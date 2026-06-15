@@ -2,5 +2,19 @@
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "mosaic-blocks",
   "homepage": "https://vantageos.com/mosaic-blocks",
-  "items": []
+  "items": [
+    {
+      "name": "mosaic-button",
+      "type": "registry:ui",
+      "title": "MosaicButton",
+      "description": "Accessible button atom built on @base-ui/react. Variants: default, secondary, ghost, destructive, outline, link. Sizes: default, sm, lg, icon, icon-sm, icon-lg.",
+      "dependencies": ["@base-ui/react", "class-variance-authority"],
+      "files": [
+        {
+          "path": "src/components/button/Button.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    }
+  ]
 }
