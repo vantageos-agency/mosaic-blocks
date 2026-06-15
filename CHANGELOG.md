@@ -38,6 +38,13 @@ at consumer level).
 - `pnpm build` (tsup ESM+CJS+DTS): success
 - `pnpm sandbox:build` (Next.js 16): static / 0 errors
 
+### Added — Documentation (2026-06-15)
+
+- `docs/ARCHITECTURE.md` — library layers, @base-ui/react foundation, OKLCH theme system (consumer-provided semantic tokens, `data-theme` dark mode, planned `styles.css` export), distribution model.
+- `docs/USAGE.md` — npm + shadcn-registry consumption, required theme setup, full component catalog.
+- `docs/CONTRIBUTING.md` — TDD RED-first workflow, local + CI gates, naming/theming conventions, docs-sync obligation.
+- `README.md` — added Documentation index (relative links), Install section, and a component Catalog table with per-batch ship status.
+
 ### Added — T1.5 CI Workflow (2026-06-15)
 
 Hard-failing GitHub Actions CI workflow (`.github/workflows/ci.yml`) — all 7 gates, no `continue-on-error`. Runs on every PR and push to `main`.

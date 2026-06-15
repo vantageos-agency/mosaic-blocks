@@ -6,6 +6,23 @@
 
 React "composed" blocks for VantageOS products. Distinct from `@vantageos/mosaic` (cross-runtime atoms): this library is React-only and targets full composed UI blocks.
 
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layers, @base-ui foundation, OKLCH theme system, distribution.
+- [docs/USAGE.md](docs/USAGE.md) — consume via npm + shadcn registry, theme setup, full component catalog.
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — TDD workflow, local + CI gates, conventions.
+- [docs/adr/0001-base-ui-vs-radix.md](docs/adr/0001-base-ui-vs-radix.md) — ADR: @base-ui/react vs Radix.
+- [CHANGELOG.md](CHANGELOG.md) — release notes.
+
+## Install
+
+```bash
+pnpm add @vantageos/mosaic-blocks   # alpha — not yet published; see docs/USAGE.md
+# peer deps: react@19, react-dom@19, tailwindcss@4
+```
+
+Theme tokens (OKLCH semantic CSS variables) are consumer-provided at the app root — see [docs/USAGE.md](docs/USAGE.md#3-theme-setup-required).
+
 ## Stack
 
 - Next.js 16 + React 19
@@ -41,6 +58,18 @@ import { MosaicButton } from "@vantageos/mosaic-blocks";
 ```
 
 Built on `@base-ui/react/button`. Headless, accessible (role=button, keyboard nav, focus management). `data-slot="button"` for Tailwind `in-data-[slot=...]` selectors. Forwards `ref` to the underlying `<button>` element.
+
+### Catalog
+
+Full prop APIs in [docs/USAGE.md](docs/USAGE.md#component-catalog). Ship status reflects merge state into `main`:
+
+| Category | Components | Status |
+|----------|-----------|--------|
+| **Atoms** (Batch C) | Button · Card · Badge · Avatar · Input · InputGroup · Field · Switch · Select · Combobox · DropdownMenu | Button shipped; rest in review (PR #6) |
+| **Landing blocks** (Batch A) | Navbar · HeroSplit · FeatureCenteredMedia · StatsGrid · PricingCard · LogosGrid · TestimonialsGrid · FooterSimple | in review (PR #2) |
+| **Utility blocks** (Batch B) | Counter · ThemeToggle · BlurredOrb · AnimatedList · IntegrationsBadge · FallingPattern · `useMediaQuery` | in review (PR #3) |
+
+All components are `Mosaic`-prefixed, props-driven, OKLCH theme-reactive, and branding-swappable.
 
 ## CI Gates
 
