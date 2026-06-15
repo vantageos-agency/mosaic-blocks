@@ -8,8 +8,16 @@
       "type": "registry:ui",
       "title": "MosaicButton",
       "description": "Accessible button atom built on @base-ui/react. Variants: default, secondary, ghost, destructive, outline, link. Sizes: default, sm, lg, icon, icon-sm, icon-lg.",
-      "dependencies": ["@base-ui/react", "class-variance-authority"],
-      "files": [{ "path": "src/components/button/Button.tsx", "type": "registry:ui" }]
+      "dependencies": [
+        "@base-ui/react",
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/button/Button.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-navbar",
@@ -17,7 +25,12 @@
       "title": "MosaicNavbar",
       "description": "Scroll-aware fixed navbar: hide-on-scroll-down, blur backdrop, mobile hamburger menu. Props: logo, links[], cta. No hardcoded branding.",
       "dependencies": [],
-      "files": [{ "path": "src/components/navbar/MosaicNavbar.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/navbar/MosaicNavbar.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-hero-split",
@@ -25,7 +38,12 @@
       "title": "MosaicHeroSplit",
       "description": "Two-column split hero: copy left, media right. Props: eyebrow, title, subtitle, cta, ctaSecondary, media. Falls back to centered single-column when no media.",
       "dependencies": [],
-      "files": [{ "path": "src/components/hero-split/MosaicHeroSplit.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/hero-split/MosaicHeroSplit.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-feature-centered-media",
@@ -34,7 +52,10 @@
       "description": "Centered feature section: heading + body + optional feature grid + centered media slot. Props: title, body, features[], media.",
       "dependencies": [],
       "files": [
-        { "path": "src/components/feature-centered-media/MosaicFeatureCenteredMedia.tsx", "type": "registry:ui" }
+        {
+          "path": "src/components/feature-centered-media/MosaicFeatureCenteredMedia.tsx",
+          "type": "registry:ui"
+        }
       ]
     },
     {
@@ -43,7 +64,12 @@
       "title": "MosaicStatsGrid",
       "description": "Border-grid statistics section. Props: stats[] {label, value}, heading, subtext. Values are plain strings; animate at consumer level.",
       "dependencies": [],
-      "files": [{ "path": "src/components/stats-grid/MosaicStatsGrid.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/stats-grid/MosaicStatsGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-pricing-card",
@@ -51,7 +77,12 @@
       "title": "MosaicPricingCard",
       "description": "Single pricing tier card. Props: tier, price, features[], cta, highlighted. Compose multiple in a grid for a full pricing section.",
       "dependencies": [],
-      "files": [{ "path": "src/components/pricing-card/MosaicPricingCard.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/pricing-card/MosaicPricingCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-logos-grid",
@@ -59,7 +90,12 @@
       "title": "MosaicLogosGrid",
       "description": "Logo cloud / partner logos grid. Props: logos[] {name, src, width, height}, heading. Grayscale hover effect.",
       "dependencies": [],
-      "files": [{ "path": "src/components/logos-grid/MosaicLogosGrid.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/logos-grid/MosaicLogosGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-testimonials-grid",
@@ -68,7 +104,10 @@
       "description": "Masonry-style testimonials grid: featured item spans half width, rest stack. Props: testimonials[] {id, quote, author, role, avatar?, logo?}, heading.",
       "dependencies": [],
       "files": [
-        { "path": "src/components/testimonials-grid/MosaicTestimonialsGrid.tsx", "type": "registry:ui" }
+        {
+          "path": "src/components/testimonials-grid/MosaicTestimonialsGrid.tsx",
+          "type": "registry:ui"
+        }
       ]
     },
     {
@@ -77,7 +116,12 @@
       "title": "MosaicFooterSimple",
       "description": "Simple multi-column footer. Props: columns[] {id, heading, links[]}, legal, logo?, social[] {label, href, iconSrc?}.",
       "dependencies": [],
-      "files": [{ "path": "src/components/footer-simple/MosaicFooterSimple.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/footer-simple/MosaicFooterSimple.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-counter",
@@ -85,7 +129,12 @@
       "title": "MosaicCounter",
       "description": "Animated metric count-up. Counts from 0 to value on mount using requestAnimationFrame (no motion dep). Props: value, duration?, format?. Respects prefers-reduced-motion.",
       "dependencies": [],
-      "files": [{ "path": "src/components/counter/MosaicCounter.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/counter/MosaicCounter.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-theme-toggle",
@@ -93,7 +142,12 @@
       "title": "MosaicThemeToggle",
       "description": "Light/dark/system theme toggle. Flips data-theme on document.documentElement. Props: themes?, onChange?, label?. Theme-reactive via OKLCH CSS vars.",
       "dependencies": [],
-      "files": [{ "path": "src/components/theme-toggle/MosaicThemeToggle.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/theme-toggle/MosaicThemeToggle.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-blurred-orb",
@@ -101,7 +155,12 @@
       "title": "MosaicBlurredOrb",
       "description": "Decorative blurred gradient orb background. Pure CSS (no extra dep). Props: colors?, size?, position?, blur?, opacity?. aria-hidden. No hardcoded branding.",
       "dependencies": [],
-      "files": [{ "path": "src/components/blurred-orb/MosaicBlurredOrb.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/blurred-orb/MosaicBlurredOrb.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-animated-list",
@@ -109,7 +168,12 @@
       "title": "MosaicAnimatedList",
       "description": "Staggered reveal list. Children animate in on mount via CSS keyframe + inline animation-delay. Props: stagger?, children, as?. No motion dep. Respects prefers-reduced-motion.",
       "dependencies": [],
-      "files": [{ "path": "src/components/animated-list/MosaicAnimatedList.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/animated-list/MosaicAnimatedList.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-integrations-badge",
@@ -117,7 +181,12 @@
       "title": "MosaicIntegrationsBadge",
       "description": "Integration badge/pill with logo slot + label. Renders as <a> when href provided. Props: label, logo?, href?, target?. OKLCH theme-reactive. No hardcoded branding.",
       "dependencies": [],
-      "files": [{ "path": "src/components/integrations-badge/MosaicIntegrationsBadge.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/integrations-badge/MosaicIntegrationsBadge.tsx",
+          "type": "registry:ui"
+        }
+      ]
     },
     {
       "name": "mosaic-falling-pattern",
@@ -125,7 +194,158 @@
       "title": "MosaicFallingPattern",
       "description": "Animated dot-grid background pattern (SVG + CSS falling dot animation). Props: density?, color?, animationDuration?. aria-hidden. No extra deps. Respects prefers-reduced-motion.",
       "dependencies": [],
-      "files": [{ "path": "src/components/falling-pattern/MosaicFallingPattern.tsx", "type": "registry:ui" }]
+      "files": [
+        {
+          "path": "src/components/falling-pattern/MosaicFallingPattern.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-card",
+      "type": "registry:ui",
+      "title": "MosaicCard",
+      "description": "Composable card surface: Card + CardHeader + CardTitle + CardDescription + CardContent + CardFooter. Style-only, data-slot per part. OKLCH theme-reactive.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/card/MosaicCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-badge",
+      "type": "registry:ui",
+      "title": "MosaicBadge",
+      "description": "Inline status badge. cva variants: default, secondary, destructive, outline. Style-only span, data-slot=\"badge\".",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/badge/MosaicBadge.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-avatar",
+      "type": "registry:ui",
+      "title": "MosaicAvatar",
+      "description": "Avatar with image + fallback, built on @base-ui/react/avatar. Props: src, alt, fallback. data-slot=\"avatar\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/avatar/MosaicAvatar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-input",
+      "type": "registry:ui",
+      "title": "MosaicInput",
+      "description": "Text input built on @base-ui/react/input. Forwards ref to native input. data-slot=\"input\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/input/MosaicInput.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-input-group",
+      "type": "registry:ui",
+      "title": "MosaicInputGroup",
+      "description": "Composition wrapper laying out prefix/suffix addons around an input. data-slot=\"input-group\".",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/input-group/MosaicInputGroup.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-field",
+      "type": "registry:ui",
+      "title": "MosaicField",
+      "description": "Accessible form field built on @base-ui/react/field: Field + Label + Control + Description + Error with wired a11y associations. data-slot=\"field\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/field/MosaicField.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-switch",
+      "type": "registry:ui",
+      "title": "MosaicSwitch",
+      "description": "Toggle switch built on @base-ui/react/switch. Controlled + uncontrolled, role=switch, keyboard accessible. data-slot=\"switch\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/switch/MosaicSwitch.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-select",
+      "type": "registry:ui",
+      "title": "MosaicSelect",
+      "description": "Listbox select built on @base-ui/react/select. Props: items[], value, onValueChange, placeholder. Keyboard + focus management. data-slot=\"select\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/select/MosaicSelect.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-combobox",
+      "type": "registry:ui",
+      "title": "MosaicCombobox",
+      "description": "Filterable combobox built on @base-ui/react/combobox with useFilter. Props: items[], value, onValueChange, placeholder. data-slot=\"combobox\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/combobox/MosaicCombobox.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-dropdown-menu",
+      "type": "registry:ui",
+      "title": "MosaicDropdownMenu",
+      "description": "Dropdown menu built on @base-ui/react/menu: Trigger + items + separators. Keyboard nav, focus-visible. data-slot=\"dropdown-menu\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/dropdown-menu/MosaicDropdownMenu.tsx",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }
