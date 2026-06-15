@@ -67,6 +67,23 @@ pnpm build
 pnpm sandbox:build
 ```
 
+### Batch A — Landing section blocks
+
+T3-A Batch A shipped. 8 landing-section blocks available — see CHANGELOG for the full list.
+
+| Block | Props summary |
+|-------|--------------|
+| `MosaicNavbar` | `logo`, `links[]`, `cta?` — scroll-aware, mobile menu |
+| `MosaicHeroSplit` | `title`, `subtitle`, `eyebrow?`, `cta?`, `media?` |
+| `MosaicFeatureCenteredMedia` | `title`, `body`, `features[]?`, `media?` |
+| `MosaicStatsGrid` | `stats[] {label, value}`, `heading?` |
+| `MosaicPricingCard` | `tier`, `price`, `features[]`, `cta`, `highlighted?` |
+| `MosaicLogosGrid` | `logos[] {name, src}`, `heading?` |
+| `MosaicTestimonialsGrid` | `testimonials[] {id, quote, author, role}`, `heading?` |
+| `MosaicFooterSimple` | `columns[]`, `legal`, `logo?`, `social[]?` |
+
+All blocks: zero hardcoded branding — all content via props. OKLCH color tokens.
+
 ## Dependency version catalog (`versions.ts`)
 
 `src/versions.ts` is the single source of truth for every pinned dependency version used across the lib package (`package.json`) and the Next.js sandbox (`sandbox/package.json`).

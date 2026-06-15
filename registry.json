@@ -15,6 +15,110 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "mosaic-navbar",
+      "type": "registry:ui",
+      "title": "MosaicNavbar",
+      "description": "Scroll-aware fixed navbar: hide-on-scroll-down, blur backdrop, mobile hamburger menu. Props: logo, links[], cta. No hardcoded branding.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/navbar/MosaicNavbar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-hero-split",
+      "type": "registry:ui",
+      "title": "MosaicHeroSplit",
+      "description": "Two-column split hero: copy left, media right. Props: eyebrow, title, subtitle, cta, ctaSecondary, media. Falls back to centered single-column when no media.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/hero-split/MosaicHeroSplit.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-feature-centered-media",
+      "type": "registry:ui",
+      "title": "MosaicFeatureCenteredMedia",
+      "description": "Centered feature section: heading + body + optional feature grid + centered media slot. Props: title, body, features[], media.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/feature-centered-media/MosaicFeatureCenteredMedia.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-stats-grid",
+      "type": "registry:ui",
+      "title": "MosaicStatsGrid",
+      "description": "Border-grid statistics section. Props: stats[] {label, value}, heading, subtext. Values are plain strings; animate at consumer level.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/stats-grid/MosaicStatsGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-pricing-card",
+      "type": "registry:ui",
+      "title": "MosaicPricingCard",
+      "description": "Single pricing tier card. Props: tier, price, features[], cta, highlighted. Compose multiple in a grid for a full pricing section.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/pricing-card/MosaicPricingCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-logos-grid",
+      "type": "registry:ui",
+      "title": "MosaicLogosGrid",
+      "description": "Logo cloud / partner logos grid. Props: logos[] {name, src, width, height}, heading. Grayscale hover effect.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/logos-grid/MosaicLogosGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-testimonials-grid",
+      "type": "registry:ui",
+      "title": "MosaicTestimonialsGrid",
+      "description": "Masonry-style testimonials grid: featured item spans half width, rest stack. Props: testimonials[] {id, quote, author, role, avatar?, logo?}, heading.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/testimonials-grid/MosaicTestimonialsGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-footer-simple",
+      "type": "registry:ui",
+      "title": "MosaicFooterSimple",
+      "description": "Simple multi-column footer. Props: columns[] {id, heading, links[]}, legal, logo?, social[] {label, href, iconSrc?}.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/footer-simple/MosaicFooterSimple.tsx",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }
