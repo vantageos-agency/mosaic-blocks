@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.next/
+coverage/
+*.tsbuildinfo
+.turbo/
+sandbox/node_modules/
+sandbox/.next/
