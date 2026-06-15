@@ -45,6 +45,20 @@ at consumer level).
 - `docs/CONTRIBUTING.md` — TDD RED-first workflow, local + CI gates, naming/theming conventions, docs-sync obligation.
 - `README.md` — added Documentation index (relative links), Install section, and a component Catalog table with per-batch ship status.
 
+### Added — T3-B Batch B: 6 utility blocks + useMediaQuery (2026-06-15)
+
+6 utility blocks + 1 hook ported from heyfabrika/styleui (MIT). All theme-reactive via OKLCH CSS vars. Zero hardcoded branding. Zero new runtime dependencies.
+
+- `MosaicCounter` — animated metric count-up via requestAnimationFrame (easeOutExpo). Props: `value`, `duration?`, `format?`. Respects `prefers-reduced-motion`.
+- `MosaicThemeToggle` — light/dark/system theme toggle. Flips `data-theme` on `document.documentElement`. Props: `themes?`, `onChange?`, `label?`.
+- `MosaicBlurredOrb` — decorative blurred gradient orb. Pure CSS (`filter: blur`). Props: `colors?`, `size?`, `position?`, `blur?`, `opacity?`. `aria-hidden`.
+- `MosaicAnimatedList` — staggered reveal list via CSS keyframe + inline `animation-delay`. Props: `stagger?`, `children`, `as?`. Respects `prefers-reduced-motion`.
+- `MosaicIntegrationsBadge` — integration pill badge. Renders as `<a>` when `href` provided. Props: `label`, `logo?`, `href?`, `target?`.
+- `MosaicFallingPattern` — animated dot-grid background (SVG pattern + CSS falling dot animation). Props: `density?`, `color?`, `animationDuration?`. `aria-hidden`.
+- `useMediaQuery(query): boolean` — SSR-safe media query hook; subscribes via `addEventListener("change")` in effect only.
+
+**Bundle decision:** `motion` (framer-motion) evaluated and rejected — all animations achievable with native rAF + CSS keyframes. 0 new runtime deps. Registry: 6 blocks added. Tests: RED-first, 25 new.
+
 ### Added — T1.5 CI Workflow (2026-06-15)
 
 Hard-failing GitHub Actions CI workflow (`.github/workflows/ci.yml`) — all 7 gates, no `continue-on-error`. Runs on every PR and push to `main`.

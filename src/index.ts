@@ -3,6 +3,7 @@
  *
  * T0-ARCH: atoms (MosaicButton)
  * T3-A Batch A: 8 landing-section blocks
+ * T3-B Batch B: 6 utility blocks + useMediaQuery hook
  */
 
 export { version } from "./version.js";
@@ -59,3 +60,28 @@ export type {
   FooterLink,
   SocialLink,
 } from "./components/footer-simple/MosaicFooterSimple.js";
+
+// ── T3-B Batch B: utility blocks ─────────────────────────────────────────────
+export { MosaicCounter } from "./components/counter/MosaicCounter.js";
+export type { MosaicCounterProps } from "./components/counter/MosaicCounter.js";
+
+export { MosaicThemeToggle } from "./components/theme-toggle/MosaicThemeToggle.js";
+export type { MosaicThemeToggleProps, Theme } from "./components/theme-toggle/MosaicThemeToggle.js";
+
+export { MosaicBlurredOrb } from "./components/blurred-orb/MosaicBlurredOrb.js";
+export type {
+  MosaicBlurredOrbProps,
+  OrbPosition,
+} from "./components/blurred-orb/MosaicBlurredOrb.js";
+
+export { MosaicAnimatedList } from "./components/animated-list/MosaicAnimatedList.js";
+export type { MosaicAnimatedListProps } from "./components/animated-list/MosaicAnimatedList.js";
+
+export { MosaicIntegrationsBadge } from "./components/integrations-badge/MosaicIntegrationsBadge.js";
+export type { MosaicIntegrationsBadgeProps } from "./components/integrations-badge/MosaicIntegrationsBadge.js";
+
+export { MosaicFallingPattern } from "./components/falling-pattern/MosaicFallingPattern.js";
+export type { MosaicFallingPatternProps } from "./components/falling-pattern/MosaicFallingPattern.js";
+
+// ── T3-B Batch B: hooks ───────────────────────────────────────────────────────
+export { useMediaQuery } from "./hooks/useMediaQuery.js";
