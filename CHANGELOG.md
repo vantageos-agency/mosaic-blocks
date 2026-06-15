@@ -9,6 +9,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — T3-A Batch A: 8 landing-section blocks (2026-06-15)
+
+Eight production-ready landing page section blocks ported from heyfabrika/styleui (MIT).
+All blocks are fully props-driven — zero hardcoded branding, colors, copy, or logos.
+OKLCH CSS tokens throughout (no pure `#000`/`#fff`).
+RED-first TDD: 35 new tests (8 new test files), 100% passing.
+
+| Block | Props API (key props) |
+|-------|-----------------------|
+| `MosaicNavbar` | `logo`, `links[]`, `cta?` — scroll-aware hide-on-scroll-down, mobile menu |
+| `MosaicHeroSplit` | `title`, `subtitle`, `eyebrow?`, `cta?`, `ctaSecondary?`, `media?` |
+| `MosaicFeatureCenteredMedia` | `title`, `body`, `features[]?`, `media?` |
+| `MosaicStatsGrid` | `stats[] {label, value}`, `heading?`, `subtext?` |
+| `MosaicPricingCard` | `tier`, `price`, `features[]`, `cta`, `highlighted?` |
+| `MosaicLogosGrid` | `logos[] {name, src, width?, height?}`, `heading?` |
+| `MosaicTestimonialsGrid` | `testimonials[] {id, quote, author, role, avatar?, logo?}`, `heading?` |
+| `MosaicFooterSimple` | `columns[] {id, heading, links[]}`, `legal`, `logo?`, `social[]?` |
+
+**New dependencies:** none — motion/react intentionally excluded (CSS transitions used
+instead for bundle budget). Native `<img>` used (lib-portable; wrap with `next/image`
+at consumer level).
+
+**Gates (all green):**
+- `pnpm test`: 38/38 (10 files)
+- `pnpm typecheck`: 0 errors
+- `pnpm lint` (biome): 0 errors
+- `pnpm build` (tsup ESM+CJS+DTS): success
+- `pnpm sandbox:build` (Next.js 16): static / 0 errors
+
 ### Added — T1.5 CI Workflow (2026-06-15)
 
 Hard-failing GitHub Actions CI workflow (`.github/workflows/ci.yml`) — all 7 gates, no `continue-on-error`. Runs on every PR and push to `main`.
@@ -26,8 +55,6 @@ Hard-failing GitHub Actions CI workflow (`.github/workflows/ci.yml`) — all 7 g
 
 **Action pins:** `actions/checkout@v4`, `pnpm/action-setup@v4`, `actions/setup-node@v4`. pnpm store cached via `setup-node` built-in cache.
 
-**README:** CI badge added. Gates table added.
-
 ### Added — T0-ARCH: @base-ui/react adoption + MosaicButton spike
 
 - **ADR-0001** (`docs/adr/0001-base-ui-vs-radix.md`): Architecture Decision Record adopting `@base-ui/react` as the headless primitive layer for Batch C interactive atoms. Documents rationale, per-primitive availability across all 11 Batch C atoms, risks, and consequences.
@@ -41,7 +68,7 @@ Hard-failing GitHub Actions CI workflow (`.github/workflows/ci.yml`) — all 7 g
 
 ### Changed
 
-- `README.md`: Added MosaicButton usage, @base-ui/react rationale, ADR-0001 link, CI badge + gates table.
+- `README.md`: Added MosaicButton usage, @base-ui/react rationale, ADR-0001 link, CI badge + gates table, Batch A blocks section.
 
 ---
 
@@ -50,6 +77,9 @@ Hard-failing GitHub Actions CI workflow (`.github/workflows/ci.yml`) — all 7 g
 ### Added
 
 - T1 bootstrap: build infra (tsup ESM+CJS+DTS), vitest test harness, Next.js 16 sandbox, biome linter, versions.ts catalog, sync-versions script, versions drift guard.
+- `src/versions.ts` — pinned-dependency catalog (pattern from awslabs/nx-plugin-for-aws, Apache 2.0).
+- `scripts/sync-versions.mjs` — propagates catalog to all package.json files.
+- `src/versions.test.ts` — drift guard (CI catches package.json drift).
 - `Placeholder` component (scaffold — removed when T3 lands real blocks).
 
 ---

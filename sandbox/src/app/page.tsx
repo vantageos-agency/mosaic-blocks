@@ -1,53 +1,292 @@
-import { MosaicButton, Placeholder, version } from "@vantageos/mosaic-blocks";
+"use client";
+
+import {
+  MosaicButton,
+  MosaicFeatureCenteredMedia,
+  MosaicFooterSimple,
+  MosaicHeroSplit,
+  MosaicLogosGrid,
+  MosaicNavbar,
+  MosaicPricingCard,
+  MosaicStatsGrid,
+  MosaicTestimonialsGrid,
+  Placeholder,
+  version,
+} from "@vantageos/mosaic-blocks";
 
 export default function SandboxPage() {
   return (
-    <main className="p-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold mb-1">mosaic-blocks sandbox</h1>
-        <p className="text-sm text-gray-500">
-          v{version} — T0-ARCH spike: MosaicButton (@base-ui/react, ADR-0001)
-        </p>
-      </div>
+    <div className="min-h-screen bg-white">
+      {/* MosaicNavbar */}
+      <MosaicNavbar
+        logo={<span className="text-lg font-bold tracking-tight text-gray-900">Mosaic</span>}
+        links={[
+          { label: "Features", href: "#features" },
+          { label: "Pricing", href: "#pricing" },
+          { label: "Customers", href: "#customers" },
+        ]}
+        cta={{ label: "Get started", href: "#start" }}
+      />
 
-      <section>
-        <h2 className="text-lg font-semibold mb-3">MosaicButton — variants</h2>
-        <div className="flex flex-wrap gap-3">
-          <MosaicButton variant="default">Default</MosaicButton>
-          <MosaicButton variant="secondary">Secondary</MosaicButton>
-          <MosaicButton variant="ghost">Ghost</MosaicButton>
-          <MosaicButton variant="destructive">Destructive</MosaicButton>
-          <MosaicButton variant="outline">Outline</MosaicButton>
-          <MosaicButton variant="link">Link</MosaicButton>
+      <main className="pt-24 space-y-0">
+        {/* Header */}
+        <div className="px-8 py-6 border-b border-gray-100">
+          <h1 className="text-2xl font-bold mb-1">mosaic-blocks sandbox</h1>
+          <p className="text-sm text-gray-500">
+            v{version} — T3-A Batch A: 8 landing-section blocks
+          </p>
         </div>
-      </section>
 
-      <section>
-        <h2 className="text-lg font-semibold mb-3">MosaicButton — sizes</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <MosaicButton size="sm">Small</MosaicButton>
-          <MosaicButton size="default">Default</MosaicButton>
-          <MosaicButton size="lg">Large</MosaicButton>
-          <MosaicButton size="icon" aria-label="Icon button">
-            +
-          </MosaicButton>
-        </div>
-      </section>
+        {/* MosaicButton — atom (T0-ARCH, preserved across T3-A rebase) */}
+        <section className="border-b border-gray-100 px-8 py-8">
+          <p className="pb-3 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicButton — variants / sizes / states
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <MosaicButton variant="default">Default</MosaicButton>
+            <MosaicButton variant="secondary">Secondary</MosaicButton>
+            <MosaicButton variant="ghost">Ghost</MosaicButton>
+            <MosaicButton variant="destructive">Destructive</MosaicButton>
+            <MosaicButton variant="outline">Outline</MosaicButton>
+            <MosaicButton variant="link">Link</MosaicButton>
+            <MosaicButton size="sm">Small</MosaicButton>
+            <MosaicButton size="lg">Large</MosaicButton>
+            <MosaicButton size="icon" aria-label="Icon button">
+              +
+            </MosaicButton>
+            <MosaicButton disabled>Disabled</MosaicButton>
+          </div>
+        </section>
 
-      <section>
-        <h2 className="text-lg font-semibold mb-3">MosaicButton — states</h2>
-        <div className="flex flex-wrap gap-3">
-          <MosaicButton disabled>Disabled</MosaicButton>
-          <MosaicButton variant="secondary" disabled>
-            Secondary disabled
-          </MosaicButton>
-        </div>
-      </section>
+        {/* MosaicHeroSplit */}
+        <section className="border-b border-gray-100">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicHeroSplit
+          </p>
+          <MosaicHeroSplit
+            eyebrow="Now in beta"
+            title="The platform built for modern product teams"
+            subtitle="Ship faster, collaborate smarter, and keep every stakeholder aligned — without the enterprise overhead."
+            cta={{ label: "Start free", href: "#start" }}
+            ctaSecondary={{ label: "Watch demo", href: "#demo" }}
+            media={
+              <div className="w-full rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 aspect-video flex items-center justify-center text-gray-400 text-sm">
+                Product screenshot slot
+              </div>
+            }
+          />
+        </section>
 
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Placeholder (legacy)</h2>
-        <Placeholder label="Alpha placeholder — T3 blocks will replace this" />
-      </section>
-    </main>
+        {/* MosaicLogosGrid */}
+        <section className="border-b border-gray-100">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicLogosGrid
+          </p>
+          <MosaicLogosGrid
+            heading="Trusted by teams at leading companies"
+            logos={[
+              {
+                name: "Notion",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Notion",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Framer",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Framer",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Slack",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Slack",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Webflow",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Webflow",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Linear",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Linear",
+                width: 100,
+                height: 40,
+              },
+            ]}
+          />
+        </section>
+
+        {/* MosaicFeatureCenteredMedia */}
+        <section className="border-b border-gray-100" id="features">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicFeatureCenteredMedia
+          </p>
+          <MosaicFeatureCenteredMedia
+            title="Everything your team needs"
+            body="Built for speed. Designed to stay out of your way."
+            features={[
+              {
+                id: "f1",
+                title: "Real-time collaboration",
+                description: "Every change syncs instantly across your team.",
+              },
+              {
+                id: "f2",
+                title: "Version history",
+                description: "Roll back to any point in your project's history.",
+              },
+              {
+                id: "f3",
+                title: "Smart automations",
+                description: "Automate repetitive work without writing code.",
+              },
+              {
+                id: "f4",
+                title: "Integrations",
+                description: "Connects with the tools you already use.",
+              },
+            ]}
+            media={
+              <div className="w-full rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 aspect-video flex items-center justify-center text-gray-400 text-sm">
+                Feature media slot
+              </div>
+            }
+          />
+        </section>
+
+        {/* MosaicStatsGrid */}
+        <section className="border-b border-gray-100">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicStatsGrid
+          </p>
+          <MosaicStatsGrid
+            heading="Numbers that speak for themselves"
+            subtext="Trusted by thousands of teams shipping faster every day."
+            stats={[
+              { value: "12K+", label: "Active teams" },
+              { value: "99.9%", label: "Uptime SLA" },
+              { value: "3x", label: "Faster shipping" },
+            ]}
+          />
+        </section>
+
+        {/* MosaicTestimonialsGrid */}
+        <section className="border-b border-gray-100" id="customers">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicTestimonialsGrid
+          </p>
+          <MosaicTestimonialsGrid
+            heading="Loved by thousands who work smarter"
+            testimonials={[
+              {
+                id: "t1",
+                quote:
+                  "We onboarded 40 engineers in a week and saw immediate productivity gains. The tooling just gets out of the way and lets us focus on shipping.",
+                author: "Sarah Chen",
+                role: "VP of Engineering, Acme Corp",
+              },
+              {
+                id: "t2",
+                quote:
+                  "Finally a tool that feels like it was built by people who actually ship code. Game changer.",
+                author: "Marcus Thompson",
+                role: "Lead Developer",
+              },
+              {
+                id: "t3",
+                quote: "Our clients notice the difference. We close projects 30% faster now.",
+                author: "Jordan Patel",
+                role: "Founder, Studio JP",
+              },
+            ]}
+          />
+        </section>
+
+        {/* MosaicPricingCard — 3 cards */}
+        <section className="border-b border-gray-100 px-8 py-16" id="pricing">
+          <p className="pb-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicPricingCard (3-tier example)
+          </p>
+          <div className="flex flex-wrap gap-6 justify-center">
+            <MosaicPricingCard
+              tier="Free"
+              price="$0/mo"
+              features={["Up to 3 projects", "1 team member", "Community support"]}
+              cta={{ label: "Start for free", href: "#free" }}
+            />
+            <MosaicPricingCard
+              tier="Pro"
+              price="$19/mo"
+              features={[
+                "Unlimited projects",
+                "Up to 10 members",
+                "Priority support",
+                "Custom domain",
+              ]}
+              cta={{ label: "Get started", href: "#pro" }}
+              highlighted
+            />
+            <MosaicPricingCard
+              tier="Enterprise"
+              price="Custom"
+              features={[
+                "Unlimited everything",
+                "SSO / SAML",
+                "Dedicated support",
+                "SLA guarantee",
+              ]}
+              cta={{ label: "Contact sales", href: "#enterprise" }}
+            />
+          </div>
+        </section>
+
+        {/* Placeholder (legacy) */}
+        <section className="px-8 py-8">
+          <Placeholder label="Alpha placeholder — T4+ blocks will extend this sandbox" />
+        </section>
+
+        {/* MosaicFooterSimple */}
+        <MosaicFooterSimple
+          logo={<span className="text-lg font-bold tracking-tight text-gray-900">Mosaic</span>}
+          columns={[
+            {
+              id: "col-product",
+              heading: "Product",
+              links: [
+                { label: "Features", href: "#features" },
+                { label: "Pricing", href: "#pricing" },
+                { label: "Changelog", href: "#changelog" },
+              ],
+            },
+            {
+              id: "col-company",
+              heading: "Company",
+              links: [
+                { label: "About", href: "#about" },
+                { label: "Blog", href: "#blog" },
+                { label: "Careers", href: "#careers" },
+              ],
+            },
+            {
+              id: "col-legal",
+              heading: "Legal",
+              links: [
+                { label: "Privacy", href: "#privacy" },
+                { label: "Terms", href: "#terms" },
+              ],
+            },
+          ]}
+          social={[
+            { label: "Twitter / X", href: "https://x.com" },
+            { label: "GitHub", href: "https://github.com" },
+            { label: "LinkedIn", href: "https://linkedin.com" },
+          ]}
+          legal={`© ${new Date().getFullYear()} VantageOS. All rights reserved.`}
+        />
+      </main>
+    </div>
   );
 }
