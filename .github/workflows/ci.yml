@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# Cancel in-flight runs for the same PR/branch so pushes don't queue
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout (full history so react-doctor --diff origin/main works) ──
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. Setup pnpm ────────────────────────────────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # ── 3. Setup Node 22 + restore pnpm store cache ──────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+
+      # ── 4. Install ───────────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── 5. Lint (Biome — 0 warnings) ─────────────────────────────────────────
+      - name: Lint
+        run: pnpm lint
+
+      # ── 6. Typecheck (tsc --noEmit — 0 errors) ───────────────────────────────
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # ── 7. Tests (Vitest — all green) ────────────────────────────────────────
+      - name: Test
+        run: pnpm test
+
+      # ── 8. Parse / syntax guard ───────────────────────────────────────────────
+      #    Uses TS compiler API to detect parse-level errors before bundling.
+      #    Mirrors vantage-immo #89 bundleGuard fix-pattern (m978csm3).
+      - name: Parse guard
+        run: pnpm parse-guard
+
+      # ── 9. Build (tsup ESM+CJS+DTS) ──────────────────────────────────────────
+      - name: Build
+        run: pnpm build
+
+      # ── 10. Sandbox build (Next.js — Rule #19) ───────────────────────────────
+      - name: Sandbox build
+        run: pnpm sandbox:build
+
+      # ── 11. React-doctor (Dimension 12) — PINNED 0.2.11, never @latest ───────
+      #    --diff origin/main  → scan only changed files vs main
+      #    --fail-on error     → exit non-zero on any error-level diagnostic
+      #    --annotations       → surface findings as GitHub Actions annotations
+      - name: React-doctor
+        run: >
+          npx react-doctor@0.2.11
+          --diff origin/main
+          --fail-on error
+          --annotations
+          src

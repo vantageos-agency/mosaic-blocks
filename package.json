@@ -25,7 +25,8 @@
     "test": "vitest run",
     "sandbox:build": "cd sandbox && pnpm build",
     "prebuild": "rimraf dist",
-    "sync-versions": "node scripts/sync-versions.mjs"
+    "sync-versions": "node scripts/sync-versions.mjs",
+    "parse-guard": "node scripts/parse-guard.mjs"
   },
   "peerDependencies": {
     "react": "^19",
