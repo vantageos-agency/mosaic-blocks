@@ -37,7 +37,7 @@ jobs:
           node-version: "22.x"
           cache: "pnpm"
 
-      # ── 4. Install ───────────────────────────────────────────────────────────
+      # ── 4. Install root deps ─────────────────────────────────────────────────
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -54,7 +54,7 @@ jobs:
         run: pnpm test
 
       # ── 8. Parse / syntax guard ───────────────────────────────────────────────
-      #    Uses TS compiler API to detect parse-level errors before bundling.
+      #    Uses TS compiler API getSyntacticDiagnostics over src/**/*.ts(x).
       #    Mirrors vantage-immo #89 bundleGuard fix-pattern (m978csm3).
       - name: Parse guard
         run: pnpm parse-guard
@@ -63,11 +63,17 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # ── 10. Sandbox build (Next.js — Rule #19) ───────────────────────────────
+      # ── 10. Sandbox install + build (Next.js — Rule #19) ─────────────────────
+      #    The sandbox is a standalone pnpm project (not a workspace member).
+      #    Install its deps first (including the freshly built local lib via file:..).
+      - name: Install sandbox dependencies
+        working-directory: sandbox
+        run: pnpm install --frozen-lockfile
+
       - name: Sandbox build
         run: pnpm sandbox:build
 
-      # ── 11. React-doctor (Dimension 12) — PINNED 0.2.11, never @latest ───────
+      # ── 11. React-doctor (Dimension 12) — PINNED 0.2.11, NEVER @latest ───────
       #    --diff origin/main  → scan only changed files vs main
       #    --fail-on error     → exit non-zero on any error-level diagnostic
       #    --annotations       → surface findings as GitHub Actions annotations
