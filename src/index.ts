@@ -8,3 +8,5 @@
 
 export { version } from "./version.js";
 export { Placeholder } from "./placeholder.js";
+export { MosaicButton, buttonVariants } from "./components/button/Button.js";
+export type { MosaicButtonProps } from "./components/button/Button.js";

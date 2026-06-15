@@ -8,12 +8,37 @@ React "composed" blocks for VantageOS products. Distinct from `@vantageos/mosaic
 
 - Next.js 16 + React 19
 - Tailwind v4 (OKLCH design tokens)
-- @base-ui-components/react
+- **@base-ui/react** (headless interactive atoms — see [ADR-0001](docs/adr/0001-base-ui-vs-radix.md))
+- class-variance-authority (variant management)
 - shadcn registry protocol
 
-## Status
+## Interactive Atoms — @base-ui/react (ADR-0001)
 
-T1 bootstrap (build infra only). Real blocks land in T3/T4. Consumed by VP Cloud (Sigma) and vCRM Cloud (Theta).
+All interactive Batch C atoms use `@base-ui/react` as the headless primitive layer.
+Decision rationale, per-primitive availability table, and risk register: [`docs/adr/0001-base-ui-vs-radix.md`](docs/adr/0001-base-ui-vs-radix.md).
+
+**Why @base-ui/react, not Radix?**
+- Source (`heyfabrika/styleui`) is 100% @base-ui — near-zero porting effort.
+- React 19 native; `data-slot` API aligns with our Tailwind v4 selectors.
+- shadcn's stated future reference; forward-compatible with registry format.
+- No existing Radix investment to preserve.
+
+## Components
+
+### MosaicButton
+
+```tsx
+import { MosaicButton } from "@vantageos/mosaic-blocks";
+
+// Variants: default | secondary | ghost | destructive | outline | link
+// Sizes:    default | sm | lg | icon | icon-sm | icon-lg
+
+<MosaicButton variant="secondary" size="lg">Save changes</MosaicButton>
+<MosaicButton variant="destructive" disabled>Delete account</MosaicButton>
+<MosaicButton variant="ghost" size="icon" aria-label="Add item">+</MosaicButton>
+```
+
+Built on `@base-ui/react/button`. Headless, accessible (role=button, keyboard nav, focus management). `data-slot="button"` for Tailwind `in-data-[slot=...]` selectors. Forwards `ref` to the underlying `<button>` element.
 
 ## Dependency version catalog (`versions.ts`)
 
@@ -39,11 +64,11 @@ git add src/versions.ts package.json sandbox/package.json
 ## Gates
 
 ```
-pnpm lint        # biome check
-pnpm typecheck   # tsc --noEmit
-pnpm test        # vitest run
-pnpm build       # tsup → dist/
-pnpm sandbox:build  # next build inside sandbox/
+pnpm lint           # biome check (0 errors)
+pnpm typecheck      # tsc --noEmit (0 errors)
+pnpm test           # vitest run (all pass)
+pnpm build          # tsup → dist/ (ESM + CJS + DTS)
+pnpm sandbox:build  # next build inside sandbox/ (MosaicButton rendered)
 ```
 
 ---

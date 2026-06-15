@@ -16,6 +16,7 @@ export const versions = {
   react: "^19",
   "react-dom": "^19",
   "@base-ui/react": "^1.5.0",
+  "class-variance-authority": "^0.7.1",
 
   // ── Next.js sandbox ─────────────────────────────────────────────────────────
   next: "16.2.9",
