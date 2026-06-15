@@ -1,15 +1,21 @@
 "use client";
 
 import {
+  MosaicAnimatedList,
+  MosaicBlurredOrb,
   MosaicButton,
+  MosaicCounter,
+  MosaicFallingPattern,
   MosaicFeatureCenteredMedia,
   MosaicFooterSimple,
   MosaicHeroSplit,
+  MosaicIntegrationsBadge,
   MosaicLogosGrid,
   MosaicNavbar,
   MosaicPricingCard,
   MosaicStatsGrid,
   MosaicTestimonialsGrid,
+  MosaicThemeToggle,
   Placeholder,
   version,
 } from "@vantageos/mosaic-blocks";
@@ -240,6 +246,35 @@ export default function SandboxPage() {
               ]}
               cta={{ label: "Contact sales", href: "#enterprise" }}
             />
+          </div>
+        </section>
+
+        {/* ── T3-B Batch B: utility blocks ─────────────────────────────── */}
+        <section className="border-t border-gray-100 px-8 py-10 space-y-8">
+          <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">
+            T3-B Batch B — utility blocks
+          </p>
+
+          <div className="flex flex-wrap items-center gap-8">
+            <MosaicCounter value={12000} />
+            <MosaicCounter value={99} duration={1500} format={(v) => `${Math.round(v)}%`} />
+            <MosaicThemeToggle />
+            <MosaicIntegrationsBadge label="Stripe" />
+            <MosaicIntegrationsBadge label="GitHub" href="https://github.com" />
+          </div>
+
+          <MosaicAnimatedList stagger={100} className="list-none space-y-2">
+            <li>Staggered item one</li>
+            <li>Staggered item two</li>
+            <li>Staggered item three</li>
+          </MosaicAnimatedList>
+
+          <div className="relative h-40 overflow-hidden rounded-2xl border border-gray-100">
+            <MosaicFallingPattern />
+            <MosaicBlurredOrb position={{ top: "20%", left: "30%" }} />
+            <span className="absolute inset-0 grid place-items-center text-sm text-gray-400">
+              MosaicBlurredOrb + MosaicFallingPattern (decorative)
+            </span>
           </div>
         </section>
 

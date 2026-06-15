@@ -113,6 +113,27 @@ T3-A Batch A shipped. 8 landing-section blocks available — see CHANGELOG for t
 
 All blocks: zero hardcoded branding — all content via props. OKLCH color tokens.
 
+## Blocks
+
+### T3-B Batch B — Utility Blocks (2026-06-15)
+
+| Block | Description | Extra deps |
+|-------|-------------|------------|
+| `MosaicCounter` | Animated metric count-up (rAF, easeOutExpo) | none |
+| `MosaicThemeToggle` | Light/dark/system toggle via `data-theme` | none |
+| `MosaicBlurredOrb` | Decorative blurred gradient orb (CSS filter) | none |
+| `MosaicAnimatedList` | Staggered reveal list (CSS keyframe stagger) | none |
+| `MosaicIntegrationsBadge` | Integration pill badge with logo slot | none |
+| `MosaicFallingPattern` | Animated dot-grid background (SVG + CSS) | none |
+
+**Hook:** `useMediaQuery(query): boolean` — SSR-safe, subscribes in effect only.
+
+**Bundle:** 0 new runtime dependencies added. `motion` evaluated and rejected — all animations achievable with native rAF + CSS keyframes.
+
+## Status
+
+T3-B Batch B complete. T1 bootstrap (build infra) was the foundation. Consumed by VP Cloud (Sigma) and vCRM Cloud (Theta).
+
 ## Dependency version catalog (`versions.ts`)
 
 `src/versions.ts` is the single source of truth for every pinned dependency version used across the lib package (`package.json`) and the Next.js sandbox (`sandbox/package.json`).
