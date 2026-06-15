@@ -43,35 +43,28 @@ Component source paths live under `src/components/<name>/`. Use this path when y
 
 ## 3. Theme setup (required)
 
-Components reference semantic OKLCH tokens; you must register them once at the app root.
-
-> **T5:** `@import "@vantageos/mosaic-blocks/styles.css";` will provide the default token set. Until then, declare them yourself:
+Components reference semantic OKLCH tokens; register the default token set once at the app root using the shipped stylesheet:
 
 ```css
 /* app/globals.css */
 @import "tailwindcss";
+@import "@vantageos/mosaic-blocks/styles.css";
+```
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary:    var(--primary);
-  /* …map the full shadcn token set… */
-}
+This provides 19 semantic OKLCH tokens (`background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`) with a light `:root` block and a `[data-theme="dark"]` block. The `@theme inline` block maps every token to Tailwind v4 color utilities automatically.
+
+**Rebrand:** override any `--*` CSS variable after the import — no component changes needed (Rule #2):
+
+```css
+@import "tailwindcss";
+@import "@vantageos/mosaic-blocks/styles.css";
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.15 0 0);
-  --primary:    oklch(0.55 0.2 264);
-  /* … */
-}
-[data-theme="dark"] {
-  --background: oklch(0.15 0 0);
-  --foreground: oklch(0.98 0 0);
-  /* … */
+  --primary: oklch(0.55 0.2 264); /* swap to your brand color */
 }
 ```
 
-Toggle dark mode with `MosaicThemeToggle` (flips the `data-theme` attribute on `<html>`), or set it yourself. Rebrand by overriding any `--*` variable — no component changes (Rule #2). Full model: [ARCHITECTURE.md](./ARCHITECTURE.md#theme-system--oklch-semantic-tokens-no-provider).
+Toggle dark mode with `MosaicThemeToggle` (flips the `data-theme` attribute on `<html>`), or set `data-theme="dark"` on `<html>` yourself. Full model: [ARCHITECTURE.md](./ARCHITECTURE.md#theme-system--oklch-semantic-tokens-no-provider).
 
 ## Component catalog
 

@@ -9,6 +9,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1] — 2026-06-15
+
+### Added
+
+- Shippable `@vantageos/mosaic-blocks/styles.css` default OKLCH token set: 19 semantic tokens (`background`, `foreground`, `card`, `card-foreground`, `popover`, `popover-foreground`, `primary`, `primary-foreground`, `secondary`, `secondary-foreground`, `muted`, `muted-foreground`, `accent`, `accent-foreground`, `destructive`, `destructive-foreground`, `border`, `input`, `ring`), light `:root` block + dark `[data-theme="dark"]` block, `@theme inline` Tailwind v4 mapping for all 19 tokens, branding-swappable via var override per Rule #2.
+- npm publish wiring: `"private": true` removed, `"license": "MIT"`, `"publishConfig": { "access": "public" }`, `repository` + `homepage` fields, `"./styles.css": "./dist/styles.css"` export entry.
+- `scripts/copy-assets.mjs`: copies `src/styles.css` → `dist/styles.css` as part of the `build` script.
+- Sandbox (`sandbox/src/app/globals.css`) now imports `@vantageos/mosaic-blocks/styles.css` — export exercised by `sandbox:build`.
+
 ### Added — T3-C Batch C: 10 base-ui atoms (2026-06-15)
 
 Ten interactive/static atoms ported onto `@base-ui/react@1.5.0` primitives, completing the
