@@ -9,6 +9,31 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — T3-C Batch C: 10 base-ui atoms (2026-06-15)
+
+Ten interactive/static atoms ported onto `@base-ui/react@1.5.0` primitives, completing the
+11-atom Batch C set (MosaicButton shipped in T0-ARCH). All props-driven, OKLCH theme-reactive,
+branding-swappable, `data-slot` API. RED-first TDD: 82 new tests across 10 files, 100% passing.
+
+| Atom | Primitive | Notes |
+|------|-----------|-------|
+| `MosaicCard` (+Header/Title/Description/Content/Footer) | style-only | composable surface |
+| `MosaicBadge` | style-only | cva: default/secondary/destructive/outline |
+| `MosaicAvatar` | `@base-ui/react/avatar` | image + fallback |
+| `MosaicInput` | `@base-ui/react/input` | ref → native input |
+| `MosaicInputGroup` | composition | prefix/suffix addons |
+| `MosaicField` (+Label/Control/Description/Error) | `@base-ui/react/field` | wired a11y associations |
+| `MosaicSwitch` | `@base-ui/react/switch` | controlled + uncontrolled, role=switch |
+| `MosaicSelect` | `@base-ui/react/select` | items[] API, keyboard nav |
+| `MosaicCombobox` | `@base-ui/react/combobox` | useFilter "contains", native in 1.5.0 |
+| `MosaicDropdownMenu` | `@base-ui/react/menu` | trigger + items[], keyboard nav |
+
+**base-ui 1.5.0 API notes:** `onValueChange` receives `(value, eventDetails)` (value can be `null`);
+`Field.Error` renders `<div>` with `match` prop; `Select.Value` needs a render child for label mapping;
+`Menu.Trigger` uses `render` prop (not `asChild`); `Switch.Root` dispatches PointerEvent (tests use keyboard).
+
+**Gates (all green):** test 98/98 (13 files) · typecheck 0 · biome 0 · tsup ESM+CJS+DTS · sandbox:build static (Rule #19).
+
 ### Added — T3-A Batch A: 8 landing-section blocks (2026-06-15)
 
 Eight production-ready landing page section blocks ported from heyfabrika/styleui (MIT).

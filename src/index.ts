@@ -85,3 +85,77 @@ export type { MosaicFallingPatternProps } from "./components/falling-pattern/Mos
 
 // ── T3-B Batch B: hooks ───────────────────────────────────────────────────────
 export { useMediaQuery } from "./hooks/useMediaQuery.js";
+
+// ── T3-C Batch C: base-ui atoms ──────────────────────────────────────────────
+
+// Card (style-only, composable)
+export {
+  MosaicCard,
+  MosaicCardHeader,
+  MosaicCardTitle,
+  MosaicCardDescription,
+  MosaicCardContent,
+  MosaicCardFooter,
+} from "./components/card/MosaicCard.js";
+export type {
+  MosaicCardProps,
+  MosaicCardHeaderProps,
+  MosaicCardTitleProps,
+  MosaicCardDescriptionProps,
+  MosaicCardContentProps,
+  MosaicCardFooterProps,
+} from "./components/card/MosaicCard.js";
+
+// Badge (style-only)
+export { MosaicBadge, badgeVariants } from "./components/badge/MosaicBadge.js";
+export type { MosaicBadgeProps } from "./components/badge/MosaicBadge.js";
+
+// Avatar (@base-ui/react/avatar)
+export { MosaicAvatar } from "./components/avatar/MosaicAvatar.js";
+export type { MosaicAvatarProps } from "./components/avatar/MosaicAvatar.js";
+
+// Input (@base-ui/react/input)
+export { MosaicInput } from "./components/input/MosaicInput.js";
+export type { MosaicInputProps } from "./components/input/MosaicInput.js";
+
+// InputGroup (composition)
+export { MosaicInputGroup } from "./components/input-group/MosaicInputGroup.js";
+export type { MosaicInputGroupProps } from "./components/input-group/MosaicInputGroup.js";
+
+// Field (@base-ui/react/field)
+export {
+  MosaicField,
+  MosaicFieldLabel,
+  MosaicFieldControl,
+  MosaicFieldDescription,
+  MosaicFieldError,
+} from "./components/field/MosaicField.js";
+export type {
+  MosaicFieldProps,
+  MosaicFieldLabelProps,
+  MosaicFieldControlProps,
+  MosaicFieldDescriptionProps,
+  MosaicFieldErrorProps,
+} from "./components/field/MosaicField.js";
+
+// Switch (@base-ui/react/switch)
+export { MosaicSwitch } from "./components/switch/MosaicSwitch.js";
+export type { MosaicSwitchProps } from "./components/switch/MosaicSwitch.js";
+
+// Select (@base-ui/react/select)
+export { MosaicSelect } from "./components/select/MosaicSelect.js";
+export type { MosaicSelectItem, MosaicSelectProps } from "./components/select/MosaicSelect.js";
+
+// Combobox (@base-ui/react/combobox)
+export { MosaicCombobox } from "./components/combobox/MosaicCombobox.js";
+export type {
+  MosaicComboboxItem,
+  MosaicComboboxProps,
+} from "./components/combobox/MosaicCombobox.js";
+
+// DropdownMenu (@base-ui/react/menu)
+export { MosaicDropdownMenu } from "./components/dropdown-menu/MosaicDropdownMenu.js";
+export type {
+  MosaicDropdownMenuItem,
+  MosaicDropdownMenuProps,
+} from "./components/dropdown-menu/MosaicDropdownMenu.js";

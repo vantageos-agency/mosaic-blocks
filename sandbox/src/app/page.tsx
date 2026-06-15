@@ -2,18 +2,33 @@
 
 import {
   MosaicAnimatedList,
+  MosaicAvatar,
+  MosaicBadge,
   MosaicBlurredOrb,
   MosaicButton,
+  MosaicCard,
+  MosaicCardContent,
+  MosaicCardDescription,
+  MosaicCardFooter,
+  MosaicCardHeader,
+  MosaicCardTitle,
+  MosaicCombobox,
   MosaicCounter,
+  MosaicDropdownMenu,
   MosaicFallingPattern,
   MosaicFeatureCenteredMedia,
+  MosaicField,
   MosaicFooterSimple,
   MosaicHeroSplit,
+  MosaicInput,
+  MosaicInputGroup,
   MosaicIntegrationsBadge,
   MosaicLogosGrid,
   MosaicNavbar,
   MosaicPricingCard,
+  MosaicSelect,
   MosaicStatsGrid,
+  MosaicSwitch,
   MosaicTestimonialsGrid,
   MosaicThemeToggle,
   Placeholder,
@@ -276,6 +291,80 @@ export default function SandboxPage() {
               MosaicBlurredOrb + MosaicFallingPattern (decorative)
             </span>
           </div>
+        </section>
+
+        {/* ── T3-C Batch C: base-ui atoms ──────────────────────────────── */}
+        <section className="border-t border-gray-100 px-8 py-10 space-y-6">
+          <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">
+            T3-C Batch C — base-ui atoms
+          </p>
+
+          <div className="flex flex-wrap items-start gap-4">
+            <MosaicBadge>Default</MosaicBadge>
+            <MosaicBadge variant="secondary">Secondary</MosaicBadge>
+            <MosaicBadge variant="destructive">Destructive</MosaicBadge>
+            <MosaicBadge variant="outline">Outline</MosaicBadge>
+            <MosaicAvatar
+              src="https://placehold.co/64x64/ededed/9ca3af?text=AB"
+              alt="Ada B."
+              fallback="AB"
+            />
+            <MosaicSwitch aria-label="Toggle" defaultChecked />
+            <MosaicSwitch aria-label="Disabled" disabled />
+          </div>
+
+          <div className="flex flex-wrap items-start gap-4">
+            <MosaicInput placeholder="Plain input" />
+            <MosaicInputGroup prefix={<span className="px-2 text-gray-400">@</span>}>
+              <MosaicInput placeholder="username" />
+            </MosaicInputGroup>
+            <MosaicSelect
+              items={[
+                { value: "react", label: "React" },
+                { value: "preact", label: "Preact" },
+              ]}
+              placeholder="Pick a runtime"
+            />
+            <MosaicCombobox
+              items={[
+                { value: "ts", label: "TypeScript" },
+                { value: "js", label: "JavaScript" },
+              ]}
+              placeholder="Search…"
+            />
+            <MosaicDropdownMenu
+              trigger={<MosaicButton variant="outline">Open menu</MosaicButton>}
+              items={[
+                { id: "edit", label: "Edit" },
+                { id: "delete", label: "Delete" },
+              ]}
+            />
+          </div>
+
+          <MosaicField className="w-64">
+            <MosaicField.Label>Email</MosaicField.Label>
+            <MosaicField.Control
+              render={
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  className="h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none"
+                />
+              }
+            />
+            <MosaicField.Description>We never share it.</MosaicField.Description>
+          </MosaicField>
+
+          <MosaicCard className="max-w-sm">
+            <MosaicCardHeader>
+              <MosaicCardTitle>Card title</MosaicCardTitle>
+              <MosaicCardDescription>Composable card surface.</MosaicCardDescription>
+            </MosaicCardHeader>
+            <MosaicCardContent>Body content goes here.</MosaicCardContent>
+            <MosaicCardFooter>
+              <MosaicButton size="sm">Action</MosaicButton>
+            </MosaicCardFooter>
+          </MosaicCard>
         </section>
 
         {/* Placeholder (legacy) */}
