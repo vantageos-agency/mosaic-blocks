@@ -1,2 +1,7 @@
 @import "tailwindcss";
 @import "@vantageos/mosaic-blocks/styles.css";
+/* Scan the lib's compiled dist so Tailwind v4 generates the utility classes
+   that mosaic-blocks components reference (bg-background, ring-ring, etc.).
+   Without this @source directive those classes are purged and components render unstyled.
+   Path is relative to this CSS file — adjust depth to reach your own node_modules. */
+@source "../../node_modules/@vantageos/mosaic-blocks/dist";
