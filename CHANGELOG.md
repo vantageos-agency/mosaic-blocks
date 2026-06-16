@@ -19,6 +19,8 @@ Two net-new deliverables landing in this wave. Four additional patterns (MosaicN
 
 ### Changed
 
+- **MosaicLogosGrid stagger keyframe** (`mosaic-logo-in`) now ships statically in `styles.css` instead of runtime injection (cleaner SSR, no runtime `<style>` insertion). Stagger requires importing `@vantageos/mosaic-blocks/styles.css` (already required for theming).
+- **MosaicFeature3Col** icon-slot now uses `size-10` Tailwind shorthand instead of separate `h-10 w-10`. Behavior identical.
 - Added MIT LICENSE file (backs package.json license:MIT); corrected package description (no longer "not yet published"). Ships in next publish — 0.1.0-alpha.1 already live, no republish.
 
 ## [0.1.0-alpha.1] — 2026-06-15

@@ -94,7 +94,7 @@ export function MosaicFeature3Col({
             {feature.icon !== undefined && (
               <div
                 data-slot="feature-3col-icon"
-                className="flex h-10 w-10 items-center justify-center text-foreground"
+                className="flex size-10 items-center justify-center text-foreground"
               >
                 {feature.icon}
               </div>
