@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Added MIT LICENSE file (backs package.json license:MIT); corrected package description (no longer "not yet published"). Ships in next publish — 0.1.0-alpha.1 already live, no republish.
+
 ## [0.1.0-alpha.1] — 2026-06-15
 
 ### Added
