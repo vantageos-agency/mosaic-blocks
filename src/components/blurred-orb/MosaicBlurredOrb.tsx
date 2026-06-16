@@ -7,7 +7,7 @@
  * Colors via OKLCH props — no hardcoded branding.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +33,7 @@ export interface MosaicBlurredOrbProps {
   /** Opacity 0–1 (default 0.6) */
   opacity?: number;
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -51,50 +52,46 @@ export interface MosaicBlurredOrbProps {
  *   <YourContent />
  * </div>
  */
-export const MosaicBlurredOrb = React.forwardRef<HTMLDivElement, MosaicBlurredOrbProps>(
-  function MosaicBlurredOrb(
-    {
-      colors = ["oklch(0.7 0.15 250)", "oklch(0.65 0.18 290)"],
-      size = 500,
-      position = { top: "-15%", left: "-10%" },
-      blur = 80,
-      opacity = 0.6,
-      className,
-    },
-    ref,
-  ) {
-    // Build gradient stops from colors array
-    const gradientStops = colors
-      .map((color, i) => {
-        const pct = Math.round((i / Math.max(colors.length - 1, 1)) * 100);
-        return `${color} ${pct}%`;
-      })
-      .join(", ");
+export function MosaicBlurredOrb({
+  colors = ["oklch(0.7 0.15 250)", "oklch(0.65 0.18 290)"],
+  size = 500,
+  position = { top: "-15%", left: "-10%" },
+  blur = 80,
+  opacity = 0.6,
+  className,
+  ref,
+}: MosaicBlurredOrbProps) {
+  // Build gradient stops from colors array
+  const gradientStops = colors
+    .map((color, i) => {
+      const pct = Math.round((i / Math.max(colors.length - 1, 1)) * 100);
+      return `${color} ${pct}%`;
+    })
+    .join(", ");
 
-    const gradient =
-      colors.length === 1
-        ? `radial-gradient(circle, ${colors[0]} 0%, transparent 70%)`
-        : `radial-gradient(circle, ${gradientStops}, transparent 75%)`;
+  const gradient =
+    colors.length === 1
+      ? `radial-gradient(circle, ${colors[0]} 0%, transparent 70%)`
+      : `radial-gradient(circle, ${gradientStops}, transparent 75%)`;
 
-    return (
-      <div
-        ref={ref}
-        aria-hidden="true"
-        className={className}
-        style={{
-          position: "absolute",
-          width: size,
-          height: size,
-          borderRadius: "50%",
-          background: gradient,
-          filter: `blur(${blur}px)`,
-          opacity,
-          pointerEvents: "none",
-          ...position,
-        }}
-      />
-    );
-  },
-);
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      className={className}
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: gradient,
+        filter: `blur(${blur}px)`,
+        opacity,
+        pointerEvents: "none",
+        ...position,
+      }}
+    />
+  );
+}
 
 MosaicBlurredOrb.displayName = "MosaicBlurredOrb";

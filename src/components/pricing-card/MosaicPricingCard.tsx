@@ -7,7 +7,7 @@
  * Styling: Tailwind v4 + OKLCH tokens.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,6 +28,7 @@ export interface MosaicPricingCardProps {
   /** Highlighted tier — renders with accent border + tinted background */
   highlighted?: boolean;
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -51,77 +52,80 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  *   highlighted
  * />
  */
-export const MosaicPricingCard = React.forwardRef<HTMLDivElement, MosaicPricingCardProps>(
-  function MosaicPricingCard({ tier, price, features, cta, highlighted = false, className }, ref) {
-    return (
-      <div
-        ref={ref}
+export function MosaicPricingCard({
+  tier,
+  price,
+  features,
+  cta,
+  highlighted = false,
+  className,
+  ref,
+}: MosaicPricingCardProps) {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex min-w-72 flex-col gap-6 rounded-2xl border p-8",
+        highlighted
+          ? "border-[oklch(0.6_0.15_250_/_0.5)] bg-[oklch(0.97_0.02_250)]"
+          : "border-[oklch(0.9_0.005_250)] bg-[oklch(1_0_0)]",
+        className,
+      )}
+    >
+      {/* Tier badge */}
+      <span
         className={cn(
-          "flex min-w-72 flex-col gap-6 rounded-2xl border p-8",
+          "inline-flex w-fit items-center rounded-sm border px-2.5 py-0.5 text-xs font-semibold",
           highlighted
-            ? "border-[oklch(0.6_0.15_250_/_0.5)] bg-[oklch(0.97_0.02_250)]"
-            : "border-[oklch(0.9_0.005_250)] bg-[oklch(1_0_0)]",
-          className,
+            ? "border-transparent bg-[oklch(0.15_0.01_250)] text-[oklch(0.98_0_0)]"
+            : "border-[oklch(0.85_0.01_250)] bg-[oklch(1_0_0)] text-[oklch(0.2_0.01_250)]",
         )}
       >
-        {/* Tier badge */}
-        <span
-          className={cn(
-            "inline-flex w-fit items-center rounded-sm border px-2.5 py-0.5 text-xs font-semibold",
-            highlighted
-              ? "border-transparent bg-[oklch(0.15_0.01_250)] text-[oklch(0.98_0_0)]"
-              : "border-[oklch(0.85_0.01_250)] bg-[oklch(1_0_0)] text-[oklch(0.2_0.01_250)]",
-          )}
-        >
-          {tier}
-        </span>
+        {tier}
+      </span>
 
-        {/* Price */}
-        <p className="text-xl font-semibold text-[oklch(0.12_0.01_250)]">{price}</p>
+      {/* Price */}
+      <p className="text-xl font-semibold text-[oklch(0.12_0.01_250)]">{price}</p>
 
-        {/* CTA */}
-        <a
-          href={cta.href}
-          className={cn(
-            "inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
-            highlighted
-              ? "bg-[oklch(0.15_0.01_250)] text-[oklch(0.98_0_0)] hover:bg-[oklch(0.25_0.01_250)]"
-              : "border border-[oklch(0.75_0.01_250)] bg-transparent text-[oklch(0.15_0.01_250)] hover:bg-[oklch(0.96_0.005_250)]",
-          )}
-        >
-          {cta.label}
-        </a>
+      {/* CTA */}
+      <a
+        href={cta.href}
+        className={cn(
+          "inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
+          highlighted
+            ? "bg-[oklch(0.15_0.01_250)] text-[oklch(0.98_0_0)] hover:bg-[oklch(0.25_0.01_250)]"
+            : "border border-[oklch(0.75_0.01_250)] bg-transparent text-[oklch(0.15_0.01_250)] hover:bg-[oklch(0.96_0.005_250)]",
+        )}
+      >
+        {cta.label}
+      </a>
 
-        {/* Features */}
-        <ul className="flex flex-col gap-2">
-          {features.map((feature) => (
-            <li
-              key={feature}
-              className="flex items-center gap-2 text-sm text-[oklch(0.35_0.01_250)]"
+      {/* Features */}
+      <ul className="flex flex-col gap-2">
+        {features.map((feature) => (
+          <li key={feature} className="flex items-center gap-2 text-sm text-[oklch(0.35_0.01_250)]">
+            {/* Check icon (inline SVG — no lucide-react dep) */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 text-[oklch(0.5_0.12_145)]"
+              aria-hidden="true"
             >
-              {/* Check icon (inline SVG — no lucide-react dep) */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="shrink-0 text-[oklch(0.5_0.12_145)]"
-                aria-hidden="true"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {feature}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  },
-);
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 MosaicPricingCard.displayName = "MosaicPricingCard";

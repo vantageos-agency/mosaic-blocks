@@ -22,6 +22,7 @@ export interface MosaicAnimatedListProps {
   className?: string;
   /** Wrapper element tag (default "ul") */
   as?: "ul" | "ol" | "div";
+  ref?: React.Ref<HTMLUListElement & HTMLOListElement & HTMLDivElement>;
 }
 
 // ── Keyframe style injection ──────────────────────────────────────────────────
@@ -58,39 +59,43 @@ function injectKeyframes() {
  *   <li>Third feature</li>
  * </MosaicAnimatedList>
  */
-export const MosaicAnimatedList = React.forwardRef<HTMLElement, MosaicAnimatedListProps>(
-  function MosaicAnimatedList({ stagger = 80, children, className, as: Tag = "ul" }, ref) {
-    React.useEffect(() => {
-      injectKeyframes();
-    }, []);
+export function MosaicAnimatedList({
+  stagger = 80,
+  children,
+  className,
+  as: Tag = "ul",
+  ref,
+}: MosaicAnimatedListProps) {
+  React.useEffect(() => {
+    injectKeyframes();
+  }, []);
 
-    const items = React.Children.toArray(children);
+  const items = React.Children.toArray(children);
 
-    return (
-      <Tag
-        ref={ref as React.Ref<HTMLUListElement & HTMLOListElement & HTMLDivElement>}
-        className={className}
-      >
-        {items.map((child, i) => {
-          // React.Children.toArray() assigns stable .key values like ".$key"
-          const stableKey = (child as React.ReactElement).key ?? `item-${i}`;
-          return (
-            <React.Fragment key={stableKey}>
-              <div
-                className="mosaic-list-item"
-                style={{
-                  opacity: 0,
-                  animation: `mosaic-list-item-in 400ms ease-out ${i * stagger}ms forwards`,
-                }}
-              >
-                {child}
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </Tag>
-    );
-  },
-);
+  return (
+    <Tag
+      ref={ref as React.Ref<HTMLUListElement & HTMLOListElement & HTMLDivElement>}
+      className={className}
+    >
+      {items.map((child, i) => {
+        // React.Children.toArray() assigns stable .key values like ".$key"
+        const stableKey = (child as React.ReactElement).key ?? `item-${i}`;
+        return (
+          <React.Fragment key={stableKey}>
+            <div
+              className="mosaic-list-item"
+              style={{
+                opacity: 0,
+                animation: `mosaic-list-item-in 400ms ease-out ${i * stagger}ms forwards`,
+              }}
+            >
+              {child}
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </Tag>
+  );
+}
 
 MosaicAnimatedList.displayName = "MosaicAnimatedList";

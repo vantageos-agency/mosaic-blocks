@@ -31,6 +31,7 @@ export interface MosaicNavbarProps {
   /** Optional CTA button */
   cta?: NavCta;
   className?: string;
+  ref?: React.Ref<HTMLElement>;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -52,10 +53,7 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  *   cta={{ label: "Get started", href: "#start" }}
  * />
  */
-export const MosaicNavbar = React.forwardRef<HTMLElement, MosaicNavbarProps>(function MosaicNavbar(
-  { logo, links, cta, className },
-  ref,
-) {
+export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarProps) {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isHidden, setIsHidden] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -204,6 +202,6 @@ export const MosaicNavbar = React.forwardRef<HTMLElement, MosaicNavbarProps>(fun
       </div>
     </nav>
   );
-});
+}
 
 MosaicNavbar.displayName = "MosaicNavbar";

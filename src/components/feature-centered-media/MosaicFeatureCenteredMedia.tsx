@@ -6,7 +6,7 @@
  * Layout: text header centered, media centered below.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,6 +26,7 @@ export interface MosaicFeatureCenteredMediaProps {
   /** Media slot — centered below or beside the text */
   media?: React.ReactNode;
   className?: string;
+  ref?: React.Ref<HTMLElement>;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -48,10 +49,14 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  *   media={<img src="/feature.png" alt="Feature screenshot" className="w-full rounded-2xl" />}
  * />
  */
-export const MosaicFeatureCenteredMedia = React.forwardRef<
-  HTMLElement,
-  MosaicFeatureCenteredMediaProps
->(function MosaicFeatureCenteredMedia({ title, body, features, media, className }, ref) {
+export function MosaicFeatureCenteredMedia({
+  title,
+  body,
+  features,
+  media,
+  className,
+  ref,
+}: MosaicFeatureCenteredMediaProps) {
   return (
     <section ref={ref} className={cn("relative mx-auto w-full max-w-6xl px-4 py-16", className)}>
       {/* Header */}
@@ -86,6 +91,6 @@ export const MosaicFeatureCenteredMedia = React.forwardRef<
       )}
     </section>
   );
-});
+}
 
 MosaicFeatureCenteredMedia.displayName = "MosaicFeatureCenteredMedia";

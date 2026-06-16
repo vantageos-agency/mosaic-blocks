@@ -9,7 +9,7 @@
  */
 
 import { Field } from "@base-ui/react/field";
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ──────────────────────────────────────────────────────────────────
 
@@ -21,12 +21,10 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 
 export interface MosaicFieldProps extends React.ComponentPropsWithoutRef<typeof Field.Root> {
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-const MosaicFieldRoot = React.forwardRef<HTMLDivElement, MosaicFieldProps>(function MosaicFieldRoot(
-  { className, children, ...props },
-  ref,
-) {
+function MosaicFieldRoot({ className, children, ref, ...props }: MosaicFieldProps) {
   return (
     <Field.Root
       ref={ref}
@@ -37,32 +35,31 @@ const MosaicFieldRoot = React.forwardRef<HTMLDivElement, MosaicFieldProps>(funct
       {children}
     </Field.Root>
   );
-});
+}
 MosaicFieldRoot.displayName = "MosaicField";
 
 // ── Label ─────────────────────────────────────────────────────────────────────
 
 export interface MosaicFieldLabelProps extends React.ComponentPropsWithoutRef<typeof Field.Label> {
   className?: string;
+  ref?: React.Ref<HTMLLabelElement>;
 }
 
-const MosaicFieldLabel = React.forwardRef<HTMLLabelElement, MosaicFieldLabelProps>(
-  function MosaicFieldLabel({ className, children, ...props }, ref) {
-    return (
-      <Field.Label
-        ref={ref}
-        className={cn(
-          "text-sm font-medium leading-none text-foreground",
-          "data-[disabled]:opacity-50",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </Field.Label>
-    );
-  },
-);
+function MosaicFieldLabel({ className, children, ref, ...props }: MosaicFieldLabelProps) {
+  return (
+    <Field.Label
+      ref={ref}
+      className={cn(
+        "text-sm font-medium leading-none text-foreground",
+        "data-[disabled]:opacity-50",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </Field.Label>
+  );
+}
 MosaicFieldLabel.displayName = "MosaicField.Label";
 
 // ── Control ───────────────────────────────────────────────────────────────────
@@ -70,13 +67,12 @@ MosaicFieldLabel.displayName = "MosaicField.Label";
 export interface MosaicFieldControlProps
   extends React.ComponentPropsWithoutRef<typeof Field.Control> {
   className?: string;
+  ref?: React.Ref<HTMLElement>;
 }
 
-const MosaicFieldControl = React.forwardRef<HTMLElement, MosaicFieldControlProps>(
-  function MosaicFieldControl({ className, ...props }, ref) {
-    return <Field.Control ref={ref} className={cn(className)} {...props} />;
-  },
-);
+function MosaicFieldControl({ className, ref, ...props }: MosaicFieldControlProps) {
+  return <Field.Control ref={ref} className={cn(className)} {...props} />;
+}
 MosaicFieldControl.displayName = "MosaicField.Control";
 
 // ── Description ───────────────────────────────────────────────────────────────
@@ -84,21 +80,25 @@ MosaicFieldControl.displayName = "MosaicField.Control";
 export interface MosaicFieldDescriptionProps
   extends React.ComponentPropsWithoutRef<typeof Field.Description> {
   className?: string;
+  ref?: React.Ref<HTMLParagraphElement>;
 }
 
-const MosaicFieldDescription = React.forwardRef<HTMLParagraphElement, MosaicFieldDescriptionProps>(
-  function MosaicFieldDescription({ className, children, ...props }, ref) {
-    return (
-      <Field.Description
-        ref={ref}
-        className={cn("text-xs text-muted-foreground", className)}
-        {...props}
-      >
-        {children}
-      </Field.Description>
-    );
-  },
-);
+function MosaicFieldDescription({
+  className,
+  children,
+  ref,
+  ...props
+}: MosaicFieldDescriptionProps) {
+  return (
+    <Field.Description
+      ref={ref}
+      className={cn("text-xs text-muted-foreground", className)}
+      {...props}
+    >
+      {children}
+    </Field.Description>
+  );
+}
 MosaicFieldDescription.displayName = "MosaicField.Description";
 
 // ── Error ─────────────────────────────────────────────────────────────────────
@@ -107,23 +107,28 @@ export interface MosaicFieldErrorProps extends React.ComponentPropsWithoutRef<ty
   className?: string;
   /** Force-show the error even without native validity state */
   show?: boolean;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-const MosaicFieldError = React.forwardRef<HTMLDivElement, MosaicFieldErrorProps>(
-  function MosaicFieldError({ className, children, show: _show, ...props }, ref) {
-    const show = _show;
-    return (
-      <Field.Error
-        ref={ref}
-        match={show === true ? true : undefined}
-        className={cn("text-xs font-medium text-destructive", className)}
-        {...props}
-      >
-        {children}
-      </Field.Error>
-    );
-  },
-);
+function MosaicFieldError({
+  className,
+  children,
+  show: _show,
+  ref,
+  ...props
+}: MosaicFieldErrorProps) {
+  const show = _show;
+  return (
+    <Field.Error
+      ref={ref}
+      match={show === true ? true : undefined}
+      className={cn("text-xs font-medium text-destructive", className)}
+      {...props}
+    >
+      {children}
+    </Field.Error>
+  );
+}
 MosaicFieldError.displayName = "MosaicField.Error";
 
 // ── Compound export ────────────────────────────────────────────────────────────

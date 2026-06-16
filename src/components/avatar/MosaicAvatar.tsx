@@ -9,7 +9,7 @@
  */
 
 import { Avatar } from "@base-ui/react/avatar";
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -36,34 +36,32 @@ export interface MosaicAvatarProps extends Avatar.Root.Props {
  * <MosaicAvatar src="/user.png" alt="John" fallback="JD" />
  * <MosaicAvatar fallback="AB" />
  */
-export const MosaicAvatar = React.forwardRef<HTMLSpanElement, MosaicAvatarProps>(
-  function MosaicAvatar({ src, alt, fallback, className, ...props }, ref) {
-    return (
-      <Avatar.Root
-        ref={ref}
-        data-slot="avatar"
-        className={cn(
-          "relative flex size-10 shrink-0 overflow-hidden rounded-full",
-          "bg-muted text-muted-foreground",
-          className,
-        )}
-        {...props}
+export function MosaicAvatar({ src, alt, fallback, className, ref, ...props }: MosaicAvatarProps) {
+  return (
+    <Avatar.Root
+      ref={ref}
+      data-slot="avatar"
+      className={cn(
+        "relative flex size-10 shrink-0 overflow-hidden rounded-full",
+        "bg-muted text-muted-foreground",
+        className,
+      )}
+      {...props}
+    >
+      <Avatar.Image
+        src={src ?? ""}
+        alt={alt ?? ""}
+        data-slot="avatar-image"
+        className="aspect-square size-full object-cover"
+      />
+      <Avatar.Fallback
+        data-slot="avatar-fallback"
+        className="flex size-full items-center justify-center text-sm font-medium"
       >
-        <Avatar.Image
-          src={src ?? ""}
-          alt={alt ?? ""}
-          data-slot="avatar-image"
-          className="aspect-square size-full object-cover"
-        />
-        <Avatar.Fallback
-          data-slot="avatar-fallback"
-          className="flex size-full items-center justify-center text-sm font-medium"
-        >
-          {fallback}
-        </Avatar.Fallback>
-      </Avatar.Root>
-    );
-  },
-);
+        {fallback}
+      </Avatar.Fallback>
+    </Avatar.Root>
+  );
+}
 
 MosaicAvatar.displayName = "MosaicAvatar";

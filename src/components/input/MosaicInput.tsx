@@ -2,7 +2,7 @@
  * MosaicInput — built on @base-ui/react/input
  *
  * Uses the Input primitive from @base-ui/react/input which renders a native
- * <input> element with Field integration and forwardRef.
+ * <input> element with Field integration and ref-as-prop (React 19).
  * data-slot="input".
  *
  * Design tokens: Tailwind v4 semantic classes (bg-background, border-border,
@@ -10,7 +10,7 @@
  */
 
 import { Input as InputPrimitive } from "@base-ui/react/input";
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -34,25 +34,23 @@ export interface MosaicInputProps extends InputPrimitive.Props {
  * <MosaicInput placeholder="Search…" />
  * <MosaicInput type="email" value={email} onChange={handleChange} />
  */
-export const MosaicInput = React.forwardRef<HTMLInputElement, MosaicInputProps>(
-  function MosaicInput({ className, ...props }, ref) {
-    return (
-      <InputPrimitive
-        ref={ref as React.Ref<HTMLElement>}
-        data-slot="input"
-        className={cn(
-          "flex h-9 w-full rounded-md border border-border bg-background px-3 py-1",
-          "text-sm text-foreground shadow-xs",
-          "placeholder:text-muted-foreground",
-          "outline-none transition-colors",
-          "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export function MosaicInput({ className, ref, ...props }: MosaicInputProps) {
+  return (
+    <InputPrimitive
+      ref={ref as React.Ref<HTMLElement>}
+      data-slot="input"
+      className={cn(
+        "flex h-9 w-full rounded-md border border-border bg-background px-3 py-1",
+        "text-sm text-foreground shadow-xs",
+        "placeholder:text-muted-foreground",
+        "outline-none transition-colors",
+        "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
 
 MosaicInput.displayName = "MosaicInput";

@@ -7,7 +7,7 @@
  * Zero extra deps — pure HTML/CSS.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,7 @@ export interface MosaicIntegrationsBadgeProps {
   /** Link target (default "_blank" for external links) */
   target?: React.HTMLAttributeAnchorTarget;
   className?: string;
+  ref?: React.Ref<HTMLAnchorElement & HTMLSpanElement>;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -50,10 +51,14 @@ const hoverClass =
  *   href="https://stripe.com"
  * />
  */
-export const MosaicIntegrationsBadge = React.forwardRef<
-  HTMLAnchorElement & HTMLSpanElement,
-  MosaicIntegrationsBadgeProps
->(function MosaicIntegrationsBadge({ label, logo, href, target = "_blank", className }, ref) {
+export function MosaicIntegrationsBadge({
+  label,
+  logo,
+  href,
+  target = "_blank",
+  className,
+  ref,
+}: MosaicIntegrationsBadgeProps) {
   const inner = (
     <>
       {logo && <span className="flex shrink-0 items-center">{logo}</span>}
@@ -80,6 +85,6 @@ export const MosaicIntegrationsBadge = React.forwardRef<
       {inner}
     </span>
   );
-});
+}
 
 MosaicIntegrationsBadge.displayName = "MosaicIntegrationsBadge";

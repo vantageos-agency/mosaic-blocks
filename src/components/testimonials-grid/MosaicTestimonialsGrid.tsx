@@ -7,7 +7,7 @@
  * Falls back to uniform 2-col for 2 items, 3-col for 3+.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,6 +32,7 @@ export interface MosaicTestimonialsGridProps {
   /** Optional section heading */
   heading?: React.ReactNode;
   className?: string;
+  ref?: React.Ref<HTMLElement>;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -117,40 +118,43 @@ function TestimonialCard({ item, featured = false }: TestimonialCardProps) {
  *   ]}
  * />
  */
-export const MosaicTestimonialsGrid = React.forwardRef<HTMLElement, MosaicTestimonialsGridProps>(
-  function MosaicTestimonialsGrid({ testimonials, heading, className }, ref) {
-    const [featured, ...rest] = testimonials;
+export function MosaicTestimonialsGrid({
+  testimonials,
+  heading,
+  className,
+  ref,
+}: MosaicTestimonialsGridProps) {
+  const [featured, ...rest] = testimonials;
 
-    return (
-      <section ref={ref} className={cn("px-4 py-16 mx-auto max-w-6xl", className)}>
-        {heading && (
-          <div className="mb-12 text-center">
-            <h2 className="text-2xl font-normal tracking-tight text-[oklch(0.12_0.01_250)] md:text-4xl">
-              {heading}
-            </h2>
+  return (
+    <section ref={ref} className={cn("px-4 py-16 mx-auto max-w-6xl", className)}>
+      {heading && (
+        <div className="mb-12 text-center">
+          <h2 className="text-2xl font-normal tracking-tight text-[oklch(0.12_0.01_250)] md:text-4xl">
+            {heading}
+          </h2>
+        </div>
+      )}
+
+      {testimonials.length === 0 ? null : testimonials.length === 1 ? (
+        <TestimonialCard item={featured} />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
+          {/* Featured — spans 3 cols on md */}
+          <div className="md:col-span-3 h-full">
+            <TestimonialCard item={featured} featured />
           </div>
-        )}
 
-        {testimonials.length === 0 ? null : testimonials.length === 1 ? (
-          <TestimonialCard item={featured} />
-        ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
-            {/* Featured — spans 3 cols on md */}
-            <div className="md:col-span-3 h-full">
-              <TestimonialCard item={featured} featured />
-            </div>
-
-            {/* Rest — stacked in 3-col right side */}
-            <div className="md:col-span-3 flex flex-col gap-6">
-              {rest.map((item) => (
-                <TestimonialCard key={item.id} item={item} />
-              ))}
-            </div>
+          {/* Rest — stacked in 3-col right side */}
+          <div className="md:col-span-3 flex flex-col gap-6">
+            {rest.map((item) => (
+              <TestimonialCard key={item.id} item={item} />
+            ))}
           </div>
-        )}
-      </section>
-    );
-  },
-);
+        </div>
+      )}
+    </section>
+  );
+}
 
 MosaicTestimonialsGrid.displayName = "MosaicTestimonialsGrid";
