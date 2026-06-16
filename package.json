@@ -1,7 +1,7 @@
 {
   "name": "@vantageos/mosaic-blocks",
   "version": "0.1.0-alpha.1",
-  "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Alpha, not yet published.",
+  "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Published alpha.",
   "license": "MIT",
   "type": "module",
   "exports": {
