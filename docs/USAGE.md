@@ -122,16 +122,19 @@ Then import the theme tokens in your global CSS:
 
 ### Verify the wiring worked
 
-After wiring, run a real build (`next build`) and grep the emitted CSS for a lib-only class such as `ring-ring` or `bg-card`:
+After wiring, run a real build (`next build`) and grep the emitted CSS for a **library-only** class — `data-[popup-open]:ring-ring`, a `data-[…]:` variant that only mosaic-blocks' compiled `@base-ui` components emit, so a match proves the dist glob is wired:
 
 ```bash
-# Tailwind v4 — emitted CSS is in .next/static/chunks/*.css
-grep -rho "ring-ring[^ }]*" .next/static 2>/dev/null | head
-grep -rho "bg-card[^ }]*"   .next/static 2>/dev/null | head
-
-# Tailwind v3 — the merged CSS file is usually .next/static/css/*.css
-grep -rho "ring-ring[^ }]*" .next/static/css 2>/dev/null | head
+# scope to *.css — match the emitted CSS rule, not the JS bundle (works for v3 + v4 layouts)
+find .next -name '*.css' | xargs grep -ho 'popup-open' 2>/dev/null | head
+# other lib-only fragments you can probe instead: checked   highlighted
 ```
+
+> **Tailwind escapes `[`, `]` and `:` in emitted CSS selectors** (the class `data-[popup-open]:ring-ring` compiles to `.data-\[popup-open\]\:ring-ring`), so grep the un-escaped fragment `popup-open` — grepping the literal class string `data-[popup-open]:ring-ring` returns nothing even when wiring is correct.
+
+> **Scope the grep to `*.css` files** — the JS bundle contains the source class string `data-[popup-open]:ring-ring` literally, so grepping the whole build dir matches the bundled component even when Tailwind purged the CSS rule (component bundled ≠ CSS generated). Only a match inside a `.css` file proves the rule was generated.
+
+> **Don't probe with a plain semantic class** (`bg-card`, `ring-ring`, `text-muted-foreground`) — consumers usually use those in their own markup, so they generate regardless and give a false pass. A `data-[…]:` variant fragment like `popup-open` only appears in mosaic-blocks' compiled components.
 
 If the grep returns nothing, the `@source` path or `content` glob is not matching the lib's dist — check the relative path depth and rebuild.
 
