@@ -81,12 +81,13 @@ After wiring, run a real build (`next build`) and grep the emitted CSS for a **l
 
 ```bash
 # Tailwind v4 — the .css chunk lives under .next/static/chunks/
-grep -rho "data-\[popup-open\]:ring-ring[^ }]*" .next/static 2>/dev/null | head
-# other lib-only discriminators you can probe instead:
-#   data-\[checked\]:bg-foreground   data-\[highlighted\]:bg-accent
+grep -r "popup-open" .next/static 2>/dev/null | head
+# other lib-only fragments you can probe instead: checked   highlighted
 ```
 
-> **Don't probe with a plain semantic class** (`bg-card`, `ring-ring`, `text-muted-foreground`) — consumers usually use those in their own markup, so they generate regardless and give a false pass. A `data-[…]:` variant only appears in mosaic-blocks' compiled components.
+> **Tailwind escapes `[`, `]` and `:` in emitted CSS selectors** (the class `data-[popup-open]:ring-ring` compiles to `.data-\[popup-open\]\:ring-ring`), so grep the un-escaped fragment `popup-open` — grepping the literal class string `data-[popup-open]:ring-ring` returns nothing even when wiring is correct.
+
+> **Don't probe with a plain semantic class** (`bg-card`, `ring-ring`, `text-muted-foreground`) — consumers usually use those in their own markup, so they generate regardless and give a false pass. A `data-[…]:` variant fragment like `popup-open` only appears in mosaic-blocks' compiled components.
 
 If the grep returns nothing, the `@source` path or `content` glob is not matching the dist — fix the path and rebuild.
 
