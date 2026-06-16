@@ -7,7 +7,7 @@
  * No motion/react dependency — CSS opacity transition only.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,6 +28,7 @@ export interface MosaicLogosGridProps {
   /** Optional heading text above the grid */
   heading?: React.ReactNode;
   className?: string;
+  ref?: React.Ref<HTMLElement>;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -51,36 +52,34 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  *   ]}
  * />
  */
-export const MosaicLogosGrid = React.forwardRef<HTMLElement, MosaicLogosGridProps>(
-  function MosaicLogosGrid({ logos, heading, className }, ref) {
-    return (
-      <section
-        ref={ref}
-        className={cn(
-          "flex flex-col items-center justify-center gap-8 px-4 py-12 mx-auto max-w-6xl",
-          className,
-        )}
-      >
-        {heading && (
-          <p className="text-center text-sm font-light text-[oklch(0.5_0.01_250)]">{heading}</p>
-        )}
-        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8 lg:gap-12">
-          {logos.map((logo) => (
-            <div key={logo.name} className="transition-transform duration-200 hover:scale-110">
-              {/* Native img — lib-portable; consumers using Next.js should wrap with next/image */}
-              <img
-                src={logo.src}
-                alt={logo.name}
-                width={logo.width ?? 80}
-                height={logo.height ?? 80}
-                className="object-contain opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-200"
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  },
-);
+export function MosaicLogosGrid({ logos, heading, className, ref }: MosaicLogosGridProps) {
+  return (
+    <section
+      ref={ref}
+      className={cn(
+        "flex flex-col items-center justify-center gap-8 px-4 py-12 mx-auto max-w-6xl",
+        className,
+      )}
+    >
+      {heading && (
+        <p className="text-center text-sm font-light text-[oklch(0.5_0.01_250)]">{heading}</p>
+      )}
+      <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8 lg:gap-12">
+        {logos.map((logo) => (
+          <div key={logo.name} className="transition-transform duration-200 hover:scale-110">
+            {/* Native img — lib-portable; consumers using Next.js should wrap with next/image */}
+            <img
+              src={logo.src}
+              alt={logo.name}
+              width={logo.width ?? 80}
+              height={logo.height ?? 80}
+              className="object-contain opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-200"
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 MosaicLogosGrid.displayName = "MosaicLogosGrid";

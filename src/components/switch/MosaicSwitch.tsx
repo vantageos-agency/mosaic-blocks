@@ -10,7 +10,7 @@
  */
 
 import { Switch } from "@base-ui/react/switch";
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,7 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 
 export interface MosaicSwitchProps extends React.ComponentPropsWithoutRef<typeof Switch.Root> {
   className?: string;
+  ref?: React.Ref<HTMLElement>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -39,10 +40,7 @@ export interface MosaicSwitchProps extends React.ComponentPropsWithoutRef<typeof
  * // Controlled
  * <MosaicSwitch checked={enabled} onCheckedChange={setEnabled} aria-label="Notifications" />
  */
-export const MosaicSwitch = React.forwardRef<HTMLElement, MosaicSwitchProps>(function MosaicSwitch(
-  { className, ...props },
-  ref,
-) {
+export function MosaicSwitch({ className, ref, ...props }: MosaicSwitchProps) {
   return (
     <Switch.Root
       ref={ref}
@@ -73,6 +71,6 @@ export const MosaicSwitch = React.forwardRef<HTMLElement, MosaicSwitchProps>(fun
       />
     </Switch.Root>
   );
-});
+}
 
 MosaicSwitch.displayName = "MosaicSwitch";

@@ -21,6 +21,7 @@ export interface MosaicCounterProps {
   /** Optional format function applied to the current number */
   format?: (value: number) => string;
   className?: string;
+  ref?: React.Ref<HTMLSpanElement>;
 }
 
 // ── Easing ────────────────────────────────────────────────────────────────────
@@ -38,63 +39,67 @@ function easeOutExpo(t: number): number {
  * @example
  * <MosaicCounter value={10000} duration={2000} format={(v) => `${Math.round(v).toLocaleString()}+`} />
  */
-export const MosaicCounter = React.forwardRef<HTMLSpanElement, MosaicCounterProps>(
-  function MosaicCounter({ value, duration = 1500, format, className }, ref) {
-    const [current, setCurrent] = React.useState(0);
-    const rafRef = React.useRef<number>(0);
-    const startTimeRef = React.useRef<number | null>(null);
+export function MosaicCounter({
+  value,
+  duration = 1500,
+  format,
+  className,
+  ref,
+}: MosaicCounterProps) {
+  const [current, setCurrent] = React.useState(0);
+  const rafRef = React.useRef<number>(0);
+  const startTimeRef = React.useRef<number | null>(null);
 
-    React.useEffect(() => {
-      // Respect prefers-reduced-motion (guard: jsdom may not implement matchMedia)
-      const prefersReduced =
-        typeof window !== "undefined" &&
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  React.useEffect(() => {
+    // Respect prefers-reduced-motion (guard: jsdom may not implement matchMedia)
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      if (prefersReduced) {
-        setCurrent(value);
-        return;
+    if (prefersReduced) {
+      setCurrent(value);
+      return;
+    }
+
+    startTimeRef.current = null;
+
+    const animate = (timestamp: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = timestamp;
       }
+      const elapsed = timestamp - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutExpo(progress);
+      setCurrent(Math.round(eased * value));
 
-      startTimeRef.current = null;
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        setCurrent(value);
+      }
+    };
 
-      const animate = (timestamp: number) => {
-        if (startTimeRef.current === null) {
-          startTimeRef.current = timestamp;
-        }
-        const elapsed = timestamp - startTimeRef.current;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = easeOutExpo(progress);
-        setCurrent(Math.round(eased * value));
+    rafRef.current = requestAnimationFrame(animate);
 
-        if (progress < 1) {
-          rafRef.current = requestAnimationFrame(animate);
-        } else {
-          setCurrent(value);
-        }
-      };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value, duration]);
 
-      rafRef.current = requestAnimationFrame(animate);
+  const display = format ? format(current) : String(current);
 
-      return () => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      };
-    }, [value, duration]);
-
-    const display = format ? format(current) : String(current);
-
-    return (
-      <span
-        ref={ref}
-        className={className}
-        style={{ fontVariantNumeric: "tabular-nums" }}
-        aria-label={format ? format(value) : String(value)}
-        aria-live="polite"
-      >
-        {display}
-      </span>
-    );
-  },
-);
+  return (
+    <span
+      ref={ref}
+      className={className}
+      style={{ fontVariantNumeric: "tabular-nums" }}
+      aria-label={format ? format(value) : String(value)}
+      aria-live="polite"
+    >
+      {display}
+    </span>
+  );
+}
 
 MosaicCounter.displayName = "MosaicCounter";

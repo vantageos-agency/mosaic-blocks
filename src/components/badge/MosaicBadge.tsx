@@ -8,7 +8,7 @@
  */
 
 import { type VariantProps, cva } from "class-variance-authority";
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -48,6 +48,7 @@ export interface MosaicBadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {
   className?: string;
+  ref?: React.Ref<HTMLSpanElement>;
 }
 
 /**
@@ -58,10 +59,7 @@ export interface MosaicBadgeProps
  * <MosaicBadge variant="destructive">Error</MosaicBadge>
  * <MosaicBadge variant="outline">Beta</MosaicBadge>
  */
-export const MosaicBadge = React.forwardRef<HTMLSpanElement, MosaicBadgeProps>(function MosaicBadge(
-  { className, variant, ...props },
-  ref,
-) {
+export function MosaicBadge({ className, variant, ref, ...props }: MosaicBadgeProps) {
   return (
     <span
       ref={ref}
@@ -70,7 +68,7 @@ export const MosaicBadge = React.forwardRef<HTMLSpanElement, MosaicBadgeProps>(f
       {...props}
     />
   );
-});
+}
 
 MosaicBadge.displayName = "MosaicBadge";
 

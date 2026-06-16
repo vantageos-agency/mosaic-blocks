@@ -6,12 +6,12 @@
  *
  * Uses @base-ui/react/button as the headless base per ADR-0001.
  * Styling: Tailwind v4 + cva variants. No tailwind-merge needed (single source).
- * API: data-slot="button" attribution, forwardRef via @base-ui (automatic).
+ * API: data-slot="button" attribution, ref as regular prop (React 19).
  */
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { type VariantProps, cva } from "class-variance-authority";
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ──────────────────────────────────────────────────────────────────
 
@@ -64,9 +64,11 @@ const buttonVariants = cva(
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export interface MosaicButtonProps
-  extends ButtonPrimitive.Props,
+  extends Omit<ButtonPrimitive.Props, "ref">,
     VariantProps<typeof buttonVariants> {
   className?: string;
+  /** ref is typed as HTMLElement to preserve the original public API surface */
+  ref?: React.Ref<HTMLElement>;
 }
 
 /**
@@ -79,19 +81,16 @@ export interface MosaicButtonProps
  * <MosaicButton variant="secondary" size="lg">Save</MosaicButton>
  * <MosaicButton variant="destructive" disabled>Delete</MosaicButton>
  */
-export const MosaicButton = React.forwardRef<HTMLElement, MosaicButtonProps>(function MosaicButton(
-  { className, variant, size, ...props },
-  ref,
-) {
+export function MosaicButton({ className, variant, size, ref, ...props }: MosaicButtonProps) {
   return (
     <ButtonPrimitive
-      ref={ref}
+      ref={ref as React.Ref<HTMLButtonElement>}
       data-slot="button"
       className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     />
   );
-});
+}
 
 MosaicButton.displayName = "MosaicButton";
 

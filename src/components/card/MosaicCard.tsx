@@ -9,7 +9,7 @@
  * border-border). No hardcoded colors.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,7 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 
 export interface MosaicCardProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 /**
@@ -33,10 +34,7 @@ export interface MosaicCardProps extends React.HTMLAttributes<HTMLDivElement> {
  *   <MosaicCardFooter>…</MosaicCardFooter>
  * </MosaicCard>
  */
-export const MosaicCard = React.forwardRef<HTMLDivElement, MosaicCardProps>(function MosaicCard(
-  { className, ...props },
-  ref,
-) {
+export function MosaicCard({ className, ref, ...props }: MosaicCardProps) {
   return (
     <div
       ref={ref}
@@ -48,7 +46,7 @@ export const MosaicCard = React.forwardRef<HTMLDivElement, MosaicCardProps>(func
       {...props}
     />
   );
-});
+}
 
 MosaicCard.displayName = "MosaicCard";
 
@@ -56,20 +54,19 @@ MosaicCard.displayName = "MosaicCard";
 
 export interface MosaicCardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-export const MosaicCardHeader = React.forwardRef<HTMLDivElement, MosaicCardHeaderProps>(
-  function MosaicCardHeader({ className, ...props }, ref) {
-    return (
-      <div
-        ref={ref}
-        data-slot="card-header"
-        className={cn("flex flex-col gap-1.5 p-6", className)}
-        {...props}
-      />
-    );
-  },
-);
+export function MosaicCardHeader({ className, ref, ...props }: MosaicCardHeaderProps) {
+  return (
+    <div
+      ref={ref}
+      data-slot="card-header"
+      className={cn("flex flex-col gap-1.5 p-6", className)}
+      {...props}
+    />
+  );
+}
 
 MosaicCardHeader.displayName = "MosaicCardHeader";
 
@@ -77,20 +74,19 @@ MosaicCardHeader.displayName = "MosaicCardHeader";
 
 export interface MosaicCardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
   className?: string;
+  ref?: React.Ref<HTMLHeadingElement>;
 }
 
-export const MosaicCardTitle = React.forwardRef<HTMLHeadingElement, MosaicCardTitleProps>(
-  function MosaicCardTitle({ className, ...props }, ref) {
-    return (
-      <h3
-        ref={ref}
-        data-slot="card-title"
-        className={cn("text-lg font-semibold leading-none tracking-tight", className)}
-        {...props}
-      />
-    );
-  },
-);
+export function MosaicCardTitle({ className, ref, ...props }: MosaicCardTitleProps) {
+  return (
+    <h3
+      ref={ref}
+      data-slot="card-title"
+      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+      {...props}
+    />
+  );
+}
 
 MosaicCardTitle.displayName = "MosaicCardTitle";
 
@@ -98,12 +94,10 @@ MosaicCardTitle.displayName = "MosaicCardTitle";
 
 export interface MosaicCardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
   className?: string;
+  ref?: React.Ref<HTMLParagraphElement>;
 }
 
-export const MosaicCardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  MosaicCardDescriptionProps
->(function MosaicCardDescription({ className, ...props }, ref) {
+export function MosaicCardDescription({ className, ref, ...props }: MosaicCardDescriptionProps) {
   return (
     <p
       ref={ref}
@@ -112,7 +106,7 @@ export const MosaicCardDescription = React.forwardRef<
       {...props}
     />
   );
-});
+}
 
 MosaicCardDescription.displayName = "MosaicCardDescription";
 
@@ -120,15 +114,14 @@ MosaicCardDescription.displayName = "MosaicCardDescription";
 
 export interface MosaicCardContentProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-export const MosaicCardContent = React.forwardRef<HTMLDivElement, MosaicCardContentProps>(
-  function MosaicCardContent({ className, ...props }, ref) {
-    return (
-      <div ref={ref} data-slot="card-content" className={cn("p-6 pt-0", className)} {...props} />
-    );
-  },
-);
+export function MosaicCardContent({ className, ref, ...props }: MosaicCardContentProps) {
+  return (
+    <div ref={ref} data-slot="card-content" className={cn("p-6 pt-0", className)} {...props} />
+  );
+}
 
 MosaicCardContent.displayName = "MosaicCardContent";
 
@@ -136,19 +129,18 @@ MosaicCardContent.displayName = "MosaicCardContent";
 
 export interface MosaicCardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-export const MosaicCardFooter = React.forwardRef<HTMLDivElement, MosaicCardFooterProps>(
-  function MosaicCardFooter({ className, ...props }, ref) {
-    return (
-      <div
-        ref={ref}
-        data-slot="card-footer"
-        className={cn("flex items-center p-6 pt-0", className)}
-        {...props}
-      />
-    );
-  },
-);
+export function MosaicCardFooter({ className, ref, ...props }: MosaicCardFooterProps) {
+  return (
+    <div
+      ref={ref}
+      data-slot="card-footer"
+      className={cn("flex items-center p-6 pt-0", className)}
+      {...props}
+    />
+  );
+}
 
 MosaicCardFooter.displayName = "MosaicCardFooter";

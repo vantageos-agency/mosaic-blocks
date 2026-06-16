@@ -8,7 +8,7 @@
  * Design tokens: Tailwind v4 semantic classes only.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -28,6 +28,7 @@ export interface MosaicInputGroupProps
   suffix?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 /**
@@ -45,35 +46,40 @@ export interface MosaicInputGroupProps
  *   <MosaicInput placeholder="yoursite" />
  * </MosaicInputGroup>
  */
-export const MosaicInputGroup = React.forwardRef<HTMLDivElement, MosaicInputGroupProps>(
-  function MosaicInputGroup({ prefix, suffix, className, children, ...props }, ref) {
-    return (
-      <div
-        ref={ref}
-        data-slot="input-group"
-        className={cn("flex items-center", className)}
-        {...props}
-      >
-        {prefix ? (
-          <div
-            data-slot="input-group-prefix"
-            className="flex shrink-0 items-center text-sm text-muted-foreground"
-          >
-            {prefix}
-          </div>
-        ) : null}
-        <div className="min-w-0 flex-1">{children}</div>
-        {suffix ? (
-          <div
-            data-slot="input-group-suffix"
-            className="flex shrink-0 items-center text-sm text-muted-foreground"
-          >
-            {suffix}
-          </div>
-        ) : null}
-      </div>
-    );
-  },
-);
+export function MosaicInputGroup({
+  prefix,
+  suffix,
+  className,
+  children,
+  ref,
+  ...props
+}: MosaicInputGroupProps) {
+  return (
+    <div
+      ref={ref}
+      data-slot="input-group"
+      className={cn("flex items-center", className)}
+      {...props}
+    >
+      {prefix ? (
+        <div
+          data-slot="input-group-prefix"
+          className="flex shrink-0 items-center text-sm text-muted-foreground"
+        >
+          {prefix}
+        </div>
+      ) : null}
+      <div className="min-w-0 flex-1">{children}</div>
+      {suffix ? (
+        <div
+          data-slot="input-group-suffix"
+          className="flex shrink-0 items-center text-sm text-muted-foreground"
+        >
+          {suffix}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 MosaicInputGroup.displayName = "MosaicInputGroup";
