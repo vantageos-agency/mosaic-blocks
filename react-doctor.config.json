@@ -1,0 +1,15 @@
+{
+  "$schema": "https://react.doctor/schema/react-doctor.config.json",
+  "ignore": {
+    "overrides": [
+      {
+        "files": [
+          "src/components/button/Button.tsx",
+          "src/components/badge/MosaicBadge.tsx",
+          "src/components/field/MosaicField.tsx"
+        ],
+        "rules": ["react-doctor/only-export-components"]
+      }
+    ]
+  }
+}
