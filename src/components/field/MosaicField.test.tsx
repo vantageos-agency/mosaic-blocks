@@ -6,6 +6,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
+import type * as React from "react";
 import { describe, expect, it } from "vitest";
 
 import { MosaicField } from "./MosaicField.js";
@@ -84,5 +85,16 @@ describe("MosaicField", () => {
     }
     // Either linked or description is present — both are valid a11y approaches
     expect(desc).toBeTruthy();
+  });
+
+  it("forwards ref to the root div element (React-19 ref-as-prop pattern)", () => {
+    const ref = { current: null as HTMLDivElement | null };
+    render(
+      <MosaicField ref={ref as React.RefObject<HTMLDivElement>}>
+        <MosaicField.Control render={<input type="text" />} />
+      </MosaicField>,
+    );
+    expect(ref.current).not.toBeNull();
+    expect(ref.current?.tagName.toLowerCase()).toBe("div");
   });
 });

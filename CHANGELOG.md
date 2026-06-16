@@ -9,6 +9,19 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — Tech Debt (DETTE A + B)
+
+**DETTE A — react-doctor allow-list for 3 cva/compound false-positives (config only)**
+Added `react-doctor.config.json` with an `ignore.overrides` entry that scopes the `react-doctor/only-export-components` rule to three files that legitimately export non-component utilities alongside components:
+- `src/components/button/Button.tsx` — `buttonVariants` (cva helper, public API)
+- `src/components/badge/MosaicBadge.tsx` — `badgeVariants` (cva helper, public API)
+- `src/components/field/MosaicField.tsx` — `MosaicField` compound via `Object.assign`
+
+These are deliberate library patterns, not fast-refresh violations. The config uses the per-file, per-rule `ignore.overrides` mechanism (see react-doctor config schema). Zero component source files were edited; zero other rules or files were suppressed. Full-scan `only-export-components` errors: 3 → 0.
+
+**DETTE B — MosaicField ref-forwarding test**
+Added one unit test to `src/components/field/MosaicField.test.tsx` proving the React-19 ref-as-prop pattern forwards a ref through `MosaicField` (root) to the underlying `<div>` DOM element. Mirrors the ref-forwarding test style from `Button.test.tsx` and `MosaicInput.test.tsx`. Test count: 167 → 168.
+
 ### Added — T4 (rescoped Option A)
 
 Two net-new deliverables landing in this wave. Four additional patterns (MosaicNavbar, MosaicStatsGrid, MosaicLogosGrid-static, MosaicPricingCard) were already shipped in Batch A and are subsumed here by reference.
