@@ -7,10 +7,11 @@
  * No motion/react dependency — CSS opacity transition only.
  *
  * T4 addition: opt-in `stagger` prop for staggered reveal animation.
- * Same keyframe approach as MosaicAnimatedList. Respects prefers-reduced-motion.
+ * The `mosaic-logo-in` keyframe ships statically in styles.css (no runtime injection).
+ * Requires importing `@vantageos/mosaic-blocks/styles.css`. Respects prefers-reduced-motion.
  */
 
-import * as React from "react";
+import type * as React from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export interface MosaicLogosGridProps {
    * - `number` → explicit ms step between items
    * - `false` / `undefined` → no animation (default, fully backward-compatible)
    * Respects prefers-reduced-motion: no delay applied when reduced motion is set.
+   * Requires importing `@vantageos/mosaic-blocks/styles.css` for the keyframe.
    */
   stagger?: boolean | number;
   className?: string;
@@ -46,27 +48,6 @@ export interface MosaicLogosGridProps {
 
 function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(" ");
-}
-
-// ── Keyframe style injection ──────────────────────────────────────────────────
-
-const ANIMATION_ID = "mosaic-logos-grid-kf";
-
-function injectKeyframes() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById(ANIMATION_ID)) return;
-  const style = document.createElement("style");
-  style.id = ANIMATION_ID;
-  style.textContent = `
-    @keyframes mosaic-logo-in {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .mosaic-logo-stagger { animation: none !important; opacity: 0.7 !important; transform: none !important; }
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +63,7 @@ function prefersReducedMotion(): boolean {
  * MosaicLogosGrid — wrapping flex grid of partner/integration logos.
  * Pass `heading` for a "Trusted by" label above the logos.
  * Pass `stagger` (true or ms number) for a staggered reveal animation.
+ * The `mosaic-logo-in` keyframe is defined in styles.css (static, SSR-safe).
  *
  * @example
  * <MosaicLogosGrid
@@ -96,10 +78,6 @@ function prefersReducedMotion(): boolean {
 export function MosaicLogosGrid({ logos, heading, stagger, className, ref }: MosaicLogosGridProps) {
   const isStagger = stagger !== undefined && stagger !== false;
   const stepMs = typeof stagger === "number" ? stagger : 80;
-
-  React.useEffect(() => {
-    if (isStagger) injectKeyframes();
-  }, [isStagger]);
 
   const reducedMotion = prefersReducedMotion();
 
