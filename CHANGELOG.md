@@ -9,6 +9,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — T4 (rescoped Option A)
+
+Two net-new deliverables landing in this wave. Four additional patterns (MosaicNavbar, MosaicStatsGrid, MosaicLogosGrid-static, MosaicPricingCard) were already shipped in Batch A and are subsumed here by reference.
+
+**MosaicFeature3Col** (`src/components/feature-3col/`) — new 3-column feature grid section, distinct from the existing `MosaicFeatureCenteredMedia` (which is a single centered layout with media slot). Props: `heading?`, `subtext?`, `features: Feature3ColItem[]` (each item: `id`, `title`, `body`, `icon?`). Responsive: 1 column on mobile, 3 columns at `md+`. Optional icon slot per cell. `data-slot="feature-3col"` on root `<section>`, `data-slot="feature-3col-item"` on each cell. React-19 ref-as-prop. OKLCH semantic tokens only. 8 TDD tests.
+
+**MosaicLogosGrid stagger-motion variant** — opt-in `stagger?: boolean | number` prop added to the existing `MosaicLogosGrid` (DRY, no new component). When truthy, logos animate in with a CSS keyframe staggered reveal (`mosaic-logo-in`), applying per-item `animation-delay` increasing by `stagger` ms (or 80ms default when `true`). Fully backward-compatible: existing behavior is preserved when `stagger` is omitted. Respects `prefers-reduced-motion: reduce` — no animation or delay applied when set. Same keyframe injection pattern as `MosaicAnimatedList`. 4 new TDD tests.
+
 ### Changed
 
 - Added MIT LICENSE file (backs package.json license:MIT); corrected package description (no longer "not yet published"). Ships in next publish — 0.1.0-alpha.1 already live, no republish.
