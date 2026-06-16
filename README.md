@@ -23,6 +23,73 @@ pnpm add @vantageos/mosaic-blocks   # alpha — not yet published; see docs/USAG
 
 Theme tokens (OKLCH semantic CSS variables) are consumer-provided at the app root — see [docs/USAGE.md](docs/USAGE.md#3-theme-setup-required).
 
+## Consuming with Tailwind (REQUIRED)
+
+> **Why this matters:** mosaic-blocks ships as compiled JS that references Tailwind utility classes (`bg-background`, `border-border`, `ring-ring/20`, etc.). If your Tailwind build does not scan the lib's published `dist/`, those classes get purged and components render completely unstyled — even though your app compiles without errors.
+
+You must tell your Tailwind build to scan the lib's dist. The full required setup in one place:
+
+### Tailwind v4 (CSS-first — `@import "tailwindcss"`)
+
+In your `app/globals.css` (or equivalent), add an `@source` directive **after** all `@import` rules (CSS spec: `@import` must precede other at-rules):
+
+```css
+/* app/globals.css */
+@import "tailwindcss";
+
+/* REQUIRED: OKLCH semantic token variables consumed by all mosaic-blocks components */
+@import "@vantageos/mosaic-blocks/styles.css";
+
+/* REQUIRED: tell Tailwind v4 to scan the lib's dist for utility classes.     */
+/* Place @source after all @import rules (CSS spec: @import must come first).  */
+/* Path is relative to THIS CSS file — adjust the leading ../../ depth         */
+/* so it points at your project's node_modules directory.                      */
+@source "../../node_modules/@vantageos/mosaic-blocks/dist";
+```
+
+> **Resolving the relative path:** count how many directories deep your CSS file is from the project root. If `globals.css` is at `src/app/globals.css` → use `../../node_modules/...`. If it is at `app/globals.css` (one level) → use `../node_modules/...`.
+
+### Tailwind v3 (`tailwind.config.js` / `tailwind.config.ts`)
+
+Add the glob to the `content` array:
+
+```js
+// tailwind.config.js
+module.exports = {
+  content: [
+    "./src/**/*.{ts,tsx}",
+    // REQUIRED: scan mosaic-blocks compiled dist so utility classes are not purged
+    "./node_modules/@vantageos/mosaic-blocks/dist/**/*.{js,mjs,cjs}",
+  ],
+  // ... rest of config
+};
+```
+
+Then import the theme tokens in your CSS:
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* REQUIRED: OKLCH semantic tokens used by all mosaic-blocks components */
+@import "@vantageos/mosaic-blocks/styles.css";
+```
+
+### Verify it worked
+
+After wiring, run a real build (`next build`) and grep the emitted CSS for a lib-only class:
+
+```bash
+# Tailwind v4 — the .css chunk lives under .next/static/chunks/
+grep -rho "ring-ring[^ }]*" .next/static 2>/dev/null | head
+# or
+grep -rho "bg-card[^ }]*" .next/static 2>/dev/null | head
+```
+
+If the grep returns nothing, the `@source` path or `content` glob is not matching the dist — fix the path and rebuild.
+
+> Tracked as fix-pattern **m977rhgv** — 2 consumers (vantageos-crm #105, vantage-peers-dashboard #12) missed this before it was documented.
+
 ## Stack
 
 - Next.js 16 + React 19
