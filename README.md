@@ -77,14 +77,16 @@ Then import the theme tokens in your CSS:
 
 ### Verify it worked
 
-After wiring, run a real build (`next build`) and grep the emitted CSS for a lib-only class:
+After wiring, run a real build (`next build`) and grep the emitted CSS for a **library-only** class — `data-[popup-open]:ring-ring`, which only mosaic-blocks' compiled `@base-ui` components emit, so a match proves the dist glob is wired:
 
 ```bash
 # Tailwind v4 — the .css chunk lives under .next/static/chunks/
-grep -rho "ring-ring[^ }]*" .next/static 2>/dev/null | head
-# or
-grep -rho "bg-card[^ }]*" .next/static 2>/dev/null | head
+grep -rho "data-\[popup-open\]:ring-ring[^ }]*" .next/static 2>/dev/null | head
+# other lib-only discriminators you can probe instead:
+#   data-\[checked\]:bg-foreground   data-\[highlighted\]:bg-accent
 ```
+
+> **Don't probe with a plain semantic class** (`bg-card`, `ring-ring`, `text-muted-foreground`) — consumers usually use those in their own markup, so they generate regardless and give a false pass. A `data-[…]:` variant only appears in mosaic-blocks' compiled components.
 
 If the grep returns nothing, the `@source` path or `content` glob is not matching the dist — fix the path and rebuild.
 
