@@ -16,6 +16,7 @@ import {
   MosaicCounter,
   MosaicDropdownMenu,
   MosaicFallingPattern,
+  MosaicFeature3Col,
   MosaicFeatureCenteredMedia,
   MosaicField,
   MosaicFooterSimple,
@@ -98,10 +99,53 @@ export default function SandboxPage() {
           />
         </section>
 
-        {/* MosaicLogosGrid */}
+        {/* T4 — MosaicFeature3Col */}
+        <section className="border-b border-gray-100" id="feature-3col">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicFeature3Col — 3-column feature grid (T4)
+          </p>
+          <MosaicFeature3Col
+            heading="Built for every team"
+            subtext="From solo founders to enterprise engineering squads."
+            features={[
+              {
+                id: "fc1",
+                title: "Deploy in seconds",
+                body: "Push to git and your changes are live. Zero config required.",
+                icon: (
+                  <span aria-hidden="true" className="text-xl">
+                    ⚡
+                  </span>
+                ),
+              },
+              {
+                id: "fc2",
+                title: "Scales automatically",
+                body: "Handle traffic spikes without lifting a finger. We manage the infra.",
+                icon: (
+                  <span aria-hidden="true" className="text-xl">
+                    📈
+                  </span>
+                ),
+              },
+              {
+                id: "fc3",
+                title: "Secure by default",
+                body: "SOC 2 Type II, GDPR compliant, encryption at rest and in transit.",
+                icon: (
+                  <span aria-hidden="true" className="text-xl">
+                    🔒
+                  </span>
+                ),
+              },
+            ]}
+          />
+        </section>
+
+        {/* MosaicLogosGrid — static */}
         <section className="border-b border-gray-100">
           <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
-            MosaicLogosGrid
+            MosaicLogosGrid (static)
           </p>
           <MosaicLogosGrid
             heading="Trusted by teams at leading companies"
@@ -133,6 +177,43 @@ export default function SandboxPage() {
               {
                 name: "Linear",
                 src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Linear",
+                width: 100,
+                height: 40,
+              },
+            ]}
+          />
+        </section>
+
+        {/* T4 — MosaicLogosGrid stagger variant */}
+        <section className="border-b border-gray-100">
+          <p className="px-8 pt-6 text-xs font-mono text-gray-400 uppercase tracking-widest">
+            MosaicLogosGrid stagger=80 (T4 motion variant)
+          </p>
+          <MosaicLogosGrid
+            heading="Animated stagger reveal"
+            stagger={80}
+            logos={[
+              {
+                name: "GitHub",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=GitHub",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Stripe",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Stripe",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Vercel",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Vercel",
+                width: 100,
+                height: 40,
+              },
+              {
+                name: "Supabase",
+                src: "https://placehold.co/100x40/f3f4f6/9ca3af?text=Supabase",
                 width: 100,
                 height: 40,
               },

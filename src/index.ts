@@ -61,6 +61,13 @@ export type {
   SocialLink,
 } from "./components/footer-simple/MosaicFooterSimple.js";
 
+// ── T4: net-new components (Option A) ────────────────────────────────────────
+export { MosaicFeature3Col } from "./components/feature-3col/MosaicFeature3Col.js";
+export type {
+  MosaicFeature3ColProps,
+  Feature3ColItem,
+} from "./components/feature-3col/MosaicFeature3Col.js";
+
 // ── T3-B Batch B: utility blocks ─────────────────────────────────────────────
 export { MosaicCounter } from "./components/counter/MosaicCounter.js";
 export type { MosaicCounterProps } from "./components/counter/MosaicCounter.js";

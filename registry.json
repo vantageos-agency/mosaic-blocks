@@ -88,11 +88,24 @@
       "name": "mosaic-logos-grid",
       "type": "registry:ui",
       "title": "MosaicLogosGrid",
-      "description": "Logo cloud / partner logos grid. Props: logos[] {name, src, width, height}, heading. Grayscale hover effect.",
+      "description": "Logo cloud / partner logos grid. Props: logos[] {name, src, width, height}, heading. Grayscale hover effect. Optional stagger-motion variant: pass stagger=true or stagger=80 for CSS keyframe staggered reveal; respects prefers-reduced-motion.",
       "dependencies": [],
       "files": [
         {
           "path": "src/components/logos-grid/MosaicLogosGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-feature-3col",
+      "type": "registry:ui",
+      "title": "MosaicFeature3Col",
+      "description": "3-column feature grid section. Props: heading?, subtext?, features[] {id, title, body, icon?}. Responsive: 1-col mobile, 3-col md+. Icon slot per cell. data-slot API. Distinct from MosaicFeatureCenteredMedia (single centered layout).",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/feature-3col/MosaicFeature3Col.tsx",
           "type": "registry:ui"
         }
       ]
