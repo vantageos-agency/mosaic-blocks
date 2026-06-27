@@ -20,8 +20,10 @@
  *   })
  * }
  *
- * Note: svix is required for webhook signature verification.
- * Add svix to your app's dependencies: `npm install svix`
+ * Note: svix is an optional peer dependency required only for webhook signature
+ * verification. Install it in your app: `npm install svix`
+ * If svix is absent at runtime, this handler throws an explicit Error with
+ * installation instructions.
  */
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -71,7 +73,8 @@ const SVIX_HEADERS = ["svix-id", "svix-timestamp", "svix-signature"] as const;
  * MosaicClerkWebhookHandler — verifies and dispatches Clerk webhook events.
  *
  * Returns a `Response` compatible with Next.js App Router route handlers.
- * svix must be installed in the consuming app (`npm install svix`).
+ * svix is an optional peer dependency and must be installed in the consuming
+ * app (`npm install svix`). Throws an explicit Error if svix is not installed.
  */
 export async function MosaicClerkWebhookHandler(
   req: Request,
@@ -81,20 +84,16 @@ export async function MosaicClerkWebhookHandler(
     options;
 
   // ── Verify signature via svix ─────────────────────────────────────────────
-  // Dynamic import avoids a hard bundle dep on svix. The string is computed at
-  // runtime so TypeScript does not attempt static resolution.
-  type SvixWebhook = {
-    verify: (body: string, headers: Record<string, string>) => unknown;
-  };
-  type SvixModule = { Webhook: new (secret: string) => SvixWebhook };
-  const svixPkg = "svix"; // runtime string — prevents tsc static resolution
-  let svixModule: SvixModule;
+  // svix is an optional peer dependency. A literal dynamic import lets TypeScript
+  // resolve types at build time (via devDependencies) while keeping it out of the
+  // main bundle at runtime. Consumers must install svix themselves.
+  let Webhook: typeof import("svix").Webhook;
   try {
-    svixModule = (await import(/* @vite-ignore */ svixPkg)) as SvixModule;
+    ({ Webhook } = await import("svix"));
   } catch {
-    return new Response("svix is required for webhook verification. Run: npm install svix", {
-      status: 500,
-    });
+    throw new Error(
+      "MosaicClerkWebhookHandler requires the 'svix' package for webhook signature verification. Install it: npm install svix (or pnpm add svix).",
+    );
   }
 
   const svixHeaders: Record<string, string> = {};
@@ -110,7 +109,7 @@ export async function MosaicClerkWebhookHandler(
 
   let evt: { type: string; data: Record<string, unknown> };
   try {
-    const wh = new svixModule.Webhook(webhookSecret);
+    const wh = new Webhook(webhookSecret);
     evt = wh.verify(body, svixHeaders) as typeof evt;
   } catch {
     return new Response("Webhook signature verification failed", { status: 400 });

@@ -14,11 +14,11 @@ npm install @vantageos/mosaic-blocks @clerk/nextjs @vantageos/cloud-identity
 npm install svix
 ```
 
-> **IMPORTANT — svix peer dependency**
+> **IMPORTANT — svix optional peer dependency**
 >
-> `MosaicClerkWebhookHandler` uses a runtime dynamic import of `svix` to verify Clerk webhook signatures. `svix` is **not** bundled into `@vantageos/mosaic-blocks` to keep the main bundle free of this server-only dependency.
+> `MosaicClerkWebhookHandler` uses a literal dynamic `import("svix")` to verify Clerk webhook signatures. `svix` is declared as an **optional peer dependency** (`^1.0.0`) and is **never bundled** into `@vantageos/mosaic-blocks`.
 >
-> If you use `MosaicClerkWebhookHandler` without installing `svix`, you will receive a **`MODULE_NOT_FOUND` runtime error** when your webhook route is called — not a compile-time error, because the import is deferred.
+> If you use `MosaicClerkWebhookHandler` without installing `svix`, the handler **throws an explicit `Error`** with install instructions at the point of the first webhook call — not a silent failure.
 >
 > **If you do not use `MosaicClerkWebhookHandler`, you do not need to install `svix`.**
 
@@ -28,7 +28,7 @@ Peer dependency matrix:
 |---------|--------------|---------|
 | `@clerk/nextjs` | Any auth component | `^7` |
 | `@vantageos/cloud-identity` | `MosaicMultiTenantProvider`, `useEffectiveWorkspaceId` | `^0.2` |
-| `svix` | `MosaicClerkWebhookHandler` only | `*` (latest stable) |
+| `svix` | `MosaicClerkWebhookHandler` only | `^1.0.0` |
 
 ---
 
@@ -389,9 +389,9 @@ MosaicClerkWebhookHandler(req: Request, options: MosaicClerkWebhookHandlerOption
 | `organizationMembership.created` | `onMembershipCreated(data: MosaicClerkMembership)` |
 | `organizationMembership.deleted` | `onMembershipDeleted(data: MosaicClerkMembership)` |
 
-**Error handling:** returns `HTTP 400` for missing/invalid svix headers or failed signature verification; `HTTP 500` for missing `svix` package or handler errors.
+**Error handling:** returns `HTTP 400` for missing/invalid svix headers or failed signature verification; `HTTP 500` for handler callback errors. If `svix` is not installed, the handler throws an explicit `Error` before processing the request — wire your route handler to catch it and return an appropriate response (e.g. 500).
 
-**Implementation note:** `svix` is imported via a runtime dynamic import using a computed string (`const svixPkg = "svix"`) to prevent TypeScript from statically resolving and bundling it. If `svix` is not installed, the handler returns a `500` response with a clear error message instead of crashing the process.
+**Implementation note:** `svix` is imported via a literal dynamic `import("svix")`. TypeScript resolves the types at build time (via `svix` in devDependencies) while keeping the package out of the bundle at runtime. Consumers declare `svix` as an optional peer dependency and install it only when using this handler.
 
 ---
 
@@ -461,7 +461,7 @@ The auth components in `@vantageos/mosaic-blocks` were ported from the `any-deba
 | Internal `workspaceId` resolution | Delegates to `@vantageos/cloud-identity` 0.2.0 `resolveWorkspaceId` |
 | `OrganizationSwitcher` (Clerk direct) | `MosaicClerkOrgSwitcher` (Clerk injected as prop) |
 | Webhook handler in `/api/webhooks/clerk/route.ts` | `MosaicClerkWebhookHandler` (importable function) |
-| `svix` bundled transitively | `svix` must be installed explicitly — `MODULE_NOT_FOUND` if missing |
+| `svix` bundled transitively | `svix` must be installed explicitly (optional peer dep `^1.0.0`) — throws an explicit Error with install instructions if absent |
 
 No debate-specific business logic was ported. The UI shell, layout, and auth plumbing are fully generic.
 

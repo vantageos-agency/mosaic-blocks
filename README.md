@@ -55,7 +55,7 @@ pnpm add @vantageos/mosaic-blocks
 | `@base-ui/react` | `^1.5.0` | Auto-installed (direct dep) |
 | `@clerk/nextjs` | `^7` | Using any auth component |
 | `@vantageos/cloud-identity` | `^0.2` | `MosaicMultiTenantProvider` |
-| `svix` | `*` | `MosaicClerkWebhookHandler` only |
+| `svix` | `^1.0.0` | `MosaicClerkWebhookHandler` only |
 
 ```bash
 # Minimal — no auth
@@ -64,6 +64,28 @@ pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss
 # Full — with Clerk auth
 pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss @clerk/nextjs @vantageos/cloud-identity
 ```
+
+---
+
+## Optional peer dependencies
+
+Some components in `@vantageos/mosaic-blocks` depend on packages that are NOT bundled into the library. Install them only when using the relevant component. The library never bundles these packages and throws a clear error at runtime if the required optional peer is absent.
+
+| Package | Required for | Install |
+|---|---|---|
+| `svix` | `MosaicClerkWebhookHandler` (Clerk webhook signature verification) | `npm install svix` |
+
+### svix — webhook signature verification
+
+`MosaicClerkWebhookHandler` dynamically imports `svix` at runtime to verify Clerk webhook signatures. If `svix` is not installed in your app, the handler throws an explicit `Error` with installation instructions — it never silently fails.
+
+```bash
+npm install svix
+# or
+pnpm add svix
+```
+
+If you do not use `MosaicClerkWebhookHandler`, you do not need to install `svix`.
 
 ---
 
