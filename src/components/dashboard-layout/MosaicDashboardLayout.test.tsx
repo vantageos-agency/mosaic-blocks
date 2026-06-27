@@ -45,9 +45,7 @@ describe("MosaicDashboardLayout", () => {
   it("renders breadcrumbs when provided", () => {
     render(
       <Wrapper>
-        <MosaicDashboardLayout
-          breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reports" }]}
-        >
+        <MosaicDashboardLayout breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reports" }]}>
           <p>Content</p>
         </MosaicDashboardLayout>
       </Wrapper>,

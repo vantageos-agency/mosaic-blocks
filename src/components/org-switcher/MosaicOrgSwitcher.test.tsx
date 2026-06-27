@@ -11,24 +11,12 @@ const orgs = [
 
 describe("MosaicOrgSwitcher", () => {
   it("renders current org name", () => {
-    render(
-      <MosaicOrgSwitcher
-        organizations={orgs}
-        currentOrgId="org-1"
-        onSelectOrg={() => {}}
-      />,
-    );
+    render(<MosaicOrgSwitcher organizations={orgs} currentOrgId="org-1" onSelectOrg={() => {}} />);
     expect(screen.getByText("Acme Corp")).toBeTruthy();
   });
 
   it("opens dropdown and shows all orgs on trigger click", async () => {
-    render(
-      <MosaicOrgSwitcher
-        organizations={orgs}
-        currentOrgId="org-1"
-        onSelectOrg={() => {}}
-      />,
-    );
+    render(<MosaicOrgSwitcher organizations={orgs} currentOrgId="org-1" onSelectOrg={() => {}} />);
     const trigger = screen.getByRole("button");
     await userEvent.click(trigger);
     expect(screen.getByText("Beta LLC")).toBeTruthy();
@@ -36,13 +24,7 @@ describe("MosaicOrgSwitcher", () => {
 
   it("calls onSelectOrg when an org is selected", async () => {
     const onSelect = vi.fn();
-    render(
-      <MosaicOrgSwitcher
-        organizations={orgs}
-        currentOrgId="org-1"
-        onSelectOrg={onSelect}
-      />,
-    );
+    render(<MosaicOrgSwitcher organizations={orgs} currentOrgId="org-1" onSelectOrg={onSelect} />);
     await userEvent.click(screen.getByRole("button"));
     await userEvent.click(screen.getByText("Beta LLC"));
     expect(onSelect).toHaveBeenCalledWith("org-2");

@@ -8,9 +8,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
 
-const selectedAgents = [
-  { id: "a1", name: "Debater Alpha", type: "GPT-4", isActive: true },
-];
+const selectedAgents = [{ id: "a1", name: "Debater Alpha", type: "GPT-4", isActive: true }];
 
 const availableAgents = [
   { id: "a2", name: "Analyst Beta", type: "Claude", isActive: true },

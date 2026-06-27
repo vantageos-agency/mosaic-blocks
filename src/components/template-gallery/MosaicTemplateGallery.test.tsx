@@ -58,11 +58,7 @@ describe("MosaicTemplateGallery", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicTemplateGallery
-            templates={[]}
-            onSelectTemplate={() => {}}
-            {...galleryBaseProps}
-          />
+          <MosaicTemplateGallery templates={[]} onSelectTemplate={() => {}} {...galleryBaseProps} />
         </Wrapper>,
       ),
     ).not.toThrow();
@@ -85,22 +81,12 @@ describe("MosaicTemplateGallery", () => {
 
 describe("MosaicTemplateCard", () => {
   it("renders template name", () => {
-    render(
-      <MosaicTemplateCard
-        template={templates[0]}
-        onSelect={() => {}}
-      />,
-    );
+    render(<MosaicTemplateCard template={templates[0]} onSelect={() => {}} />);
     expect(screen.getByText("Strategy Debate")).toBeTruthy();
   });
 
   it("renders template description", () => {
-    render(
-      <MosaicTemplateCard
-        template={templates[0]}
-        onSelect={() => {}}
-      />,
-    );
+    render(<MosaicTemplateCard template={templates[0]} onSelect={() => {}} />);
     expect(screen.getByText("A structured strategy discussion")).toBeTruthy();
   });
 });
@@ -108,11 +94,7 @@ describe("MosaicTemplateCard", () => {
 describe("MosaicTemplatePreview", () => {
   it("renders template name in preview", () => {
     render(
-      <MosaicTemplatePreview
-        template={templates[0]}
-        onSelect={() => {}}
-        onClose={() => {}}
-      />,
+      <MosaicTemplatePreview template={templates[0]} onSelect={() => {}} onClose={() => {}} />,
     );
     expect(screen.getByText("Strategy Debate")).toBeTruthy();
   });
@@ -120,9 +102,7 @@ describe("MosaicTemplatePreview", () => {
 
 describe("MosaicQuickStartPanel", () => {
   it("renders without crashing", () => {
-    const scenarios = [
-      { id: "s1", title: "Quick Start", description: "Get started fast" },
-    ];
+    const scenarios = [{ id: "s1", title: "Quick Start", description: "Get started fast" }];
     expect(() =>
       render(
         <MosaicQuickStartPanel

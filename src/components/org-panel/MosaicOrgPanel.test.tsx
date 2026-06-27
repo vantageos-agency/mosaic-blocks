@@ -68,16 +68,19 @@ describe("MosaicOrgPanel", () => {
 
 describe("MosaicOrgRoleBadge", () => {
   it("renders admin badge", () => {
+    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
     render(<MosaicOrgRoleBadge role="admin" />);
     expect(screen.getByText(/admin/i)).toBeTruthy();
   });
 
   it("renders member badge", () => {
+    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
     render(<MosaicOrgRoleBadge role="member" />);
     expect(screen.getByText(/member/i)).toBeTruthy();
   });
 
   it("renders owner badge", () => {
+    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
     render(<MosaicOrgRoleBadge role="owner" />);
     expect(screen.getByText(/owner/i)).toBeTruthy();
   });
@@ -99,11 +102,7 @@ describe("MosaicCreateOrgDialog", () => {
   it("renders form when open", () => {
     render(
       <Wrapper>
-        <MosaicCreateOrgDialog
-          open={true}
-          onOpenChange={() => {}}
-          onCreateOrg={() => {}}
-        />
+        <MosaicCreateOrgDialog open={true} onOpenChange={() => {}} onCreateOrg={() => {}} />
       </Wrapper>,
     );
     // Form should be visible

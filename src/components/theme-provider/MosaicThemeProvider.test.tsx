@@ -54,7 +54,11 @@ describe("MosaicThemeProvider", () => {
       children: React.ReactNode;
       defaultTheme?: string;
     }) {
-      return <div data-testid="p" data-theme={defaultTheme}>{children}</div>;
+      return (
+        <div data-testid="p" data-theme={defaultTheme}>
+          {children}
+        </div>
+      );
     }
 
     render(

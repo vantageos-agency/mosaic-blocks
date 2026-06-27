@@ -40,9 +40,7 @@ describe("MosaicAgentCard", () => {
   });
 
   it("accepts custom className", () => {
-    const { container } = render(
-      <MosaicAgentCard agent={agent} className="my-card" />,
-    );
+    const { container } = render(<MosaicAgentCard agent={agent} className="my-card" />);
     expect(container.querySelector(".my-card")).toBeTruthy();
   });
 });
