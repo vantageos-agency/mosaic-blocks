@@ -257,3 +257,184 @@ export type {
   MosaicModuleData,
   MosaicModuleType,
 } from "./components/module-card/MosaicModuleCard.js";
+
+// ── T3-D wave-2: remaining anydebate shell blocks ─────────────────────────────
+
+// MosaicThemeProvider — next-themes wrapper
+export { MosaicThemeProvider } from "./components/theme-provider/MosaicThemeProvider.js";
+export type { MosaicThemeProviderProps } from "./components/theme-provider/MosaicThemeProvider.js";
+
+// MosaicDeleteConfirmationDialog — generic destructive confirm dialog
+export { MosaicDeleteConfirmationDialog } from "./components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.js";
+export type { MosaicDeleteConfirmationDialogProps } from "./components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.js";
+
+// MosaicPreferencesPanel — generic user preferences form
+export { MosaicPreferencesPanel } from "./components/preferences-panel/MosaicPreferencesPanel.js";
+export type {
+  MosaicPreferencesPanelProps,
+  MosaicPreferenceGroup,
+  MosaicPreference,
+  MosaicSelectItem as MosaicPrefSelectItem,
+} from "./components/preferences-panel/MosaicPreferencesPanel.js";
+
+// MosaicProfilePanel — generic user profile form
+export { MosaicProfilePanel } from "./components/profile-panel/MosaicProfilePanel.js";
+export type {
+  MosaicProfilePanelProps,
+  MosaicProfileField,
+} from "./components/profile-panel/MosaicProfilePanel.js";
+
+// MosaicMainNav — generic responsive top-nav
+export { MosaicMainNav } from "./components/main-nav/MosaicMainNav.js";
+export type {
+  MosaicMainNavProps,
+  MosaicNavItem,
+} from "./components/main-nav/MosaicMainNav.js";
+
+// MosaicAgentCard — generic agent/resource card
+export { MosaicAgentCard } from "./components/agent-card/MosaicAgentCard.js";
+export type {
+  MosaicAgentCardProps,
+  MosaicAgentData,
+} from "./components/agent-card/MosaicAgentCard.js";
+
+// MosaicQuickAgentSelector — compact agent pill picker
+export { MosaicQuickAgentSelector } from "./components/quick-agent-selector/MosaicQuickAgentSelector.js";
+export type {
+  MosaicQuickAgentSelectorProps,
+  MosaicQuickAgent,
+} from "./components/quick-agent-selector/MosaicQuickAgentSelector.js";
+
+// MosaicSelectorModal — generic searchable item picker modal
+export { MosaicSelectorModal } from "./components/selector-modal/MosaicSelectorModal.js";
+export type {
+  MosaicSelectorModalProps,
+  MosaicSelectorItem,
+  MosaicSelectorCategory,
+} from "./components/selector-modal/MosaicSelectorModal.js";
+
+// MosaicMessageCard — generic message/chat card
+export { MosaicMessageCard } from "./components/message-card/MosaicMessageCard.js";
+export type {
+  MosaicMessageCardProps,
+  MosaicMessage,
+  MosaicMessageSender,
+  MosaicMessageSenderType,
+  MosaicMessageReactions,
+} from "./components/message-card/MosaicMessageCard.js";
+
+// MosaicMessageList — responsive message list (responsive-pair)
+export {
+  MosaicMessageList,
+  MosaicMessageListDesktop,
+  MosaicMessageListMobile,
+} from "./components/message-list/MosaicMessageList.js";
+export type { MosaicMessageListProps } from "./components/message-list/MosaicMessageList.js";
+
+// MosaicFilterSidebar — generic collapsible filter sidebar
+export { MosaicFilterSidebar } from "./components/filter-sidebar/MosaicFilterSidebar.js";
+export type {
+  MosaicFilterSidebarProps,
+  MosaicFilterOption,
+} from "./components/filter-sidebar/MosaicFilterSidebar.js";
+
+// MosaicAgentList — responsive agent list (responsive-pair)
+export {
+  MosaicAgentList,
+  MosaicAgentListDesktop,
+  MosaicAgentListMobile,
+} from "./components/agent-list/MosaicAgentList.js";
+export type { MosaicAgentListProps } from "./components/agent-list/MosaicAgentList.js";
+
+// MosaicMarketplaceList — responsive marketplace grid/list (responsive-pair)
+export {
+  MosaicMarketplaceList,
+  MosaicMarketplaceListDesktop,
+  MosaicMarketplaceListMobile,
+} from "./components/marketplace-list/MosaicMarketplaceList.js";
+export type {
+  MosaicMarketplaceListProps,
+  MosaicMarketplaceItem,
+} from "./components/marketplace-list/MosaicMarketplaceList.js";
+
+// MosaicTemplateGallery — generic template browser (responsive-pair)
+export {
+  MosaicTemplateGallery,
+  MosaicTemplateCard,
+  MosaicTemplatePreview,
+  MosaicQuickStartPanel,
+  MosaicAgentTeamPreview,
+} from "./components/template-gallery/MosaicTemplateGallery.js";
+export type {
+  MosaicTemplateGalleryProps,
+  MosaicTemplateCardProps,
+  MosaicTemplatePreviewProps,
+  MosaicQuickStartPanelProps,
+  MosaicAgentTeamPreviewProps,
+  MosaicTemplate,
+  MosaicTemplateAgent,
+  MosaicTemplateMetadata,
+  MosaicScenario,
+  MosaicAgentPreset,
+} from "./components/template-gallery/MosaicTemplateGallery.js";
+
+// MosaicModuleLibrary — generic module/library manager (responsive-pair)
+export {
+  MosaicModuleLibrary,
+  MosaicModuleForm,
+} from "./components/module-library/MosaicModuleLibrary.js";
+export type {
+  MosaicModuleLibraryProps,
+  MosaicModuleFormProps,
+  MosaicModuleItem,
+  MosaicModuleFormField,
+} from "./components/module-library/MosaicModuleLibrary.js";
+
+// MosaicOrgPanel — generic org management shell (responsive-pair)
+export {
+  MosaicOrgPanel,
+  MosaicOrgRoleBadge,
+  MosaicMultiOrgIndicator,
+  MosaicCreateOrgDialog,
+  MosaicInviteMemberDialog,
+  MosaicMemberList,
+} from "./components/org-panel/MosaicOrgPanel.js";
+export type {
+  MosaicOrgPanelProps,
+  MosaicOrgPanelTab,
+  MosaicOrgRoleBadgeProps,
+  MosaicMultiOrgIndicatorProps,
+  MosaicCreateOrgDialogProps,
+  MosaicInviteMemberDialogProps,
+  MosaicMemberListProps,
+  MosaicOrgInfo,
+  MosaicOrgMember,
+  MosaicOrgRole,
+  MosaicOrgStats,
+  MosaicStatItem,
+} from "./components/org-panel/MosaicOrgPanel.js";
+
+// MosaicDashboardContent — generic dashboard content area with view switcher
+export { MosaicDashboardContent } from "./components/dashboard-content/MosaicDashboardContent.js";
+export type {
+  MosaicDashboardContentProps,
+  MosaicDashboardView,
+} from "./components/dashboard-content/MosaicDashboardContent.js";
+
+// MosaicDashboardHeader — generic sticky dashboard header
+export { MosaicDashboardHeader } from "./components/dashboard-header/MosaicDashboardHeader.js";
+export type { MosaicDashboardHeaderProps } from "./components/dashboard-header/MosaicDashboardHeader.js";
+
+// MosaicOrgSwitcher — presentational org picker dropdown
+export { MosaicOrgSwitcher } from "./components/org-switcher/MosaicOrgSwitcher.js";
+export type {
+  MosaicOrgSwitcherProps,
+  MosaicOrg,
+} from "./components/org-switcher/MosaicOrgSwitcher.js";
+
+// MosaicQuickActionsMenu — generic dropdown quick-actions button
+export { MosaicQuickActionsMenu } from "./components/quick-actions-menu/MosaicQuickActionsMenu.js";
+export type {
+  MosaicQuickActionsMenuProps,
+  MosaicQuickAction as MosaicQuickActionsMenuItem,
+} from "./components/quick-actions-menu/MosaicQuickActionsMenu.js";
