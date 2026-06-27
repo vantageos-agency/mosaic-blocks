@@ -1,7 +1,13 @@
 "use client";
 
 import {
+  MosaicActivityFeed,
+  MosaicAdaptiveGrid,
+  MosaicAdaptiveModal,
+  MosaicAdaptiveNavigation,
+  MosaicAgentComposer,
   MosaicAnimatedList,
+  MosaicAppSidebar,
   MosaicAvatar,
   MosaicBadge,
   MosaicBlurredOrb,
@@ -14,6 +20,8 @@ import {
   MosaicCardTitle,
   MosaicCombobox,
   MosaicCounter,
+  MosaicDashboardLayout,
+  MosaicDeviceProvider,
   MosaicDropdownMenu,
   MosaicFallingPattern,
   MosaicFeature3Col,
@@ -25,8 +33,10 @@ import {
   MosaicInputGroup,
   MosaicIntegrationsBadge,
   MosaicLogosGrid,
+  MosaicModuleCard,
   MosaicNavbar,
   MosaicPricingCard,
+  MosaicQuickActionCard,
   MosaicSelect,
   MosaicStatsGrid,
   MosaicSwitch,
@@ -35,6 +45,28 @@ import {
   Placeholder,
   version,
 } from "@vantageos/mosaic-blocks";
+import { useState } from "react";
+
+function ModalDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <MosaicDeviceProvider>
+      <MosaicButton onClick={() => setOpen(true)} variant="outline">
+        Open Modal
+      </MosaicButton>
+      <MosaicAdaptiveModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title="Adaptive Modal"
+        description="Dialog on desktop, bottom sheet on mobile."
+      >
+        <p className="text-sm text-gray-600">
+          This is the modal body. On mobile it slides up from the bottom.
+        </p>
+      </MosaicAdaptiveModal>
+    </MosaicDeviceProvider>
+  );
+}
 
 export default function SandboxPage() {
   return (
@@ -452,6 +484,211 @@ export default function SandboxPage() {
         <section className="px-8 py-8">
           <Placeholder label="Alpha placeholder — T4+ blocks will extend this sandbox" />
         </section>
+
+        {/* ── T3-D anydebate shell blocks ──────────────────────────────── */}
+        <MosaicDeviceProvider>
+          <section className="border-t border-gray-100 px-8 py-10 space-y-8">
+            <p className="text-xs font-mono text-gray-400 uppercase tracking-widest">
+              T3-D — anydebate shell blocks (PC-01..PC-11)
+            </p>
+
+            {/* MosaicAdaptiveGrid */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicAdaptiveGrid</p>
+              <MosaicAdaptiveGrid mobileColumns={1} tabletColumns={2} desktopColumns={3}>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                  Cell 1
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                  Cell 2
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                  Cell 3
+                </div>
+              </MosaicAdaptiveGrid>
+            </div>
+
+            {/* MosaicAdaptiveNavigation */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicAdaptiveNavigation</p>
+              <MosaicAdaptiveNavigation
+                items={[
+                  { id: "step1", title: "Setup", isComplete: true },
+                  { id: "step2", title: "Configure", duration: 30 },
+                  { id: "step3", title: "Deploy" },
+                ]}
+                activeItem="step2"
+                onItemChange={() => {}}
+              />
+            </div>
+
+            {/* MosaicAdaptiveModal — trigger */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicAdaptiveModal</p>
+              <ModalDemo />
+            </div>
+
+            {/* MosaicAppSidebar */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicAppSidebar (collapsed)</p>
+              <div className="flex h-64 rounded-xl border border-gray-200 overflow-hidden">
+                <MosaicAppSidebar
+                  isCollapsed={false}
+                  onToggleCollapse={() => {}}
+                  logoSlot={<span className="text-sm font-bold text-gray-800">Mosaic</span>}
+                  navItems={[
+                    { id: "home", label: "Home", href: "/" },
+                    { id: "settings", label: "Settings", href: "/settings" },
+                  ]}
+                  footerStatus={{ label: "All systems go", sublabel: "Healthy" }}
+                />
+                <div className="flex-1 bg-gray-50 p-4 text-sm text-gray-500">Main content area</div>
+              </div>
+            </div>
+
+            {/* MosaicQuickActionCard */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicQuickActionCard</p>
+              <MosaicQuickActionCard
+                heading="Quick Actions"
+                actions={[
+                  {
+                    id: "create",
+                    title: "Create",
+                    description: "Start new item",
+                    icon: <span>+</span>,
+                    href: "#",
+                    accent: "green",
+                  },
+                  {
+                    id: "import",
+                    title: "Import",
+                    description: "Upload files",
+                    icon: <span>↑</span>,
+                    href: "#",
+                    accent: "blue",
+                  },
+                  {
+                    id: "export",
+                    title: "Export",
+                    description: "Download data",
+                    icon: <span>↓</span>,
+                    href: "#",
+                    accent: "purple",
+                  },
+                  {
+                    id: "share",
+                    title: "Share",
+                    description: "Invite team",
+                    icon: <span>→</span>,
+                    href: "#",
+                    accent: "orange",
+                  },
+                ]}
+              />
+            </div>
+
+            {/* MosaicActivityFeed */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicActivityFeed</p>
+              <MosaicActivityFeed
+                heading="Recent Activity"
+                viewAllHref="#"
+                activities={[
+                  {
+                    id: "a1",
+                    type: "task",
+                    title: "Report published",
+                    description: "PDF export completed",
+                    timestamp: "2h ago",
+                    status: "completed",
+                  },
+                  {
+                    id: "a2",
+                    type: "task",
+                    title: "Draft in progress",
+                    description: "Working on v2",
+                    timestamp: "5h ago",
+                    status: "active",
+                    participants: ["Alice", "Bob"],
+                    messages: 12,
+                  },
+                  {
+                    id: "a3",
+                    type: "task",
+                    title: "Old session",
+                    description: "Marketing planning",
+                    timestamp: "3 days ago",
+                    status: "archived",
+                  },
+                ]}
+              />
+            </div>
+
+            {/* MosaicModuleCard */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">MosaicModuleCard</p>
+              <MosaicModuleCard
+                type="role"
+                module={{
+                  name: "Product Manager",
+                  description: "Drives product strategy and roadmap",
+                  tags: ["strategy", "roadmap", "ux"],
+                  icon: "🎯",
+                }}
+                onEdit={() => {}}
+                onRemove={() => {}}
+              />
+            </div>
+
+            {/* MosaicAgentComposer */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">
+                MosaicAgentComposer (desktop 2-col)
+              </p>
+              <div className="h-[600px] rounded-xl border border-gray-200 overflow-hidden">
+                <MosaicAgentComposer
+                  agentName=""
+                  onAgentNameChange={() => {}}
+                  customInstructions=""
+                  onCustomInstructionsChange={() => {}}
+                  onSelectRole={() => {}}
+                  onSelectPersona={() => {}}
+                  onSelectFramework={() => {}}
+                  onSelectModel={() => {}}
+                  onRemoveRole={() => {}}
+                  onRemovePersona={() => {}}
+                  onRemoveFramework={() => {}}
+                  onSave={() => {}}
+                  canSave={false}
+                />
+              </div>
+            </div>
+
+            {/* MosaicDashboardLayout — rendered in a bounded iframe-like container */}
+            <div>
+              <p className="mb-3 text-xs font-mono text-gray-400">
+                MosaicDashboardLayout (bounded preview)
+              </p>
+              <div className="h-[500px] rounded-xl border border-gray-200 overflow-hidden relative">
+                <MosaicDashboardLayout
+                  title="Dashboard"
+                  subtitle="Overview of your workspace"
+                  breadcrumbs={[{ label: "Home", href: "#" }, { label: "Dashboard" }]}
+                  sidebarProps={{
+                    logoSlot: <span className="text-sm font-bold">Mosaic</span>,
+                    navItems: [
+                      { id: "home", label: "Home", href: "/" },
+                      { id: "analytics", label: "Analytics", href: "/analytics" },
+                    ],
+                  }}
+                >
+                  <p className="text-sm text-gray-500">Dashboard body — children render here.</p>
+                </MosaicDashboardLayout>
+              </div>
+            </div>
+          </section>
+        </MosaicDeviceProvider>
 
         {/* MosaicFooterSimple */}
         <MosaicFooterSimple

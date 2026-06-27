@@ -359,6 +359,144 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "mosaic-device-provider",
+      "type": "registry:ui",
+      "title": "MosaicDeviceProvider",
+      "description": "Responsive device context provider. Exposes isMobile/isTablet/isDesktop, sm/md/lg/xl breakpoint flags, orientation, viewport size. Hooks: useDevice, useBreakpoint, useIsMobile, useIsTablet, useIsDesktop, useViewport, useOrientation. SSR-safe. Required by all adaptive components.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/device-provider/MosaicDeviceProvider.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-adaptive-grid",
+      "type": "registry:ui",
+      "title": "MosaicAdaptiveGrid",
+      "description": "Device-aware CSS grid wrapper. Reads isMobile/isTablet/isDesktop from MosaicDeviceProvider and applies the correct column count. Props: mobileColumns, tabletColumns, desktopColumns, gap. Uses inline CSS for dynamic columns (no JIT issues).",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-adaptive-modal",
+      "type": "registry:ui",
+      "title": "MosaicAdaptiveModal",
+      "description": "Unified modal/sheet: Dialog on desktop, bottom-sheet on mobile. Uses native <dialog> element (focus trap, Escape key, backdrop). Single API: isOpen, onClose, title, children, description. No Radix/Vaul dep — fully portable.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/adaptive-modal/MosaicAdaptiveModal.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-adaptive-navigation",
+      "type": "registry:ui",
+      "title": "MosaicAdaptiveNavigation",
+      "description": "Step navigation: tab strip on desktop, expandable accordion on mobile. Props: items[] {id, title, duration?, isComplete?, children?}, activeItem, onItemChange, expandedItems, onToggleExpanded. Zero debate coupling; generic items API.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/adaptive-navigation/MosaicAdaptiveNavigation.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-dashboard-layout",
+      "type": "registry:ui",
+      "title": "MosaicDashboardLayout",
+      "description": "Full-height app shell: sticky header (title, subtitle, breadcrumbs, actions slot), persistent sidebar on desktop, hamburger + AdaptiveModal drawer on mobile. Props: title, subtitle, breadcrumbs[], actions, sidebarProps, renderLink. Zero hardcoded branding.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/dashboard-layout/MosaicDashboardLayout.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-app-sidebar",
+      "type": "registry:ui",
+      "title": "MosaicAppSidebar",
+      "description": "Collapsible sidebar (64px icon-only / 280px expanded) with nested nav, quick actions, recent items, and footer status slot. Full-width on mobile. Props: navItems[], quickActions[], recentItems[], logoSlot, footerStatus. No hardcoded routes or branding.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/app-sidebar/MosaicAppSidebar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-quick-action-card",
+      "type": "registry:ui",
+      "title": "MosaicQuickActionCard",
+      "description": "Grid of action cards with 6 accent color presets (yellow, blue, green, purple, orange, cyan). CSS stagger reveal on mount. Props: actions[] {id, title, description, icon, href, accent?}, heading, columns, renderLink. No hardcoded routes.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/quick-action-card/MosaicQuickActionCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-activity-feed",
+      "type": "registry:ui",
+      "title": "MosaicActivityFeed",
+      "description": "Activity feed card with stagger-reveal rows. Status badges (active/completed/archived), participant avatar stack, message count, timestamp. Props: activities[] {id, type, title, description, timestamp, status, participants?, messages?}, iconMap, viewAllHref, renderLink.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/activity-feed/MosaicActivityFeed.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-agent-composer",
+      "type": "registry:ui",
+      "title": "MosaicAgentComposer",
+      "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type — no domain coupling.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/agent-composer/MosaicAgentComposer.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-composer/MosaicAgentComposerDesktop.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-composer/MosaicAgentComposerMobile.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-module-card",
+      "type": "registry:ui",
+      "title": "MosaicModuleCard",
+      "description": "Selected-module display card for composer slot. Shows name, description, optional details, emoji icon, tags, edit/remove actions. Props: type, module {name, description, details?, icon?, tags?}, onEdit, onRemove, isSelected, isCustom. Generic — no debate domain types.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/module-card/MosaicModuleCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }

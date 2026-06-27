@@ -166,3 +166,94 @@ export type {
   MosaicDropdownMenuItem,
   MosaicDropdownMenuProps,
 } from "./components/dropdown-menu/MosaicDropdownMenu.js";
+
+// ── T3-D anydebate shell blocks ───────────────────────────────────────────────
+
+// DeviceProvider + hooks (PC-01) — foundation for all adaptive components
+export {
+  MosaicDeviceProvider,
+  useDevice,
+  useBreakpoint,
+  useIsMobile,
+  useIsTablet,
+  useIsDesktop,
+  useViewport,
+  useOrientation,
+} from "./components/device-provider/MosaicDeviceProvider.js";
+export type {
+  DeviceContextValue,
+  Orientation,
+  Breakpoint,
+  MosaicDeviceProviderProps,
+} from "./components/device-provider/MosaicDeviceProvider.js";
+
+// AdaptiveGrid (PC-02)
+export { MosaicAdaptiveGrid } from "./components/adaptive-grid/MosaicAdaptiveGrid.js";
+export type { MosaicAdaptiveGridProps } from "./components/adaptive-grid/MosaicAdaptiveGrid.js";
+
+// AdaptiveModal (PC-03)
+export { MosaicAdaptiveModal } from "./components/adaptive-modal/MosaicAdaptiveModal.js";
+export type { MosaicAdaptiveModalProps } from "./components/adaptive-modal/MosaicAdaptiveModal.js";
+
+// AdaptiveNavigation (PC-04)
+export { MosaicAdaptiveNavigation } from "./components/adaptive-navigation/MosaicAdaptiveNavigation.js";
+export type {
+  MosaicAdaptiveNavigationProps,
+  MosaicNavigationItem,
+} from "./components/adaptive-navigation/MosaicAdaptiveNavigation.js";
+
+// DashboardLayout (PC-05) — full app shell
+export { MosaicDashboardLayout } from "./components/dashboard-layout/MosaicDashboardLayout.js";
+export type {
+  MosaicDashboardLayoutProps,
+  MosaicBreadcrumb,
+} from "./components/dashboard-layout/MosaicDashboardLayout.js";
+
+// AppSidebar (PC-06) — collapsible + mobile drawer
+export { MosaicAppSidebar } from "./components/app-sidebar/MosaicAppSidebar.js";
+export type {
+  MosaicAppSidebarProps,
+  MosaicSidebarNavItem,
+  MosaicSidebarQuickAction,
+  MosaicSidebarRecentItem,
+  MosaicSidebarFooterStatus,
+} from "./components/app-sidebar/MosaicAppSidebar.js";
+
+// QuickActionCard (PC-07) — 6-accent action grid
+export { MosaicQuickActionCard } from "./components/quick-action-card/MosaicQuickActionCard.js";
+export type {
+  MosaicQuickActionCardProps,
+  MosaicQuickAction,
+  MosaicActionAccent,
+} from "./components/quick-action-card/MosaicQuickActionCard.js";
+
+// ActivityFeed + ActivityItem (PC-08)
+export {
+  MosaicActivityFeed,
+  MosaicActivityItem,
+} from "./components/activity-feed/MosaicActivityFeed.js";
+export type {
+  MosaicActivityFeedProps,
+  MosaicActivityItemProps,
+  MosaicActivity,
+  MosaicActivityStatus,
+} from "./components/activity-feed/MosaicActivityFeed.js";
+
+// AgentComposer — responsive-pair orchestrator (PC-09 + PC-10)
+export { MosaicAgentComposer } from "./components/agent-composer/MosaicAgentComposer.js";
+export { MosaicAgentComposerDesktop } from "./components/agent-composer/MosaicAgentComposerDesktop.js";
+export { MosaicAgentComposerMobile } from "./components/agent-composer/MosaicAgentComposerMobile.js";
+export type {
+  MosaicAgentComposerProps,
+  MosaicComposerModule,
+  MosaicComposerModel,
+} from "./components/agent-composer/MosaicAgentComposer.js";
+export type { MosaicAgentComposerMobileProps } from "./components/agent-composer/MosaicAgentComposerMobile.js";
+
+// ModuleCard (PC-11) — selected module display card
+export { MosaicModuleCard } from "./components/module-card/MosaicModuleCard.js";
+export type {
+  MosaicModuleCardProps,
+  MosaicModuleData,
+  MosaicModuleType,
+} from "./components/module-card/MosaicModuleCard.js";
