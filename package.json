@@ -1,6 +1,6 @@
 {
   "name": "@vantageos/mosaic-blocks",
-  "version": "0.2.0-alpha",
+  "version": "0.2.1-alpha",
   "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Published alpha.",
   "license": "FSL-1.1-Apache-2.0",
   "type": "module",
@@ -48,7 +48,7 @@
   },
   "homepage": "https://vantageos.com/mosaic-blocks",
   "scripts": {
-    "build": "tsup && node scripts/copy-assets.mjs",
+    "build": "tsup && node scripts/prepend-use-client.mjs && node scripts/copy-assets.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "biome check .",
     "test": "vitest run",
@@ -86,7 +86,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@storybook/addon-a11y": "^10.4.6",
-"@storybook/react": "^10.4.6",
+    "@storybook/react": "^10.4.6",
     "@storybook/react-vite": "^10.4.6",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
