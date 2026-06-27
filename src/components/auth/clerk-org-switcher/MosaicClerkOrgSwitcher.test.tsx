@@ -8,11 +8,13 @@ function MockOrgSwitcher({
   appearance,
   afterCreateOrganizationUrl,
   afterSelectOrganizationUrl,
+  afterSelectPersonalUrl,
   hidePersonal,
 }: {
   appearance?: Record<string, unknown>;
   afterCreateOrganizationUrl?: string;
   afterSelectOrganizationUrl?: string;
+  afterSelectPersonalUrl?: string;
   hidePersonal?: boolean;
 }) {
   return (
@@ -21,6 +23,7 @@ function MockOrgSwitcher({
       data-has-appearance={appearance ? "true" : "false"}
       data-after-create={afterCreateOrganizationUrl}
       data-after-select={afterSelectOrganizationUrl}
+      data-after-personal={afterSelectPersonalUrl}
       data-hide-personal={String(hidePersonal)}
     >
       Org Switcher
@@ -95,5 +98,33 @@ describe("MosaicClerkOrgSwitcher", () => {
     render(<MosaicClerkOrgSwitcher clerkOrgSwitcher={mockFn} />);
     expect(screen.getByTestId("mock-os")).toBeTruthy();
     expect(mockFn).toHaveBeenCalledOnce();
+  });
+
+  // ── New props (gap #2) ───────────────────────────────────────────────────────
+
+  it("passes afterSelectPersonalUrl to Clerk OrganizationSwitcher", () => {
+    render(
+      <MosaicClerkOrgSwitcher
+        clerkOrgSwitcher={MockOrgSwitcher}
+        afterSelectPersonalUrl="/personal"
+      />,
+    );
+    expect(screen.getByTestId("clerk-org-switcher").getAttribute("data-after-personal")).toBe(
+      "/personal",
+    );
+  });
+
+  it("forwards data-testid onto the root wrapper", () => {
+    const { container } = render(
+      <MosaicClerkOrgSwitcher clerkOrgSwitcher={MockOrgSwitcher} data-testid="org-switcher" />,
+    );
+    expect(container.querySelector('[data-testid="org-switcher"]')).toBeTruthy();
+  });
+
+  it("does not emit data-testid when prop omitted", () => {
+    const { container } = render(<MosaicClerkOrgSwitcher clerkOrgSwitcher={MockOrgSwitcher} />);
+    // data-slot is present but data-testid should not be
+    const root = container.querySelector('[data-slot="clerk-org-switcher"]');
+    expect(root?.getAttribute("data-testid")).toBeNull();
   });
 });

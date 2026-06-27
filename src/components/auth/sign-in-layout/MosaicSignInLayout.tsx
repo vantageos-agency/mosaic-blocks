@@ -20,13 +20,31 @@ export interface MosaicSignInLayoutProps {
   clerkSignIn: React.ComponentType<{
     appearance?: Record<string, unknown>;
     signUpUrl?: string;
+    signInUrl?: string;
     fallbackRedirectUrl?: string;
+    forceRedirectUrl?: string;
+    routing?: "hash" | "path" | "virtual";
+    path?: string;
     [key: string]: unknown;
   }>;
   /** URL for sign-up page */
   signUpUrl?: string;
-  /** URL to redirect after successful sign-in */
+  /** URL for sign-in page (passed to the Clerk widget as signInUrl) */
+  signInUrl?: string;
+  /** URL to redirect after successful sign-in (Clerk v7 fallbackRedirectUrl) */
   afterSignInUrl?: string;
+  /** Force redirect URL — overrides query-param-based redirects (Clerk v7) */
+  forceRedirectUrl?: string;
+  /**
+   * Clerk routing mode for catch-all routes.
+   * Required for [[...sign-in]] App Router pages. Defaults to "path" when path is set.
+   */
+  routing?: "hash" | "path" | "virtual";
+  /**
+   * Base path for "path" routing (e.g. "/sign-in").
+   * Required when routing="path".
+   */
+  path?: string;
   /** Optional headline above the Clerk widget */
   headline?: string;
   /** Optional sub-headline */
@@ -67,7 +85,11 @@ const clerkAppearance = {
 export function MosaicSignInLayout({
   clerkSignIn: ClerkSignIn,
   signUpUrl = "/sign-up",
+  signInUrl,
   afterSignInUrl = "/",
+  forceRedirectUrl,
+  routing,
+  path,
   headline,
   subheadline,
   className,
@@ -97,7 +119,11 @@ export function MosaicSignInLayout({
         <ClerkSignIn
           appearance={clerkAppearance}
           signUpUrl={signUpUrl}
+          {...(signInUrl !== undefined && { signInUrl })}
           fallbackRedirectUrl={afterSignInUrl}
+          {...(forceRedirectUrl !== undefined && { forceRedirectUrl })}
+          {...(routing !== undefined && { routing })}
+          {...(path !== undefined && { path })}
         />
       </div>
     </div>

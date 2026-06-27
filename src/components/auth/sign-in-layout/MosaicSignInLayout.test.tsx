@@ -7,17 +7,29 @@ import { MosaicSignInLayout } from "./MosaicSignInLayout.js";
 function MockSignIn({
   appearance,
   signUpUrl,
+  signInUrl,
   fallbackRedirectUrl,
+  forceRedirectUrl,
+  routing,
+  path,
 }: {
   appearance?: Record<string, unknown>;
   signUpUrl?: string;
+  signInUrl?: string;
   fallbackRedirectUrl?: string;
+  forceRedirectUrl?: string;
+  routing?: string;
+  path?: string;
 }) {
   return (
     <div
       data-testid="clerk-sign-in"
       data-signup-url={signUpUrl}
+      data-signin-url={signInUrl}
       data-redirect={fallbackRedirectUrl}
+      data-force-redirect={forceRedirectUrl}
+      data-routing={routing}
+      data-path={path}
       data-has-appearance={appearance ? "true" : "false"}
     >
       Sign In Widget
@@ -101,5 +113,29 @@ describe("MosaicSignInLayout", () => {
     render(<MosaicSignInLayout clerkSignIn={mockFn} />);
     expect(screen.getByTestId("clerk-fn")).toBeTruthy();
     expect(mockFn).toHaveBeenCalledOnce();
+  });
+
+  // ── New props (gap #1) ───────────────────────────────────────────────────────
+
+  it("passes routing prop to Clerk SignIn", () => {
+    render(<MosaicSignInLayout clerkSignIn={MockSignIn} routing="path" />);
+    expect(screen.getByTestId("clerk-sign-in").getAttribute("data-routing")).toBe("path");
+  });
+
+  it("passes path prop to Clerk SignIn", () => {
+    render(<MosaicSignInLayout clerkSignIn={MockSignIn} routing="path" path="/sign-in" />);
+    expect(screen.getByTestId("clerk-sign-in").getAttribute("data-path")).toBe("/sign-in");
+  });
+
+  it("passes forceRedirectUrl to Clerk SignIn", () => {
+    render(<MosaicSignInLayout clerkSignIn={MockSignIn} forceRedirectUrl="/onboarding" />);
+    expect(screen.getByTestId("clerk-sign-in").getAttribute("data-force-redirect")).toBe(
+      "/onboarding",
+    );
+  });
+
+  it("does not forward routing attr when prop omitted", () => {
+    render(<MosaicSignInLayout clerkSignIn={MockSignIn} />);
+    expect(screen.getByTestId("clerk-sign-in").getAttribute("data-routing")).toBeNull();
   });
 });
