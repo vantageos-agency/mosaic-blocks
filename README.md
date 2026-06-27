@@ -8,6 +8,14 @@ React "composed" blocks for VantageOS products. Distinct from `@vantageos/mosaic
 
 ## Documentation
 
+### Consumer guides (start here)
+
+- [docs/components-catalog.md](docs/components-catalog.md) — exhaustive catalog of all 85 exported components and hooks, grouped by section, with import paths and Storybook links.
+- [docs/mobile-first.md](docs/mobile-first.md) — MosaicDeviceProvider, useDevice(), adaptive primitives (AdaptiveGrid / AdaptiveModal / AdaptiveNavigation), the responsive-pair pattern, DOs and DON'Ts.
+- [docs/auth.md](docs/auth.md) — Clerk integration, MosaicMultiTenantProvider, sign-in/up layouts, org switcher, RBAC, webhook sync to Convex, svix peer dependency note.
+
+### Architecture and contribution
+
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layers, @base-ui foundation, OKLCH theme system, distribution.
 - [docs/USAGE.md](docs/USAGE.md) — consume via npm + shadcn registry, theme setup, full component catalog.
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — TDD workflow, local + CI gates, conventions.
