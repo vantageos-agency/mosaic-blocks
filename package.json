@@ -1,8 +1,8 @@
 {
   "name": "@vantageos/mosaic-blocks",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha",
   "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Published alpha.",
-  "license": "MIT",
+  "license": "FSL-1.1-Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,7 +17,27 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "registry.json"
+    "registry.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "react-19",
+    "tailwindcss-v4",
+    "shadcn",
+    "base-ui",
+    "mosaic",
+    "vantageos",
+    "components",
+    "mobile-first",
+    "oklch",
+    "clerk",
+    "multi-tenant",
+    "react",
+    "ui",
+    "nextjs",
+    "blocks",
+    "design-system"
   ],
   "publishConfig": {
     "access": "public"
