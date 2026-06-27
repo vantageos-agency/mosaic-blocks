@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAppSidebar } from "./MosaicAppSidebar.js";

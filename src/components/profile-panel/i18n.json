@@ -1,0 +1,18 @@
+{
+  "en": {
+    "save": "Save Profile",
+    "saving": "Saving…",
+    "uploadAvatar": "Upload photo",
+    "security": "Security",
+    "changePassword": "Change Password",
+    "avatar": "Profile photo"
+  },
+  "fr": {
+    "save": "Enregistrer le profil",
+    "saving": "Enregistrement…",
+    "uploadAvatar": "Télécharger une photo",
+    "security": "Sécurité",
+    "changePassword": "Changer le mot de passe",
+    "avatar": "Photo de profil"
+  }
+}

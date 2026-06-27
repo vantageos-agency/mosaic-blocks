@@ -1,0 +1,46 @@
+{
+  "en": {
+    "title": "Library",
+    "search": "Search…",
+    "create": "New",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "empty": "No items found.",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Module name…",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe this module…",
+      "icon": "Icon",
+      "iconPlaceholder": "Emoji or short label…",
+      "tags": "Tags",
+      "tagPlaceholder": "Add a tag…",
+      "addTag": "Add",
+      "required": "required"
+    }
+  },
+  "fr": {
+    "title": "Bibliothèque",
+    "search": "Rechercher…",
+    "create": "Nouveau",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "empty": "Aucun élément trouvé.",
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "Nom du module…",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez ce module…",
+      "icon": "Icône",
+      "iconPlaceholder": "Emoji ou libellé court…",
+      "tags": "Étiquettes",
+      "tagPlaceholder": "Ajouter une étiquette…",
+      "addTag": "Ajouter",
+      "required": "obligatoire"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "en": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "pause": "Pause",
+    "start": "Start",
+    "edit": "Edit",
+    "delete": "Delete",
+    "agentActions": "Agent actions"
+  },
+  "fr": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "pause": "Mettre en pause",
+    "start": "Démarrer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "agentActions": "Actions de l'agent"
+  }
+}

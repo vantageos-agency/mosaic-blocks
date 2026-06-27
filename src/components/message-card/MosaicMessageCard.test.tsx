@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { MosaicMessageCard } from "./MosaicMessageCard.js";
 
@@ -43,9 +43,7 @@ describe("MosaicMessageCard", () => {
   });
 
   it("accepts custom className", () => {
-    const { container } = render(
-      <MosaicMessageCard message={message} className="my-message" />,
-    );
+    const { container } = render(<MosaicMessageCard message={message} className="my-message" />);
     expect(container.querySelector(".my-message")).toBeTruthy();
   });
 });

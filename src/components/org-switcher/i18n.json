@@ -1,0 +1,12 @@
+{
+  "en": {
+    "createOrganization": "Create organization",
+    "switchOrganization": "Switch organization",
+    "currentOrg": "Current organization"
+  },
+  "fr": {
+    "createOrganization": "Créer une organisation",
+    "switchOrganization": "Changer d'organisation",
+    "currentOrg": "Organisation actuelle"
+  }
+}

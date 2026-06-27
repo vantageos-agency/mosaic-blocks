@@ -13,6 +13,13 @@ const baseProps = {
   onAgentNameChange: vi.fn(),
   customInstructions: "",
   onCustomInstructionsChange: vi.fn(),
+  onSelectRole: vi.fn(),
+  onSelectPersona: vi.fn(),
+  onSelectFramework: vi.fn(),
+  onSelectModel: vi.fn(),
+  onRemoveRole: vi.fn(),
+  onRemovePersona: vi.fn(),
+  onRemoveFramework: vi.fn(),
   onSave: vi.fn(),
   canSave: true,
 };

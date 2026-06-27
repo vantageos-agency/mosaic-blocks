@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { MosaicQuickActionCard } from "./MosaicQuickActionCard.js";
@@ -40,9 +39,7 @@ describe("MosaicQuickActionCard", () => {
   });
 
   it("accepts custom className", () => {
-    const { container } = render(
-      <MosaicQuickActionCard actions={actions} className="my-class" />,
-    );
+    const { container } = render(<MosaicQuickActionCard actions={actions} className="my-class" />);
     expect(container.querySelector(".my-class")).toBeTruthy();
   });
 

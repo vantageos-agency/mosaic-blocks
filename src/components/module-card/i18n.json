@@ -1,0 +1,20 @@
+{
+  "en": {
+    "edit": "Edit module",
+    "remove": "Remove module",
+    "types": {
+      "role": "Role",
+      "persona": "Persona",
+      "framework": "Framework"
+    }
+  },
+  "fr": {
+    "edit": "Modifier le module",
+    "remove": "Retirer le module",
+    "types": {
+      "role": "Rôle",
+      "persona": "Persona",
+      "framework": "Cadre de pensée"
+    }
+  }
+}

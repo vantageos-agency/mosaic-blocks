@@ -1,0 +1,14 @@
+{
+  "en": {
+    "search": "Search…",
+    "searchAriaLabel": "Search",
+    "notifications": "Notifications",
+    "openSearch": "Open search"
+  },
+  "fr": {
+    "search": "Rechercher…",
+    "searchAriaLabel": "Rechercher",
+    "notifications": "Notifications",
+    "openSearch": "Ouvrir la recherche"
+  }
+}

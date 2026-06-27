@@ -1,0 +1,34 @@
+{
+  "en": {
+    "agentName": "Agent Name",
+    "agentNamePlaceholder": "Name your agent…",
+    "customInstructions": "Custom Instructions",
+    "customInstructionsPlaceholder": "Add specific instructions for this agent…",
+    "role": "Role",
+    "persona": "Persona",
+    "framework": "Framework",
+    "model": "AI Model",
+    "addRole": "Add Role",
+    "addPersona": "Add Persona",
+    "addFramework": "Add Framework",
+    "selectModel": "Select Model",
+    "save": "Save Agent",
+    "saving": "Saving…"
+  },
+  "fr": {
+    "agentName": "Nom de l'agent",
+    "agentNamePlaceholder": "Nommez votre agent…",
+    "customInstructions": "Instructions personnalisées",
+    "customInstructionsPlaceholder": "Ajoutez des instructions spécifiques pour cet agent…",
+    "role": "Rôle",
+    "persona": "Persona",
+    "framework": "Cadre de pensée",
+    "model": "Modèle IA",
+    "addRole": "Ajouter un rôle",
+    "addPersona": "Ajouter un persona",
+    "addFramework": "Ajouter un cadre",
+    "selectModel": "Sélectionner un modèle",
+    "save": "Enregistrer l'agent",
+    "saving": "Enregistrement…"
+  }
+}

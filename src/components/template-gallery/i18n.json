@@ -1,0 +1,44 @@
+{
+  "en": {
+    "title": "Templates",
+    "search": "Search templates…",
+    "select": "Use Template",
+    "preview": "Preview",
+    "duplicate": "Duplicate",
+    "empty": "No templates found.",
+    "quickStart": {
+      "title": "Quick Start",
+      "scenarios": "Scenarios",
+      "presets": "Agent Presets",
+      "scratch": "Start from scratch"
+    },
+    "agentTeam": {
+      "label": "Agent team"
+    },
+    "card": {
+      "agents": "agents",
+      "uses": "uses"
+    }
+  },
+  "fr": {
+    "title": "Modèles",
+    "search": "Rechercher des modèles…",
+    "select": "Utiliser ce modèle",
+    "preview": "Aperçu",
+    "duplicate": "Dupliquer",
+    "empty": "Aucun modèle trouvé.",
+    "quickStart": {
+      "title": "Démarrage rapide",
+      "scenarios": "Scénarios",
+      "presets": "Préréglages d'agents",
+      "scratch": "Commencer de zéro"
+    },
+    "agentTeam": {
+      "label": "Équipe d'agents"
+    },
+    "card": {
+      "agents": "agents",
+      "uses": "utilisations"
+    }
+  }
+}

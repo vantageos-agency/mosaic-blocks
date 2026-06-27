@@ -1,0 +1,22 @@
+{
+  "en": {
+    "search": "Search…",
+    "all": "All",
+    "select": "Select",
+    "cancel": "Cancel",
+    "previous": "Previous",
+    "next": "Next",
+    "noResults": "No results found.",
+    "preview": "Preview"
+  },
+  "fr": {
+    "search": "Rechercher…",
+    "all": "Tous",
+    "select": "Sélectionner",
+    "cancel": "Annuler",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "noResults": "Aucun résultat trouvé.",
+    "preview": "Aperçu"
+  }
+}

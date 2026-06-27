@@ -1,0 +1,24 @@
+{
+  "en": {
+    "heading": "Recent Activity",
+    "viewAll": "View all",
+    "status": {
+      "active": "Active",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "messages": "messages",
+    "empty": "No recent activity"
+  },
+  "fr": {
+    "heading": "Activité récente",
+    "viewAll": "Tout afficher",
+    "status": {
+      "active": "Actif",
+      "completed": "Terminé",
+      "archived": "Archivé"
+    },
+    "messages": "messages",
+    "empty": "Aucune activité récente"
+  }
+}

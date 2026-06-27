@@ -6,7 +6,7 @@ import { MosaicDeleteConfirmationDialog } from "./MosaicDeleteConfirmationDialog
 
 describe("MosaicDeleteConfirmationDialog", () => {
   it("renders nothing when closed", () => {
-    const { container } = render(
+    render(
       <MosaicDeleteConfirmationDialog
         open={false}
         onOpenChange={() => {}}

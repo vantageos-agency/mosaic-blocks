@@ -1,0 +1,64 @@
+{
+  "en": {
+    "tabs": {
+      "overview": "Overview",
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "roles": {
+      "admin": "Admin",
+      "member": "Member",
+      "owner": "Owner"
+    },
+    "invite": "Invite",
+    "inviteTitle": "Invite Member",
+    "createOrg": "Create Organization",
+    "createOrgTitle": "Create Organization",
+    "orgCount": "{n} orgs",
+    "remove": "Remove",
+    "changeRole": "Change role",
+    "email": "Email address",
+    "role": "Role",
+    "name": "Organization name",
+    "slug": "Slug",
+    "description": "Description",
+    "cancel": "Cancel",
+    "create": "Create",
+    "send": "Send invitation",
+    "memberList": {
+      "searchPlaceholder": "Search members…",
+      "empty": "No members found."
+    }
+  },
+  "fr": {
+    "tabs": {
+      "overview": "Aperçu",
+      "members": "Membres",
+      "settings": "Paramètres"
+    },
+    "roles": {
+      "admin": "Admin",
+      "member": "Membre",
+      "owner": "Propriétaire"
+    },
+    "invite": "Inviter",
+    "inviteTitle": "Inviter un membre",
+    "createOrg": "Créer une organisation",
+    "createOrgTitle": "Créer une organisation",
+    "orgCount": "{n} organisations",
+    "remove": "Retirer",
+    "changeRole": "Changer le rôle",
+    "email": "Adresse e-mail",
+    "role": "Rôle",
+    "name": "Nom de l'organisation",
+    "slug": "Identifiant URL",
+    "description": "Description",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "send": "Envoyer l'invitation",
+    "memberList": {
+      "searchPlaceholder": "Rechercher des membres…",
+      "empty": "Aucun membre trouvé."
+    }
+  }
+}
