@@ -1,0 +1,34 @@
+{
+  "en": {
+    "reply": "Reply",
+    "bookmark": "Bookmark",
+    "copy": "Copy",
+    "like": "Like ({count})",
+    "dislike": "Dislike ({count})",
+    "justNow": "just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago",
+    "senderTypes": {
+      "user": "User",
+      "ai": "AI",
+      "system": "System"
+    }
+  },
+  "fr": {
+    "reply": "Répondre",
+    "bookmark": "Sauvegarder",
+    "copy": "Copier",
+    "like": "J'aime ({count})",
+    "dislike": "Je n'aime pas ({count})",
+    "justNow": "à l'instant",
+    "minutesAgo": "il y a {n} min",
+    "hoursAgo": "il y a {n} h",
+    "daysAgo": "il y a {n} j",
+    "senderTypes": {
+      "user": "Utilisateur",
+      "ai": "IA",
+      "system": "Système"
+    }
+  }
+}

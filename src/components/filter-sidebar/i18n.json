@@ -1,0 +1,16 @@
+{
+  "en": {
+    "expandFilters": "Expand filters",
+    "collapseFilters": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "categories": "Categories",
+    "filters": "Filters"
+  },
+  "fr": {
+    "expandFilters": "Développer les filtres",
+    "collapseFilters": "Réduire le panneau",
+    "expandSidebar": "Développer le panneau",
+    "categories": "Catégories",
+    "filters": "Filtres"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "en": {
+    "title": "Agents",
+    "search": "Search agents…",
+    "create": "New Agent",
+    "empty": "No agents found.",
+    "all": "All",
+    "favorites": "Favorites"
+  },
+  "fr": {
+    "title": "Agents",
+    "search": "Rechercher des agents…",
+    "create": "Nouvel agent",
+    "empty": "Aucun agent trouvé.",
+    "all": "Tous",
+    "favorites": "Favoris"
+  }
+}

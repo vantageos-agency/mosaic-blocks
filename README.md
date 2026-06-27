@@ -1,243 +1,529 @@
 # @vantageos/mosaic-blocks
 
+[![npm version](https://img.shields.io/npm/v/@vantageos/mosaic-blocks)](https://www.npmjs.com/package/@vantageos/mosaic-blocks)
 [![CI](https://github.com/vantageos-agency/mosaic-blocks/actions/workflows/ci.yml/badge.svg)](https://github.com/vantageos-agency/mosaic-blocks/actions/workflows/ci.yml)
+[![License: FSL-1.1-Apache-2.0](https://img.shields.io/badge/license-FSL--1.1--Apache--2.0-blue)](LICENSE)
 
-**Alpha — not yet published. PRs gated by CI — all 7 gates must be green before merge.**
+**Production-ready composed UI blocks for VantageOS products.** Built on React 19 + Tailwind v4 + `@base-ui/react`. Ships mobile-first, multi-tenant auth, OKLCH theming, and full bilingual (FR+EN) out of the box.
 
-React "composed" blocks for VantageOS products. Distinct from `@vantageos/mosaic` (cross-runtime atoms): this library is React-only and targets full composed UI blocks.
+---
 
-## Documentation
+## 1. Hero & Positioning
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layers, @base-ui foundation, OKLCH theme system, distribution.
-- [docs/USAGE.md](docs/USAGE.md) — consume via npm + shadcn registry, theme setup, full component catalog.
-- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — TDD workflow, local + CI gates, conventions.
-- [docs/adr/0001-base-ui-vs-radix.md](docs/adr/0001-base-ui-vs-radix.md) — ADR: @base-ui/react vs Radix.
-- [CHANGELOG.md](CHANGELOG.md) — release notes.
+`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 85+ opinionated, fully-typed UI components that integrate natively with:
 
-## Install
+- **Clerk** — auth sign-in/up flows, org switcher, RBAC, webhook sync
+- **Convex** — real-time data binding ready
+- **Tailwind v4** — OKLCH semantic color tokens, dark mode, mobile-first breakpoints
+- **Next.js 15+** — App Router, Server Components compatible
+
+This is not a headless utility library. Components are composed, styled, and production-tested. Import and use — no assembly required.
+
+> Absorbed from **anydebate** (production SaaS) — these blocks ran in a live multi-tenant debate platform before extraction. See [Section 17 — Credits](#17-credits).
+
+---
+
+## 2. Why This Package (vs shadcn raw / MUI / headless)
+
+| | mosaic-blocks | shadcn raw | MUI | headless-ui |
+|---|---|---|---|---|
+| Composed blocks (Dashboard, OrgPanel, AgentComposer) | Yes | No | Partial | No |
+| OKLCH dark mode out of the box | Yes | Manual | No | No |
+| Clerk multi-tenant auth wired in | Yes | DIY | DIY | DIY |
+| Mobile-first adaptive system (DeviceProvider) | Yes | No | No | No |
+| FR+EN bilingual locale | Yes | No | No | No |
+| React 19 / Tailwind v4 native | Yes | Partial | No | Partial |
+| Zero config (CSS tokens auto-injected) | Yes | No | No | No |
+
+shadcn/ui is the underlying primitive layer — mosaic-blocks sits on top and composes it with auth, layout, and multi-tenant concerns so you do not have to.
+
+---
+
+## 3. Install
 
 ```bash
-pnpm add @vantageos/mosaic-blocks   # alpha — not yet published; see docs/USAGE.md
-# peer deps: react@19, react-dom@19, tailwindcss@4
+pnpm add @vantageos/mosaic-blocks
 ```
 
-Theme tokens (OKLCH semantic CSS variables) are consumer-provided at the app root — see [docs/USAGE.md](docs/USAGE.md#3-theme-setup-required).
+### Peer dependencies (required)
 
-## Consuming with Tailwind (REQUIRED)
+| Package | Min version | Required when |
+|---|---|---|
+| `react` | `^19.0.0` | Always |
+| `react-dom` | `^19.0.0` | Always |
+| `tailwindcss` | `^4.3.1` | Always |
+| `@base-ui/react` | `^1.5.0` | Auto-installed (direct dep) |
+| `@clerk/nextjs` | `^7` | Using any auth component |
+| `@vantageos/cloud-identity` | `^0.2` | `MosaicMultiTenantProvider` |
+| `svix` | `^1.0.0` | `MosaicClerkWebhookHandler` only |
 
-> **Why this matters:** mosaic-blocks ships as compiled JS that references Tailwind utility classes (`bg-background`, `border-border`, `ring-ring/20`, etc.). If your Tailwind build does not scan the lib's published `dist/`, those classes get purged and components render completely unstyled — even though your app compiles without errors.
+```bash
+# Minimal — no auth
+pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss
 
-You must tell your Tailwind build to scan the lib's dist. The full required setup in one place:
+# Full — with Clerk auth
+pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss @clerk/nextjs @vantageos/cloud-identity
+```
 
-### Tailwind v4 (CSS-first — `@import "tailwindcss"`)
+---
 
-In your `app/globals.css` (or equivalent), add an `@source` directive **after** all `@import` rules (CSS spec: `@import` must precede other at-rules):
+## Optional peer dependencies
+
+Some components in `@vantageos/mosaic-blocks` depend on packages that are NOT bundled into the library. Install them only when using the relevant component. The library never bundles these packages and throws a clear error at runtime if the required optional peer is absent.
+
+| Package | Required for | Install |
+|---|---|---|
+| `svix` | `MosaicClerkWebhookHandler` (Clerk webhook signature verification) | `npm install svix` |
+
+### svix — webhook signature verification
+
+`MosaicClerkWebhookHandler` dynamically imports `svix` at runtime to verify Clerk webhook signatures. If `svix` is not installed in your app, the handler throws an explicit `Error` with installation instructions — it never silently fails.
+
+```bash
+npm install svix
+# or
+pnpm add svix
+```
+
+If you do not use `MosaicClerkWebhookHandler`, you do not need to install `svix`.
+
+---
+
+## 4. Quick Start (30 seconds)
+
+```tsx
+// app/layout.tsx
+import "@vantageos/mosaic-blocks/styles.css";
+import { MosaicDeviceProvider } from "@vantageos/mosaic-blocks";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <MosaicDeviceProvider>{children}</MosaicDeviceProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx
+// app/dashboard/page.tsx
+import { MosaicDashboardLayout } from "@vantageos/mosaic-blocks";
+import Link from "next/link";
+
+export default function DashboardPage() {
+  return (
+    <MosaicDashboardLayout
+      title="My App"
+      breadcrumbs={[{ label: "Dashboard" }]}
+      sidebarProps={{
+        navItems: [{ id: "home", label: "Home", href: "/", icon: null }],
+        quickActions: [],
+      }}
+      renderLink={(href, children) => <Link href={href}>{children}</Link>}
+    >
+      <p>Hello from mosaic-blocks.</p>
+    </MosaicDashboardLayout>
+  );
+}
+```
+
+---
+
+## 5. Configuration
+
+### Tailwind v4 — `@source` directive (REQUIRED)
+
+mosaic-blocks ships compiled JS that references Tailwind utility classes. Your Tailwind build must scan the package's `dist/` or classes will be purged:
 
 ```css
 /* app/globals.css */
 @import "tailwindcss";
 
-/* REQUIRED: OKLCH semantic token variables consumed by all mosaic-blocks components */
-@import "@vantageos/mosaic-blocks/styles.css";
+/* Scan mosaic-blocks dist for utility classes */
+@source "../node_modules/@vantageos/mosaic-blocks/dist";
 
-/* REQUIRED: tell Tailwind v4 to scan the lib's dist for utility classes.     */
-/* Place @source after all @import rules (CSS spec: @import must come first).  */
-/* Path is relative to THIS CSS file — adjust the leading ../../ depth         */
-/* so it points at your project's node_modules directory.                      */
-@source "../../node_modules/@vantageos/mosaic-blocks/dist";
+/* Import OKLCH semantic token variables */
+@import "@vantageos/mosaic-blocks/styles.css";
 ```
 
-> **Resolving the relative path:** count how many directories deep your CSS file is from the project root. If `globals.css` is at `src/app/globals.css` → use `../../node_modules/...`. If it is at `app/globals.css` (one level) → use `../node_modules/...`.
-
-### Tailwind v3 (`tailwind.config.js` / `tailwind.config.ts`)
-
-Add the glob to the `content` array:
+### Tailwind v3 — `content` path
 
 ```js
 // tailwind.config.js
 module.exports = {
   content: [
-    "./src/**/*.{ts,tsx}",
-    // REQUIRED: scan mosaic-blocks compiled dist so utility classes are not purged
-    "./node_modules/@vantageos/mosaic-blocks/dist/**/*.{js,mjs,cjs}",
+    "./src/**/*.{tsx,ts}",
+    "./node_modules/@vantageos/mosaic-blocks/dist/**/*.{js,cjs}",
   ],
-  // ... rest of config
 };
 ```
 
-Then import the theme tokens in your CSS:
+### Provider wrap
+
+Wrap your application root with `MosaicDeviceProvider` for the full adaptive system:
+
+```tsx
+import { MosaicDeviceProvider } from "@vantageos/mosaic-blocks";
+
+// Wrap once at app root — all adaptive components require this ancestor
+<MosaicDeviceProvider>{children}</MosaicDeviceProvider>
+```
+
+For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 10 — Theming](#10-theming).
+
+---
+
+## 6. Component Catalogue Summary
+
+85 exported components and hooks across 8 sections. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+
+| Section | Top components | Count |
+|---|---|---|
+| Layout | `MosaicDashboardLayout`, `MosaicSidebar`, `MosaicHeader` | 8 |
+| Device / Adaptive | `MosaicDeviceProvider`, `MosaicAdaptiveGrid`, `MosaicAdaptiveModal`, `MosaicAdaptiveNavigation` | 7 |
+| Auth / Multi-tenant | `MosaicMultiTenantProvider`, `MosaicSignInCard`, `MosaicOrgPanel`, `MosaicClerkWebhookHandler` | 12 |
+| Agents | `MosaicAgentComposer`, `MosaicAgentCard`, `MosaicAgentGrid` | 9 |
+| Debate | `MosaicDebateRoom`, `MosaicDebateTimer`, `MosaicDebateParticipant` | 11 |
+| Data display | `MosaicDataTable`, `MosaicKpiCard`, `MosaicActivityFeed` | 14 |
+| Forms | `MosaicForm`, `MosaicRichInput`, `MosaicSelect`, `MosaicTagInput` | 18 |
+| Primitives | `MosaicButton`, `MosaicBadge`, `MosaicAvatar`, `MosaicToast` | 6 |
+
+All exports: `import { ComponentName } from "@vantageos/mosaic-blocks"`
+
+---
+
+## 7. Auth Integration
+
+mosaic-blocks includes production-ready Clerk auth components with multi-tenant support. Full guide: [docs/auth.md](docs/auth.md).
+
+```tsx
+// app/layout.tsx — 5-line Clerk + multi-tenant setup
+import { ClerkProvider } from "@clerk/nextjs";
+import { MosaicMultiTenantProvider } from "@vantageos/mosaic-blocks";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkProvider>
+      <MosaicMultiTenantProvider workspaceId={process.env.WORKSPACE_ID}>
+        {children}
+      </MosaicMultiTenantProvider>
+    </ClerkProvider>
+  );
+}
+```
+
+Key auth components:
+
+- `MosaicSignInCard` / `MosaicSignUpCard` — styled Clerk auth flows
+- `MosaicOrgSwitcher` — organization switcher with avatar, plan badge
+- `MosaicOrgPanel` — full org management (members, roles, invitations)
+- `MosaicClerkWebhookHandler` — Next.js route handler for Clerk webhook sync (requires `svix`)
+- `useEffectiveWorkspaceId` — hook to read active workspace from context
+
+RBAC is handled through Clerk's `has()` helper — see [docs/auth.md](docs/auth.md) for role guard patterns.
+
+---
+
+## 8. Mobile-First
+
+Every component is built mobile-first. Full guide: [docs/mobile-first.md](docs/mobile-first.md).
+
+### DeviceProvider + adaptive primitives
+
+```tsx
+import {
+  MosaicDeviceProvider,
+  MosaicAdaptiveGrid,
+  useDevice,
+} from "@vantageos/mosaic-blocks";
+
+function MyPage() {
+  const { isMobile } = useDevice();
+
+  return (
+    <MosaicDeviceProvider>
+      <MosaicAdaptiveGrid
+        mobileColumns={1}
+        tabletColumns={2}
+        desktopColumns={3}
+      >
+        {items.map((item) => <Card key={item.id} {...item} />)}
+      </MosaicAdaptiveGrid>
+    </MosaicDeviceProvider>
+  );
+}
+```
+
+Breakpoints follow Tailwind v4 defaults: `sm` 640px / `md` 768px / `lg` 1024px / `xl` 1280px.
+
+Adaptive components: `MosaicAdaptiveGrid`, `MosaicAdaptiveModal`, `MosaicAdaptiveNavigation`, `MosaicAgentComposer`. All require `MosaicDeviceProvider` in their ancestor tree.
+
+---
+
+## 9. i18n
+
+mosaic-blocks ships bilingual (FR+EN) out of the box via `@vantageos/mosaic-i18n`.
+
+```bash
+pnpm add @vantageos/mosaic-i18n react-i18next i18next
+```
+
+```tsx
+import { initMosaicI18n } from "@vantageos/mosaic-i18n";
+
+// Initialize once at app root
+initMosaicI18n({ defaultLanguage: "fr" }); // or "en"
+```
+
+Override individual strings:
+
+```tsx
+import { mergeMosaicTranslations } from "@vantageos/mosaic-i18n";
+
+mergeMosaicTranslations("fr", {
+  "mosaic.button.confirm": "Valider",
+  "mosaic.debate.start": "Commencer le débat",
+});
+```
+
+Locale files (JSON): `@vantageos/mosaic-i18n/locales/en.json` and `@vantageos/mosaic-i18n/locales/fr.json`.
+
+---
+
+## 10. Theming
+
+mosaic-blocks uses OKLCH semantic CSS variables provided by `@vantageos/mosaic-tokens`.
+
+```bash
+pnpm add @vantageos/mosaic-tokens
+```
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-/* REQUIRED: OKLCH semantic tokens used by all mosaic-blocks components */
+/* app/globals.css */
+@import "@vantageos/mosaic-tokens/css"; /* declares --mosaic-color-*, --mosaic-space-*, etc. */
+@import "@vantageos/mosaic-blocks/styles.css"; /* maps tokens to Tailwind utility classes */
+```
+
+### Dark mode
+
+```css
+/* Automatic via Tailwind v4 dark: prefix — tokens handle the rest */
+@import "tailwindcss";
+@import "@vantageos/mosaic-tokens/css";
 @import "@vantageos/mosaic-blocks/styles.css";
 ```
 
-### Verify it worked
+Components use semantic tokens (`--mosaic-color-neutral-50`, `--mosaic-color-danger-500`, etc.) — swap the token set at `:root` to rebrand entirely. 58 tokens across colors, spacing, typography, shadows, radii, and motion.
 
-After wiring, run a real build (`next build`) and grep the emitted CSS for a **library-only** class — `data-[popup-open]:ring-ring`, which only mosaic-blocks' compiled `@base-ui` components emit, so a match proves the dist glob is wired:
+---
+
+## 11. TypeScript
+
+mosaic-blocks is written in strict TypeScript. All props are fully typed with no `any`.
 
 ```bash
-# scope to *.css — match the emitted CSS rule, not the JS bundle
-find .next -name '*.css' | xargs grep -ho 'popup-open' 2>/dev/null | head
-# other lib-only fragments you can probe instead: checked   highlighted
+# tsconfig.json requirement
+{
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "bundler"   // or "node16"
+  }
+}
 ```
 
-> **Tailwind escapes `[`, `]` and `:` in emitted CSS selectors** (the class `data-[popup-open]:ring-ring` compiles to `.data-\[popup-open\]\:ring-ring`), so grep the un-escaped fragment `popup-open` — grepping the literal class string `data-[popup-open]:ring-ring` returns nothing even when wiring is correct.
+Named exports only — tree-shakeable. Types are co-located with each component in `dist/index.d.ts`.
 
-> **Scope the grep to `*.css` files** — the JS bundle contains the source class string `data-[popup-open]:ring-ring` literally, so grepping the whole build dir matches the bundled component even when Tailwind purged the CSS rule (component bundled ≠ CSS generated). Only a match inside a `.css` file proves the rule was generated.
+---
 
-> **Don't probe with a plain semantic class** (`bg-card`, `ring-ring`, `text-muted-foreground`) — consumers usually use those in their own markup, so they generate regardless and give a false pass. A `data-[…]:` variant fragment like `popup-open` only appears in mosaic-blocks' compiled components.
+## 12. Examples
 
-If the grep returns nothing, the `@source` path or `content` glob is not matching the dist — fix the path and rebuild.
-
-> Tracked as fix-pattern **m977rhgv** — 2 consumers (vantageos-crm #105, vantage-peers-dashboard #12) missed this before it was documented.
-
-## Stack
-
-- Next.js 16 + React 19
-- Tailwind v4 (OKLCH design tokens)
-- **@base-ui/react** (headless interactive atoms — see [ADR-0001](docs/adr/0001-base-ui-vs-radix.md))
-- class-variance-authority (variant management)
-- shadcn registry protocol
-
-## Interactive Atoms — @base-ui/react (ADR-0001)
-
-All interactive Batch C atoms use `@base-ui/react` as the headless primitive layer.
-Decision rationale, per-primitive availability table, and risk register: [`docs/adr/0001-base-ui-vs-radix.md`](docs/adr/0001-base-ui-vs-radix.md).
-
-**Why @base-ui/react, not Radix?**
-- Source (`heyfabrika/styleui`) is 100% @base-ui — near-zero porting effort.
-- React 19 native; `data-slot` API aligns with our Tailwind v4 selectors.
-- shadcn's stated future reference; forward-compatible with registry format.
-- No existing Radix investment to preserve.
-
-## Components
-
-### MosaicButton
+### Basic — Dashboard layout with sidebar
 
 ```tsx
-import { MosaicButton } from "@vantageos/mosaic-blocks";
+import {
+  MosaicDashboardLayout,
+  MosaicDeviceProvider,
+  MosaicKpiCard,
+} from "@vantageos/mosaic-blocks";
+import Link from "next/link";
 
-// Variants: default | secondary | ghost | destructive | outline | link
-// Sizes:    default | sm | lg | icon | icon-sm | icon-lg
-
-<MosaicButton variant="secondary" size="lg">Save changes</MosaicButton>
-<MosaicButton variant="destructive" disabled>Delete account</MosaicButton>
-<MosaicButton variant="ghost" size="icon" aria-label="Add item">+</MosaicButton>
+export default function DashboardPage() {
+  return (
+    <MosaicDeviceProvider>
+      <MosaicDashboardLayout
+        title="Analytics"
+        breadcrumbs={[{ label: "Dashboard" }]}
+        sidebarProps={{
+          navItems: [
+            { id: "overview", label: "Overview", href: "/", icon: null },
+            { id: "agents", label: "Agents", href: "/agents", icon: null },
+          ],
+          quickActions: [],
+        }}
+        renderLink={(href, children) => <Link href={href}>{children}</Link>}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <MosaicKpiCard title="Active Agents" value={24} trend="+12%" />
+          <MosaicKpiCard title="Debates Today" value={8} trend="+3" />
+        </div>
+      </MosaicDashboardLayout>
+    </MosaicDeviceProvider>
+  );
+}
 ```
 
-Built on `@base-ui/react/button`. Headless, accessible (role=button, keyboard nav, focus management). `data-slot="button"` for Tailwind `in-data-[slot=...]` selectors. Forwards `ref` to the underlying `<button>` element.
+### Mobile-first — Adaptive grid with device detection
 
-### Catalog
+```tsx
+import {
+  MosaicDeviceProvider,
+  MosaicAdaptiveGrid,
+  useDevice,
+} from "@vantageos/mosaic-blocks";
 
-Full prop APIs in [docs/USAGE.md](docs/USAGE.md#component-catalog). Ship status reflects merge state into `main`:
+function AgentsList({ agents }: { agents: Agent[] }) {
+  const { isMobile, isTablet } = useDevice();
 
-| Category | Components | Status |
-|----------|-----------|--------|
-| **Atoms** (Batch C) | Button · Card · Badge · Avatar · Input · InputGroup · Field · Switch · Select · Combobox · DropdownMenu | Button shipped; rest in review (PR #6) |
-| **Landing blocks** (Batch A) | Navbar · HeroSplit · FeatureCenteredMedia · StatsGrid · PricingCard · LogosGrid · TestimonialsGrid · FooterSimple | in review (PR #2) |
-| **Utility blocks** (Batch B) | Counter · ThemeToggle · BlurredOrb · AnimatedList · IntegrationsBadge · FallingPattern · `useMediaQuery` | in review (PR #3) |
+  return (
+    <MosaicAdaptiveGrid
+      mobileColumns={1}
+      tabletColumns={2}
+      desktopColumns={3}
+      gap={isMobile ? "sm" : "md"}
+    >
+      {agents.map((agent) => (
+        <MosaicAgentCard
+          key={agent.id}
+          agent={agent}
+          compact={isMobile}
+        />
+      ))}
+    </MosaicAdaptiveGrid>
+  );
+}
 
-All components are `Mosaic`-prefixed, props-driven, OKLCH theme-reactive, and branding-swappable.
-
-## CI Gates
-
-Every PR runs 7 hard-failing gates (no `continue-on-error`). All must pass before merge:
-
-| # | Gate | Tool |
-|---|------|------|
-| 1 | Lint | Biome — 0 warnings |
-| 2 | Typecheck | tsc --noEmit — 0 errors |
-| 3 | Tests | Vitest — all green |
-| 4 | Parse guard | TS compiler API — syntax errors exit 1 |
-| 5 | Build | tsup ESM+CJS+DTS |
-| 6 | Sandbox build | Next.js build (Rule #19) |
-| 7 | React-doctor | react-doctor@0.2.11 --fail-on error (Dimension 12) |
-
-Run locally:
-
-```
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm parse-guard
-pnpm build
-pnpm sandbox:build
-```
-
-### Batch A — Landing section blocks
-
-T3-A Batch A shipped. 8 landing-section blocks available — see CHANGELOG for the full list.
-
-| Block | Props summary |
-|-------|--------------|
-| `MosaicNavbar` | `logo`, `links[]`, `cta?` — scroll-aware, mobile menu |
-| `MosaicHeroSplit` | `title`, `subtitle`, `eyebrow?`, `cta?`, `media?` |
-| `MosaicFeatureCenteredMedia` | `title`, `body`, `features[]?`, `media?` |
-| `MosaicStatsGrid` | `stats[] {label, value}`, `heading?` |
-| `MosaicPricingCard` | `tier`, `price`, `features[]`, `cta`, `highlighted?` |
-| `MosaicLogosGrid` | `logos[] {name, src}`, `heading?` |
-| `MosaicTestimonialsGrid` | `testimonials[] {id, quote, author, role}`, `heading?` |
-| `MosaicFooterSimple` | `columns[]`, `legal`, `logo?`, `social[]?` |
-
-All blocks: zero hardcoded branding — all content via props. OKLCH color tokens.
-
-## Blocks
-
-### T3-B Batch B — Utility Blocks (2026-06-15)
-
-| Block | Description | Extra deps |
-|-------|-------------|------------|
-| `MosaicCounter` | Animated metric count-up (rAF, easeOutExpo) | none |
-| `MosaicThemeToggle` | Light/dark/system toggle via `data-theme` | none |
-| `MosaicBlurredOrb` | Decorative blurred gradient orb (CSS filter) | none |
-| `MosaicAnimatedList` | Staggered reveal list (CSS keyframe stagger) | none |
-| `MosaicIntegrationsBadge` | Integration pill badge with logo slot | none |
-| `MosaicFallingPattern` | Animated dot-grid background (SVG + CSS) | none |
-
-**Hook:** `useMediaQuery(query): boolean` — SSR-safe, subscribes in effect only.
-
-**Bundle:** 0 new runtime dependencies added. `motion` evaluated and rejected — all animations achievable with native rAF + CSS keyframes.
-
-## Status
-
-T3-B Batch B complete. T1 bootstrap (build infra) was the foundation. Consumed by VP Cloud (Sigma) and vCRM Cloud (Theta).
-
-## Dependency version catalog (`versions.ts`)
-
-`src/versions.ts` is the single source of truth for every pinned dependency version used across the lib package (`package.json`) and the Next.js sandbox (`sandbox/package.json`).
-
-Pattern adapted from [awslabs/nx-plugin-for-aws](https://github.com/awslabs/nx-plugin-for-aws) (Apache 2.0).
-
-**Why** — DRY: one edit propagates to both package.json files, and to any future scaffolds (CLI templates, Storybook host, etc.) that consume the catalog. No version drift between lib and sandbox.
-
-**How to update a dep version**
-
-```
-# 1. Edit the version string in src/versions.ts
-# 2. Propagate to all package.json files
-pnpm sync-versions
-# 3. Reinstall if needed, then commit both files
-pnpm install
-git add src/versions.ts package.json sandbox/package.json
+export default function AgentsPage({ agents }: { agents: Agent[] }) {
+  return (
+    <MosaicDeviceProvider>
+      <AgentsList agents={agents} />
+    </MosaicDeviceProvider>
+  );
+}
 ```
 
-**Drift guard** — `src/versions.test.ts` (vitest) asserts that every catalog-managed key in both `package.json` files matches `versions.ts`. The test fails on drift, which means CI catches any manual edit to a `package.json` that wasn't reflected in the catalog (or vice versa).
+### Auth — Multi-tenant sign-in with Clerk
 
-## Gates (local commands)
+```tsx
+import { ClerkProvider } from "@clerk/nextjs";
+import {
+  MosaicMultiTenantProvider,
+  MosaicSignInCard,
+} from "@vantageos/mosaic-blocks";
 
-```
-pnpm lint           # biome check (0 errors)
-pnpm typecheck      # tsc --noEmit (0 errors)
-pnpm test           # vitest run (all pass)
-pnpm parse-guard    # TS compiler API syntax check (scripts/parse-guard.mjs)
-pnpm build          # tsup → dist/ (ESM + CJS + DTS)
-pnpm sandbox:build  # next build inside sandbox/ (MosaicButton rendered)
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkProvider>
+      <MosaicMultiTenantProvider>
+        {children}
+      </MosaicMultiTenantProvider>
+    </ClerkProvider>
+  );
+}
+
+// app/sign-in/page.tsx
+export default function SignInPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <MosaicSignInCard
+        redirectUrl="/dashboard"
+        locale="fr"
+        showSocialLogin
+      />
+    </div>
+  );
+}
 ```
 
 ---
 
-Orchestrator: Gamma — VantageOS Team | 2026-06-15
+## 13. Browser Support
+
+| Browser | Min version |
+|---|---|
+| Chrome / Edge | 111+ (OKLCH support) |
+| Firefox | 113+ |
+| Safari | 15.4+ |
+| Mobile Safari | iOS 15.4+ |
+| Mobile Chrome | Android 111+ |
+
+OKLCH color space requires modern browsers. IE is not supported. For older browser support, provide fallback CSS variables.
+
+---
+
+## 14. Versioning & Changelog
+
+This package follows [Semantic Versioning](https://semver.org/). While in alpha (`0.x.y`), minor versions may contain breaking changes.
+
+| Version | Status | Notes |
+|---|---|---|
+| `0.2.0-alpha` | Current | anydebate absorb complete — 85 components, Clerk auth, mobile-first, Storybook 10, 69 stories |
+| `0.1.0-alpha.1` | Previous | Initial alpha publish |
+
+Full release history: [CHANGELOG.md](CHANGELOG.md)
+
+Pre-stable: we will follow `0.x.y-alpha` until API surface stabilizes. Subscribe to GitHub releases for breaking change notices.
+
+---
+
+## 15. Contributing
+
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full workflow.
+
+Quick summary:
+
+1. Fork and clone the repo
+2. `pnpm install` at repo root
+3. `pnpm build` — compiles the package
+4. `pnpm test` — runs vitest suite (396 tests)
+5. `pnpm lint` — biome check
+6. `pnpm storybook` — component sandbox at localhost:6006
+7. Open a PR — CI gate has 7 required checks (typecheck, lint, test, build, size, a11y, storybook)
+
+All PRs require a passing CI and a review. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design and [docs/adr/](docs/adr/) for architecture decisions.
+
+---
+
+## 16. License
+
+`@vantageos/mosaic-blocks` is licensed under the **Functional Source License, Version 1.1, Apache 2.0 Future License** (`FSL-1.1-Apache-2.0`).
+
+- Free for non-production use, research, and evaluation
+- Commercial use requires a valid VantageOS license
+- Converts to Apache 2.0 after 2 years from each release
+
+Full license: [LICENSE](LICENSE)
+
+---
+
+## 17. Credits
+
+**Origin**: these components were extracted from **anydebate**, a production multi-tenant debate SaaS. The absorb mission (gamma/anydebate-absorb) ported the shell, auth, mobile-first system, and all wave-1 + wave-2 components into this library under FSL.
+
+**Upstream dependencies**:
+
+- [`@base-ui/react`](https://base-ui.com/) — headless primitives foundation (ADR: [docs/adr/0001-base-ui-vs-radix.md](docs/adr/0001-base-ui-vs-radix.md))
+- [`@clerk/nextjs`](https://clerk.com/) — authentication and organization management
+- [Convex](https://convex.dev/) — real-time backend (binding patterns in [docs/auth.md](docs/auth.md))
+- [Tailwind CSS](https://tailwindcss.com/) — utility-first CSS v4
+- [VantageOS](https://vantageos.com/) — parent design system (mosaic-tokens, mosaic-i18n)
+
+**Design system packages**:
+
+- [`@vantageos/mosaic-tokens`](https://www.npmjs.com/package/@vantageos/mosaic-tokens) — OKLCH design tokens (colors, spacing, typography, motion)
+- [`@vantageos/mosaic-i18n`](https://www.npmjs.com/package/@vantageos/mosaic-i18n) — FR+EN locale resources
+
+---
+
+*Orchestrator: Gamma — VantageOS Team | 2026-06-27*

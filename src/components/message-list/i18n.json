@@ -1,0 +1,16 @@
+{
+  "en": {
+    "title": "Messages",
+    "search": "Search messages…",
+    "loadMore": "Load more",
+    "empty": "No messages yet.",
+    "loading": "Loading…"
+  },
+  "fr": {
+    "title": "Messages",
+    "search": "Rechercher des messages…",
+    "loadMore": "Charger plus",
+    "empty": "Aucun message pour l'instant.",
+    "loading": "Chargement…"
+  }
+}
