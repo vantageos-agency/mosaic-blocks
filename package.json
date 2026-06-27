@@ -38,9 +38,23 @@
     "parse-guard": "node scripts/parse-guard.mjs"
   },
   "peerDependencies": {
+    "@clerk/nextjs": "^7",
+    "@vantageos/cloud-identity": "^0.2",
     "react": "^19",
     "react-dom": "^19",
+    "svix": "*",
     "tailwindcss": "^4.3.1"
+  },
+  "peerDependenciesMeta": {
+    "@clerk/nextjs": {
+      "optional": true
+    },
+    "@vantageos/cloud-identity": {
+      "optional": true
+    },
+    "svix": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

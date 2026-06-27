@@ -761,6 +761,125 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "mosaic-sign-in-layout",
+      "type": "registry:ui",
+      "title": "MosaicSignInLayout",
+      "description": "Sign-in page layout, themed, mobile-first. Wraps Clerk <SignIn> with OKLCH-token appearance. Clerk injected as peer prop.",
+      "dependencies": [
+        "@clerk/nextjs"
+      ],
+      "files": [
+        {
+          "path": "src/components/auth/sign-in-layout/MosaicSignInLayout.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-sign-up-layout",
+      "type": "registry:ui",
+      "title": "MosaicSignUpLayout",
+      "description": "Sign-up page layout, themed, mobile-first. Wraps Clerk <SignUp> with OKLCH-token appearance. Clerk injected as peer prop.",
+      "dependencies": [
+        "@clerk/nextjs"
+      ],
+      "files": [
+        {
+          "path": "src/components/auth/sign-up-layout/MosaicSignUpLayout.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-clerk-org-switcher",
+      "type": "registry:ui",
+      "title": "MosaicClerkOrgSwitcher",
+      "description": "Clerk-backed org switcher (live org data). Wraps <OrganizationSwitcher> with OKLCH appearance. DISTINCT from MosaicOrgSwitcher (presentational, orgs via props).",
+      "dependencies": [
+        "@clerk/nextjs"
+      ],
+      "files": [
+        {
+          "path": "src/components/auth/clerk-org-switcher/MosaicClerkOrgSwitcher.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-user-button",
+      "type": "registry:ui",
+      "title": "MosaicUserButton",
+      "description": "Clerk <UserButton> with OKLCH-token appearance. Avatar + popover themed to mosaic tokens. Clerk injected as peer prop.",
+      "dependencies": [
+        "@clerk/nextjs"
+      ],
+      "files": [
+        {
+          "path": "src/components/auth/user-button/MosaicUserButton.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-org-profile-page",
+      "type": "registry:ui",
+      "title": "MosaicOrgProfilePage",
+      "description": "Clerk <OrganizationProfile> for team management with OKLCH appearance. hash/path/virtual routing modes. Clerk injected as peer prop.",
+      "dependencies": [
+        "@clerk/nextjs"
+      ],
+      "files": [
+        {
+          "path": "src/components/auth/org-profile-page/MosaicOrgProfilePage.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-multi-tenant-provider",
+      "type": "registry:ui",
+      "title": "MosaicMultiTenantProvider",
+      "description": "Wraps <ClerkProvider> + cloud-identity workspace-scope context. resolveWorkspaceId prop integrates @vantageos/cloud-identity. Exposes useMosaicWorkspace hook.",
+      "dependencies": [
+        "@clerk/nextjs",
+        "@vantageos/cloud-identity"
+      ],
+      "files": [
+        {
+          "path": "src/components/multi-tenant/multi-tenant-provider/MosaicMultiTenantProvider.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "use-effective-workspace-id",
+      "type": "registry:hook",
+      "title": "useEffectiveWorkspaceId",
+      "description": "Re-exposes cloud-identity workspace resolver as a typed React hook. Reads from MosaicMultiTenantProvider context.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/multi-tenant/multi-tenant-provider/useEffectiveWorkspaceId.ts",
+          "type": "registry:hook"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-clerk-webhook-handler",
+      "type": "registry:lib",
+      "title": "MosaicClerkWebhookHandler",
+      "description": "Template handler: Clerk -> Convex sync for organization.created + organizationMembership.created/deleted. svix signature verification. Returns Next.js App Router compatible Response.",
+      "dependencies": [
+        "svix"
+      ],
+      "files": [
+        {
+          "path": "src/components/multi-tenant/webhook-handler/MosaicClerkWebhookHandler.ts",
+          "type": "registry:lib"
+        }
+      ]
     }
   ]
 }

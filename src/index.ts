@@ -438,3 +438,49 @@ export type {
   MosaicQuickActionsMenuProps,
   MosaicQuickAction as MosaicQuickActionsMenuItem,
 } from "./components/quick-actions-menu/MosaicQuickActionsMenu.js";
+
+// ── T1.5: Auth wrappers (Clerk peer) ─────────────────────────────────────────
+
+// MosaicSignInLayout — sign-in page layout, themed, mobile-first (Clerk SignIn)
+export { MosaicSignInLayout } from "./components/auth/sign-in-layout/MosaicSignInLayout.js";
+export type { MosaicSignInLayoutProps } from "./components/auth/sign-in-layout/MosaicSignInLayout.js";
+
+// MosaicSignUpLayout — sign-up page layout, themed, mobile-first (Clerk SignUp)
+export { MosaicSignUpLayout } from "./components/auth/sign-up-layout/MosaicSignUpLayout.js";
+export type { MosaicSignUpLayoutProps } from "./components/auth/sign-up-layout/MosaicSignUpLayout.js";
+
+// MosaicClerkOrgSwitcher — Clerk-backed (live org data). DISTINCT from
+// MosaicOrgSwitcher (presentational, orgs via props).
+export { MosaicClerkOrgSwitcher } from "./components/auth/clerk-org-switcher/MosaicClerkOrgSwitcher.js";
+export type { MosaicClerkOrgSwitcherProps } from "./components/auth/clerk-org-switcher/MosaicClerkOrgSwitcher.js";
+
+// MosaicUserButton — Clerk UserButton with OKLCH appearance
+export { MosaicUserButton } from "./components/auth/user-button/MosaicUserButton.js";
+export type { MosaicUserButtonProps } from "./components/auth/user-button/MosaicUserButton.js";
+
+// MosaicOrgProfilePage — Clerk OrganizationProfile for team management
+export { MosaicOrgProfilePage } from "./components/auth/org-profile-page/MosaicOrgProfilePage.js";
+export type { MosaicOrgProfilePageProps } from "./components/auth/org-profile-page/MosaicOrgProfilePage.js";
+
+// ── T1.5: Multi-tenant (Clerk + cloud-identity peer) ─────────────────────────
+
+// MosaicMultiTenantProvider — ClerkProvider + cloud-identity workspace-scope ctx
+export {
+  MosaicMultiTenantProvider,
+  useMosaicWorkspace,
+} from "./components/multi-tenant/multi-tenant-provider/MosaicMultiTenantProvider.js";
+export type {
+  MosaicMultiTenantProviderProps,
+  MosaicWorkspaceContext,
+} from "./components/multi-tenant/multi-tenant-provider/MosaicMultiTenantProvider.js";
+
+// useEffectiveWorkspaceId — re-exposes cloud-identity workspace resolver hook
+export { useEffectiveWorkspaceId } from "./components/multi-tenant/multi-tenant-provider/useEffectiveWorkspaceId.js";
+
+// MosaicClerkWebhookHandler — Clerk → Convex sync (organization events)
+export { MosaicClerkWebhookHandler } from "./components/multi-tenant/webhook-handler/MosaicClerkWebhookHandler.js";
+export type {
+  MosaicClerkWebhookHandlerOptions,
+  MosaicClerkOrganization,
+  MosaicClerkMembership,
+} from "./components/multi-tenant/webhook-handler/MosaicClerkWebhookHandler.js";
