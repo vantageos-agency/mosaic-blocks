@@ -556,6 +556,13 @@ export type { MosaicUserButtonProps } from "./components/auth/user-button/Mosaic
 export { MosaicOrgProfilePage } from "./components/auth/org-profile-page/MosaicOrgProfilePage.js";
 export type { MosaicOrgProfilePageProps } from "./components/auth/org-profile-page/MosaicOrgProfilePage.js";
 
+// ── #23: MosaicDataTable ─────────────────────────────────────────────────────
+export { MosaicDataTable } from "./components/data-table/MosaicDataTable.js";
+export type {
+  MosaicDataTableProps,
+  MosaicDataTableColumn,
+} from "./components/data-table/MosaicDataTable.js";
+
 // ── T1.5: Multi-tenant (Clerk + cloud-identity peer) ─────────────────────────
 
 // MosaicMultiTenantProvider — ClerkProvider + cloud-identity workspace-scope ctx
