@@ -563,6 +563,14 @@ export type {
   MosaicDataTableColumn,
 } from "./components/data-table/MosaicDataTable.js";
 
+// ── #22: MosaicStepPipeline ──────────────────────────────────────────────────
+export { MosaicStepPipeline } from "./components/step-pipeline/MosaicStepPipeline.js";
+export type {
+  MosaicStepPipelineProps,
+  MosaicStep,
+  MosaicStepStatus,
+} from "./components/step-pipeline/MosaicStepPipeline.js";
+
 // ── T1.5: Multi-tenant (Clerk + cloud-identity peer) ─────────────────────────
 
 // MosaicMultiTenantProvider — ClerkProvider + cloud-identity workspace-scope ctx
