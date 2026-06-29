@@ -61,6 +61,16 @@ function injectStyles() {
 
 export type MosaicActivityStatus = "active" | "completed" | "archived";
 
+/**
+ * Participant shape.
+ *
+ * Two forms accepted (union, both backward-compat):
+ * - `string` — plain label, rendered as initials avatar (original API)
+ * - `{ actor?: string; excerpt?: string }` — structured form (VP ActivityEvent shape)
+ *   `actor` is used as the avatar label; `excerpt` is surfaced as a sub-line when rendering.
+ */
+export type MosaicActivityParticipant = string | { actor?: string; excerpt?: string };
+
 export interface MosaicActivity {
   /** Stable unique identifier */
   id: string;
@@ -68,12 +78,35 @@ export interface MosaicActivity {
   type: string;
   title: string;
   description?: string;
-  timestamp: string;
-  status: MosaicActivityStatus;
-  /** Array of participant labels (shown as initials avatars) */
-  participants?: string[];
+  /**
+   * Timestamp label. Accepts:
+   * - `string` — display-ready label or ISO string (original API)
+   * - `number` — Unix ms epoch (VP `updatedAt` numeric form)
+   */
+  timestamp: string | number;
+  /**
+   * Activity status. Accepts the canonical `MosaicActivityStatus` values
+   * (`"active" | "completed" | "archived"`) OR any free string from upstream
+   * systems (e.g. VP `ActivityEvent.status`). Known values receive accent styling;
+   * unknown strings fall back to the "archived" (neutral) style.
+   *
+   * Using `MosaicActivityStatus | (string & {})` preserves IDE autocomplete
+   * for the well-known values while accepting arbitrary strings at runtime.
+   */
+  status: MosaicActivityStatus | (string & {});
+  /**
+   * Participant list. Accepts:
+   * - `string[]` — plain labels rendered as initials avatars (original API)
+   * - `MosaicActivityParticipant[]` — union shape also accepting `{ actor?, excerpt? }` objects
+   */
+  participants?: MosaicActivityParticipant[];
   /** Number of messages/events in this activity */
   messages?: number;
+  /**
+   * Optional excerpt / summary text (VP ActivityEvent field).
+   * Shown below description when present.
+   */
+  excerpt?: string;
 }
 
 export interface MosaicActivityFeedProps {
@@ -98,11 +131,34 @@ export interface MosaicActivityFeedProps {
 
 // ── Status colors ─────────────────────────────────────────────────────────────
 
-const STATUS_CLASSES: Record<MosaicActivityStatus, string> = {
+const STATUS_CLASSES: Record<string, string> = {
   active: "bg-green-500/10 text-green-600 border border-green-500/20 dark:text-green-400",
   completed: "bg-blue-500/10 text-blue-600 border border-blue-500/20 dark:text-blue-400",
   archived: "bg-gray-500/10 text-gray-600 border border-gray-500/20 dark:text-gray-400",
 };
+
+/** Fallback style for unrecognised status strings */
+const STATUS_FALLBACK = "bg-gray-500/10 text-gray-600 border border-gray-500/20 dark:text-gray-400";
+
+/** Resolve status display class — known values get accent colours, others neutral. */
+function getStatusClass(status: string): string {
+  return STATUS_CLASSES[status] ?? STATUS_FALLBACK;
+}
+
+/** Normalise a participant (string or structured object) to a display label. */
+function participantLabel(p: MosaicActivityParticipant): string {
+  if (typeof p === "string") return p;
+  return p.actor ?? "";
+}
+
+/**
+ * Normalise timestamp to a display string.
+ * Numeric values are treated as Unix ms and formatted as a locale date-time.
+ */
+function formatTimestamp(ts: string | number): string {
+  if (typeof ts === "string") return ts;
+  return new Date(ts).toLocaleString();
+}
 
 // ── Default icon ──────────────────────────────────────────────────────────────
 
@@ -185,15 +241,18 @@ export function MosaicActivityItem({ activity, icon, className }: MosaicActivity
             {activity.participants && activity.participants.length > 0 && (
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  {activity.participants.slice(0, 3).map((p) => (
-                    <div
-                      key={p}
-                      aria-label={p}
-                      className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium text-muted-foreground"
-                    >
-                      {p.slice(0, 2).toUpperCase()}
-                    </div>
-                  ))}
+                  {activity.participants.slice(0, 3).map((p) => {
+                    const label = participantLabel(p);
+                    return (
+                      <div
+                        key={label}
+                        aria-label={label}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-medium text-muted-foreground"
+                      >
+                        {label.slice(0, 2).toUpperCase()}
+                      </div>
+                    );
+                  })}
                 </div>
                 {activity.messages !== undefined && (
                   <span className="text-xs text-muted-foreground">
@@ -202,6 +261,12 @@ export function MosaicActivityItem({ activity, icon, className }: MosaicActivity
                 )}
               </div>
             )}
+            {/* Excerpt (VP ActivityEvent field) */}
+            {activity.excerpt && (
+              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                {activity.excerpt}
+              </p>
+            )}
           </div>
 
           {/* Status + timestamp */}
@@ -209,12 +274,14 @@ export function MosaicActivityItem({ activity, icon, className }: MosaicActivity
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-xs font-medium",
-                STATUS_CLASSES[activity.status],
+                getStatusClass(activity.status),
               )}
             >
               {activity.status}
             </span>
-            <span className="text-xs text-muted-foreground">{activity.timestamp}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatTimestamp(activity.timestamp)}
+            </span>
           </div>
         </div>
       </div>

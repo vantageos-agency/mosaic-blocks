@@ -28,6 +28,7 @@ export interface MosaicClerkOrgSwitcherProps {
     appearance?: Record<string, unknown>;
     afterCreateOrganizationUrl?: string;
     afterSelectOrganizationUrl?: string;
+    afterSelectPersonalUrl?: string;
     afterLeaveOrganizationUrl?: string;
     hidePersonal?: boolean;
     [key: string]: unknown;
@@ -36,10 +37,20 @@ export interface MosaicClerkOrgSwitcherProps {
   afterCreateOrganizationUrl?: string;
   /** URL to redirect after selecting an org */
   afterSelectOrganizationUrl?: string;
+  /**
+   * URL to redirect after selecting the personal workspace.
+   * Required for VP patterns where personal workspace has a distinct landing page.
+   */
+  afterSelectPersonalUrl?: string;
   /** URL to redirect after leaving an org */
   afterLeaveOrganizationUrl?: string;
   /** Hide personal workspace from the switcher */
   hidePersonal?: boolean;
+  /**
+   * data-testid forwarded onto the root wrapper div.
+   * Allows e2e selectors (e.g. Playwright `getByTestId("org-switcher")`).
+   */
+  "data-testid"?: string;
   className?: string;
 }
 
@@ -71,16 +82,23 @@ export function MosaicClerkOrgSwitcher({
   clerkOrgSwitcher: ClerkOrgSwitcher,
   afterCreateOrganizationUrl = "/",
   afterSelectOrganizationUrl = "/",
+  afterSelectPersonalUrl,
   afterLeaveOrganizationUrl = "/",
   hidePersonal = false,
+  "data-testid": dataTestId,
   className,
 }: MosaicClerkOrgSwitcherProps) {
   return (
-    <div data-slot="clerk-org-switcher" className={className}>
+    <div
+      data-slot="clerk-org-switcher"
+      {...(dataTestId !== undefined && { "data-testid": dataTestId })}
+      className={className}
+    >
       <ClerkOrgSwitcher
         appearance={clerkAppearance}
         afterCreateOrganizationUrl={afterCreateOrganizationUrl}
         afterSelectOrganizationUrl={afterSelectOrganizationUrl}
+        {...(afterSelectPersonalUrl !== undefined && { afterSelectPersonalUrl })}
         afterLeaveOrganizationUrl={afterLeaveOrganizationUrl}
         hidePersonal={hidePersonal}
       />
