@@ -201,11 +201,11 @@ export function MosaicDataTable<T>({
     >
       <thead data-slot="data-table-header">
         <tr data-slot="data-table-header-row" className="border-b border-border bg-muted">
-          {columns.map((col) => {
+          {columns.map((col, colIndex) => {
             const isSortable = masterSortable && col.sortable;
             return (
               <th
-                key={col.key}
+                key={colIndex}
                 data-slot="data-table-th"
                 scope="col"
                 aria-sort={ariaSort(col)}
@@ -257,12 +257,12 @@ export function MosaicDataTable<T>({
                 data-slot="data-table-row"
                 className="border-b border-border hover:bg-muted/50 transition-colors"
               >
-                {columns.map((col) => {
+                {columns.map((col, colIndex) => {
                   const rawVal = (row as Record<string, unknown>)[col.key];
                   const cell = col.render ? col.render(row) : String(rawVal ?? "");
                   return (
                     <td
-                      key={col.key}
+                      key={colIndex}
                       data-slot="data-table-td"
                       className={cn(
                         "px-4 py-3 text-foreground",

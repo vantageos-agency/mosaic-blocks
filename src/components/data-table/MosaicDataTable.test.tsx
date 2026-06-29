@@ -63,6 +63,30 @@ describe("MosaicDataTable", () => {
     expect(screen.getByText("[IDLE]")).toBeTruthy();
   });
 
+  it("renders both columns when two columns share the same key (duplicate-key scenario)", () => {
+    // Two columns share key="status": one default render, one custom render.
+    // With key={col.key}, React would emit a duplicate-key warning and potentially
+    // drop one of the two columns. With key={colIndex}, both must render.
+    const dupKeyColumns: MosaicDataTableColumn<Agent>[] = [
+      { key: "name", header: "Name" },
+      { key: "status", header: "Status (raw)" },
+      { key: "status", header: "Status (label)", render: (row) => `[${row.status.toUpperCase()}]` },
+    ];
+    render(<MosaicDataTable columns={dupKeyColumns} rows={agents} getRowKey={(r) => r.id} />);
+
+    // Both header cells must be present
+    expect(screen.getByText("Status (raw)")).toBeTruthy();
+    expect(screen.getByText("Status (label)")).toBeTruthy();
+
+    // Both body renders must be present: raw value "active" and custom "[ACTIVE]"
+    // agents has 2 active + 1 idle
+    const rawActives = screen.getAllByText("active");
+    expect(rawActives.length).toBeGreaterThanOrEqual(2);
+    const labelledActives = screen.getAllByText("[ACTIVE]");
+    expect(labelledActives.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("[IDLE]")).toBeTruthy();
+  });
+
   it("shows emptyState when rows is empty", () => {
     render(<MosaicDataTable columns={columns} rows={[]} emptyState={<span>Aucune donnée</span>} />);
     expect(screen.getByText("Aucune donnée")).toBeTruthy();
