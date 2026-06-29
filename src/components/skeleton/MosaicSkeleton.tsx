@@ -106,5 +106,3 @@ export function MosaicSkeleton({
 }
 
 MosaicSkeleton.displayName = "MosaicSkeleton";
-
-export { skeletonVariants };

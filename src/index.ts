@@ -14,8 +14,9 @@ export { MosaicButton, buttonVariants } from "./components/button/Button.js";
 export type { MosaicButtonProps } from "./components/button/Button.js";
 
 // ── #20: MosaicSkeleton ──────────────────────────────────────────────────────
-export { MosaicSkeleton, skeletonVariants } from "./components/skeleton/MosaicSkeleton.js";
+export { MosaicSkeleton } from "./components/skeleton/MosaicSkeleton.js";
 export type { MosaicSkeletonProps } from "./components/skeleton/MosaicSkeleton.js";
+export { skeletonVariants } from "./components/skeleton/skeleton-variants.js";
 
 // ── T3-A Batch A: landing section blocks ─────────────────────────────────────
 export { MosaicNavbar } from "./components/navbar/MosaicNavbar.js";
