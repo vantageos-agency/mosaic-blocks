@@ -7,40 +7,15 @@
  * Design tokens: Tailwind v4 semantic classes only. No hardcoded colors.
  */
 
-import { type VariantProps, cva } from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority";
 import type * as React from "react";
+import { badgeVariants } from "./badge-variants.js";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
 function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(" ");
 }
-
-// ── Variants ──────────────────────────────────────────────────────────────────
-
-const badgeVariants = cva(
-  [
-    "inline-flex items-center justify-center",
-    "rounded-full border border-transparent",
-    "px-2.5 py-0.5",
-    "text-xs font-semibold",
-    "select-none whitespace-nowrap",
-    "transition-colors",
-  ],
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground border-transparent",
-        secondary: "bg-secondary text-secondary-foreground border-transparent",
-        destructive: "bg-destructive text-destructive-foreground border-transparent",
-        outline: "bg-background text-foreground border-border",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  },
-);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
