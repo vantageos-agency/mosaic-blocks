@@ -98,6 +98,10 @@ export type { MosaicFallingPatternProps } from "./components/falling-pattern/Mos
 // ── T3-B Batch B: hooks ───────────────────────────────────────────────────────
 export { useMediaQuery } from "./hooks/useMediaQuery.js";
 
+// ── #21: MosaicFilterBar ─────────────────────────────────────────────────────
+export { MosaicFilterBar } from "./components/filter-bar/MosaicFilterBar.js";
+export type { MosaicFilterBarProps } from "./components/filter-bar/MosaicFilterBar.js";
+
 // ── #19: MosaicEmptyState ────────────────────────────────────────────────────
 export { MosaicEmptyState } from "./components/empty-state/MosaicEmptyState.js";
 export type { MosaicEmptyStateProps } from "./components/empty-state/MosaicEmptyState.js";
