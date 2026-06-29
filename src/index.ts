@@ -93,6 +93,87 @@ export type { MosaicFallingPatternProps } from "./components/falling-pattern/Mos
 // ── T3-B Batch B: hooks ───────────────────────────────────────────────────────
 export { useMediaQuery } from "./hooks/useMediaQuery.js";
 
+// ── #24: base-UI atoms ───────────────────────────────────────────────────────
+
+// Accordion (@base-ui/react/accordion)
+export {
+  MosaicAccordion,
+  MosaicAccordionItem,
+  MosaicAccordionTrigger,
+  MosaicAccordionPanel,
+  Accordion,
+} from "./components/accordion/MosaicAccordion.js";
+export type {
+  MosaicAccordionProps,
+  MosaicAccordionItemProps,
+  MosaicAccordionTriggerProps,
+  MosaicAccordionPanelProps,
+} from "./components/accordion/MosaicAccordion.js";
+
+// Checkbox (@base-ui/react/checkbox)
+export { MosaicCheckbox } from "./components/checkbox/MosaicCheckbox.js";
+export type { MosaicCheckboxProps } from "./components/checkbox/MosaicCheckbox.js";
+
+// Collapsible (@base-ui/react/collapsible)
+export {
+  MosaicCollapsible,
+  MosaicCollapsibleTrigger,
+  MosaicCollapsiblePanel,
+} from "./components/collapsible/MosaicCollapsible.js";
+export type {
+  MosaicCollapsibleProps,
+  MosaicCollapsibleTriggerProps,
+  MosaicCollapsiblePanelProps,
+} from "./components/collapsible/MosaicCollapsible.js";
+
+// Progress (@base-ui/react/progress)
+export { MosaicProgress } from "./components/progress/MosaicProgress.js";
+export type { MosaicProgressProps } from "./components/progress/MosaicProgress.js";
+
+// RadioGroup (@base-ui/react/radio-group + radio)
+export {
+  MosaicRadioGroup,
+  MosaicRadioGroupItem,
+} from "./components/radio-group/MosaicRadioGroup.js";
+export type {
+  MosaicRadioGroupProps,
+  MosaicRadioGroupItemProps,
+} from "./components/radio-group/MosaicRadioGroup.js";
+
+// ScrollArea (@base-ui/react/scroll-area)
+export { MosaicScrollArea } from "./components/scroll-area/MosaicScrollArea.js";
+export type { MosaicScrollAreaProps } from "./components/scroll-area/MosaicScrollArea.js";
+
+// Separator (@base-ui/react/separator)
+export { MosaicSeparator } from "./components/separator/MosaicSeparator.js";
+export type { MosaicSeparatorProps } from "./components/separator/MosaicSeparator.js";
+
+// Slider (@base-ui/react/slider)
+export { MosaicSlider } from "./components/slider/MosaicSlider.js";
+export type { MosaicSliderProps } from "./components/slider/MosaicSlider.js";
+
+// Tabs (@base-ui/react/tabs)
+export {
+  MosaicTabs,
+  MosaicTabsList,
+  MosaicTabsTrigger,
+  MosaicTabsPanel,
+} from "./components/tabs/MosaicTabs.js";
+export type {
+  MosaicTabsProps,
+  MosaicTabsListProps,
+  MosaicTabsTriggerProps,
+  MosaicTabsPanelProps,
+} from "./components/tabs/MosaicTabs.js";
+
+// Textarea (native <textarea> styled)
+export { MosaicTextarea } from "./components/textarea/MosaicTextarea.js";
+export type { MosaicTextareaProps } from "./components/textarea/MosaicTextarea.js";
+
+// Tooltip (@base-ui/react/tooltip)
+export { MosaicTooltip, Tooltip } from "./components/tooltip/MosaicTooltip.js";
+export type { MosaicTooltipProps } from "./components/tooltip/MosaicTooltip.js";
+
 // ── T3-C Batch C: base-ui atoms ──────────────────────────────────────────────
 
 // Card (style-only, composable)
