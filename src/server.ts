@@ -31,3 +31,14 @@ export { badgeVariants } from "./components/badge/badge-variants.js";
 // Source: src/components/skeleton/skeleton-variants.ts (isolated — no React import)
 // Safe: depends only on class-variance-authority (pure, no browser APIs).
 export { skeletonVariants } from "./components/skeleton/skeleton-variants.js";
+
+// ── #22: stepPipelineVariants — cva variant functions for MosaicStepPipeline ─
+// Source: src/components/step-pipeline/step-pipeline-variants.ts (isolated — no React import)
+// Safe: depends only on class-variance-authority (pure, no browser APIs).
+export {
+  stepPipelineVariants,
+  stepIndicatorVariants,
+  stepConnectorVariants,
+  stepLabelVariants,
+  stepDescriptionVariants,
+} from "./components/step-pipeline/step-pipeline-variants.js";
