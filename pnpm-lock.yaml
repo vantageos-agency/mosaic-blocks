@@ -20,6 +20,9 @@ importers:
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
+      svix:
+        specifier: ^1.0.0
+        version: 1.96.1
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -66,9 +69,6 @@ importers:
       storybook:
         specifier: ^10.4.6
         version: 10.4.6(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react@19.2.7)
-      svix:
-        specifier: ^1.96.1
-        version: 1.96.1
       tailwindcss:
         specifier: ^4.3.1
         version: 4.3.1

@@ -84,4 +84,4 @@ jobs:
           --diff origin/main
           --fail-on error
           --annotations
-          src
+          .
