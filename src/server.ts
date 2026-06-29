@@ -26,3 +26,8 @@ export { buttonVariants } from "./components/button/button-variants.js";
 // Source: src/components/badge/badge-variants.ts (isolated — no React import)
 // Safe: depends only on class-variance-authority (pure, no browser APIs).
 export { badgeVariants } from "./components/badge/badge-variants.js";
+
+// ── skeletonVariants — cva variant function for MosaicSkeleton ───────────────
+// Source: src/components/skeleton/skeleton-variants.ts (isolated — no React import)
+// Safe: depends only on class-variance-authority (pure, no browser APIs).
+export { skeletonVariants } from "./components/skeleton/skeleton-variants.js";
