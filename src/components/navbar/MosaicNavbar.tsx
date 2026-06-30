@@ -32,6 +32,32 @@ export interface MosaicNavbarProps {
   cta?: NavCta;
   className?: string;
   ref?: React.Ref<HTMLElement>;
+  /**
+   * Accessible label for the `<nav>` landmark. Override with a localized
+   * string so screen-reader users hear the correct language.
+   *
+   * @default "Main navigation"
+   * @example
+   * // French consumer
+   * <MosaicNavbar navAriaLabel="Navigation principale" ... />
+   */
+  navAriaLabel?: string;
+  /**
+   * Accessible label for the hamburger button when the mobile menu is closed.
+   *
+   * @default "Open menu"
+   * @example
+   * <MosaicNavbar openMenuAriaLabel="Ouvrir le menu" ... />
+   */
+  openMenuAriaLabel?: string;
+  /**
+   * Accessible label for the hamburger button when the mobile menu is open.
+   *
+   * @default "Close menu"
+   * @example
+   * <MosaicNavbar closeMenuAriaLabel="Fermer le menu" ... />
+   */
+  closeMenuAriaLabel?: string;
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
@@ -47,13 +73,34 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  * blur backdrop on scroll. Mobile menu included. All content via props.
  *
  * @example
+ * // English (default)
  * <MosaicNavbar
  *   logo={<img src="/logo.svg" alt="Brand" className="h-8 w-auto" />}
  *   links={[{ label: "Features", href: "#features" }, { label: "Pricing", href: "#pricing" }]}
  *   cta={{ label: "Get started", href: "#start" }}
  * />
+ *
+ * @example
+ * // French consumer override
+ * <MosaicNavbar
+ *   logo={<img src="/logo.svg" alt="Marque" className="h-8 w-auto" />}
+ *   links={[{ label: "Fonctionnalités", href: "#features" }, { label: "Tarifs", href: "#pricing" }]}
+ *   cta={{ label: "Commencer", href: "#start" }}
+ *   navAriaLabel="Navigation principale"
+ *   openMenuAriaLabel="Ouvrir le menu"
+ *   closeMenuAriaLabel="Fermer le menu"
+ * />
  */
-export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarProps) {
+export function MosaicNavbar({
+  logo,
+  links,
+  cta,
+  className,
+  ref,
+  navAriaLabel = "Main navigation",
+  openMenuAriaLabel = "Open menu",
+  closeMenuAriaLabel = "Close menu",
+}: MosaicNavbarProps) {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isHidden, setIsHidden] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -86,7 +133,7 @@ export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarP
   return (
     <nav
       ref={ref}
-      aria-label="Main navigation"
+      aria-label={navAriaLabel}
       className={cn(
         "fixed left-0 right-0 top-0 z-50 px-4 pt-4 mx-auto w-full max-w-6xl transition-all duration-300 ease-out",
         isHidden ? "opacity-0 -translate-y-5 pointer-events-none" : "opacity-100 translate-y-0",
@@ -145,7 +192,7 @@ export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarP
             )}
             <button
               type="button"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-label={isOpen ? closeMenuAriaLabel : openMenuAriaLabel}
               aria-expanded={isOpen}
               aria-controls="mosaic-mobile-menu"
               onClick={() => setIsOpen((v) => !v)}

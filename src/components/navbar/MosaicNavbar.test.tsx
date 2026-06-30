@@ -33,4 +33,35 @@ describe("MosaicNavbar", () => {
     );
     expect(screen.getAllByText("Get started").length).toBeGreaterThan(0);
   });
+
+  // ── i18n: caller-overridable aria-labels ───────────────────────────────────
+
+  it("uses navAriaLabel prop on <nav> when provided (FR override)", () => {
+    render(
+      <MosaicNavbar logo={<span>Logo</span>} links={links} navAriaLabel="Navigation principale" />,
+    );
+    expect(screen.getByRole("navigation", { name: "Navigation principale" })).toBeTruthy();
+  });
+
+  it("falls back to English default when navAriaLabel is omitted", () => {
+    render(<MosaicNavbar logo={<span>Logo</span>} links={links} />);
+    expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeTruthy();
+  });
+
+  it("uses openMenuAriaLabel prop on hamburger button when provided (FR override)", () => {
+    render(
+      <MosaicNavbar
+        logo={<span>Logo</span>}
+        links={links}
+        openMenuAriaLabel="Ouvrir le menu"
+        closeMenuAriaLabel="Fermer le menu"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Ouvrir le menu" })).toBeTruthy();
+  });
+
+  it("falls back to English defaults on hamburger button when props omitted", () => {
+    render(<MosaicNavbar logo={<span>Logo</span>} links={links} />);
+    expect(screen.getByRole("button", { name: "Open menu" })).toBeTruthy();
+  });
 });
