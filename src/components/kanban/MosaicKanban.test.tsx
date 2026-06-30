@@ -168,4 +168,14 @@ describe("MosaicKanbanColumn", () => {
     const badge = document.querySelector("[data-slot='kanban-column-count']");
     expect(badge?.getAttribute("aria-label")).toBe("7 items");
   });
+
+  it("uses countLabel prop for localized aria-label (FR consumer)", () => {
+    render(
+      <MosaicKanbanColumn title="À faire" count={3} countLabel={(n) => `${n} éléments`}>
+        children
+      </MosaicKanbanColumn>,
+    );
+    const badge = document.querySelector("[data-slot='kanban-column-count']");
+    expect(badge?.getAttribute("aria-label")).toBe("3 éléments");
+  });
 });

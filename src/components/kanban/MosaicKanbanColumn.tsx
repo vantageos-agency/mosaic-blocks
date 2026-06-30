@@ -13,9 +13,16 @@
  * text-muted-foreground, bg-background). No hardcoded colors.
  *
  * @example
+ * // English (default)
+ * <MosaicKanbanColumn title="To Do" count={3}>
+ *   <TaskCard task={task} />
+ * </MosaicKanbanColumn>
+ *
+ * // French override
  * <MosaicKanbanColumn
  *   title="À faire"
  *   count={3}
+ *   countLabel={(n) => `${n} éléments`}
  *   headerActions={<button aria-label="Ajouter une tâche">+</button>}
  *   footer={<button>Charger plus</button>}
  * >
@@ -44,6 +51,12 @@ export interface MosaicKanbanColumnProps {
   children: React.ReactNode;
   /** Optional footer slot (e.g. "Load more" / Convex pagination button). */
   footer?: React.ReactNode;
+  /**
+   * Optional caller-provided formatter for the count badge aria-label.
+   * Use this to supply a localized string (e.g. FR: `(n) => \`${n} éléments\``).
+   * Falls back to English `"${count} items"` when omitted.
+   */
+  countLabel?: (count: number) => string;
   className?: string;
   ref?: React.Ref<HTMLElement>;
 }
@@ -66,6 +79,7 @@ export function MosaicKanbanColumn({
   headerActions,
   children,
   footer,
+  countLabel,
   className,
   ref,
 }: MosaicKanbanColumnProps) {
@@ -91,7 +105,7 @@ export function MosaicKanbanColumn({
           {count !== undefined && (
             <span
               data-slot="kanban-column-count"
-              aria-label={`${count} items`}
+              aria-label={countLabel ? countLabel(count) : `${count} items`}
               className={cn(
                 "inline-flex items-center justify-center",
                 "min-w-[1.25rem] h-5 px-1.5 rounded-full",
