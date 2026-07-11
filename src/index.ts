@@ -561,6 +561,7 @@ export { MosaicDataTable } from "./components/data-table/MosaicDataTable.js";
 export type {
   MosaicDataTableProps,
   MosaicDataTableColumn,
+  MosaicDataTablePagination,
 } from "./components/data-table/MosaicDataTable.js";
 
 // ── #22: MosaicStepPipeline / #43: segment-bar variant ──────────────────────
