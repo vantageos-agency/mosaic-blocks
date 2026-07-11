@@ -169,3 +169,73 @@ describe("MosaicStepPipeline", () => {
     expect(items[1].getAttribute("data-status")).toBe("upcoming");
   });
 });
+
+// ── variant="segments" (compact progress bar) ──────────────────────────────────
+
+describe("MosaicStepPipeline variant='segments'", () => {
+  it("renders N segments for N steps, filled for done/current, unfilled for upcoming", () => {
+    const { container } = render(
+      <MosaicStepPipeline
+        steps={THREE_STEPS}
+        currentIndex={1}
+        variant="segments"
+        progressAriaLabel="Progression de la mission"
+      />,
+    );
+    const segments = container.querySelectorAll("[data-slot='step-segment']");
+    expect(segments.length).toBe(3);
+    // index 0 = done -> filled, index 1 = current -> filled, index 2 = upcoming -> not filled
+    expect(segments[0].getAttribute("data-status")).toBe("done");
+    expect(segments[1].getAttribute("data-status")).toBe("current");
+    expect(segments[2].getAttribute("data-status")).toBe("upcoming");
+    expect(segments[0].getAttribute("data-filled")).toBe("true");
+    expect(segments[1].getAttribute("data-filled")).toBe("true");
+    expect(segments[2].getAttribute("data-filled")).toBe("false");
+  });
+
+  it("renders no dots and no step labels in segment mode", () => {
+    const { container } = render(
+      <MosaicStepPipeline
+        steps={THREE_STEPS}
+        currentIndex={1}
+        variant="segments"
+        progressAriaLabel="Progression de la mission"
+      />,
+    );
+    expect(container.querySelectorAll("[data-slot='step-indicator']").length).toBe(0);
+    expect(container.querySelectorAll("[data-slot='step-label']").length).toBe(0);
+    expect(container.querySelectorAll("[data-slot='step-description']").length).toBe(0);
+    expect(container.querySelector("ol")).toBeFalsy();
+  });
+
+  it("honours the required progressAriaLabel prop (host-owned French string)", () => {
+    const { container } = render(
+      <MosaicStepPipeline
+        steps={THREE_STEPS}
+        currentIndex={1}
+        variant="segments"
+        progressAriaLabel="Progression de la mission : étape 2 sur 3"
+      />,
+    );
+    const root = container.querySelector("[data-slot='step-segment-bar']");
+    expect(root?.getAttribute("aria-label")).toBe("Progression de la mission : étape 2 sur 3");
+    expect(root?.getAttribute("role")).toBe("progressbar");
+  });
+
+  it("uses the optional progressLabel function prop for aria-valuetext when provided", () => {
+    const progressLabel = (current: number, total: number) => `Étape ${current} sur ${total}`;
+    const { container } = render(
+      <MosaicStepPipeline
+        steps={THREE_STEPS}
+        currentIndex={1}
+        variant="segments"
+        progressAriaLabel="Progression de la mission"
+        progressLabel={progressLabel}
+      />,
+    );
+    const root = container.querySelector("[data-slot='step-segment-bar']");
+    expect(root?.getAttribute("aria-valuetext")).toBe("Étape 2 sur 3");
+    expect(root?.getAttribute("aria-valuenow")).toBe("2");
+    expect(root?.getAttribute("aria-valuemax")).toBe("3");
+  });
+});

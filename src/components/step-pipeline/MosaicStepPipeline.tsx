@@ -44,6 +44,8 @@ import {
   stepIndicatorVariants,
   stepLabelVariants,
   stepPipelineVariants,
+  stepSegmentBarVariants,
+  stepSegmentVariants,
 } from "./step-pipeline-variants.js";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
@@ -70,7 +72,7 @@ export interface MosaicStep {
   status?: MosaicStepStatus;
 }
 
-export interface MosaicStepPipelineProps {
+interface MosaicStepPipelineBaseProps {
   /** Ordered array of pipeline stages. */
   steps: MosaicStep[];
   /**
@@ -79,16 +81,50 @@ export interface MosaicStepPipelineProps {
    * @default 0
    */
   currentIndex?: number;
+  /** Additional Tailwind classes on the root element. */
+  className?: string;
+}
+
+export interface MosaicStepPipelineDotsProps extends MosaicStepPipelineBaseProps {
   /**
-   * Layout orientation.
+   * Full dot-layout rendering (indicator + label + description per step).
+   * @default "dots"
+   */
+  variant?: "dots";
+  /**
+   * Layout orientation. Only meaningful for `variant="dots"`.
    * @default "horizontal"
    */
   orientation?: "horizontal" | "vertical";
-  /** Additional Tailwind classes on the root element. */
-  className?: string;
   /** React 19 ref prop — forwarded to the root <ol> element. */
   ref?: React.Ref<HTMLOListElement>;
 }
+
+export interface MosaicStepPipelineSegmentsProps extends MosaicStepPipelineBaseProps {
+  /**
+   * Compact horizontal progress-segment bar — colored segment fills only,
+   * no dots and no step labels. Intended for space-constrained UIs (e.g.
+   * mission cards) where a thin progress indicator is enough.
+   */
+  variant: "segments";
+  /**
+   * Accessible name for the segment bar (`aria-label`). Required — the
+   * library ships zero user-facing strings; the host owns the copy and its
+   * language.
+   */
+  progressAriaLabel: string;
+  /**
+   * Optional function producing the live `aria-valuetext` announced by
+   * screen readers, e.g. `(current, total) => \`Étape ${current} sur ${total}\``.
+   * When omitted, `progressAriaLabel` alone is used as the accessible name
+   * and no `aria-valuetext` is set.
+   */
+  progressLabel?: (current: number, total: number) => string;
+  /** React 19 ref prop — forwarded to the root segment-bar element. */
+  ref?: React.Ref<HTMLDivElement>;
+}
+
+export type MosaicStepPipelineProps = MosaicStepPipelineDotsProps | MosaicStepPipelineSegmentsProps;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -104,16 +140,93 @@ function resolveStatus(step: MosaicStep, index: number, currentIndex: number): M
 /**
  * MosaicStepPipeline — production step-pipeline atom for @vantageos/mosaic-blocks.
  *
+ * Two rendering modes selected via `variant`:
+ * - `"dots"` (default): full ordered stage progress with done/current/upcoming
+ *   status, connector lines, horizontal and vertical orientations. Accessible
+ *   via ol/li + aria-current.
+ * - `"segments"`: compact horizontal progress-segment bar — colored fills
+ *   only, no dots and no labels. Accessible via role="progressbar".
+ */
+export function MosaicStepPipeline(props: MosaicStepPipelineProps) {
+  if (props.variant === "segments") {
+    return <MosaicStepPipelineSegments {...props} />;
+  }
+  return <MosaicStepPipelineDots {...props} />;
+}
+
+MosaicStepPipeline.displayName = "MosaicStepPipeline";
+
+/**
+ * MosaicStepPipelineSegments — compact segment-bar rendering.
+ *
+ * Renders one filled/unfilled segment per step, no dots, no labels.
+ * Accessible name via required `progressAriaLabel`; optional `progressLabel`
+ * function drives the live `aria-valuetext`.
+ */
+function MosaicStepPipelineSegments({
+  steps,
+  currentIndex = 0,
+  className,
+  progressAriaLabel,
+  progressLabel,
+  ref,
+}: MosaicStepPipelineSegmentsProps) {
+  const total = steps.length;
+  const current = steps.reduce((count, step, index) => {
+    const status = resolveStatus(step, index, currentIndex);
+    return status === "upcoming" ? count : count + 1;
+  }, 0);
+
+  return (
+    <div
+      ref={ref}
+      data-slot="step-segment-bar"
+      role="progressbar"
+      // Non-interactive status indicator: not a tab stop, but still
+      // programmatically focusable to satisfy a11y/useFocusableInteractive.
+      tabIndex={-1}
+      aria-label={progressAriaLabel}
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={current}
+      aria-valuetext={progressLabel ? progressLabel(current, total) : undefined}
+      className={cn(stepSegmentBarVariants(), className)}
+    >
+      {steps.map((step, index) => {
+        const status = resolveStatus(step, index, currentIndex);
+        const filled = status !== "upcoming";
+        const key = step.id !== undefined ? step.id : index;
+
+        return (
+          <div
+            key={key}
+            data-slot="step-segment"
+            data-status={status}
+            data-filled={filled}
+            aria-hidden="true"
+            className={cn(stepSegmentVariants({ filled }))}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+MosaicStepPipelineSegments.displayName = "MosaicStepPipelineSegments";
+
+/**
+ * MosaicStepPipelineDots — full dot-layout rendering (default variant).
+ *
  * Ordered stage progress with done/current/upcoming status, connector lines,
  * horizontal and vertical orientations. Accessible via ol/li + aria-current.
  */
-export function MosaicStepPipeline({
+function MosaicStepPipelineDots({
   steps,
   currentIndex = 0,
   orientation = "horizontal",
   className,
   ref,
-}: MosaicStepPipelineProps) {
+}: MosaicStepPipelineDotsProps) {
   return (
     <ol
       ref={ref}
@@ -237,4 +350,4 @@ export function MosaicStepPipeline({
   );
 }
 
-MosaicStepPipeline.displayName = "MosaicStepPipeline";
+MosaicStepPipelineDots.displayName = "MosaicStepPipelineDots";
