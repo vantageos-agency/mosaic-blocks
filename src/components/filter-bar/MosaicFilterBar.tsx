@@ -63,11 +63,11 @@ export interface MosaicFilterBarProps {
    */
   onClearAll?: () => void;
   /**
-   * Label for the Clear button. Override for i18n (FR: "Réinitialiser").
-   * Defaults to "Clear" — not hardcoded in rendered output; always caller-overridable.
-   * @default "Clear"
+   * Label for the Clear button (shown only when `onClearAll` is set).
+   * Required — the host owns the language (e.g. FR: "Réinitialiser"). No
+   * default, no fallback.
    */
-  clearLabel?: React.ReactNode;
+  clearLabel: React.ReactNode;
   /**
    * Layout alignment of the bar contents.
    * - `"start"` (default) — all controls grouped at the leading edge
@@ -98,7 +98,7 @@ export function MosaicFilterBar({
   label,
   children,
   onClearAll,
-  clearLabel = "Clear",
+  clearLabel,
   align = "start",
   className,
   ref,

@@ -40,6 +40,12 @@ function SelectorDemo() {
           setSelected(item.id);
           setOpen(false);
         }}
+        allCategoryLabel="All"
+        emptyMessage="No results found."
+        closeAriaLabel="Close dialog"
+        searchPlaceholder="Search…"
+        confirmLabel="Select"
+        cancelLabel="Cancel"
       />
     </MosaicDeviceProvider>
   );
@@ -61,6 +67,12 @@ const baseModalArgs = {
   title: "Select",
   items: [] as MosaicSelectorItem[],
   onSelect: (_item: MosaicSelectorItem) => {},
+  allCategoryLabel: "All",
+  emptyMessage: "No results found.",
+  closeAriaLabel: "Close dialog",
+  searchPlaceholder: "Search…",
+  confirmLabel: "Select",
+  cancelLabel: "Cancel",
 };
 
 export const Default: Story = {
@@ -82,6 +94,12 @@ export const PreSelected: Story = {
           items={items}
           selectedId={selected}
           onSelect={(item) => setSelected(item.id)}
+          allCategoryLabel="All"
+          emptyMessage="No results found."
+          closeAriaLabel="Close dialog"
+          searchPlaceholder="Search…"
+          confirmLabel="Select"
+          cancelLabel="Cancel"
         />
       </MosaicDeviceProvider>
     );

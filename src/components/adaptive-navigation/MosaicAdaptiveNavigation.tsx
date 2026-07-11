@@ -42,6 +42,20 @@ export interface MosaicAdaptiveNavigationProps {
   /** Controlled expanded set for accordion (mobile). If uncontrolled, pass undefined. */
   expandedItems?: Set<string>;
   onToggleExpanded?: (id: string) => void;
+  /**
+   * aria-label for the mobile accordion `<nav>`. Required — the host owns
+   * the language (e.g. `t('AdaptiveNavigation.aria.step')`). No default.
+   */
+  stepNavAriaLabel: string;
+  /**
+   * aria-label for the desktop tab-strip `<nav>`. Required — the host owns
+   * the language (e.g. `t('AdaptiveNavigation.aria.tab')`). No default.
+   */
+  tabNavAriaLabel: string;
+  /** Status caption shown when a step is complete. Required, no default. */
+  completeStatusLabel: string;
+  /** Status caption shown when a step is not yet complete. Required, no default. */
+  inProgressStatusLabel: string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -106,6 +120,8 @@ function ChevronDownIcon({ rotated }: { rotated: boolean }) {
  *   onItemChange={setActive}
  *   expandedItems={expanded}
  *   onToggleExpanded={toggle}
+ *   stepNavAriaLabel={t('AdaptiveNavigation.aria.step')}
+ *   tabNavAriaLabel={t('AdaptiveNavigation.aria.tab')}
  * />
  */
 export function MosaicAdaptiveNavigation({
@@ -114,6 +130,10 @@ export function MosaicAdaptiveNavigation({
   onItemChange,
   expandedItems,
   onToggleExpanded,
+  stepNavAriaLabel,
+  tabNavAriaLabel,
+  completeStatusLabel,
+  inProgressStatusLabel,
   className,
   ref,
 }: MosaicAdaptiveNavigationProps) {
@@ -125,7 +145,7 @@ export function MosaicAdaptiveNavigation({
         ref={ref}
         data-slot="adaptive-navigation"
         className={cn("space-y-3", className)}
-        aria-label="Step navigation"
+        aria-label={stepNavAriaLabel}
       >
         {items.map((item, idx) => {
           const isExpanded = expandedItems?.has(item.id) ?? false;
@@ -153,7 +173,7 @@ export function MosaicAdaptiveNavigation({
                   <div>
                     <p className="text-base font-medium text-foreground">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {item.isComplete ? "Complete" : "In progress"}
+                      {item.isComplete ? completeStatusLabel : inProgressStatusLabel}
                     </p>
                   </div>
                 </div>
@@ -185,7 +205,7 @@ export function MosaicAdaptiveNavigation({
       ref={ref}
       data-slot="adaptive-navigation"
       className={cn("w-full", className)}
-      aria-label="Tab navigation"
+      aria-label={tabNavAriaLabel}
     >
       <div
         role="tablist"

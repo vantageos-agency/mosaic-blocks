@@ -14,31 +14,71 @@ const sampleModule = {
 
 describe("MosaicModuleCard", () => {
   it("renders module name", () => {
-    render(<MosaicModuleCard type="framework" module={sampleModule} />);
+    render(
+      <MosaicModuleCard
+        type="framework"
+        module={sampleModule}
+        customBadgeLabel="CUSTOM"
+        editAriaLabel="Edit module"
+        removeAriaLabel="Remove module"
+      />,
+    );
     expect(screen.getByText("Design Thinking")).toBeTruthy();
   });
 
   it("renders module description", () => {
-    render(<MosaicModuleCard type="framework" module={sampleModule} />);
+    render(
+      <MosaicModuleCard
+        type="framework"
+        module={sampleModule}
+        customBadgeLabel="CUSTOM"
+        editAriaLabel="Edit module"
+        removeAriaLabel="Remove module"
+      />,
+    );
     expect(screen.getByText("Human-centered problem solving framework")).toBeTruthy();
   });
 
   it("calls onRemove when remove button clicked", async () => {
     const onRemove = vi.fn();
-    render(<MosaicModuleCard type="framework" module={sampleModule} onRemove={onRemove} />);
+    render(
+      <MosaicModuleCard
+        type="framework"
+        module={sampleModule}
+        onRemove={onRemove}
+        customBadgeLabel="CUSTOM"
+        editAriaLabel="Edit module"
+        removeAriaLabel="Remove module"
+      />,
+    );
     const removeBtn = screen.getByRole("button", { name: /remove module/i });
     await userEvent.click(removeBtn);
     expect(onRemove).toHaveBeenCalled();
   });
 
   it("renders without remove/edit buttons when handlers not provided", () => {
-    render(<MosaicModuleCard type="framework" module={sampleModule} />);
+    render(
+      <MosaicModuleCard
+        type="framework"
+        module={sampleModule}
+        customBadgeLabel="CUSTOM"
+        editAriaLabel="Edit module"
+        removeAriaLabel="Remove module"
+      />,
+    );
     expect(screen.queryByRole("button", { name: /remove module/i })).toBeNull();
   });
 
   it("applies custom className", () => {
     const { container } = render(
-      <MosaicModuleCard type="framework" module={sampleModule} className="my-module" />,
+      <MosaicModuleCard
+        type="framework"
+        module={sampleModule}
+        className="my-module"
+        customBadgeLabel="CUSTOM"
+        editAriaLabel="Edit module"
+        removeAriaLabel="Remove module"
+      />,
     );
     expect(container.querySelector(".my-module")).toBeTruthy();
   });

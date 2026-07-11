@@ -32,6 +32,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredSidebarLabels = {
+  sidebarAriaLabel: "Application sidebar",
+  mainNavAriaLabel: "Main navigation",
+  quickActionsHeading: "Quick Actions",
+  recentHeading: "Recent",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
+};
+
 export const Default: Story = {
   args: {
     isCollapsed: false,
@@ -39,6 +48,7 @@ export const Default: Story = {
     navItems,
     activePath: "/agents",
     onNavigate: (href) => console.log("navigate", href),
+    ...requiredSidebarLabels,
   },
 };
 
@@ -48,5 +58,6 @@ export const Collapsed: Story = {
     onToggleCollapse: () => console.log("expand"),
     navItems,
     activePath: "/agents",
+    ...requiredSidebarLabels,
   },
 };

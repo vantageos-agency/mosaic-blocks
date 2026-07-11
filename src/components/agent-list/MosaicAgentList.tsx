@@ -19,10 +19,24 @@
 import * as React from "react";
 import { MosaicAdaptiveModal } from "../adaptive-modal/MosaicAdaptiveModal.js";
 import { MosaicAgentCard } from "../agent-card/MosaicAgentCard.js";
-import type { MosaicAgentData } from "../agent-card/MosaicAgentCard.js";
+import type { MosaicAgentCardProps, MosaicAgentData } from "../agent-card/MosaicAgentCard.js";
 import { useDevice } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicFilterSidebar } from "../filter-sidebar/MosaicFilterSidebar.js";
 import type { MosaicFilterOption } from "../filter-sidebar/MosaicFilterSidebar.js";
+
+/** Required host-owned strings forwarded to every MosaicAgentCard rendered by the list. */
+export type MosaicAgentListCardLabels = Pick<
+  MosaicAgentCardProps,
+  | "activeBadgeLabel"
+  | "agentActionsAriaLabel"
+  | "deactivateLabel"
+  | "activateLabel"
+  | "editLabel"
+  | "deleteLabel"
+  | "pauseLabel"
+  | "startLabel"
+  | "createdLabel"
+>;
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -46,9 +60,39 @@ export interface MosaicAgentListProps {
   onCreateAgent?: () => void;
   /** Slot for header-right actions (e.g. OrgSwitcher) */
   headerActions?: React.ReactNode;
-  title?: string;
-  searchPlaceholder?: string;
-  createLabel?: string;
+  /** Section heading. Required, no default. */
+  title: string;
+  /** Search input placeholder. Required, no default. */
+  searchPlaceholder: string;
+  /** Label for the "create agent" button. Required, no default. */
+  createLabel: string;
+  /**
+   * Message shown when the filtered agent list is empty. Required — the
+   * host owns the language (e.g. `t('AgentList.empty')`). No default.
+   */
+  emptyMessage: string;
+  /**
+   * aria-label for the mobile "open filters" button. Required — host-owned,
+   * no default.
+   */
+  openFiltersAriaLabel: string;
+  /** Title of the mobile filters modal. Required — host-owned, no default. */
+  filtersModalTitle: string;
+  /**
+   * aria-label for the mobile filters modal close button. Required —
+   * host-owned, no default.
+   */
+  closeFiltersAriaLabel: string;
+  /** Required host-owned strings forwarded to every MosaicAgentCard. */
+  agentCardLabels: MosaicAgentListCardLabels;
+  /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
+  expandFiltersAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
+  categoriesHeading: string;
+  /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
+  collapseSidebarAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
+  expandSidebarAriaLabel: string;
   className?: string;
 }
 
@@ -128,9 +172,15 @@ function AgentListDesktop({
   onEditAgent,
   onCreateAgent,
   headerActions,
-  title = "Agents",
-  searchPlaceholder = "Search agents…",
-  createLabel = "New Agent",
+  title,
+  searchPlaceholder,
+  createLabel,
+  emptyMessage,
+  agentCardLabels,
+  expandFiltersAriaLabel,
+  categoriesHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
 }: MosaicAgentListProps) {
   const [query, setQuery] = React.useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
@@ -163,6 +213,10 @@ function AgentListDesktop({
           categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={onCategoryChange}
+          expandFiltersAriaLabel={expandFiltersAriaLabel}
+          categoriesHeading={categoriesHeading}
+          collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+          expandSidebarAriaLabel={expandSidebarAriaLabel}
         />
 
         {/* Main content */}
@@ -205,7 +259,7 @@ function AgentListDesktop({
           {/* Grid */}
           <div className="flex-1 overflow-y-auto p-6">
             {filtered.length === 0 && (
-              <p className="py-12 text-center text-sm text-muted-foreground">No agents found.</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>
             )}
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {filtered.map((agent) => (
@@ -215,6 +269,7 @@ function AgentListDesktop({
                   onToggleStatus={onToggleStatus}
                   onDelete={onDeleteAgent}
                   onEdit={onEditAgent}
+                  {...agentCardLabels}
                 />
               ))}
             </div>
@@ -239,9 +294,18 @@ function AgentListMobile({
   onDeleteAgent,
   onEditAgent,
   onCreateAgent,
-  title = "Agents",
-  searchPlaceholder = "Search agents…",
-  createLabel = "New Agent",
+  title,
+  searchPlaceholder,
+  createLabel,
+  emptyMessage,
+  openFiltersAriaLabel,
+  filtersModalTitle,
+  closeFiltersAriaLabel,
+  agentCardLabels,
+  expandFiltersAriaLabel,
+  categoriesHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
 }: MosaicAgentListProps) {
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -269,7 +333,7 @@ function AgentListMobile({
                 "hover:bg-accent hover:text-accent-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               )}
-              aria-label="Open filters"
+              aria-label={openFiltersAriaLabel}
             >
               <FilterIcon />
             </button>
@@ -315,15 +379,21 @@ function AgentListMobile({
             onToggleStatus={onToggleStatus}
             onDelete={onDeleteAgent}
             onEdit={onEditAgent}
+            {...agentCardLabels}
           />
         ))}
         {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-muted-foreground">No agents found.</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         )}
       </div>
 
       {/* Filter modal */}
-      <MosaicAdaptiveModal isOpen={filterOpen} onClose={() => setFilterOpen(false)} title="Filters">
+      <MosaicAdaptiveModal
+        isOpen={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        title={filtersModalTitle}
+        closeAriaLabel={closeFiltersAriaLabel}
+      >
         <div className="p-4">
           <MosaicFilterSidebar
             isCollapsed={false}
@@ -336,6 +406,10 @@ function AgentListMobile({
             }}
             categories={categories}
             selectedCategory={selectedCategory}
+            expandFiltersAriaLabel={expandFiltersAriaLabel}
+            categoriesHeading={categoriesHeading}
+            collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+            expandSidebarAriaLabel={expandSidebarAriaLabel}
             onCategoryChange={(id) => {
               onCategoryChange(id);
               setFilterOpen(false);

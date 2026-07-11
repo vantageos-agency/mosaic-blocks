@@ -15,7 +15,12 @@ function ModalDemo({ title }: { title: string }) {
       >
         Open Modal
       </button>
-      <MosaicAdaptiveModal isOpen={open} onClose={() => setOpen(false)} title={title}>
+      <MosaicAdaptiveModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={title}
+        closeAriaLabel="Close dialog"
+      >
         <p className="text-sm text-muted-foreground">
           Modal content goes here. Adapts to a bottom sheet on mobile.
         </p>
@@ -35,12 +40,24 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: { isOpen: false, onClose: () => {}, title: "Settings", children: null },
+  args: {
+    isOpen: false,
+    onClose: () => {},
+    title: "Settings",
+    children: null,
+    closeAriaLabel: "Close dialog",
+  },
   render: () => <ModalDemo title="Settings" />,
 };
 
 export const LongContent: Story = {
-  args: { isOpen: false, onClose: () => {}, title: "Details", children: null },
+  args: {
+    isOpen: false,
+    onClose: () => {},
+    title: "Details",
+    children: null,
+    closeAriaLabel: "Close dialog",
+  },
   render: () => (
     <MosaicDeviceProvider>
       {(() => {
@@ -54,7 +71,12 @@ export const LongContent: Story = {
             >
               Open Long Modal
             </button>
-            <MosaicAdaptiveModal isOpen={open} onClose={() => setOpen(false)} title="Details">
+            <MosaicAdaptiveModal
+              isOpen={open}
+              onClose={() => setOpen(false)}
+              title="Details"
+              closeAriaLabel="Close dialog"
+            >
               <p className="mb-3 text-sm text-muted-foreground">
                 Paragraph 1 — Lorem ipsum dolor sit amet, consectetur adipiscing elit.
               </p>

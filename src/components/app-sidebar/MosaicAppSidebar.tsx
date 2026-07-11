@@ -123,6 +123,21 @@ export interface MosaicAppSidebarProps {
   logoSlot?: React.ReactNode;
   /** Footer status pill */
   footerStatus?: MosaicSidebarFooterStatus;
+  /**
+   * aria-label for the root `<div>` sidebar landmark. Required — host-owned,
+   * no default.
+   */
+  sidebarAriaLabel: string;
+  /** aria-label for the main `<nav>`. Required — host-owned, no default. */
+  mainNavAriaLabel: string;
+  /** Heading above the quick-actions section. Required — host-owned, no default. */
+  quickActionsHeading: string;
+  /** Heading above the recent-items section. Required — host-owned, no default. */
+  recentHeading: string;
+  /** aria-label for the collapse-toggle button when expanded. Required, no default. */
+  collapseSidebarAriaLabel: string;
+  /** aria-label for the collapse-toggle button when collapsed. Required, no default. */
+  expandSidebarAriaLabel: string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -253,6 +268,12 @@ export function MosaicAppSidebar({
   recentItems = [],
   logoSlot,
   footerStatus,
+  sidebarAriaLabel,
+  mainNavAriaLabel,
+  quickActionsHeading,
+  recentHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
   className,
   ref,
 }: MosaicAppSidebarProps) {
@@ -295,7 +316,7 @@ export function MosaicAppSidebar({
         transition: "width 280ms ease-in-out",
         overflow: "hidden",
       }}
-      aria-label="Application sidebar"
+      aria-label={sidebarAriaLabel}
     >
       {/* ── Header ── */}
       <div className="shrink-0 border-b border-sidebar-border p-4">
@@ -309,7 +330,7 @@ export function MosaicAppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={isCollapsed ? expandSidebarAriaLabel : collapseSidebarAriaLabel}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
                 "hover:bg-sidebar-accent text-sidebar-foreground",
@@ -327,7 +348,7 @@ export function MosaicAppSidebar({
       <div className="flex-1 overflow-y-auto p-2" style={{ scrollbarWidth: "thin" }}>
         {/* Nav items */}
         {navItems.length > 0 && (
-          <nav aria-label="Main navigation">
+          <nav aria-label={mainNavAriaLabel}>
             <div className="space-y-0.5">
               {navItems.map((item) => {
                 const isActive = activePath === item.href;
@@ -423,7 +444,7 @@ export function MosaicAppSidebar({
         {!isCollapsed && quickActions.length > 0 && (
           <div className="mt-6">
             <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/60">
-              Quick Actions
+              {quickActionsHeading}
             </p>
             <div className="space-y-0.5">
               {quickActions.map((action) => (
@@ -449,7 +470,7 @@ export function MosaicAppSidebar({
         {!isCollapsed && recentItems.length > 0 && (
           <div className="mt-6">
             <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/60">
-              Recent
+              {recentHeading}
             </p>
             <div className="space-y-1.5">
               {recentItems.map((item) => (

@@ -37,6 +37,21 @@ const galleryBaseProps = {
   onFilterChange: () => {},
   selectedCategory: "all",
   onCategoryChange: () => {},
+  emptyMessage: "No templates found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
+  previewLabel: "Preview",
+  duplicateLabel: "Duplicate",
+};
+
+const templateCardLabels = {
+  previewLabel: "Preview",
+  duplicateLabel: "Duplicate",
 };
 
 describe("MosaicTemplateGallery", () => {
@@ -81,12 +96,16 @@ describe("MosaicTemplateGallery", () => {
 
 describe("MosaicTemplateCard", () => {
   it("renders template name", () => {
-    render(<MosaicTemplateCard template={templates[0]} onSelect={() => {}} />);
+    render(
+      <MosaicTemplateCard template={templates[0]} onSelect={() => {}} {...templateCardLabels} />,
+    );
     expect(screen.getByText("Strategy Debate")).toBeTruthy();
   });
 
   it("renders template description", () => {
-    render(<MosaicTemplateCard template={templates[0]} onSelect={() => {}} />);
+    render(
+      <MosaicTemplateCard template={templates[0]} onSelect={() => {}} {...templateCardLabels} />,
+    );
     expect(screen.getByText("A structured strategy discussion")).toBeTruthy();
   });
 });
@@ -94,7 +113,13 @@ describe("MosaicTemplateCard", () => {
 describe("MosaicTemplatePreview", () => {
   it("renders template name in preview", () => {
     render(
-      <MosaicTemplatePreview template={templates[0]} onSelect={() => {}} onClose={() => {}} />,
+      <MosaicTemplatePreview
+        template={templates[0]}
+        onSelect={() => {}}
+        onClose={() => {}}
+        cancelLabel="Cancel"
+        selectLabel="Use Template"
+      />,
     );
     expect(screen.getByText("Strategy Debate")).toBeTruthy();
   });

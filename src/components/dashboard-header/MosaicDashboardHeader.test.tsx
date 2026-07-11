@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicDashboardHeader } from "./MosaicDashboardHeader.js";
 
+const requiredHeaderLabels = { searchPlaceholder: "Search…", searchAriaLabel: "Search" };
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -12,7 +14,7 @@ describe("MosaicDashboardHeader", () => {
   it("renders title", () => {
     render(
       <Wrapper>
-        <MosaicDashboardHeader title="My Dashboard" />
+        <MosaicDashboardHeader title="My Dashboard" {...requiredHeaderLabels} />
       </Wrapper>,
     );
     expect(screen.getByText("My Dashboard")).toBeTruthy();
@@ -23,7 +25,11 @@ describe("MosaicDashboardHeader", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicDashboardHeader title="Dashboard" subtitle="Welcome back" />
+          <MosaicDashboardHeader
+            title="Dashboard"
+            subtitle="Welcome back"
+            {...requiredHeaderLabels}
+          />
         </Wrapper>,
       ),
     ).not.toThrow();
@@ -36,6 +42,7 @@ describe("MosaicDashboardHeader", () => {
           title="Dashboard"
           notificationCount={5}
           onNotificationsClick={() => {}}
+          {...requiredHeaderLabels}
         />
       </Wrapper>,
     );
@@ -47,7 +54,11 @@ describe("MosaicDashboardHeader", () => {
   it("renders actions slot content", () => {
     render(
       <Wrapper>
-        <MosaicDashboardHeader title="Dashboard" actions={<button type="button">Action</button>} />
+        <MosaicDashboardHeader
+          title="Dashboard"
+          actions={<button type="button">Action</button>}
+          {...requiredHeaderLabels}
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Action")).toBeTruthy();
@@ -61,6 +72,7 @@ describe("MosaicDashboardHeader", () => {
           title="Dashboard"
           notificationCount={3}
           onNotificationsClick={onClick}
+          {...requiredHeaderLabels}
         />
       </Wrapper>,
     );

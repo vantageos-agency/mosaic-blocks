@@ -51,8 +51,10 @@ export interface MosaicPreferencesPanelProps {
   onSave: () => void;
   /** Whether the save action is pending */
   isSaving?: boolean;
-  /** Label for the save button (default "Save Preferences") */
-  saveLabel?: string;
+  /** Label for the save button. Required, no default. */
+  saveLabel: string;
+  /** Label shown on the save button while `isSaving` is true. Required, no default. */
+  savingLabel: string;
   className?: string;
 }
 
@@ -131,7 +133,8 @@ export function MosaicPreferencesPanel({
   onChange,
   onSave,
   isSaving = false,
-  saveLabel = "Save Preferences",
+  saveLabel,
+  savingLabel,
   className,
 }: MosaicPreferencesPanelProps) {
   const { isMobile } = useDevice();
@@ -223,7 +226,7 @@ export function MosaicPreferencesPanel({
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
           </svg>
-          {isSaving ? "Saving…" : saveLabel}
+          {isSaving ? savingLabel : saveLabel}
         </button>
       </div>
     </div>

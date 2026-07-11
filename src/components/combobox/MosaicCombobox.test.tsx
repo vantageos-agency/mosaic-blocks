@@ -22,25 +22,39 @@ const ITEMS = [
 
 describe("MosaicCombobox", () => {
   it("renders an input with role=combobox", () => {
-    render(<MosaicCombobox items={ITEMS} placeholder="Search frameworks…" />);
+    render(
+      <MosaicCombobox
+        items={ITEMS}
+        placeholder="Search frameworks…"
+        emptyMessage="No results found."
+      />,
+    );
     expect(screen.getByRole("combobox")).toBeTruthy();
   });
 
   it("sets data-slot='combobox' on the wrapper", () => {
-    const { container } = render(<MosaicCombobox items={ITEMS} placeholder="Search…" />);
+    const { container } = render(
+      <MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />,
+    );
     const wrapper = container.querySelector("[data-slot='combobox']");
     expect(wrapper).toBeTruthy();
   });
 
   it("shows placeholder text in input", () => {
-    render(<MosaicCombobox items={ITEMS} placeholder="Search frameworks…" />);
+    render(
+      <MosaicCombobox
+        items={ITEMS}
+        placeholder="Search frameworks…"
+        emptyMessage="No results found."
+      />,
+    );
     const input = screen.getByRole("combobox");
     expect(input.getAttribute("placeholder")).toBe("Search frameworks…");
   });
 
   it("opens dropdown on input focus + type", async () => {
     const user = userEvent.setup();
-    render(<MosaicCombobox items={ITEMS} placeholder="Search…" />);
+    render(<MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />);
     const input = screen.getByRole("combobox");
     await user.click(input);
     await user.type(input, "Re");
@@ -51,7 +65,7 @@ describe("MosaicCombobox", () => {
 
   it("filters items by input value", async () => {
     const user = userEvent.setup();
-    render(<MosaicCombobox items={ITEMS} placeholder="Search…" />);
+    render(<MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />);
     await user.click(screen.getByRole("combobox"));
     await user.type(screen.getByRole("combobox"), "vue");
     await waitFor(() => {
@@ -62,7 +76,7 @@ describe("MosaicCombobox", () => {
 
   it("closes popup on Escape key", async () => {
     const user = userEvent.setup();
-    render(<MosaicCombobox items={ITEMS} placeholder="Search…" />);
+    render(<MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />);
     const input = screen.getByRole("combobox");
     await user.click(input);
     await user.type(input, "r");
@@ -76,7 +90,14 @@ describe("MosaicCombobox", () => {
   it("calls onValueChange when item is selected", async () => {
     const user = userEvent.setup();
     const handler = vi.fn();
-    render(<MosaicCombobox items={ITEMS} placeholder="Search…" onValueChange={handler} />);
+    render(
+      <MosaicCombobox
+        items={ITEMS}
+        placeholder="Search…"
+        onValueChange={handler}
+        emptyMessage="No results found."
+      />,
+    );
     const input = screen.getByRole("combobox");
     await user.click(input);
     await user.type(input, "React");
@@ -89,7 +110,7 @@ describe("MosaicCombobox", () => {
 
   it("navigates items with ArrowDown", async () => {
     const user = userEvent.setup();
-    render(<MosaicCombobox items={ITEMS} placeholder="Search…" />);
+    render(<MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />);
     const input = screen.getByRole("combobox");
     await user.click(input);
     await user.type(input, "a");
@@ -103,7 +124,7 @@ describe("MosaicCombobox", () => {
 
   it("shows all items when input is empty and popup is open", async () => {
     const user = userEvent.setup();
-    render(<MosaicCombobox items={ITEMS} placeholder="Search…" />);
+    render(<MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />);
     const input = screen.getByRole("combobox");
     await user.click(input);
     // Trigger open via ArrowDown which should open and show items

@@ -42,8 +42,7 @@ function SelectorDemo() {
         }}
         onRemoveAgent={(id) => setSelected((prev) => prev.filter((a) => a.id !== id))}
         onOpenBuilder={() => console.log("open builder")}
-        addLabel="Add Agent"
-        createLabel="Create Custom"
+        {...requiredQuickAgentLabels}
       />
     </MosaicDeviceProvider>
   );
@@ -66,8 +65,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredQuickAgentLabels = {
+  quickAddHeading: "Quick Add",
+  configureBehaviorCaption: "Configure roles and behavior",
+  noAgentsAvailableMessage: "No agents available to add.",
+  addAgentModalTitle: "Add Agent",
+  closeAriaLabel: "Close dialog",
+  addLabel: "Add Agent",
+  createLabel: "Create Custom Agent",
+};
+
 export const Default: Story = {
-  args: { selectedAgents: [], onAddAgent: () => {}, onRemoveAgent: () => {} },
+  args: {
+    selectedAgents: [],
+    onAddAgent: () => {},
+    onRemoveAgent: () => {},
+    ...requiredQuickAgentLabels,
+  },
   render: () => <SelectorDemo />,
 };
 
@@ -77,6 +91,6 @@ export const Empty: Story = {
     availableAgents,
     onAddAgent: (id) => console.log("add", id),
     onRemoveAgent: () => {},
-    addLabel: "Add Agent",
+    ...requiredQuickAgentLabels,
   },
 };

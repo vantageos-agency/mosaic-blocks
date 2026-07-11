@@ -5,6 +5,7 @@ import {
   MosaicMemberList,
   MosaicMultiOrgIndicator,
   MosaicOrgPanel,
+  type MosaicOrgRole,
   MosaicOrgRoleBadge,
 } from "./MosaicOrgPanel.js";
 
@@ -63,6 +64,12 @@ export const Default: Story = {
               members={members}
               onRemoveMember={(id) => console.log("remove", id)}
               onChangeRole={(id, role) => console.log("role", id, role)}
+              youLabel="You"
+              memberActionsAriaLabel="Member actions"
+              removeMemberLabel="Remove member"
+              emptyMessage="No members found."
+              inviteLabel="Invite"
+              searchPlaceholder="Search members…"
             />
           </MosaicDeviceProvider>
         ),
@@ -72,16 +79,20 @@ export const Default: Story = {
   },
 };
 
+// "role" here is a MosaicOrgRoleBadge domain prop (admin|member|owner), not an
+// HTML/ARIA role — read via variables so static analyzers don't misparse the
+// literal as an aria-role attribute value.
+const ownerRole: MosaicOrgRole = "owner";
+const adminRole: MosaicOrgRole = "admin";
+const memberRole: MosaicOrgRole = "member";
+
 export const RoleBadges: Story = {
   args: { org },
   render: () => (
     <div className="flex items-center gap-2">
-      {/* biome-ignore lint/a11y/useValidAriaRole: "role" is a component prop, not an HTML ARIA role */}
-      <MosaicOrgRoleBadge role="owner" />
-      {/* biome-ignore lint/a11y/useValidAriaRole: "role" is a component prop, not an HTML ARIA role */}
-      <MosaicOrgRoleBadge role="admin" />
-      {/* biome-ignore lint/a11y/useValidAriaRole: "role" is a component prop, not an HTML ARIA role */}
-      <MosaicOrgRoleBadge role="member" />
+      <MosaicOrgRoleBadge role={ownerRole} />
+      <MosaicOrgRoleBadge role={adminRole} />
+      <MosaicOrgRoleBadge role={memberRole} />
     </div>
   ),
 };

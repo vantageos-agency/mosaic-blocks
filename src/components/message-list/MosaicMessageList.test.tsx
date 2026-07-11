@@ -4,6 +4,19 @@ import { describe, expect, it } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicMessageList } from "./MosaicMessageList.js";
 
+const requiredMessageListLabels = {
+  searchPlaceholder: "Search messages…",
+  emptyMessage: "No messages found.",
+  loadMoreLabel: "Load more",
+  replyLabel: "Reply",
+  moreOptionsAriaLabel: "More options",
+  removeBookmarkAriaLabel: "Remove bookmark",
+  bookmarkAriaLabel: "Bookmark message",
+  removeBookmarkLabel: "Remove bookmark",
+  bookmarkLabel: "Bookmark",
+  copyMessageLabel: "Copy message",
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -27,7 +40,7 @@ describe("MosaicMessageList", () => {
   it("renders message contents", () => {
     render(
       <Wrapper>
-        <MosaicMessageList messages={messages} />
+        <MosaicMessageList messages={messages} {...requiredMessageListLabels} />
       </Wrapper>,
     );
     expect(screen.getByText("Hello world")).toBeTruthy();
@@ -37,7 +50,11 @@ describe("MosaicMessageList", () => {
   it("renders title when provided", () => {
     render(
       <Wrapper>
-        <MosaicMessageList messages={messages} title="Conversation" />
+        <MosaicMessageList
+          messages={messages}
+          title="Conversation"
+          {...requiredMessageListLabels}
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Conversation")).toBeTruthy();
@@ -47,7 +64,7 @@ describe("MosaicMessageList", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicMessageList messages={[]} />
+          <MosaicMessageList messages={[]} {...requiredMessageListLabels} />
         </Wrapper>,
       ),
     ).not.toThrow();
@@ -56,7 +73,11 @@ describe("MosaicMessageList", () => {
   it("applies custom className", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicMessageList messages={messages} className="msg-list" />
+        <MosaicMessageList
+          messages={messages}
+          className="msg-list"
+          {...requiredMessageListLabels}
+        />
       </Wrapper>,
     );
     expect(container.querySelector(".msg-list")).toBeTruthy();
@@ -66,7 +87,12 @@ describe("MosaicMessageList", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicMessageList messages={messages} hasMore={true} onLoadMore={() => {}} />
+          <MosaicMessageList
+            messages={messages}
+            hasMore={true}
+            onLoadMore={() => {}}
+            {...requiredMessageListLabels}
+          />
         </Wrapper>,
       ),
     ).not.toThrow();

@@ -70,6 +70,20 @@ export interface MosaicMessageCardProps {
   onCopy?: (messageId: string, content: string) => void;
   showThread?: boolean;
   compact?: boolean;
+  /** Label for the reply button. Required — host-owned, no default. */
+  replyLabel: string;
+  /** aria-label for the more-options menu trigger. Required — host-owned, no default. */
+  moreOptionsAriaLabel: string;
+  /** aria-label for the bookmark button when currently bookmarked. Required, no default. */
+  removeBookmarkAriaLabel: string;
+  /** aria-label for the bookmark button when not bookmarked. Required, no default. */
+  bookmarkAriaLabel: string;
+  /** Label for the bookmark toggle menu item when currently bookmarked. Required, no default. */
+  removeBookmarkLabel: string;
+  /** Label for the bookmark toggle menu item when not bookmarked. Required, no default. */
+  bookmarkLabel: string;
+  /** Label for the "copy message" menu item. Required, no default. */
+  copyMessageLabel: string;
   className?: string;
 }
 
@@ -243,6 +257,13 @@ export function MosaicMessageCard({
   onCopy,
   showThread = true,
   compact = false,
+  replyLabel,
+  moreOptionsAriaLabel,
+  removeBookmarkAriaLabel,
+  bookmarkAriaLabel,
+  removeBookmarkLabel,
+  bookmarkLabel,
+  copyMessageLabel,
   className,
 }: MosaicMessageCardProps) {
   const [bookmarked, setBookmarked] = React.useState(message.bookmarked ?? false);
@@ -421,7 +442,7 @@ export function MosaicMessageCard({
                 className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {icons.reply}
-                <span>Reply</span>
+                <span>{replyLabel}</span>
               </button>
             </div>
 
@@ -435,7 +456,7 @@ export function MosaicMessageCard({
                   "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                   bookmarked && "text-primary",
                 )}
-                aria-label={bookmarked ? "Remove bookmark" : "Bookmark message"}
+                aria-label={bookmarked ? removeBookmarkAriaLabel : bookmarkAriaLabel}
                 aria-pressed={bookmarked}
               >
                 {icons.bookmark}
@@ -447,7 +468,7 @@ export function MosaicMessageCard({
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label="More options"
+                  aria-label={moreOptionsAriaLabel}
                   aria-haspopup="menu"
                 >
                   {icons.more}
@@ -467,7 +488,7 @@ export function MosaicMessageCard({
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
                     >
                       {icons.copy}
-                      Copy message
+                      {copyMessageLabel}
                     </button>
                     <button
                       type="button"
@@ -479,7 +500,7 @@ export function MosaicMessageCard({
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
                     >
                       {icons.reply}
-                      Reply
+                      {replyLabel}
                     </button>
                     <button
                       type="button"
@@ -491,7 +512,7 @@ export function MosaicMessageCard({
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
                     >
                       {icons.bookmark}
-                      {bookmarked ? "Remove bookmark" : "Bookmark"}
+                      {bookmarked ? removeBookmarkLabel : bookmarkLabel}
                     </button>
                   </div>
                 )}

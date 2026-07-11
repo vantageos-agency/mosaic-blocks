@@ -4,6 +4,16 @@ import { describe, expect, it, vi } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicQuickAgentSelector } from "./MosaicQuickAgentSelector.js";
 
+const requiredQuickAgentLabels = {
+  quickAddHeading: "Quick Add",
+  configureBehaviorCaption: "Configure roles and behavior",
+  noAgentsAvailableMessage: "No agents available to add.",
+  addAgentModalTitle: "Add Agent",
+  closeAriaLabel: "Close dialog",
+  addLabel: "Add Agent",
+  createLabel: "Create Custom Agent",
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -25,6 +35,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
+          {...requiredQuickAgentLabels}
         />
       </Wrapper>,
     );
@@ -36,6 +47,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
+          {...requiredQuickAgentLabels}
         />
       </Wrapper>,
     );
@@ -51,7 +63,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
-          addLabel="Add Agent"
+          {...requiredQuickAgentLabels}
         />
       </Wrapper>,
     );
@@ -69,6 +81,7 @@ describe("MosaicQuickAgentSelector", () => {
             availableAgents={availableAgents}
             onAddAgent={() => {}}
             onRemoveAgent={() => {}}
+            {...requiredQuickAgentLabels}
           />
         </Wrapper>,
       ),
@@ -84,6 +97,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={onRemove}
+          {...requiredQuickAgentLabels}
         />
       </Wrapper>,
     );
@@ -102,6 +116,7 @@ describe("MosaicQuickAgentSelector", () => {
             onAddAgent={() => {}}
             onRemoveAgent={() => {}}
             maxAgents={1}
+            {...requiredQuickAgentLabels}
           />
         </Wrapper>,
       ),

@@ -13,6 +13,18 @@ const agent = {
   createdAt: new Date("2024-01-15"),
 };
 
+const requiredLabels = {
+  activeBadgeLabel: "Active",
+  agentActionsAriaLabel: "Agent actions",
+  deactivateLabel: "Deactivate",
+  activateLabel: "Activate",
+  editLabel: "Edit",
+  deleteLabel: "Delete",
+  pauseLabel: "Pause",
+  startLabel: "Start",
+  createdLabel: (date: string) => `Created ${date}`,
+};
+
 const meta = {
   title: "Components/MosaicAgentCard",
   component: MosaicAgentCard,
@@ -26,6 +38,7 @@ type Story = StoryObj<typeof meta>;
 export const Active: Story = {
   args: {
     agent,
+    ...requiredLabels,
     onToggleStatus: (id) => console.log("toggle", id),
     onEdit: (id) => console.log("edit", id),
     onDelete: (id) => console.log("delete", id),
@@ -35,6 +48,7 @@ export const Active: Story = {
 export const Inactive: Story = {
   args: {
     agent: { ...agent, isActive: false, accentColor: "bg-gray-400" },
+    ...requiredLabels,
     onToggleStatus: () => {},
   },
 };
@@ -42,6 +56,7 @@ export const Inactive: Story = {
 export const Loading: Story = {
   args: {
     agent,
+    ...requiredLabels,
     isLoading: true,
     onToggleStatus: () => {},
   },

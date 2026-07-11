@@ -47,6 +47,12 @@ export interface MosaicModuleCardProps {
   onEdit?: () => void;
   isSelected?: boolean;
   isCustom?: boolean;
+  /** Badge label shown when `isCustom` is true. Required, no default. */
+  customBadgeLabel: string;
+  /** aria-label for the edit button. Required, no default. */
+  editAriaLabel: string;
+  /** aria-label for the remove button. Required, no default. */
+  removeAriaLabel: string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -112,6 +118,9 @@ export function MosaicModuleCard({
   onEdit,
   isSelected = false,
   isCustom = false,
+  customBadgeLabel,
+  editAriaLabel,
+  removeAriaLabel,
   className,
   ref,
 }: MosaicModuleCardProps) {
@@ -139,7 +148,7 @@ export function MosaicModuleCard({
           <h4 className="truncate text-sm font-medium text-foreground">{module.name}</h4>
           {isCustom && (
             <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-              CUSTOM
+              {customBadgeLabel}
             </span>
           )}
         </div>
@@ -173,7 +182,7 @@ export function MosaicModuleCard({
             <button
               type="button"
               onClick={onEdit}
-              aria-label="Edit module"
+              aria-label={editAriaLabel}
               className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <EditIcon />
@@ -183,7 +192,7 @@ export function MosaicModuleCard({
             <button
               type="button"
               onClick={onRemove}
-              aria-label="Remove module"
+              aria-label={removeAriaLabel}
               className="flex h-8 w-8 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <RemoveIcon />

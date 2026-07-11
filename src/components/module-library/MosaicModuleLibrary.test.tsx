@@ -4,6 +4,37 @@ import { describe, expect, it } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicModuleForm, MosaicModuleLibrary } from "./MosaicModuleLibrary.js";
 
+const requiredModuleLibraryLabels = {
+  nameFieldLabel: "Name *",
+  descriptionFieldLabel: "Description",
+  namePlaceholder: "Module name…",
+  descriptionPlaceholder: "Describe this module…",
+  cancelLabel: "Cancel",
+  saveChangesLabel: "Save Changes",
+  createItemLabel: "Create",
+  itemActionsAriaLabel: "Item actions",
+  editItemLabel: "Edit",
+  deleteItemLabel: "Delete",
+  closeEditorAriaLabel: "Close dialog",
+  editModalTitle: (name: string) => `Edit ${name || "Module"}`,
+  title: "Module Library",
+  createLabel: "New Module",
+  searchPlaceholder: "Search modules…",
+  emptyMessage: "No modules found.",
+  tagListAddPlaceholder: "Add item…",
+};
+
+const requiredModuleFormLabels = {
+  nameFieldLabel: "Name *",
+  descriptionFieldLabel: "Description",
+  namePlaceholder: "Module name…",
+  descriptionPlaceholder: "Describe this module…",
+  cancelLabel: "Cancel",
+  saveChangesLabel: "Save Changes",
+  createItemLabel: "Create",
+  tagListAddPlaceholder: "Add item…",
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -42,6 +73,7 @@ describe("MosaicModuleLibrary", () => {
           onCreateItem={() => {}}
           onUpdateItem={() => {}}
           onDeleteItem={() => {}}
+          {...requiredModuleLibraryLabels}
         />
       </Wrapper>,
     );
@@ -59,6 +91,7 @@ describe("MosaicModuleLibrary", () => {
             onCreateItem={() => {}}
             onUpdateItem={() => {}}
             onDeleteItem={() => {}}
+            {...requiredModuleLibraryLabels}
           />
         </Wrapper>,
       ),
@@ -74,6 +107,7 @@ describe("MosaicModuleLibrary", () => {
           onCreateItem={() => {}}
           onUpdateItem={() => {}}
           onDeleteItem={() => {}}
+          {...requiredModuleLibraryLabels}
           title="Framework Library"
         />
       </Wrapper>,
@@ -90,6 +124,7 @@ describe("MosaicModuleForm", () => {
         formFields={formFields}
         onSave={() => {}}
         onCancel={() => {}}
+        {...requiredModuleFormLabels}
       />,
     );
     // Name field has id="module-name"
@@ -104,6 +139,7 @@ describe("MosaicModuleForm", () => {
         formFields={formFields}
         onSave={() => {}}
         onCancel={() => {}}
+        {...requiredModuleFormLabels}
       />,
     );
     const buttons = screen.getAllByRole("button");

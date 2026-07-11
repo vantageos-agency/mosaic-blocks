@@ -62,7 +62,7 @@ export function MosaicSelect({
   items,
   value,
   onValueChange,
-  placeholder = "Select…",
+  placeholder,
   defaultValue,
   disabled,
   required,

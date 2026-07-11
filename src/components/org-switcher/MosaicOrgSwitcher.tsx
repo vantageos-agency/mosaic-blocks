@@ -36,7 +36,16 @@ export interface MosaicOrgSwitcherProps {
   currentOrgId?: string;
   onSelectOrg?: (orgId: string) => void;
   onCreateOrg?: () => void;
-  createOrgLabel?: string;
+  /** Label for the "create organization" action (shown when `onCreateOrg` is set). Required, no default. */
+  createOrgLabel: string;
+  /** aria-label for the trigger button. Required, no default. */
+  triggerAriaLabel: string;
+  /**
+   * Trigger label shown when no organization is selected/available.
+   * Required — the host owns the language (e.g. `t('OrgSwitcher.none')`).
+   * No default, no fallback.
+   */
+  noOrgSelectedLabel: string;
   className?: string;
 }
 
@@ -107,7 +116,9 @@ export function MosaicOrgSwitcher({
   currentOrgId,
   onSelectOrg,
   onCreateOrg,
-  createOrgLabel = "Create organization",
+  createOrgLabel,
+  triggerAriaLabel,
+  noOrgSelectedLabel,
   className,
 }: MosaicOrgSwitcherProps) {
   const [open, setOpen] = React.useState(false);
@@ -160,14 +171,14 @@ export function MosaicOrgSwitcher({
             initials
           )}
         </span>
-        <span className="max-w-[120px] truncate">{currentOrg?.name ?? "Select org"}</span>
+        <span className="max-w-[120px] truncate">{currentOrg?.name ?? noOrgSelectedLabel}</span>
         <ChevronDownIcon />
       </button>
 
       {open && (
         <div
           role="menu"
-          aria-label="Select organization"
+          aria-label={triggerAriaLabel}
           className={cn(
             "absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-border",
             "bg-popover py-1 shadow-md",

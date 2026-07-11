@@ -32,6 +32,10 @@ describe("MosaicFilterSidebar", () => {
           categories={categories}
           selectedCategory="strategy"
           onCategoryChange={() => {}}
+          expandFiltersAriaLabel="Expand filters"
+          categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -51,6 +55,10 @@ describe("MosaicFilterSidebar", () => {
           categories={categories}
           selectedCategory="strategy"
           onCategoryChange={() => {}}
+          expandFiltersAriaLabel="Expand filters"
+          categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -71,6 +79,10 @@ describe("MosaicFilterSidebar", () => {
           categories={[]}
           selectedCategory=""
           onCategoryChange={() => {}}
+          expandFiltersAriaLabel="Expand filters"
+          categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -91,6 +103,10 @@ describe("MosaicFilterSidebar", () => {
           categories={[]}
           selectedCategory=""
           onCategoryChange={() => {}}
+          expandFiltersAriaLabel="Expand filters"
+          categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -110,6 +126,10 @@ describe("MosaicFilterSidebar", () => {
           selectedCategory=""
           onCategoryChange={() => {}}
           title="Filters"
+          expandFiltersAriaLabel="Expand filters"
+          categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );

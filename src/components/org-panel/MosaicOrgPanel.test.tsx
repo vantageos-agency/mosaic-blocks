@@ -8,6 +8,7 @@ import {
   MosaicMemberList,
   MosaicMultiOrgIndicator,
   MosaicOrgPanel,
+  type MosaicOrgRole,
   MosaicOrgRoleBadge,
 } from "./MosaicOrgPanel.js";
 
@@ -68,20 +69,23 @@ describe("MosaicOrgPanel", () => {
 
 describe("MosaicOrgRoleBadge", () => {
   it("renders admin badge", () => {
-    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
-    render(<MosaicOrgRoleBadge role="admin" />);
+    // "role" here is a MosaicOrgRoleBadge domain prop (admin|member|owner), not an
+    // HTML/ARIA role — read via a variable so static analyzers don't misparse the
+    // literal as an aria-role attribute value.
+    const roleValue: MosaicOrgRole = "admin";
+    render(<MosaicOrgRoleBadge role={roleValue} />);
     expect(screen.getByText(/admin/i)).toBeTruthy();
   });
 
   it("renders member badge", () => {
-    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
-    render(<MosaicOrgRoleBadge role="member" />);
+    const roleValue: MosaicOrgRole = "member";
+    render(<MosaicOrgRoleBadge role={roleValue} />);
     expect(screen.getByText(/member/i)).toBeTruthy();
   });
 
   it("renders owner badge", () => {
-    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
-    render(<MosaicOrgRoleBadge role="owner" />);
+    const roleValue: MosaicOrgRole = "owner";
+    render(<MosaicOrgRoleBadge role={roleValue} />);
     expect(screen.getByText(/owner/i)).toBeTruthy();
   });
 });
@@ -102,7 +106,21 @@ describe("MosaicCreateOrgDialog", () => {
   it("renders form when open", () => {
     render(
       <Wrapper>
-        <MosaicCreateOrgDialog open={true} onOpenChange={() => {}} onCreateOrg={() => {}} />
+        <MosaicCreateOrgDialog
+          open={true}
+          onOpenChange={() => {}}
+          onCreateOrg={() => {}}
+          title="Create Organization"
+          closeAriaLabel="Close dialog"
+          orgNameFieldLabel="Organization Name *"
+          orgNamePlaceholder="Acme Inc."
+          slugFieldLabel="Slug *"
+          descriptionFieldLabel="Description"
+          descriptionPlaceholder="Optional description…"
+          cancelLabel="Cancel"
+          creatingLabel="Creating…"
+          createLabel="Create Organization"
+        />
       </Wrapper>,
     );
     // Form should be visible
@@ -119,6 +137,14 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          title="Invite Member"
+          closeAriaLabel="Close dialog"
+          emailFieldLabel="Email address *"
+          emailPlaceholder="colleague@example.com"
+          roleFieldLabel="Role"
+          cancelLabel="Cancel"
+          sendingLabel="Sending…"
+          sendInvitationLabel="Send Invitation"
         />
       </Wrapper>,
     );
@@ -131,7 +157,17 @@ describe("MosaicMemberList", () => {
   it("renders member names", () => {
     render(
       <Wrapper>
-        <MosaicMemberList members={members} onRemoveMember={() => {}} onChangeRole={() => {}} />
+        <MosaicMemberList
+          members={members}
+          onRemoveMember={() => {}}
+          onChangeRole={() => {}}
+          youLabel="You"
+          memberActionsAriaLabel="Member actions"
+          removeMemberLabel="Remove member"
+          emptyMessage="No members found."
+          inviteLabel="Invite"
+          searchPlaceholder="Search members…"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Alice")).toBeTruthy();

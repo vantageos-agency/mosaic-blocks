@@ -28,6 +28,10 @@ function NavDemo() {
         onItemChange={setActive}
         expandedItems={expanded}
         onToggleExpanded={toggle}
+        stepNavAriaLabel="Step navigation"
+        tabNavAriaLabel="Tab navigation"
+        completeStatusLabel="Complete"
+        inProgressStatusLabel="In progress"
       />
     </MosaicDeviceProvider>
   );
@@ -51,7 +55,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: { items, activeItem: "agents", onItemChange: () => {} },
+  args: {
+    items,
+    activeItem: "agents",
+    onItemChange: () => {},
+    stepNavAriaLabel: "Step navigation",
+    tabNavAriaLabel: "Tab navigation",
+    completeStatusLabel: "Complete",
+    inProgressStatusLabel: "In progress",
+  },
   render: () => <NavDemo />,
 };
 
@@ -60,5 +72,9 @@ export const AllComplete: Story = {
     items: items.map((i) => ({ ...i, isComplete: true })),
     activeItem: "review",
     onItemChange: () => {},
+    stepNavAriaLabel: "Step navigation",
+    tabNavAriaLabel: "Tab navigation",
+    completeStatusLabel: "Complete",
+    inProgressStatusLabel: "In progress",
   },
 };

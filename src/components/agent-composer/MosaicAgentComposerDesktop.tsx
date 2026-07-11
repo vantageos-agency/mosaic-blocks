@@ -67,20 +67,41 @@ export interface MosaicAgentComposerProps {
   onCancel?: () => void;
   canSave: boolean;
   isEditMode?: boolean;
-  /** Labels override — localize or rename slots */
-  labels?: {
-    role?: string;
-    persona?: string;
-    framework?: string;
-    model?: string;
-    customInstructions?: string;
-    saveLabel?: string;
-    cancelLabel?: string;
-    heading?: string;
-    subheading?: string;
-    headingEdit?: string;
-    subheadingEdit?: string;
+  /**
+   * Slot labels — required, host-owned, no default. The host owns the
+   * language (e.g. next-intl `t()`). Every field is mandatory: a missing
+   * label is a compile-time error, never a silent English fallback.
+   */
+  labels: {
+    role: string;
+    persona: string;
+    framework: string;
+    model: string;
+    customInstructions: string;
+    saveLabel: string;
+    cancelLabel: string;
+    heading: string;
+    subheading: string;
+    headingEdit: string;
+    subheadingEdit: string;
   };
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  agentNameLabel: string;
+  agentNamePlaceholder: string;
+  instructionsPlaceholder: string;
+  modelDescriptionLabel: string;
+  recommendedBadgeLabel: string;
+  livePreviewHeading: string;
+  livePreviewSubheading: string;
+  previewConfigLabel: string;
+  customInstructionsPreviewLabel: string;
+  selectAllModulesLabel: string;
+  requiredLabel: string;
+  /** Fallback name shown in the preview when `agentName` is empty. Required, no default. */
+  unnamedAgentLabel: string;
 }
 
 // ── Inline icons ──────────────────────────────────────────────────────────────
@@ -266,21 +287,22 @@ export function MosaicAgentComposerDesktop({
   onCancel,
   canSave,
   isEditMode = false,
-  labels = {},
+  labels,
+  agentNameLabel,
+  agentNamePlaceholder,
+  instructionsPlaceholder,
+  modelDescriptionLabel,
+  recommendedBadgeLabel,
+  livePreviewHeading,
+  livePreviewSubheading,
+  previewConfigLabel,
+  customInstructionsPreviewLabel,
+  selectAllModulesLabel,
+  unnamedAgentLabel,
 }: MosaicAgentComposerProps) {
-  const L = {
-    role: labels.role ?? "Role",
-    persona: labels.persona ?? "Persona",
-    framework: labels.framework ?? "Framework",
-    model: labels.model ?? "Model",
-    customInstructions: labels.customInstructions ?? "Custom Instructions (Optional)",
-    saveLabel: labels.saveLabel ?? (isEditMode ? "Save Changes" : "Create Agent"),
-    cancelLabel: labels.cancelLabel ?? "Cancel",
-    heading: labels.heading ?? "Compose Agent",
-    subheading: labels.subheading ?? "Select modules to build your custom agent",
-    headingEdit: labels.headingEdit ?? "Edit Agent",
-    subheadingEdit: labels.subheadingEdit ?? "Update your agent configuration",
-  };
+  // `labels` is fully required — every field is host-supplied, no default,
+  // no fallback. Aliased to `L` only for call-site brevity below.
+  const L = labels;
 
   const allModulesSelected =
     !!selectedRole && !!selectedPersona && !!selectedFramework && !!selectedModel;
@@ -310,14 +332,14 @@ export function MosaicAgentComposerDesktop({
             htmlFor="mosaic-composer-name"
             className="block text-sm font-medium text-foreground"
           >
-            Agent Name
+            {agentNameLabel}
           </label>
           <input
             id="mosaic-composer-name"
             type="text"
             value={agentName}
             onChange={(e) => onAgentNameChange(e.target.value)}
-            placeholder="Enter agent name…"
+            placeholder={agentNamePlaceholder}
             className={cn(
               "flex min-h-[48px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm",
               "placeholder:text-muted-foreground",
@@ -354,7 +376,7 @@ export function MosaicAgentComposerDesktop({
         <div className="rounded-xl border border-border bg-card">
           <div className="border-b border-border px-4 pt-4 pb-3">
             <h3 className="text-sm font-semibold text-foreground">{L.model}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">AI model that powers your agent</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{modelDescriptionLabel}</p>
           </div>
           <div className="p-4">
             {selectedModel ? (
@@ -365,7 +387,7 @@ export function MosaicAgentComposerDesktop({
                       <p className="text-sm font-medium text-foreground">{selectedModel.name}</p>
                       {selectedModel.recommended && (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                          RECOMMENDED
+                          {recommendedBadgeLabel}
                         </span>
                       )}
                     </div>
@@ -418,7 +440,7 @@ export function MosaicAgentComposerDesktop({
             id="mosaic-composer-instructions"
             value={customInstructions}
             onChange={(e) => onCustomInstructionsChange(e.target.value)}
-            placeholder="Add any specific instructions or behaviors…"
+            placeholder={instructionsPlaceholder}
             rows={5}
             className={cn(
               "flex w-full resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm",
@@ -433,16 +455,16 @@ export function MosaicAgentComposerDesktop({
       {/* Right — live preview */}
       <div className="flex flex-col gap-5 border-l border-border pl-6">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Live Preview</h2>
-          <p className="text-sm text-muted-foreground">See how your agent will behave</p>
+          <h2 className="text-lg font-semibold text-foreground">{livePreviewHeading}</h2>
+          <p className="text-sm text-muted-foreground">{livePreviewSubheading}</p>
         </div>
 
         <hr className="border-border" />
 
         {allModulesSelected ? (
           <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-            <h3 className="font-semibold text-foreground">{agentName || "Unnamed Agent"}</h3>
-            <p className="text-xs text-muted-foreground">Your custom AI agent configuration</p>
+            <h3 className="font-semibold text-foreground">{agentName || unnamedAgentLabel}</h3>
+            <p className="text-xs text-muted-foreground">{previewConfigLabel}</p>
             <hr className="border-border" />
             <div className="space-y-3 text-sm">
               <div>
@@ -492,7 +514,7 @@ export function MosaicAgentComposerDesktop({
                 <>
                   <hr className="border-border" />
                   <div>
-                    <p className="font-medium text-foreground">Custom Instructions</p>
+                    <p className="font-medium text-foreground">{customInstructionsPreviewLabel}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{customInstructions}</p>
                   </div>
                 </>
@@ -503,7 +525,7 @@ export function MosaicAgentComposerDesktop({
           <div className="flex flex-1 items-center justify-center text-center">
             <div className="space-y-2">
               <SparklesIcon />
-              <p className="text-sm text-muted-foreground">Select all modules to see preview</p>
+              <p className="text-sm text-muted-foreground">{selectAllModulesLabel}</p>
             </div>
           </div>
         )}

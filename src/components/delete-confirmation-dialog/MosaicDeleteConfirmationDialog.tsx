@@ -29,16 +29,16 @@ export interface MosaicDeleteConfirmationDialogProps {
   onConfirm: () => void;
   /** Human-readable name of the item to be deleted */
   itemName: string;
-  /** Type label shown in the title and button ("agent", "template", etc.) */
-  itemType?: string;
-  /** Override the title text */
-  title?: string;
-  /** Override the description text */
-  description?: string;
-  /** Override the cancel button label */
-  cancelLabel?: string;
-  /** Override the confirm button label */
-  confirmLabel?: string;
+  /** Type label shown in the title and button ("agent", "template", etc.). Required, no default. */
+  itemType: string;
+  /** Dialog title. Required — the host owns the language, no default. */
+  title: string;
+  /** Dialog description. Required — the host owns the language, no default. */
+  description: string;
+  /** Cancel button label. Required, no default. */
+  cancelLabel: string;
+  /** Confirm button label. Required, no default. */
+  confirmLabel: string;
 }
 
 // ── Keyframe injection ────────────────────────────────────────────────────────
@@ -81,21 +81,14 @@ export function MosaicDeleteConfirmationDialog({
   open,
   onOpenChange,
   onConfirm,
-  itemName,
-  itemType = "item",
   title,
   description,
-  cancelLabel = "Cancel",
+  cancelLabel,
   confirmLabel,
 }: MosaicDeleteConfirmationDialogProps) {
   React.useEffect(() => {
     injectStyles();
   }, []);
-
-  const resolvedTitle = title ?? `Delete ${itemType}?`;
-  const resolvedDescription =
-    description ?? `Are you sure you want to delete "${itemName}"? This action cannot be undone.`;
-  const resolvedConfirmLabel = confirmLabel ?? `Delete ${itemType}`;
 
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -113,10 +106,10 @@ export function MosaicDeleteConfirmationDialog({
           )}
         >
           <AlertDialog.Title className="text-lg font-semibold text-foreground">
-            {resolvedTitle}
+            {title}
           </AlertDialog.Title>
           <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
-            {resolvedDescription}
+            {description}
           </AlertDialog.Description>
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <AlertDialog.Close
@@ -140,7 +133,7 @@ export function MosaicDeleteConfirmationDialog({
                 "sm:w-auto",
               )}
             >
-              {resolvedConfirmLabel}
+              {confirmLabel}
             </AlertDialog.Close>
           </div>
         </AlertDialog.Popup>

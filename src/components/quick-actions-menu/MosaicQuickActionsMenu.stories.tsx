@@ -32,12 +32,15 @@ export const Default: Story = {
     actions,
     label: "Quick Actions",
     menuTitle: "Quick Actions",
+    emptyMessage: "No actions available.",
   },
 };
 
 export const IconOnly: Story = {
   args: {
     actions,
+    label: "Quick Actions",
     menuTitle: "Actions",
+    emptyMessage: "No actions available.",
   },
 };

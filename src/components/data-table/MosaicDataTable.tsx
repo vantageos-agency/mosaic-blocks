@@ -76,9 +76,15 @@ export interface MosaicDataTableProps<T> {
   /**
    * Content rendered when `rows` is empty.
    * Pass a `<MosaicEmptyState />` with a translated title for FR/EN support.
-   * When absent, a neutral muted "No data" row is shown.
+   * When absent, `emptyMessage` is shown as plain muted text.
    */
   emptyState?: React.ReactNode;
+  /**
+   * Plain-text empty-state message shown when `rows` is empty and
+   * `emptyState` is not provided. Required — the host owns the language
+   * (e.g. `t('DataTable.empty')`). No default, no fallback.
+   */
+  emptyMessage: string;
   /** Additional Tailwind classes for the root `<table>` element. */
   className?: string;
   /** React 19 ref prop — no forwardRef wrapper needed. */
@@ -127,6 +133,7 @@ export function MosaicDataTable<T>({
   getRowKey,
   sortable: masterSortable = true,
   emptyState,
+  emptyMessage,
   className,
   ref,
 }: MosaicDataTableProps<T>) {
@@ -245,7 +252,7 @@ export function MosaicDataTable<T>({
               colSpan={columns.length}
               className="px-4 py-12 text-center text-muted-foreground"
             >
-              {emptyState ?? "No data"}
+              {emptyState ?? emptyMessage}
             </td>
           </tr>
         ) : (

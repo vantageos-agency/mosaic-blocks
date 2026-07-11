@@ -3,6 +3,31 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentList } from "./MosaicAgentList.js";
 
+const requiredListLabels = {
+  title: "Agents",
+  searchPlaceholder: "Search agents…",
+  createLabel: "New Agent",
+  emptyMessage: "No agents found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersModalTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
+  agentCardLabels: {
+    activeBadgeLabel: "Active",
+    agentActionsAriaLabel: "Agent actions",
+    deactivateLabel: "Deactivate",
+    activateLabel: "Activate",
+    editLabel: "Edit",
+    deleteLabel: "Delete",
+    pauseLabel: "Pause",
+    startLabel: "Start",
+    createdLabel: (d: string) => `Created ${d}`,
+  },
+};
+
 const agents = [
   {
     id: "a1",
@@ -61,6 +86,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    ...requiredListLabels,
     agents,
     title: "My Agents",
     filters,
@@ -78,6 +104,7 @@ export const Default: Story = {
 
 export const Empty: Story = {
   args: {
+    ...requiredListLabels,
     agents: [],
     title: "My Agents",
     filters,

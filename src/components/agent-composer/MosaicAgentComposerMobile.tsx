@@ -38,6 +38,14 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 export interface MosaicAgentComposerMobileProps extends MosaicAgentComposerProps {
   /** Show loading state on submit button */
   isLoading?: boolean;
+  /**
+   * Required host-owned strings (mobile-only extras) — no default,
+   * no fallback. The host owns the language (e.g. next-intl `t()`).
+   */
+  goBackAriaLabel: string;
+  savingLabel: string;
+  creatingLabel: string;
+  optionalInstructionsHelp: string;
 }
 
 // ── Re-export shared types for convenience ────────────────────────────────────
@@ -130,6 +138,7 @@ interface MobileModuleSlotProps {
   onSelect: () => void;
   onRemove: () => void;
   isLoading: boolean;
+  requiredLabel: string;
 }
 
 function MobileModuleSlot({
@@ -139,6 +148,7 @@ function MobileModuleSlot({
   onSelect,
   onRemove,
   isLoading,
+  requiredLabel,
 }: MobileModuleSlotProps) {
   return (
     <div className="rounded-xl border border-border bg-card">
@@ -147,7 +157,7 @@ function MobileModuleSlot({
           <h3 className="text-sm font-medium text-foreground">
             {step}. {label}
           </h3>
-          <span className="text-xs text-muted-foreground">Required</span>
+          <span className="text-xs text-muted-foreground">{requiredLabel}</span>
         </div>
       </div>
       <div className="p-3">
@@ -258,21 +268,20 @@ export function MosaicAgentComposerMobile({
   canSave,
   isEditMode = false,
   isLoading = false,
-  labels = {},
+  labels,
+  agentNameLabel,
+  agentNamePlaceholder,
+  instructionsPlaceholder,
+  recommendedBadgeLabel,
+  requiredLabel,
+  goBackAriaLabel,
+  savingLabel,
+  creatingLabel,
+  optionalInstructionsHelp,
 }: MosaicAgentComposerMobileProps) {
-  const L = {
-    role: labels.role ?? "Role",
-    persona: labels.persona ?? "Persona",
-    framework: labels.framework ?? "Framework",
-    model: labels.model ?? "Model",
-    customInstructions: labels.customInstructions ?? "Custom Instructions (Optional)",
-    saveLabel: labels.saveLabel ?? (isEditMode ? "Save Changes" : "Create Agent"),
-    cancelLabel: labels.cancelLabel ?? "Cancel",
-    heading: labels.heading ?? "Compose Agent",
-    subheading: labels.subheading ?? "Select modules to build your custom agent",
-    headingEdit: labels.headingEdit ?? "Edit Agent",
-    subheadingEdit: labels.subheadingEdit ?? "Update your agent configuration",
-  };
+  // `labels` is fully required — every field is host-supplied, no default,
+  // no fallback. Aliased to `L` only for call-site brevity below.
+  const L = labels;
 
   const instructionsId = React.useId();
 
@@ -286,7 +295,7 @@ export function MosaicAgentComposerMobile({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              aria-label="Go back"
+              aria-label={goBackAriaLabel}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               <ArrowLeftIcon />
@@ -310,14 +319,14 @@ export function MosaicAgentComposerMobile({
             htmlFor="mosaic-composer-mobile-name"
             className="block text-sm font-medium text-foreground"
           >
-            Agent Name
+            {agentNameLabel}
           </label>
           <input
             id="mosaic-composer-mobile-name"
             type="text"
             value={agentName}
             onChange={(e) => onAgentNameChange(e.target.value)}
-            placeholder="Enter agent name…"
+            placeholder={agentNamePlaceholder}
             disabled={isLoading}
             aria-required="true"
             aria-invalid={canSave && !agentName ? "true" : "false"}
@@ -338,6 +347,7 @@ export function MosaicAgentComposerMobile({
           onSelect={onSelectRole}
           onRemove={onRemoveRole}
           isLoading={isLoading}
+          requiredLabel={requiredLabel}
         />
         <MobileModuleSlot
           step={2}
@@ -346,6 +356,7 @@ export function MosaicAgentComposerMobile({
           onSelect={onSelectPersona}
           onRemove={onRemovePersona}
           isLoading={isLoading}
+          requiredLabel={requiredLabel}
         />
         <MobileModuleSlot
           step={3}
@@ -354,6 +365,7 @@ export function MosaicAgentComposerMobile({
           onSelect={onSelectFramework}
           onRemove={onRemoveFramework}
           isLoading={isLoading}
+          requiredLabel={requiredLabel}
         />
 
         {/* Model slot */}
@@ -361,7 +373,7 @@ export function MosaicAgentComposerMobile({
           <div className="border-b border-border px-4 pt-3 pb-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-foreground">4. {L.model}</h3>
-              <span className="text-xs text-muted-foreground">Required</span>
+              <span className="text-xs text-muted-foreground">{requiredLabel}</span>
             </div>
           </div>
           <div className="p-3">
@@ -373,7 +385,7 @@ export function MosaicAgentComposerMobile({
                       <p className="text-sm font-medium text-foreground">{selectedModel.name}</p>
                       {selectedModel.recommended && (
                         <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
-                          RECOMMENDED
+                          {recommendedBadgeLabel}
                         </span>
                       )}
                     </div>
@@ -425,7 +437,7 @@ export function MosaicAgentComposerMobile({
             id={instructionsId}
             value={customInstructions}
             onChange={(e) => onCustomInstructionsChange(e.target.value)}
-            placeholder="Add any specific instructions or behaviors…"
+            placeholder={instructionsPlaceholder}
             disabled={isLoading}
             aria-describedby={`${instructionsId}-help`}
             rows={4}
@@ -437,7 +449,7 @@ export function MosaicAgentComposerMobile({
             )}
           />
           <p id={`${instructionsId}-help`} className="text-xs text-muted-foreground">
-            Optional: Add specific behaviors or constraints for your agent
+            {optionalInstructionsHelp}
           </p>
         </div>
       </div>
@@ -461,7 +473,7 @@ export function MosaicAgentComposerMobile({
               className="flex flex-1 min-h-[48px] items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <SaveIcon />
-              {isLoading ? "Saving…" : L.saveLabel}
+              {isLoading ? savingLabel : L.saveLabel}
             </button>
           </div>
         ) : (
@@ -472,7 +484,7 @@ export function MosaicAgentComposerMobile({
             className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <SparklesIcon />
-            {isLoading ? "Creating…" : L.saveLabel}
+            {isLoading ? creatingLabel : L.saveLabel}
           </button>
         )}
       </div>

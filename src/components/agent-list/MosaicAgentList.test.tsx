@@ -4,6 +4,31 @@ import { describe, expect, it } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentList } from "./MosaicAgentList.js";
 
+const requiredListLabels = {
+  title: "Agents",
+  searchPlaceholder: "Search agents…",
+  createLabel: "New Agent",
+  emptyMessage: "No agents found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersModalTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
+  agentCardLabels: {
+    activeBadgeLabel: "Active",
+    agentActionsAriaLabel: "Agent actions",
+    deactivateLabel: "Deactivate",
+    activateLabel: "Activate",
+    editLabel: "Edit",
+    deleteLabel: "Delete",
+    pauseLabel: "Pause",
+    startLabel: "Start",
+    createdLabel: (d: string) => `Created ${d}`,
+  },
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -28,6 +53,7 @@ describe("MosaicAgentList", () => {
           categories={categories}
           selectedCategory="default"
           onCategoryChange={() => {}}
+          {...requiredListLabels}
         />
       </Wrapper>,
     );
@@ -46,6 +72,7 @@ describe("MosaicAgentList", () => {
           categories={categories}
           selectedCategory="default"
           onCategoryChange={() => {}}
+          {...requiredListLabels}
           title="Agent Library"
         />
       </Wrapper>,
@@ -65,6 +92,7 @@ describe("MosaicAgentList", () => {
             categories={categories}
             selectedCategory="default"
             onCategoryChange={() => {}}
+            {...requiredListLabels}
           />
         </Wrapper>,
       ),
@@ -83,6 +111,7 @@ describe("MosaicAgentList", () => {
           selectedCategory="default"
           onCategoryChange={() => {}}
           onCreateAgent={() => {}}
+          {...requiredListLabels}
           createLabel="New Agent"
         />
       </Wrapper>,
@@ -101,6 +130,7 @@ describe("MosaicAgentList", () => {
           categories={categories}
           selectedCategory="default"
           onCategoryChange={() => {}}
+          {...requiredListLabels}
         />
       </Wrapper>,
     );

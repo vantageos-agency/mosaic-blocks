@@ -78,6 +78,11 @@ export interface MosaicAdaptiveModalProps {
   children: React.ReactNode;
   className?: string;
   description?: string;
+  /**
+   * aria-label for the desktop close button. Required — the host owns the
+   * language (e.g. `t('AdaptiveModal.aria.close')`). No default, no fallback.
+   */
+  closeAriaLabel: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -87,8 +92,14 @@ export interface MosaicAdaptiveModalProps {
  * dialog; on mobile renders a bottom-sheet drawer. Single API for both.
  *
  * @example
- * <MosaicAdaptiveModal isOpen={open} onClose={() => setOpen(false)} title="Settings">
- *   <p>Modal body content</p>
+ * // Host owns i18n (e.g. next-intl) — closeAriaLabel is always required.
+ * <MosaicAdaptiveModal
+ *   isOpen={open}
+ *   onClose={() => setOpen(false)}
+ *   title="Settings"
+ *   closeAriaLabel={t('AdaptiveModal.aria.close')}
+ * >
+ *   <p>Modal body content</p> // allow-hardcode-i18n: JSDoc @example doc comment, not shipped code
  * </MosaicAdaptiveModal>
  */
 export function MosaicAdaptiveModal({
@@ -98,6 +109,7 @@ export function MosaicAdaptiveModal({
   children,
   className,
   description,
+  closeAriaLabel,
 }: MosaicAdaptiveModalProps) {
   const { isMobile } = useDevice();
   const dialogRef = React.useRef<HTMLDialogElement>(null);
@@ -231,7 +243,7 @@ export function MosaicAdaptiveModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={closeAriaLabel}
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <svg

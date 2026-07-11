@@ -36,14 +36,28 @@ const columns: MosaicDataTableColumn<Agent>[] = [
 
 describe("MosaicDataTable", () => {
   it("renders column headers", () => {
-    render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
     expect(screen.getByText("Name")).toBeTruthy();
     expect(screen.getByText("Score")).toBeTruthy();
     expect(screen.getByText("Status")).toBeTruthy();
   });
 
   it("renders all row data", () => {
-    render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
     expect(screen.getByText("Sigma")).toBeTruthy();
     expect(screen.getByText("Alpha")).toBeTruthy();
     expect(screen.getByText("Gamma")).toBeTruthy();
@@ -58,7 +72,14 @@ describe("MosaicDataTable", () => {
         render: (row) => `[${row.status.toUpperCase()}]`,
       },
     ];
-    render(<MosaicDataTable columns={customColumns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={customColumns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
     expect(screen.getAllByText("[ACTIVE]").length).toBeGreaterThan(0);
     expect(screen.getByText("[IDLE]")).toBeTruthy();
   });
@@ -72,7 +93,14 @@ describe("MosaicDataTable", () => {
       { key: "status", header: "Status (raw)" },
       { key: "status", header: "Status (label)", render: (row) => `[${row.status.toUpperCase()}]` },
     ];
-    render(<MosaicDataTable columns={dupKeyColumns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={dupKeyColumns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
 
     // Both header cells must be present
     expect(screen.getByText("Status (raw)")).toBeTruthy();
@@ -88,18 +116,30 @@ describe("MosaicDataTable", () => {
   });
 
   it("shows emptyState when rows is empty", () => {
-    render(<MosaicDataTable columns={columns} rows={[]} emptyState={<span>Aucune donnée</span>} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={[]}
+        emptyState={<span>Aucune donnée</span>}
+        emptyMessage="No data"
+      />,
+    );
     expect(screen.getByText("Aucune donnée")).toBeTruthy();
   });
 
   it("shows default No data text when rows is empty and no emptyState", () => {
-    render(<MosaicDataTable columns={columns} rows={[]} />);
+    render(<MosaicDataTable columns={columns} rows={[]} emptyMessage="No data" />);
     expect(screen.getByText("No data")).toBeTruthy();
   });
 
   it("sets data-slot='data-table' on the root element", () => {
     const { container } = render(
-      <MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />,
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
     );
     const table = container.querySelector("[data-slot='data-table']");
     expect(table).toBeTruthy();
@@ -108,7 +148,12 @@ describe("MosaicDataTable", () => {
 
   it("sets data-slot on thead, tbody, th, td", () => {
     const { container } = render(
-      <MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />,
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
     );
     expect(container.querySelector("[data-slot='data-table-header']")).toBeTruthy();
     expect(container.querySelector("[data-slot='data-table-body']")).toBeTruthy();
@@ -118,7 +163,12 @@ describe("MosaicDataTable", () => {
 
   it("sets scope='col' on all th elements", () => {
     const { container } = render(
-      <MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />,
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
     );
     const headers = container.querySelectorAll("th");
     for (const th of headers) {
@@ -128,7 +178,14 @@ describe("MosaicDataTable", () => {
 
   it("clicking a sortable header sorts rows ascending then descending", async () => {
     const user = userEvent.setup();
-    render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
 
     // Initial order: Sigma, Alpha, Gamma
     const nameHeader = screen.getByText("Name");
@@ -144,7 +201,14 @@ describe("MosaicDataTable", () => {
 
   it("clicking a sorted header again reverses to descending", async () => {
     const user = userEvent.setup();
-    render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
 
     const nameHeader = screen.getByText("Name");
     await user.click(nameHeader); // asc
@@ -158,7 +222,14 @@ describe("MosaicDataTable", () => {
 
   it("sorts numeric columns correctly (ascending)", async () => {
     const user = userEvent.setup();
-    render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
 
     const scoreHeader = screen.getByText("Score");
     await user.click(scoreHeader);
@@ -173,7 +244,12 @@ describe("MosaicDataTable", () => {
   it("sets aria-sort on the sorted column header", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />,
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
     );
 
     const nameHeader = screen.getByText("Name").closest("th");
@@ -192,7 +268,14 @@ describe("MosaicDataTable", () => {
 
   it("non-sortable column header does not sort when clicked", async () => {
     const user = userEvent.setup();
-    render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />);
+    render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
 
     const statusHeader = screen.getByText("Status");
     await user.click(statusHeader);
@@ -204,7 +287,14 @@ describe("MosaicDataTable", () => {
 
   it("getRowKey is used for stable keys (no error thrown)", () => {
     expect(() =>
-      render(<MosaicDataTable columns={columns} rows={agents} getRowKey={(r) => r.id} />),
+      render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+        />,
+      ),
     ).not.toThrow();
   });
 });

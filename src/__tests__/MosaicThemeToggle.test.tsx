@@ -17,18 +17,33 @@ describe("MosaicThemeToggle", () => {
   });
 
   it("renders without crashing", () => {
-    const { unmount } = render(<MosaicThemeToggle />);
+    const { unmount } = render(
+      <MosaicThemeToggle
+        switchToLightLabel="Switch to light theme"
+        switchToDarkLabel="Switch to dark theme"
+      />,
+    );
     unmount();
   });
 
   it("renders a toggle button", () => {
-    render(<MosaicThemeToggle />);
+    render(
+      <MosaicThemeToggle
+        switchToLightLabel="Switch to light theme"
+        switchToDarkLabel="Switch to dark theme"
+      />,
+    );
     const btn = screen.getByRole("button");
     expect(btn).toBeTruthy();
   });
 
   it("flips data-theme on the document root when clicked", () => {
-    render(<MosaicThemeToggle />);
+    render(
+      <MosaicThemeToggle
+        switchToLightLabel="Switch to light theme"
+        switchToDarkLabel="Switch to dark theme"
+      />,
+    );
     const btn = screen.getByRole("button");
     // Initial click — sets to dark
     fireEvent.click(btn);
@@ -40,7 +55,13 @@ describe("MosaicThemeToggle", () => {
 
   it("fires onChange with the new theme", () => {
     const onChange = vi.fn();
-    render(<MosaicThemeToggle onChange={onChange} />);
+    render(
+      <MosaicThemeToggle
+        onChange={onChange}
+        switchToLightLabel="Switch to light theme"
+        switchToDarkLabel="Switch to dark theme"
+      />,
+    );
     const btn = screen.getByRole("button");
     fireEvent.click(btn);
     expect(onChange).toHaveBeenCalledWith("dark");

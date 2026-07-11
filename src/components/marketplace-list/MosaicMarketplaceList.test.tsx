@@ -4,6 +4,20 @@ import { describe, expect, it } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicMarketplaceList } from "./MosaicMarketplaceList.js";
 
+const requiredMarketplaceLabels = {
+  previewLabel: "Preview",
+  emptyMessage: "No items found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersModalTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
+  installLabel: "Install",
+  uninstallLabel: "Uninstall",
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -43,6 +57,7 @@ describe("MosaicMarketplaceList", () => {
           categories={categories}
           selectedCategory="analytics"
           onCategoryChange={() => {}}
+          {...requiredMarketplaceLabels}
         />
       </Wrapper>,
     );
@@ -62,6 +77,7 @@ describe("MosaicMarketplaceList", () => {
             categories={categories}
             selectedCategory="analytics"
             onCategoryChange={() => {}}
+            {...requiredMarketplaceLabels}
           />
         </Wrapper>,
       ),
@@ -81,6 +97,7 @@ describe("MosaicMarketplaceList", () => {
           categories={categories}
           selectedCategory="analytics"
           onCategoryChange={() => {}}
+          {...requiredMarketplaceLabels}
         />
       </Wrapper>,
     );
@@ -99,6 +116,7 @@ describe("MosaicMarketplaceList", () => {
           categories={categories}
           selectedCategory="analytics"
           onCategoryChange={() => {}}
+          {...requiredMarketplaceLabels}
         />
       </Wrapper>,
     );
@@ -118,6 +136,7 @@ describe("MosaicMarketplaceList", () => {
           selectedCategory="analytics"
           onCategoryChange={() => {}}
           title="Marketplace"
+          {...requiredMarketplaceLabels}
         />
       </Wrapper>,
     );

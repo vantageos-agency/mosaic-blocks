@@ -28,12 +28,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredNavLabels = {
+  openMenuAriaLabel: "Open navigation menu",
+  closeMenuAriaLabel: "Close navigation menu",
+  drawerNavAriaLabel: "Navigation",
+  mainNavAriaLabel: "Main navigation",
+  adminBadgeLabel: "Admin",
+};
+
 export const Default: Story = {
   args: {
     items,
     isAdmin: false,
     drawerTitle: "VantageOS",
     drawerSubtitle: "AI Platform",
+    ...requiredNavLabels,
   },
 };
 
@@ -42,5 +51,7 @@ export const AdminVisible: Story = {
     items,
     isAdmin: true,
     drawerTitle: "VantageOS",
+    drawerSubtitle: "AI Platform",
+    ...requiredNavLabels,
   },
 };

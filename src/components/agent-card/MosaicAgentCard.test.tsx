@@ -16,23 +16,76 @@ const agent = {
 
 describe("MosaicAgentCard", () => {
   it("renders agent name", () => {
-    render(<MosaicAgentCard agent={agent} />);
+    render(
+      <MosaicAgentCard
+        agent={agent}
+        activeBadgeLabel="Active"
+        agentActionsAriaLabel="Agent actions"
+        deactivateLabel="Deactivate"
+        activateLabel="Activate"
+        editLabel="Edit"
+        deleteLabel="Delete"
+        pauseLabel="Pause"
+        startLabel="Start"
+        createdLabel={(d) => `Created ${d}`}
+      />,
+    );
     expect(screen.getByText("StrategyBot")).toBeTruthy();
   });
 
   it("renders agent description", () => {
-    render(<MosaicAgentCard agent={agent} />);
+    render(
+      <MosaicAgentCard
+        agent={agent}
+        activeBadgeLabel="Active"
+        agentActionsAriaLabel="Agent actions"
+        deactivateLabel="Deactivate"
+        activateLabel="Activate"
+        editLabel="Edit"
+        deleteLabel="Delete"
+        pauseLabel="Pause"
+        startLabel="Start"
+        createdLabel={(d) => `Created ${d}`}
+      />,
+    );
     expect(screen.getByText("Strategic planning agent")).toBeTruthy();
   });
 
   it("renders inactive agent correctly", () => {
-    render(<MosaicAgentCard agent={{ ...agent, isActive: false }} />);
+    render(
+      <MosaicAgentCard
+        agent={{ ...agent, isActive: false }}
+        activeBadgeLabel="Active"
+        agentActionsAriaLabel="Agent actions"
+        deactivateLabel="Deactivate"
+        activateLabel="Activate"
+        editLabel="Edit"
+        deleteLabel="Delete"
+        pauseLabel="Pause"
+        startLabel="Start"
+        createdLabel={(d) => `Created ${d}`}
+      />,
+    );
     expect(screen.getByText("StrategyBot")).toBeTruthy();
   });
 
   it("calls onToggleStatus when toggle button clicked", async () => {
     const onToggle = vi.fn();
-    render(<MosaicAgentCard agent={agent} onToggleStatus={onToggle} />);
+    render(
+      <MosaicAgentCard
+        agent={agent}
+        onToggleStatus={onToggle}
+        activeBadgeLabel="Active"
+        agentActionsAriaLabel="Agent actions"
+        deactivateLabel="Deactivate"
+        activateLabel="Activate"
+        editLabel="Edit"
+        deleteLabel="Delete"
+        pauseLabel="Pause"
+        startLabel="Start"
+        createdLabel={(d) => `Created ${d}`}
+      />,
+    );
     // "Pause" button = direct toggle (agent is active)
     const pauseBtn = screen.getByRole("button", { name: /pause/i });
     await userEvent.click(pauseBtn);
@@ -40,7 +93,21 @@ describe("MosaicAgentCard", () => {
   });
 
   it("accepts custom className", () => {
-    const { container } = render(<MosaicAgentCard agent={agent} className="my-card" />);
+    const { container } = render(
+      <MosaicAgentCard
+        agent={agent}
+        activeBadgeLabel="Active"
+        agentActionsAriaLabel="Agent actions"
+        deactivateLabel="Deactivate"
+        activateLabel="Activate"
+        editLabel="Edit"
+        deleteLabel="Delete"
+        pauseLabel="Pause"
+        startLabel="Start"
+        createdLabel={(d) => `Created ${d}`}
+        className="my-card"
+      />,
+    );
     expect(container.querySelector(".my-card")).toBeTruthy();
   });
 });

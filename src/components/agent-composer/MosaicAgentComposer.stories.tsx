@@ -4,6 +4,38 @@ import { useState } from "react";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentComposer } from "./MosaicAgentComposer.js";
 
+const requiredComposerLabels = {
+  agentNameLabel: "Agent Name",
+  agentNamePlaceholder: "Enter agent name…",
+  instructionsPlaceholder: "Add any specific instructions or behaviors…",
+  modelDescriptionLabel: "AI model that powers your agent",
+  recommendedBadgeLabel: "RECOMMENDED",
+  livePreviewHeading: "Live Preview",
+  livePreviewSubheading: "See how your agent will behave",
+  previewConfigLabel: "Your custom AI agent configuration",
+  customInstructionsPreviewLabel: "Custom Instructions",
+  selectAllModulesLabel: "Select all modules to see preview",
+  requiredLabel: "Required",
+  goBackAriaLabel: "Go back",
+  savingLabel: "Saving…",
+  creatingLabel: "Creating…",
+  optionalInstructionsHelp: "Optional: Add specific behaviors or constraints for your agent",
+  unnamedAgentLabel: "Unnamed Agent",
+  labels: {
+    role: "Role",
+    persona: "Persona",
+    framework: "Framework",
+    model: "Model",
+    customInstructions: "Custom Instructions (Optional)",
+    saveLabel: "Create Agent",
+    cancelLabel: "Cancel",
+    heading: "Compose Agent",
+    subheading: "Select modules to build your custom agent",
+    headingEdit: "Edit Agent",
+    subheadingEdit: "Update your agent configuration",
+  },
+} as const;
+
 function ComposerDemo() {
   const [agentName, setAgentName] = useState("Strategy Bot");
   const [instructions, setInstructions] = useState("");
@@ -25,6 +57,7 @@ function ComposerDemo() {
           onSave={() => console.log("save")}
           onCancel={() => console.log("cancel")}
           canSave={agentName.trim().length > 0}
+          {...requiredComposerLabels}
         />
       </div>
     </MosaicDeviceProvider>
@@ -64,6 +97,7 @@ const baseComposerArgs = {
   onRemoveFramework: () => {},
   onSave: () => {},
   canSave: false,
+  ...requiredComposerLabels,
 } as const;
 
 export const Default: Story = {
@@ -99,6 +133,7 @@ export const WithRole: Story = {
             onRemoveFramework={() => {}}
             onSave={() => console.log("save")}
             canSave
+            {...requiredComposerLabels}
           />
         </div>
       </MosaicDeviceProvider>

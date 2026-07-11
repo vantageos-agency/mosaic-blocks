@@ -60,16 +60,22 @@ export interface MosaicSelectorModalProps {
   onSelect: (item: MosaicSelectorItem) => void;
   /** If provided, renders category tabs */
   categories?: MosaicSelectorCategory[];
-  /** Search placeholder text */
-  searchPlaceholder?: string;
+  /** Search placeholder text. Required, no default. */
+  searchPlaceholder: string;
   /** Number of columns in the grid (1 or 2, default 2) */
   columns?: 1 | 2;
   /** Slot rendered alongside selected item for preview */
   renderPreview?: (item: MosaicSelectorItem) => React.ReactNode;
-  /** Confirm button label (default "Select") */
-  confirmLabel?: string;
-  /** Cancel button label (default "Cancel") */
-  cancelLabel?: string;
+  /** Confirm button label. Required, no default. */
+  confirmLabel: string;
+  /** Cancel button label. Required, no default. */
+  cancelLabel: string;
+  /** Label for the "All" category tab. Required, no default. */
+  allCategoryLabel: string;
+  /** Message shown when the filtered item grid is empty. Required, no default. */
+  emptyMessage: string;
+  /** aria-label for the modal close button. Required, no default. */
+  closeAriaLabel: string;
   className?: string;
 }
 
@@ -125,11 +131,14 @@ export function MosaicSelectorModal({
   selectedId,
   onSelect,
   categories,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   columns = 2,
   renderPreview,
-  confirmLabel = "Select",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
+  allCategoryLabel,
+  emptyMessage,
+  closeAriaLabel,
 }: MosaicSelectorModalProps) {
   const [query, setQuery] = React.useState("");
   const [activeCategory, setActiveCategory] = React.useState("all");
@@ -165,7 +174,13 @@ export function MosaicSelectorModal({
   };
 
   return (
-    <MosaicAdaptiveModal isOpen={isOpen} onClose={onClose} title={title} description={description}>
+    <MosaicAdaptiveModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      description={description}
+      closeAriaLabel={closeAriaLabel}
+    >
       <div data-slot="selector-modal" className="flex flex-col gap-4 p-4">
         {/* Search */}
         <div className="relative">
@@ -198,7 +213,7 @@ export function MosaicSelectorModal({
                   : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
-              All
+              {allCategoryLabel}
             </button>
             {categories.map((cat) => (
               <button
@@ -274,7 +289,7 @@ export function MosaicSelectorModal({
 
           {filtered.length === 0 && (
             <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
-              No results found.
+              {emptyMessage}
             </p>
           )}
         </div>

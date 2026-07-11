@@ -39,18 +39,20 @@ export interface MosaicQuickAction {
 
 export interface MosaicQuickActionsMenuProps {
   actions?: MosaicQuickAction[];
-  /** Trigger button label (hidden on mobile when icon-only) */
-  label?: string;
+  /** Trigger button label (hidden on mobile when icon-only). Required, no default. */
+  label: string;
   /** Custom trigger icon */
   triggerIcon?: React.ReactNode;
-  /** Menu header label */
-  menuTitle?: string;
+  /** Menu header label. Required, no default. */
+  menuTitle: string;
   /** Custom link renderer for href items */
   renderLink?: (
     action: MosaicQuickAction,
     children: React.ReactNode,
     className: string,
   ) => React.ReactNode;
+  /** Message shown when `actions` is empty. Required, no default. */
+  emptyMessage: string;
   className?: string;
 }
 
@@ -84,10 +86,11 @@ const DEFAULT_ACTIONS: MosaicQuickAction[] = [];
 
 export function MosaicQuickActionsMenu({
   actions = DEFAULT_ACTIONS,
-  label = "Quick Actions",
+  label,
   triggerIcon,
-  menuTitle = "Quick Actions",
+  menuTitle,
   renderLink,
+  emptyMessage,
   className,
 }: MosaicQuickActionsMenuProps) {
   const { isMobile } = useDevice();
@@ -182,9 +185,7 @@ export function MosaicQuickActionsMenu({
           ))}
 
           {actions.length === 0 && (
-            <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-              No actions available.
-            </p>
+            <p className="px-3 py-4 text-center text-sm text-muted-foreground">{emptyMessage}</p>
           )}
         </div>
       )}

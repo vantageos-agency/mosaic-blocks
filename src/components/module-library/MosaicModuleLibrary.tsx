@@ -67,10 +67,37 @@ export interface MosaicModuleLibraryProps {
   tabFilter?: (item: MosaicModuleItem, tabId: string) => boolean;
   /** Additional form fields beyond name/description */
   formFields?: MosaicModuleFormField[];
-  title?: string;
-  createLabel?: string;
-  searchPlaceholder?: string;
-  emptyMessage?: string;
+  /** Library heading. Required, no default. */
+  title: string;
+  /** Label for the "create item" button. Required, no default. */
+  createLabel: string;
+  /** Search input placeholder. Required, no default. */
+  searchPlaceholder: string;
+  /** Message shown when the filtered list is empty. Required, no default. */
+  emptyMessage: string;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  nameFieldLabel: string;
+  descriptionFieldLabel: string;
+  namePlaceholder: string;
+  descriptionPlaceholder: string;
+  cancelLabel: string;
+  saveChangesLabel: string;
+  createItemLabel: string;
+  itemActionsAriaLabel: string;
+  editItemLabel: string;
+  deleteItemLabel: string;
+  closeEditorAriaLabel: string;
+  /** Modal title for the editor. Required — `(itemName) => string`. */
+  editModalTitle: (itemName: string) => string;
+  /**
+   * Placeholder for the "add a tag" input in `tag-list` fields (used only
+   * when the field itself doesn't set its own `placeholder`). Required,
+   * no default.
+   */
+  tagListAddPlaceholder: string;
   className?: string;
 }
 
@@ -165,6 +192,23 @@ export interface MosaicModuleFormProps {
   formFields?: MosaicModuleFormField[];
   onSave: (data: Omit<MosaicModuleItem, "id"> | MosaicModuleItem) => void;
   onCancel: () => void;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  nameFieldLabel: string;
+  descriptionFieldLabel: string;
+  namePlaceholder: string;
+  descriptionPlaceholder: string;
+  cancelLabel: string;
+  saveChangesLabel: string;
+  createItemLabel: string;
+  /**
+   * Placeholder for the "add a tag" input in `tag-list` fields (used only
+   * when the field itself doesn't set its own `placeholder`). Required,
+   * no default.
+   */
+  tagListAddPlaceholder: string;
 }
 
 export function MosaicModuleForm({
@@ -173,6 +217,14 @@ export function MosaicModuleForm({
   formFields = [],
   onSave,
   onCancel,
+  nameFieldLabel,
+  descriptionFieldLabel,
+  namePlaceholder,
+  descriptionPlaceholder,
+  cancelLabel,
+  saveChangesLabel,
+  createItemLabel,
+  tagListAddPlaceholder,
 }: MosaicModuleFormProps) {
   const [formData, setFormData] = React.useState<Partial<MosaicModuleItem>>({
     name: item?.name ?? "",
@@ -222,14 +274,14 @@ export function MosaicModuleForm({
       {/* Name */}
       <div className="space-y-1.5">
         <label htmlFor="module-name" className="text-sm font-medium">
-          Name *
+          {nameFieldLabel}
         </label>
         <input
           id="module-name"
           type="text"
           value={formData.name as string}
           onChange={(e) => update("name", e.target.value)}
-          placeholder="Module name…"
+          placeholder={namePlaceholder}
           required
           className={cn(
             "w-full rounded-md border border-input bg-background px-3 py-2 min-h-[40px]",
@@ -242,13 +294,13 @@ export function MosaicModuleForm({
       {/* Description */}
       <div className="space-y-1.5">
         <label htmlFor="module-desc" className="text-sm font-medium">
-          Description
+          {descriptionFieldLabel}
         </label>
         <textarea
           id="module-desc"
           value={formData.description as string}
           onChange={(e) => update("description", e.target.value)}
-          placeholder="Describe this module…"
+          placeholder={descriptionPlaceholder}
           rows={3}
           className={cn(
             "w-full rounded-md border border-input bg-background px-3 py-2",
@@ -325,7 +377,7 @@ export function MosaicModuleForm({
                       addTag(field.id);
                     }
                   }}
-                  placeholder={field.placeholder ?? "Add item…"}
+                  placeholder={field.placeholder ?? tagListAddPlaceholder}
                   className={cn(
                     "flex-1 rounded-md border border-input bg-background px-3 py-2 min-h-[36px]",
                     "text-sm placeholder:text-muted-foreground",
@@ -370,7 +422,7 @@ export function MosaicModuleForm({
           onClick={onCancel}
           className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          Cancel
+          {cancelLabel}
         </button>
         <button
           type="button"
@@ -378,7 +430,7 @@ export function MosaicModuleForm({
           disabled={!formData.name}
           className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none"
         >
-          {mode === "edit" ? "Save Changes" : "Create"}
+          {mode === "edit" ? saveChangesLabel : createItemLabel}
         </button>
       </div>
     </div>
@@ -393,10 +445,16 @@ function ModuleItemCard({
   item,
   onEdit,
   onDelete,
+  itemActionsAriaLabel,
+  editItemLabel,
+  deleteItemLabel,
 }: {
   item: MosaicModuleItem;
   onEdit: (item: MosaicModuleItem) => void;
   onDelete: (id: string) => void;
+  itemActionsAriaLabel: string;
+  editItemLabel: string;
+  deleteItemLabel: string;
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
@@ -447,7 +505,7 @@ function ModuleItemCard({
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label="Item actions"
+              aria-label={itemActionsAriaLabel}
               aria-haspopup="menu"
             >
               <MoreVertIcon />
@@ -466,7 +524,7 @@ function ModuleItemCard({
                   }}
                   className="flex w-full items-center px-3 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
                 >
-                  Edit
+                  {editItemLabel}
                 </button>
                 <button
                   type="button"
@@ -477,7 +535,7 @@ function ModuleItemCard({
                   }}
                   className="flex w-full items-center px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
                 >
-                  Delete
+                  {deleteItemLabel}
                 </button>
               </div>
             )}
@@ -499,10 +557,23 @@ function LibraryContent({
   tabs,
   tabFilter,
   formFields,
-  title = "Module Library",
-  createLabel = "New Module",
-  searchPlaceholder = "Search modules…",
-  emptyMessage = "No modules found.",
+  title,
+  createLabel,
+  searchPlaceholder,
+  emptyMessage,
+  nameFieldLabel,
+  descriptionFieldLabel,
+  namePlaceholder,
+  descriptionPlaceholder,
+  cancelLabel,
+  saveChangesLabel,
+  createItemLabel,
+  itemActionsAriaLabel,
+  editItemLabel,
+  deleteItemLabel,
+  closeEditorAriaLabel,
+  editModalTitle,
+  tagListAddPlaceholder,
 }: MosaicModuleLibraryProps) {
   const [query, setQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState(tabs?.[0]?.id ?? "all");
@@ -613,7 +684,15 @@ function LibraryContent({
         ) : (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((item) => (
-              <ModuleItemCard key={item.id} item={item} onEdit={openEdit} onDelete={onDeleteItem} />
+              <ModuleItemCard
+                key={item.id}
+                item={item}
+                onEdit={openEdit}
+                onDelete={onDeleteItem}
+                itemActionsAriaLabel={itemActionsAriaLabel}
+                editItemLabel={editItemLabel}
+                deleteItemLabel={deleteItemLabel}
+              />
             ))}
           </div>
         )}
@@ -623,7 +702,8 @@ function LibraryContent({
       <MosaicAdaptiveModal
         isOpen={editorOpen}
         onClose={() => setEditorOpen(false)}
-        title={editorMode === "edit" ? `Edit ${editingItem?.name ?? "Module"}` : createLabel}
+        title={editorMode === "edit" ? editModalTitle(editingItem?.name ?? "") : createLabel}
+        closeAriaLabel={closeEditorAriaLabel}
       >
         <MosaicModuleForm
           item={editingItem}
@@ -631,6 +711,14 @@ function LibraryContent({
           formFields={formFields}
           onSave={handleSave}
           onCancel={() => setEditorOpen(false)}
+          nameFieldLabel={nameFieldLabel}
+          descriptionFieldLabel={descriptionFieldLabel}
+          namePlaceholder={namePlaceholder}
+          descriptionPlaceholder={descriptionPlaceholder}
+          cancelLabel={cancelLabel}
+          saveChangesLabel={saveChangesLabel}
+          createItemLabel={createItemLabel}
+          tagListAddPlaceholder={tagListAddPlaceholder}
         />
       </MosaicAdaptiveModal>
     </div>

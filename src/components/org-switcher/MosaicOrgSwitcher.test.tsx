@@ -11,12 +11,30 @@ const orgs = [
 
 describe("MosaicOrgSwitcher", () => {
   it("renders current org name", () => {
-    render(<MosaicOrgSwitcher organizations={orgs} currentOrgId="org-1" onSelectOrg={() => {}} />);
+    render(
+      <MosaicOrgSwitcher
+        organizations={orgs}
+        currentOrgId="org-1"
+        onSelectOrg={() => {}}
+        triggerAriaLabel="Select organization"
+        createOrgLabel="Create organization"
+        noOrgSelectedLabel="Select organization"
+      />,
+    );
     expect(screen.getByText("Acme Corp")).toBeTruthy();
   });
 
   it("opens dropdown and shows all orgs on trigger click", async () => {
-    render(<MosaicOrgSwitcher organizations={orgs} currentOrgId="org-1" onSelectOrg={() => {}} />);
+    render(
+      <MosaicOrgSwitcher
+        organizations={orgs}
+        currentOrgId="org-1"
+        onSelectOrg={() => {}}
+        triggerAriaLabel="Select organization"
+        createOrgLabel="Create organization"
+        noOrgSelectedLabel="Select organization"
+      />,
+    );
     const trigger = screen.getByRole("button");
     await userEvent.click(trigger);
     expect(screen.getByText("Beta LLC")).toBeTruthy();
@@ -24,7 +42,16 @@ describe("MosaicOrgSwitcher", () => {
 
   it("calls onSelectOrg when an org is selected", async () => {
     const onSelect = vi.fn();
-    render(<MosaicOrgSwitcher organizations={orgs} currentOrgId="org-1" onSelectOrg={onSelect} />);
+    render(
+      <MosaicOrgSwitcher
+        organizations={orgs}
+        currentOrgId="org-1"
+        onSelectOrg={onSelect}
+        triggerAriaLabel="Select organization"
+        createOrgLabel="Create organization"
+        noOrgSelectedLabel="Select organization"
+      />,
+    );
     await userEvent.click(screen.getByRole("button"));
     await userEvent.click(screen.getByText("Beta LLC"));
     expect(onSelect).toHaveBeenCalledWith("org-2");
@@ -38,6 +65,8 @@ describe("MosaicOrgSwitcher", () => {
         onSelectOrg={() => {}}
         onCreateOrg={() => {}}
         createOrgLabel="New Organization"
+        triggerAriaLabel="Select organization"
+        noOrgSelectedLabel="Select organization"
       />,
     );
     await userEvent.click(screen.getByRole("button"));
@@ -46,7 +75,15 @@ describe("MosaicOrgSwitcher", () => {
 
   it("renders without organizations without error", () => {
     expect(() =>
-      render(<MosaicOrgSwitcher organizations={[]} onSelectOrg={() => {}} />),
+      render(
+        <MosaicOrgSwitcher
+          organizations={[]}
+          onSelectOrg={() => {}}
+          triggerAriaLabel="Select organization"
+          createOrgLabel="Create organization"
+          noOrgSelectedLabel="Select organization"
+        />,
+      ),
     ).not.toThrow();
   });
 });

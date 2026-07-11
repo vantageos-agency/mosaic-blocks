@@ -12,7 +12,12 @@ describe("MosaicAdaptiveModal", () => {
   it("renders nothing when isOpen=false", () => {
     render(
       <Wrapper>
-        <MosaicAdaptiveModal isOpen={false} onClose={() => {}} title="Dialog">
+        <MosaicAdaptiveModal
+          isOpen={false}
+          onClose={() => {}}
+          title="Dialog"
+          closeAriaLabel="Close dialog"
+        >
           <p>Modal content</p>
         </MosaicAdaptiveModal>
       </Wrapper>,
@@ -23,7 +28,7 @@ describe("MosaicAdaptiveModal", () => {
   it("renders children when isOpen=true", () => {
     render(
       <Wrapper>
-        <MosaicAdaptiveModal isOpen onClose={() => {}} title="Dialog">
+        <MosaicAdaptiveModal isOpen onClose={() => {}} title="Dialog" closeAriaLabel="Close dialog">
           <p>Modal content</p>
         </MosaicAdaptiveModal>
       </Wrapper>,
@@ -34,7 +39,12 @@ describe("MosaicAdaptiveModal", () => {
   it("renders title when isOpen=true", () => {
     render(
       <Wrapper>
-        <MosaicAdaptiveModal isOpen onClose={() => {}} title="My Dialog">
+        <MosaicAdaptiveModal
+          isOpen
+          onClose={() => {}}
+          title="My Dialog"
+          closeAriaLabel="Close dialog"
+        >
           <p>Body</p>
         </MosaicAdaptiveModal>
       </Wrapper>,
@@ -46,7 +56,12 @@ describe("MosaicAdaptiveModal", () => {
     const onClose = vi.fn();
     render(
       <Wrapper>
-        <MosaicAdaptiveModal isOpen onClose={onClose} title="Closeable">
+        <MosaicAdaptiveModal
+          isOpen
+          onClose={onClose}
+          title="Closeable"
+          closeAriaLabel="Close dialog"
+        >
           <p>Content</p>
         </MosaicAdaptiveModal>
       </Wrapper>,
@@ -57,7 +72,12 @@ describe("MosaicAdaptiveModal", () => {
   it("renders with data-slot attribute", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicAdaptiveModal isOpen onClose={() => {}} title="Slotted">
+        <MosaicAdaptiveModal
+          isOpen
+          onClose={() => {}}
+          title="Slotted"
+          closeAriaLabel="Close dialog"
+        >
           <p>Body</p>
         </MosaicAdaptiveModal>
       </Wrapper>,
