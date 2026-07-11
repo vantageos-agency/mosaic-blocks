@@ -89,6 +89,53 @@ export interface MosaicDataTableProps<T> {
   className?: string;
   /** React 19 ref prop — no forwardRef wrapper needed. */
   ref?: React.Ref<HTMLTableElement>;
+  /**
+   * Trailing content rendered inside a `<tfoot>` row, after the last data
+   * row. Mount your own IntersectionObserver sentinel here to keep your
+   * existing infinite-scroll pattern (e.g. Convex `usePaginatedQuery`) —
+   * `MosaicDataTable` does not impose a button-driven pager.
+   *
+   * @example
+   * <MosaicDataTable
+   *   columns={columns}
+   *   rows={results}
+   *   emptyMessage="Aucune donnée"
+   *   footerSlot={<div ref={sentinelRef} />}
+   * />
+   */
+  footerSlot?: React.ReactNode;
+  /**
+   * Simple load-more affordance for consumers without their own sentinel.
+   * Optional as a feature — a table with no `pagination` renders exactly
+   * as before. When provided, `loadMoreLabel` and `loadingLabel` are
+   * REQUIRED (no default, no fallback) — the host owns the language.
+   */
+  pagination?: MosaicDataTablePagination;
+}
+
+/**
+ * Load-more pagination config. Required as a whole (no partial shape) —
+ * when a consumer opts into the simple pagination affordance, both labels
+ * must be supplied. There is no English default anywhere in this type.
+ */
+export interface MosaicDataTablePagination {
+  /** Whether more rows are available to fetch. */
+  hasMore: boolean;
+  /** Invoked when the load-more affordance is activated. */
+  onLoadMore: () => void;
+  /**
+   * Label for the load-more button. Required — the host owns the
+   * language (e.g. `t('DataTable.loadMore')`).
+   */
+  loadMoreLabel: string;
+  /**
+   * Announcement shown (and read by assistive tech via `aria-live`)
+   * while more rows are being fetched. Required — the host owns the
+   * language.
+   */
+  loadingLabel: string;
+  /** True while a load-more fetch is in flight. @default false */
+  isLoadingMore?: boolean;
 }
 
 // ── Sort state ────────────────────────────────────────────────────────────────
@@ -136,6 +183,8 @@ export function MosaicDataTable<T>({
   emptyMessage,
   className,
   ref,
+  footerSlot,
+  pagination,
 }: MosaicDataTableProps<T>) {
   const [sort, setSort] = useState<SortState | null>(null);
 
@@ -286,6 +335,42 @@ export function MosaicDataTable<T>({
           })
         )}
       </tbody>
+
+      {(footerSlot || pagination) && (
+        <tfoot data-slot="data-table-footer">
+          <tr data-slot="data-table-footer-row">
+            <td
+              data-slot="data-table-footer-cell"
+              colSpan={columns.length}
+              className="px-4 py-3 text-center"
+            >
+              {footerSlot}
+              {pagination && (
+                <div
+                  data-slot="data-table-pagination"
+                  aria-live="polite"
+                  className="flex items-center justify-center"
+                >
+                  {pagination.isLoadingMore ? (
+                    <span className="text-sm text-muted-foreground">{pagination.loadingLabel}</span>
+                  ) : (
+                    pagination.hasMore && (
+                      <button
+                        type="button"
+                        data-slot="data-table-load-more"
+                        onClick={pagination.onLoadMore}
+                        className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {pagination.loadMoreLabel}
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }

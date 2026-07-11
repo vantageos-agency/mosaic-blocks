@@ -7,7 +7,7 @@
 
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { MosaicDataTableColumn } from "./MosaicDataTable.js";
 import { MosaicDataTable } from "./MosaicDataTable.js";
 
@@ -296,5 +296,118 @@ describe("MosaicDataTable", () => {
         />,
       ),
     ).not.toThrow();
+  });
+
+  // ── #44: load-more / pagination ────────────────────────────────────────────
+
+  describe("footerSlot", () => {
+    it("renders the trailing slot content when provided (IntersectionObserver sentinel host)", () => {
+      render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+          footerSlot={<div data-testid="sentinel">sentinel-marker</div>}
+        />,
+      );
+      expect(screen.getByTestId("sentinel")).toBeTruthy();
+      expect(screen.getByText("sentinel-marker")).toBeTruthy();
+    });
+
+    it("renders no footer row when footerSlot is absent (regression)", () => {
+      const { container } = render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+        />,
+      );
+      expect(container.querySelector("tfoot")).toBeFalsy();
+    });
+  });
+
+  describe("pagination", () => {
+    const paginationBase = {
+      loadMoreLabel: "Charger plus",
+      loadingLabel: "Chargement en cours",
+    };
+
+    it("calls onLoadMore when the affordance is activated", async () => {
+      const user = userEvent.setup();
+      const onLoadMore = vi.fn();
+      render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+          pagination={{ ...paginationBase, hasMore: true, onLoadMore }}
+        />,
+      );
+      await user.click(screen.getByText("Charger plus"));
+      expect(onLoadMore).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not render the load-more affordance when hasMore is false", () => {
+      const onLoadMore = vi.fn();
+      render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+          pagination={{ ...paginationBase, hasMore: false, onLoadMore }}
+        />,
+      );
+      expect(screen.queryByText("Charger plus")).toBeFalsy();
+    });
+
+    it("shows the loading state while fetching more rows (French label, host-owned language)", () => {
+      const onLoadMore = vi.fn();
+      render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+          pagination={{ ...paginationBase, hasMore: true, onLoadMore, isLoadingMore: true }}
+        />,
+      );
+      expect(screen.getByText("Chargement en cours")).toBeTruthy();
+      // Button is not shown while loading — only the status message.
+      expect(screen.queryByText("Charger plus")).toBeFalsy();
+    });
+
+    it("announces the loading state via an aria-live region", () => {
+      const onLoadMore = vi.fn();
+      const { container } = render(
+        <MosaicDataTable
+          columns={columns}
+          rows={agents}
+          getRowKey={(r) => r.id}
+          emptyMessage="No data"
+          pagination={{ ...paginationBase, hasMore: true, onLoadMore, isLoadingMore: true }}
+        />,
+      );
+      const liveRegion = container.querySelector("[aria-live]");
+      expect(liveRegion).toBeTruthy();
+      expect(liveRegion?.textContent).toContain("Chargement en cours");
+    });
+  });
+
+  it("renders exactly as before when no pagination props are passed (regression)", () => {
+    const { container } = render(
+      <MosaicDataTable
+        columns={columns}
+        rows={agents}
+        getRowKey={(r) => r.id}
+        emptyMessage="No data"
+      />,
+    );
+    expect(container.querySelector("tfoot")).toBeFalsy();
+    expect(container.querySelector("[aria-live]")).toBeFalsy();
+    expect(screen.getAllByRole("row").length).toBe(4); // header + 3 data rows
   });
 });
