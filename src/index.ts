@@ -571,6 +571,13 @@ export type {
   MosaicStepStatus,
 } from "./components/step-pipeline/MosaicStepPipeline.js";
 
+// ── #18: MosaicKanban ────────────────────────────────────────────────────────
+export { MosaicKanbanBoard } from "./components/kanban/MosaicKanbanBoard.js";
+export type { MosaicKanbanBoardProps } from "./components/kanban/MosaicKanbanBoard.js";
+
+export { MosaicKanbanColumn } from "./components/kanban/MosaicKanbanColumn.js";
+export type { MosaicKanbanColumnProps } from "./components/kanban/MosaicKanbanColumn.js";
+
 // ── T1.5: Multi-tenant (Clerk + cloud-identity peer) ─────────────────────────
 
 // MosaicMultiTenantProvider — ClerkProvider + cloud-identity workspace-scope ctx

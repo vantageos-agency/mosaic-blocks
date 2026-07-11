@@ -30,6 +30,21 @@ export interface MosaicNavbarProps {
   links: NavLink[];
   /** Optional CTA button */
   cta?: NavCta;
+  /**
+   * aria-label for the root `<nav>` element. Required — the host owns the
+   * language (e.g. `t('Navbar.aria.main')`). No default, no fallback.
+   */
+  navAriaLabel: string;
+  /**
+   * aria-label for the hamburger button when the mobile menu is closed.
+   * Required — host-provided, no default.
+   */
+  openMenuAriaLabel: string;
+  /**
+   * aria-label for the hamburger button when the mobile menu is open.
+   * Required — host-provided, no default.
+   */
+  closeMenuAriaLabel: string;
   className?: string;
   ref?: React.Ref<HTMLElement>;
 }
@@ -47,13 +62,26 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  * blur backdrop on scroll. Mobile menu included. All content via props.
  *
  * @example
+ * // Host owns i18n (e.g. next-intl) — labels are always required props.
  * <MosaicNavbar
  *   logo={<img src="/logo.svg" alt="Brand" className="h-8 w-auto" />}
  *   links={[{ label: "Features", href: "#features" }, { label: "Pricing", href: "#pricing" }]}
  *   cta={{ label: "Get started", href: "#start" }}
+ *   navAriaLabel={t('Navbar.aria.main')}
+ *   openMenuAriaLabel={t('Navbar.aria.openMenu')}
+ *   closeMenuAriaLabel={t('Navbar.aria.closeMenu')}
  * />
  */
-export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarProps) {
+export function MosaicNavbar({
+  logo,
+  links,
+  cta,
+  navAriaLabel,
+  openMenuAriaLabel,
+  closeMenuAriaLabel,
+  className,
+  ref,
+}: MosaicNavbarProps) {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isHidden, setIsHidden] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -86,7 +114,7 @@ export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarP
   return (
     <nav
       ref={ref}
-      aria-label="Main navigation"
+      aria-label={navAriaLabel}
       className={cn(
         "fixed left-0 right-0 top-0 z-50 px-4 pt-4 mx-auto w-full max-w-6xl transition-all duration-300 ease-out",
         isHidden ? "opacity-0 -translate-y-5 pointer-events-none" : "opacity-100 translate-y-0",
@@ -145,7 +173,7 @@ export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarP
             )}
             <button
               type="button"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-label={isOpen ? closeMenuAriaLabel : openMenuAriaLabel}
               aria-expanded={isOpen}
               aria-controls="mosaic-mobile-menu"
               onClick={() => setIsOpen((v) => !v)}

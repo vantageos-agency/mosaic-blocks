@@ -80,6 +80,9 @@ export default function SandboxPage() {
           { label: "Customers", href: "#customers" },
         ]}
         cta={{ label: "Get started", href: "#start" }}
+        navAriaLabel="Main navigation"
+        openMenuAriaLabel="Open menu"
+        closeMenuAriaLabel="Close menu"
       />
 
       <main className="pt-24 space-y-0">
