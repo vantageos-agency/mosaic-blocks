@@ -94,3 +94,22 @@ export const stepDescriptionVariants = cva(["text-xs transition-colors"], {
     status: "upcoming",
   },
 });
+
+/** Root container for the compact segment-bar variant */
+export const stepSegmentBarVariants = cva(["flex w-full items-center gap-1"], {
+  variants: {},
+  defaultVariants: {},
+});
+
+/** Individual segment fill in the compact segment-bar variant */
+export const stepSegmentVariants = cva(["h-1.5 flex-1 min-w-2 rounded-full transition-colors"], {
+  variants: {
+    filled: {
+      true: "bg-foreground",
+      false: "bg-muted",
+    },
+  },
+  defaultVariants: {
+    filled: false,
+  },
+});
