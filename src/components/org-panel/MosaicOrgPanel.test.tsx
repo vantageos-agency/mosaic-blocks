@@ -8,6 +8,7 @@ import {
   MosaicMemberList,
   MosaicMultiOrgIndicator,
   MosaicOrgPanel,
+  type MosaicOrgRole,
   MosaicOrgRoleBadge,
 } from "./MosaicOrgPanel.js";
 
@@ -68,20 +69,23 @@ describe("MosaicOrgPanel", () => {
 
 describe("MosaicOrgRoleBadge", () => {
   it("renders admin badge", () => {
-    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
-    render(<MosaicOrgRoleBadge role="admin" />);
+    // "role" here is a MosaicOrgRoleBadge domain prop (admin|member|owner), not an
+    // HTML/ARIA role — read via a variable so static analyzers don't misparse the
+    // literal as an aria-role attribute value.
+    const roleValue: MosaicOrgRole = "admin";
+    render(<MosaicOrgRoleBadge role={roleValue} />);
     expect(screen.getByText(/admin/i)).toBeTruthy();
   });
 
   it("renders member badge", () => {
-    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
-    render(<MosaicOrgRoleBadge role="member" />);
+    const roleValue: MosaicOrgRole = "member";
+    render(<MosaicOrgRoleBadge role={roleValue} />);
     expect(screen.getByText(/member/i)).toBeTruthy();
   });
 
   it("renders owner badge", () => {
-    // biome-ignore lint/a11y/useValidAriaRole: "role" is a MosaicOrgRoleBadge component prop, not an HTML aria role
-    render(<MosaicOrgRoleBadge role="owner" />);
+    const roleValue: MosaicOrgRole = "owner";
+    render(<MosaicOrgRoleBadge role={roleValue} />);
     expect(screen.getByText(/owner/i)).toBeTruthy();
   });
 });
