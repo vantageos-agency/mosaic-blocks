@@ -14,6 +14,8 @@ const requiredProfilePanelLabels = {
   securitySubheading: "Manage your password and security settings",
   changePasswordLabel: "Change Password",
   savingLabel: "Saving…",
+  saveLabel: "Save Profile",
+  unnamedUserLabel: "User",
 };
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -68,8 +70,8 @@ describe("MosaicProfilePanel", () => {
         <MosaicProfilePanel
           fields={fields}
           onSave={() => {}}
-          saveLabel="Update Profile"
           {...requiredProfilePanelLabels}
+          saveLabel="Update Profile"
         />
       </Wrapper>,
     );

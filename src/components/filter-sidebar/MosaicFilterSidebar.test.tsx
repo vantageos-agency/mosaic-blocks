@@ -34,6 +34,8 @@ describe("MosaicFilterSidebar", () => {
           onCategoryChange={() => {}}
           expandFiltersAriaLabel="Expand filters"
           categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -55,6 +57,8 @@ describe("MosaicFilterSidebar", () => {
           onCategoryChange={() => {}}
           expandFiltersAriaLabel="Expand filters"
           categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -77,6 +81,8 @@ describe("MosaicFilterSidebar", () => {
           onCategoryChange={() => {}}
           expandFiltersAriaLabel="Expand filters"
           categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -99,6 +105,8 @@ describe("MosaicFilterSidebar", () => {
           onCategoryChange={() => {}}
           expandFiltersAriaLabel="Expand filters"
           categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -120,6 +128,8 @@ describe("MosaicFilterSidebar", () => {
           title="Filters"
           expandFiltersAriaLabel="Expand filters"
           categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );

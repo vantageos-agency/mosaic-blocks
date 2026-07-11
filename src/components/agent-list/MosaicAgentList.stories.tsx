@@ -4,12 +4,17 @@ import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js
 import { MosaicAgentList } from "./MosaicAgentList.js";
 
 const requiredListLabels = {
+  title: "Agents",
+  searchPlaceholder: "Search agents…",
+  createLabel: "New Agent",
   emptyMessage: "No agents found.",
   openFiltersAriaLabel: "Open filters",
   filtersModalTitle: "Filters",
   closeFiltersAriaLabel: "Close dialog",
   expandFiltersAriaLabel: "Expand filters",
   categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
   agentCardLabels: {
     activeBadgeLabel: "Active",
     agentActionsAriaLabel: "Agent actions",
@@ -81,6 +86,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    ...requiredListLabels,
     agents,
     title: "My Agents",
     filters,
@@ -93,12 +99,12 @@ export const Default: Story = {
     onToggleStatus: (id) => console.log("toggle", id),
     onEditAgent: (id) => console.log("edit", id),
     onDeleteAgent: (id) => console.log("delete", id),
-    ...requiredListLabels,
   },
 };
 
 export const Empty: Story = {
   args: {
+    ...requiredListLabels,
     agents: [],
     title: "My Agents",
     filters,
@@ -108,6 +114,5 @@ export const Empty: Story = {
     selectedCategory: "",
     onCategoryChange: () => {},
     onCreateAgent: () => console.log("create"),
-    ...requiredListLabels,
   },
 };

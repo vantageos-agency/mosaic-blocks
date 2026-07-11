@@ -60,8 +60,10 @@ export interface MosaicMarketplaceListProps {
   onPreview?: (itemId: string) => void;
   title?: string;
   searchPlaceholder?: string;
-  installLabel?: string;
-  uninstallLabel?: string;
+  /** Label for the install action button. Required, no default. */
+  installLabel: string;
+  /** Label for the uninstall action button. Required, no default. */
+  uninstallLabel: string;
   /**
    * Label for the preview button on each card. Required — host-owned,
    * no default.
@@ -82,6 +84,10 @@ export interface MosaicMarketplaceListProps {
   expandFiltersAriaLabel: string;
   /** Forwarded to MosaicFilterSidebar — required, no default. */
   categoriesHeading: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  collapseSidebarAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  expandSidebarAriaLabel: string;
   className?: string;
 }
 
@@ -312,14 +318,16 @@ function MarketplaceListDesktop(props: MosaicMarketplaceListProps) {
     onInstall,
     onUninstall,
     onPreview,
-    title = "Marketplace",
-    searchPlaceholder = "Search marketplace…",
-    installLabel = "Install",
-    uninstallLabel = "Uninstall",
+    title,
+    searchPlaceholder,
+    installLabel,
+    uninstallLabel,
     previewLabel,
     emptyMessage,
     expandFiltersAriaLabel,
     categoriesHeading,
+    collapseSidebarAriaLabel,
+    expandSidebarAriaLabel,
   } = props;
 
   const [query, setQuery] = React.useState("");
@@ -349,6 +357,8 @@ function MarketplaceListDesktop(props: MosaicMarketplaceListProps) {
           onCategoryChange={onCategoryChange}
           expandFiltersAriaLabel={expandFiltersAriaLabel}
           categoriesHeading={categoriesHeading}
+          collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+          expandSidebarAriaLabel={expandSidebarAriaLabel}
         />
         <div className="flex flex-1 flex-col min-w-0">
           <div className="border-b border-border px-6 py-4">
@@ -408,10 +418,10 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
     onInstall,
     onUninstall,
     onPreview,
-    title = "Marketplace",
-    searchPlaceholder = "Search marketplace…",
-    installLabel = "Install",
-    uninstallLabel = "Uninstall",
+    title,
+    searchPlaceholder,
+    installLabel,
+    uninstallLabel,
     previewLabel,
     emptyMessage,
     openFiltersAriaLabel,
@@ -419,6 +429,8 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
     closeFiltersAriaLabel,
     expandFiltersAriaLabel,
     categoriesHeading,
+    collapseSidebarAriaLabel,
+    expandSidebarAriaLabel,
   } = props;
 
   const [filterOpen, setFilterOpen] = React.useState(false);
@@ -502,6 +514,8 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
             selectedCategory={selectedCategory}
             expandFiltersAriaLabel={expandFiltersAriaLabel}
             categoriesHeading={categoriesHeading}
+            collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+            expandSidebarAriaLabel={expandSidebarAriaLabel}
             onCategoryChange={(id) => {
               onCategoryChange(id);
               setFilterOpen(false);

@@ -52,6 +52,10 @@ export interface MosaicAdaptiveNavigationProps {
    * the language (e.g. `t('AdaptiveNavigation.aria.tab')`). No default.
    */
   tabNavAriaLabel: string;
+  /** Status caption shown when a step is complete. Required, no default. */
+  completeStatusLabel: string;
+  /** Status caption shown when a step is not yet complete. Required, no default. */
+  inProgressStatusLabel: string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -128,6 +132,8 @@ export function MosaicAdaptiveNavigation({
   onToggleExpanded,
   stepNavAriaLabel,
   tabNavAriaLabel,
+  completeStatusLabel,
+  inProgressStatusLabel,
   className,
   ref,
 }: MosaicAdaptiveNavigationProps) {
@@ -167,7 +173,7 @@ export function MosaicAdaptiveNavigation({
                   <div>
                     <p className="text-base font-medium text-foreground">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {item.isComplete ? "Complete" : "In progress"}
+                      {item.isComplete ? completeStatusLabel : inProgressStatusLabel}
                     </p>
                   </div>
                 </div>

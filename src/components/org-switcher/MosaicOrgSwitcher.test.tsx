@@ -17,6 +17,8 @@ describe("MosaicOrgSwitcher", () => {
         currentOrgId="org-1"
         onSelectOrg={() => {}}
         triggerAriaLabel="Select organization"
+        createOrgLabel="Create organization"
+        noOrgSelectedLabel="Select organization"
       />,
     );
     expect(screen.getByText("Acme Corp")).toBeTruthy();
@@ -29,6 +31,8 @@ describe("MosaicOrgSwitcher", () => {
         currentOrgId="org-1"
         onSelectOrg={() => {}}
         triggerAriaLabel="Select organization"
+        createOrgLabel="Create organization"
+        noOrgSelectedLabel="Select organization"
       />,
     );
     const trigger = screen.getByRole("button");
@@ -44,6 +48,8 @@ describe("MosaicOrgSwitcher", () => {
         currentOrgId="org-1"
         onSelectOrg={onSelect}
         triggerAriaLabel="Select organization"
+        createOrgLabel="Create organization"
+        noOrgSelectedLabel="Select organization"
       />,
     );
     await userEvent.click(screen.getByRole("button"));
@@ -60,6 +66,7 @@ describe("MosaicOrgSwitcher", () => {
         onCreateOrg={() => {}}
         createOrgLabel="New Organization"
         triggerAriaLabel="Select organization"
+        noOrgSelectedLabel="Select organization"
       />,
     );
     await userEvent.click(screen.getByRole("button"));
@@ -73,6 +80,8 @@ describe("MosaicOrgSwitcher", () => {
           organizations={[]}
           onSelectOrg={() => {}}
           triggerAriaLabel="Select organization"
+          createOrgLabel="Create organization"
+          noOrgSelectedLabel="Select organization"
         />,
       ),
     ).not.toThrow();

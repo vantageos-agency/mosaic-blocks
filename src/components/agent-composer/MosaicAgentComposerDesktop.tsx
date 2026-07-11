@@ -67,19 +67,23 @@ export interface MosaicAgentComposerProps {
   onCancel?: () => void;
   canSave: boolean;
   isEditMode?: boolean;
-  /** Labels override — localize or rename slots */
-  labels?: {
-    role?: string;
-    persona?: string;
-    framework?: string;
-    model?: string;
-    customInstructions?: string;
-    saveLabel?: string;
-    cancelLabel?: string;
-    heading?: string;
-    subheading?: string;
-    headingEdit?: string;
-    subheadingEdit?: string;
+  /**
+   * Slot labels — required, host-owned, no default. The host owns the
+   * language (e.g. next-intl `t()`). Every field is mandatory: a missing
+   * label is a compile-time error, never a silent English fallback.
+   */
+  labels: {
+    role: string;
+    persona: string;
+    framework: string;
+    model: string;
+    customInstructions: string;
+    saveLabel: string;
+    cancelLabel: string;
+    heading: string;
+    subheading: string;
+    headingEdit: string;
+    subheadingEdit: string;
   };
   /**
    * Required host-owned strings — no default, no fallback. The host owns
@@ -96,6 +100,8 @@ export interface MosaicAgentComposerProps {
   customInstructionsPreviewLabel: string;
   selectAllModulesLabel: string;
   requiredLabel: string;
+  /** Fallback name shown in the preview when `agentName` is empty. Required, no default. */
+  unnamedAgentLabel: string;
 }
 
 // ── Inline icons ──────────────────────────────────────────────────────────────
@@ -281,7 +287,7 @@ export function MosaicAgentComposerDesktop({
   onCancel,
   canSave,
   isEditMode = false,
-  labels = {},
+  labels,
   agentNameLabel,
   agentNamePlaceholder,
   instructionsPlaceholder,
@@ -292,20 +298,11 @@ export function MosaicAgentComposerDesktop({
   previewConfigLabel,
   customInstructionsPreviewLabel,
   selectAllModulesLabel,
+  unnamedAgentLabel,
 }: MosaicAgentComposerProps) {
-  const L = {
-    role: labels.role ?? "Role",
-    persona: labels.persona ?? "Persona",
-    framework: labels.framework ?? "Framework",
-    model: labels.model ?? "Model",
-    customInstructions: labels.customInstructions ?? "Custom Instructions (Optional)",
-    saveLabel: labels.saveLabel ?? (isEditMode ? "Save Changes" : "Create Agent"),
-    cancelLabel: labels.cancelLabel ?? "Cancel",
-    heading: labels.heading ?? "Compose Agent",
-    subheading: labels.subheading ?? "Select modules to build your custom agent",
-    headingEdit: labels.headingEdit ?? "Edit Agent",
-    subheadingEdit: labels.subheadingEdit ?? "Update your agent configuration",
-  };
+  // `labels` is fully required — every field is host-supplied, no default,
+  // no fallback. Aliased to `L` only for call-site brevity below.
+  const L = labels;
 
   const allModulesSelected =
     !!selectedRole && !!selectedPersona && !!selectedFramework && !!selectedModel;
@@ -466,7 +463,7 @@ export function MosaicAgentComposerDesktop({
 
         {allModulesSelected ? (
           <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-            <h3 className="font-semibold text-foreground">{agentName || "Unnamed Agent"}</h3>
+            <h3 className="font-semibold text-foreground">{agentName || unnamedAgentLabel}</h3>
             <p className="text-xs text-muted-foreground">{previewConfigLabel}</p>
             <hr className="border-border" />
             <div className="space-y-3 text-sm">

@@ -51,6 +51,7 @@ export const AdminVisible: Story = {
     items,
     isAdmin: true,
     drawerTitle: "VantageOS",
+    drawerSubtitle: "AI Platform",
     ...requiredNavLabels,
   },
 };

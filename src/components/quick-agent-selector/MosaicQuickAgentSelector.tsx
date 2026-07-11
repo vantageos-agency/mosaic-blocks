@@ -52,10 +52,10 @@ export interface MosaicQuickAgentSelectorProps {
   onOpenBuilder?: () => void;
   /** Max number of agents allowed */
   maxAgents?: number;
-  /** Label for the add button */
-  addLabel?: string;
-  /** Label for the create-custom CTA */
-  createLabel?: string;
+  /** Label for the add button. Required, no default. */
+  addLabel: string;
+  /** Label for the create-custom CTA (shown when `onOpenBuilder` is set). Required, no default. */
+  createLabel: string;
   /**
    * Required host-owned strings — no default, no fallback. The host owns
    * the language (e.g. next-intl `t()`).
@@ -216,8 +216,8 @@ export function MosaicQuickAgentSelector({
   onRemoveAgent,
   onOpenBuilder,
   maxAgents = 4,
-  addLabel = "Add Agent",
-  createLabel = "Create Custom Agent",
+  addLabel,
+  createLabel,
   quickAddHeading,
   configureBehaviorCaption,
   noAgentsAvailableMessage,

@@ -25,6 +25,8 @@ describe("MosaicMainNav", () => {
           drawerNavAriaLabel="Navigation"
           mainNavAriaLabel="Main navigation"
           adminBadgeLabel="Admin"
+          drawerTitle="Navigation"
+          drawerSubtitle="Access all features"
         />
       </Wrapper>,
     );
@@ -43,6 +45,8 @@ describe("MosaicMainNav", () => {
           drawerNavAriaLabel="Navigation"
           mainNavAriaLabel="Main navigation"
           adminBadgeLabel="Admin"
+          drawerTitle="Navigation"
+          drawerSubtitle="Access all features"
         />
       </Wrapper>,
     );
@@ -60,6 +64,8 @@ describe("MosaicMainNav", () => {
           drawerNavAriaLabel="Navigation"
           mainNavAriaLabel="Main navigation"
           adminBadgeLabel="Admin"
+          drawerTitle="Navigation"
+          drawerSubtitle="Access all features"
         />
       </Wrapper>,
     );
@@ -85,6 +91,8 @@ describe("MosaicMainNav", () => {
           drawerNavAriaLabel="Navigation"
           mainNavAriaLabel="Main navigation"
           adminBadgeLabel="Admin"
+          drawerTitle="Navigation"
+          drawerSubtitle="Access all features"
         />
       </Wrapper>,
     );
@@ -102,6 +110,8 @@ describe("MosaicMainNav", () => {
             drawerNavAriaLabel="Navigation"
             mainNavAriaLabel="Main navigation"
             adminBadgeLabel="Admin"
+            drawerTitle="Navigation"
+            drawerSubtitle="Access all features"
           />
         </Wrapper>,
       ),

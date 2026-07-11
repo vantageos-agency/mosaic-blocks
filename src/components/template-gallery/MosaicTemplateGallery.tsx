@@ -299,7 +299,8 @@ export interface MosaicTemplatePreviewProps {
   template: MosaicTemplate;
   onSelect: (template: MosaicTemplate) => void;
   onClose?: () => void;
-  selectLabel?: string;
+  /** Label for the "use template" confirm button. Required, no default. */
+  selectLabel: string;
   /** Label for the cancel button (shown when `onClose` is set). Required, no default. */
   cancelLabel: string;
 }
@@ -308,7 +309,7 @@ export function MosaicTemplatePreview({
   template,
   onSelect,
   onClose,
-  selectLabel = "Use Template",
+  selectLabel,
   cancelLabel,
 }: MosaicTemplatePreviewProps) {
   return (
@@ -451,9 +452,9 @@ export function MosaicQuickStartPanel({
   onSelectScenario,
   onSelectPreset,
   onStartFromScratch,
-  scenariosTitle = "Quick Start Scenarios",
-  presetsTitle = "Agent Team Presets",
-  scratchLabel = "Start from Scratch",
+  scenariosTitle,
+  presetsTitle,
+  scratchLabel,
   className,
 }: MosaicQuickStartPanelProps) {
   return (
@@ -592,6 +593,10 @@ export interface MosaicTemplateGalleryProps {
   expandFiltersAriaLabel: string;
   /** Forwarded to MosaicFilterSidebar — required, no default. */
   categoriesHeading: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  collapseSidebarAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  expandSidebarAriaLabel: string;
   /** Required host-owned strings forwarded to every MosaicTemplateCard. */
   previewLabel: string;
   duplicateLabel: string;
@@ -611,14 +616,16 @@ function TemplateGalleryContent({
   selectedCategory,
   onCategoryChange,
   showActions,
-  title = "Templates",
-  searchPlaceholder = "Search templates…",
+  title,
+  searchPlaceholder,
   emptyMessage,
   openFiltersAriaLabel,
   filtersTitle,
   closeFiltersAriaLabel,
   expandFiltersAriaLabel,
   categoriesHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
   previewLabel,
   duplicateLabel,
   isMobile,
@@ -661,6 +668,8 @@ function TemplateGalleryContent({
       title={filtersTitle}
       expandFiltersAriaLabel={expandFiltersAriaLabel}
       categoriesHeading={categoriesHeading}
+      collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+      expandSidebarAriaLabel={expandSidebarAriaLabel}
     />
   );
 

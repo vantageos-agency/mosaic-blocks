@@ -5,12 +5,17 @@ import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js
 import { MosaicAgentList } from "./MosaicAgentList.js";
 
 const requiredListLabels = {
+  title: "Agents",
+  searchPlaceholder: "Search agents…",
+  createLabel: "New Agent",
   emptyMessage: "No agents found.",
   openFiltersAriaLabel: "Open filters",
   filtersModalTitle: "Filters",
   closeFiltersAriaLabel: "Close dialog",
   expandFiltersAriaLabel: "Expand filters",
   categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
   agentCardLabels: {
     activeBadgeLabel: "Active",
     agentActionsAriaLabel: "Agent actions",
@@ -67,8 +72,8 @@ describe("MosaicAgentList", () => {
           categories={categories}
           selectedCategory="default"
           onCategoryChange={() => {}}
-          title="Agent Library"
           {...requiredListLabels}
+          title="Agent Library"
         />
       </Wrapper>,
     );
@@ -106,8 +111,8 @@ describe("MosaicAgentList", () => {
           selectedCategory="default"
           onCategoryChange={() => {}}
           onCreateAgent={() => {}}
-          createLabel="New Agent"
           {...requiredListLabels}
+          createLabel="New Agent"
         />
       </Wrapper>,
     );

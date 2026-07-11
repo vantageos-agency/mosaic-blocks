@@ -24,8 +24,12 @@ export interface MosaicThemeToggleProps {
   /** Called with the new theme string after each toggle */
   onChange?: (theme: Theme) => void;
   className?: string;
-  /** aria-label for the toggle button */
+  /** aria-label override for the toggle button (takes precedence over the dynamic labels below). */
   label?: string;
+  /** aria-label when toggling would switch to light theme. Required, no default. */
+  switchToLightLabel: string;
+  /** aria-label when toggling would switch to dark theme. Required, no default. */
+  switchToDarkLabel: string;
   ref?: React.Ref<HTMLButtonElement>;
 }
 
@@ -54,6 +58,8 @@ export function MosaicThemeToggle({
   onChange,
   className,
   label,
+  switchToLightLabel,
+  switchToDarkLabel,
   ref,
 }: MosaicThemeToggleProps) {
   const [theme, setTheme] = React.useState<Theme>(() => {
@@ -83,7 +89,7 @@ export function MosaicThemeToggle({
     theme === "dark" ||
     (theme === "system" && typeof window !== "undefined" && getSystemTheme() === "dark");
 
-  const ariaLabel = label ?? (isDark ? "Switch to light theme" : "Switch to dark theme");
+  const ariaLabel = label ?? (isDark ? switchToLightLabel : switchToDarkLabel);
 
   return (
     <button

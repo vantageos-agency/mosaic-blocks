@@ -25,6 +25,8 @@ describe("MosaicAppSidebar", () => {
           mainNavAriaLabel="Main navigation"
           quickActionsHeading="Quick Actions"
           recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -42,6 +44,8 @@ describe("MosaicAppSidebar", () => {
           mainNavAriaLabel="Main navigation"
           quickActionsHeading="Quick Actions"
           recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -60,6 +64,8 @@ describe("MosaicAppSidebar", () => {
           mainNavAriaLabel="Main navigation"
           quickActionsHeading="Quick Actions"
           recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </Wrapper>,
     );
@@ -80,6 +86,8 @@ describe("MosaicAppSidebar", () => {
             mainNavAriaLabel="Main navigation"
             quickActionsHeading="Quick Actions"
             recentHeading="Recent"
+            collapseSidebarAriaLabel="Collapse sidebar"
+            expandSidebarAriaLabel="Expand sidebar"
           />
         </Wrapper>,
       ),

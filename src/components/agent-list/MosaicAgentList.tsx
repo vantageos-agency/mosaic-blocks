@@ -60,9 +60,12 @@ export interface MosaicAgentListProps {
   onCreateAgent?: () => void;
   /** Slot for header-right actions (e.g. OrgSwitcher) */
   headerActions?: React.ReactNode;
-  title?: string;
-  searchPlaceholder?: string;
-  createLabel?: string;
+  /** Section heading. Required, no default. */
+  title: string;
+  /** Search input placeholder. Required, no default. */
+  searchPlaceholder: string;
+  /** Label for the "create agent" button. Required, no default. */
+  createLabel: string;
   /**
    * Message shown when the filtered agent list is empty. Required — the
    * host owns the language (e.g. `t('AgentList.empty')`). No default.
@@ -86,6 +89,10 @@ export interface MosaicAgentListProps {
   expandFiltersAriaLabel: string;
   /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
   categoriesHeading: string;
+  /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
+  collapseSidebarAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, host-owned, no default. */
+  expandSidebarAriaLabel: string;
   className?: string;
 }
 
@@ -165,13 +172,15 @@ function AgentListDesktop({
   onEditAgent,
   onCreateAgent,
   headerActions,
-  title = "Agents",
-  searchPlaceholder = "Search agents…",
-  createLabel = "New Agent",
+  title,
+  searchPlaceholder,
+  createLabel,
   emptyMessage,
   agentCardLabels,
   expandFiltersAriaLabel,
   categoriesHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
 }: MosaicAgentListProps) {
   const [query, setQuery] = React.useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
@@ -206,6 +215,8 @@ function AgentListDesktop({
           onCategoryChange={onCategoryChange}
           expandFiltersAriaLabel={expandFiltersAriaLabel}
           categoriesHeading={categoriesHeading}
+          collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+          expandSidebarAriaLabel={expandSidebarAriaLabel}
         />
 
         {/* Main content */}
@@ -283,9 +294,9 @@ function AgentListMobile({
   onDeleteAgent,
   onEditAgent,
   onCreateAgent,
-  title = "Agents",
-  searchPlaceholder = "Search agents…",
-  createLabel = "New Agent",
+  title,
+  searchPlaceholder,
+  createLabel,
   emptyMessage,
   openFiltersAriaLabel,
   filtersModalTitle,
@@ -293,6 +304,8 @@ function AgentListMobile({
   agentCardLabels,
   expandFiltersAriaLabel,
   categoriesHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
 }: MosaicAgentListProps) {
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -395,6 +408,8 @@ function AgentListMobile({
             selectedCategory={selectedCategory}
             expandFiltersAriaLabel={expandFiltersAriaLabel}
             categoriesHeading={categoriesHeading}
+            collapseSidebarAriaLabel={collapseSidebarAriaLabel}
+            expandSidebarAriaLabel={expandSidebarAriaLabel}
             onCategoryChange={(id) => {
               onCategoryChange(id);
               setFilterOpen(false);

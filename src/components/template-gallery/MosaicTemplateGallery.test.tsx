@@ -43,6 +43,8 @@ const galleryBaseProps = {
   closeFiltersAriaLabel: "Close dialog",
   expandFiltersAriaLabel: "Expand filters",
   categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
   previewLabel: "Preview",
   duplicateLabel: "Duplicate",
 };
@@ -116,6 +118,7 @@ describe("MosaicTemplatePreview", () => {
         onSelect={() => {}}
         onClose={() => {}}
         cancelLabel="Cancel"
+        selectLabel="Use Template"
       />,
     );
     expect(screen.getByText("Strategy Debate")).toBeTruthy();

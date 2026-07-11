@@ -8,6 +8,9 @@ const requiredSelectorModalLabels = {
   allCategoryLabel: "All",
   emptyMessage: "No results found.",
   closeAriaLabel: "Close dialog",
+  searchPlaceholder: "Search…",
+  confirmLabel: "Select",
+  cancelLabel: "Cancel",
 };
 
 function Wrapper({ children }: { children: React.ReactNode }) {

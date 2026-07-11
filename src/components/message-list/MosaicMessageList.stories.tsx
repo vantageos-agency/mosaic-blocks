@@ -57,6 +57,11 @@ const requiredMessageListLabels = {
   loadMoreLabel: "Load more",
   replyLabel: "Reply",
   moreOptionsAriaLabel: "More options",
+  removeBookmarkAriaLabel: "Remove bookmark",
+  bookmarkAriaLabel: "Bookmark message",
+  removeBookmarkLabel: "Remove bookmark",
+  bookmarkLabel: "Bookmark",
+  copyMessageLabel: "Copy message",
 };
 
 export const Default: Story = {

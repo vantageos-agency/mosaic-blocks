@@ -10,6 +10,8 @@ const requiredQuickAgentLabels = {
   noAgentsAvailableMessage: "No agents available to add.",
   addAgentModalTitle: "Add Agent",
   closeAriaLabel: "Close dialog",
+  addLabel: "Add Agent",
+  createLabel: "Create Custom Agent",
 };
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -61,7 +63,6 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
-          addLabel="Add Agent"
           {...requiredQuickAgentLabels}
         />
       </Wrapper>,

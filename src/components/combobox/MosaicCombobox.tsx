@@ -72,7 +72,7 @@ export function MosaicCombobox({
   value,
   onValueChange,
   defaultValue,
-  placeholder = "Search…",
+  placeholder,
   disabled,
   name,
   emptyMessage,

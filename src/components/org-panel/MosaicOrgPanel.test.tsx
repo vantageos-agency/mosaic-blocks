@@ -110,6 +110,7 @@ describe("MosaicCreateOrgDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onCreateOrg={() => {}}
+          title="Create Organization"
           closeAriaLabel="Close dialog"
           orgNameFieldLabel="Organization Name *"
           orgNamePlaceholder="Acme Inc."
@@ -136,6 +137,7 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          title="Invite Member"
           closeAriaLabel="Close dialog"
           emailFieldLabel="Email address *"
           emailPlaceholder="colleague@example.com"
@@ -164,6 +166,7 @@ describe("MosaicMemberList", () => {
           removeMemberLabel="Remove member"
           emptyMessage="No members found."
           inviteLabel="Invite"
+          searchPlaceholder="Search members…"
         />
       </Wrapper>,
     );

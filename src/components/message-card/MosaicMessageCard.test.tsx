@@ -23,6 +23,11 @@ describe("MosaicMessageCard", () => {
         message={message}
         replyLabel="Reply"
         moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
       />,
     );
     expect(screen.getByText("This is a great discussion point.")).toBeTruthy();
@@ -34,6 +39,11 @@ describe("MosaicMessageCard", () => {
         message={message}
         replyLabel="Reply"
         moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
       />,
     );
     expect(screen.getByText("Alice")).toBeTruthy();
@@ -47,6 +57,11 @@ describe("MosaicMessageCard", () => {
           compact
           replyLabel="Reply"
           moreOptionsAriaLabel="More options"
+          removeBookmarkAriaLabel="Remove bookmark"
+          bookmarkAriaLabel="Bookmark message"
+          removeBookmarkLabel="Remove bookmark"
+          bookmarkLabel="Bookmark"
+          copyMessageLabel="Copy message"
         />,
       ),
     ).not.toThrow();
@@ -62,6 +77,11 @@ describe("MosaicMessageCard", () => {
         message={aiMessage}
         replyLabel="Reply"
         moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
       />,
     );
     // Like button renders for AI messages only
@@ -76,6 +96,11 @@ describe("MosaicMessageCard", () => {
         className="my-message"
         replyLabel="Reply"
         moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
       />,
     );
     expect(container.querySelector(".my-message")).toBeTruthy();

@@ -17,6 +17,11 @@ const requiredModuleLibraryLabels = {
   deleteItemLabel: "Delete",
   closeEditorAriaLabel: "Close dialog",
   editModalTitle: (name: string) => `Edit ${name || "Module"}`,
+  title: "Module Library",
+  createLabel: "New Module",
+  searchPlaceholder: "Search modules…",
+  emptyMessage: "No modules found.",
+  tagListAddPlaceholder: "Add item…",
 };
 
 const requiredModuleFormLabels = {
@@ -27,6 +32,7 @@ const requiredModuleFormLabels = {
   cancelLabel: "Cancel",
   saveChangesLabel: "Save Changes",
   createItemLabel: "Create",
+  tagListAddPlaceholder: "Add item…",
 };
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -101,8 +107,8 @@ describe("MosaicModuleLibrary", () => {
           onCreateItem={() => {}}
           onUpdateItem={() => {}}
           onDeleteItem={() => {}}
-          title="Framework Library"
           {...requiredModuleLibraryLabels}
+          title="Framework Library"
         />
       </Wrapper>,
     );

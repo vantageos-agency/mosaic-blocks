@@ -38,6 +38,11 @@ type Story = StoryObj<typeof meta>;
 const requiredMessageCardLabels = {
   replyLabel: "Reply",
   moreOptionsAriaLabel: "More options",
+  removeBookmarkAriaLabel: "Remove bookmark",
+  bookmarkAriaLabel: "Bookmark message",
+  removeBookmarkLabel: "Remove bookmark",
+  bookmarkLabel: "Bookmark",
+  copyMessageLabel: "Copy message",
 };
 
 export const UserMessage: Story = {

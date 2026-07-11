@@ -39,6 +39,7 @@ export const Default: Story = {
 export const IconOnly: Story = {
   args: {
     actions,
+    label: "Quick Actions",
     menuTitle: "Actions",
     emptyMessage: "No actions available.",
   },

@@ -20,6 +20,20 @@ const requiredComposerLabels = {
   savingLabel: "Saving…",
   creatingLabel: "Creating…",
   optionalInstructionsHelp: "Optional: Add specific behaviors or constraints for your agent",
+  unnamedAgentLabel: "Unnamed Agent",
+  labels: {
+    role: "Role",
+    persona: "Persona",
+    framework: "Framework",
+    model: "Model",
+    customInstructions: "Custom Instructions (Optional)",
+    saveLabel: "Create Agent",
+    cancelLabel: "Cancel",
+    heading: "Compose Agent",
+    subheading: "Select modules to build your custom agent",
+    headingEdit: "Edit Agent",
+    subheadingEdit: "Update your agent configuration",
+  },
 } as const;
 
 function ComposerDemo() {

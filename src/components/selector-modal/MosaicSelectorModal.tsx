@@ -60,16 +60,16 @@ export interface MosaicSelectorModalProps {
   onSelect: (item: MosaicSelectorItem) => void;
   /** If provided, renders category tabs */
   categories?: MosaicSelectorCategory[];
-  /** Search placeholder text */
-  searchPlaceholder?: string;
+  /** Search placeholder text. Required, no default. */
+  searchPlaceholder: string;
   /** Number of columns in the grid (1 or 2, default 2) */
   columns?: 1 | 2;
   /** Slot rendered alongside selected item for preview */
   renderPreview?: (item: MosaicSelectorItem) => React.ReactNode;
-  /** Confirm button label (default "Select") */
-  confirmLabel?: string;
-  /** Cancel button label (default "Cancel") */
-  cancelLabel?: string;
+  /** Confirm button label. Required, no default. */
+  confirmLabel: string;
+  /** Cancel button label. Required, no default. */
+  cancelLabel: string;
   /** Label for the "All" category tab. Required, no default. */
   allCategoryLabel: string;
   /** Message shown when the filtered item grid is empty. Required, no default. */
@@ -131,11 +131,11 @@ export function MosaicSelectorModal({
   selectedId,
   onSelect,
   categories,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   columns = 2,
   renderPreview,
-  confirmLabel = "Select",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   allCategoryLabel,
   emptyMessage,
   closeAriaLabel,

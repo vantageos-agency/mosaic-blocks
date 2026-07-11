@@ -36,6 +36,8 @@ function FilterDemo() {
           title="Filters"
           expandFiltersAriaLabel="Expand filters"
           categoriesHeading="Categories"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
         />
       </div>
     </MosaicDeviceProvider>
@@ -68,6 +70,8 @@ const baseFilterArgs = {
   onCategoryChange: () => {},
   expandFiltersAriaLabel: "Expand filters",
   categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
 } as const;
 
 export const Default: Story = {
@@ -88,5 +92,7 @@ export const Collapsed: Story = {
     title: "Filters",
     expandFiltersAriaLabel: "Expand filters",
     categoriesHeading: "Categories",
+    collapseSidebarAriaLabel: "Collapse sidebar",
+    expandSidebarAriaLabel: "Expand sidebar",
   },
 };

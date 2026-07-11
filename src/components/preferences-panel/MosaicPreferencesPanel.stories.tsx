@@ -69,6 +69,7 @@ function PrefDemo() {
           onChange={handleChange}
           onSave={() => console.log("saved")}
           saveLabel="Save Preferences"
+          savingLabel="Saving…"
         />
       </div>
     </MosaicDeviceProvider>
@@ -92,7 +93,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const basePrefArgs = { groups, onChange: () => {}, onSave: () => {} } as const;
+const basePrefArgs = {
+  groups,
+  onChange: () => {},
+  onSave: () => {},
+  saveLabel: "Save Preferences",
+  savingLabel: "Saving…",
+} as const;
 
 export const Default: Story = {
   args: basePrefArgs,
@@ -106,5 +113,6 @@ export const Saving: Story = {
     onSave: () => {},
     isSaving: true,
     saveLabel: "Saving…",
+    savingLabel: "Saving…",
   },
 };

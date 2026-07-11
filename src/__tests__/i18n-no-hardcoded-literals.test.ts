@@ -9,9 +9,17 @@
  * (n: number) => string`).
  *
  * This test statically scans every non-test .tsx file under
- * src/components/** for a hardcoded literal in JSX text position or in
- * one of the user-facing attributes above, and fails the suite if any
- * violation is found.
+ * src/components/** for a hardcoded literal in:
+ *   - JSX text position
+ *   - one of the user-facing attributes above
+ *   - an English-looking `?? "..."` / `|| "..."` fallback default
+ *   - an English-looking ternary true-branch (`cond ? "English" : ...`)
+ *   - an English-looking destructuring/parameter default
+ *     (`{ searchPlaceholder = "Search…" }`)
+ * This closes every hiding place for the "optional prop + English default"
+ * mechanism — inside JSX, inside a `??`/`||` fallback, inside a ternary, and
+ * inside the destructuring default itself. Fails the suite if any violation
+ * is found.
  *
  * Exclusions (documented, not silent):
  *   - *.test.tsx, *.stories.tsx, *.spec.tsx files
@@ -162,8 +170,83 @@ const JSX_TEXT_RE = /(?<![{`=])>\s*([A-Z][A-Za-zÀ-ÿ0-9 ,.'’…:/&()%-]{2,})\
 // structural/DOM/CSS, not text.
 const USER_FACING_ATTR_RE = /\b(aria-label|title|placeholder|alt|label)=\{?"([A-Z][^"{}]{2,})"\}?/g;
 
+// `?? "..."` / `|| "..."` fallback default in a JS expression (object
+// property value, JSX text expression, function arg, etc). Catches the
+// banned "optional prop + English default" mechanism that hides outside
+// JSX (e.g. `labels.role ?? "Role"`, `field.placeholder ?? "Add item…"`).
+// Matches both quote styles; content is filtered by isEnglishDefault below.
+const FALLBACK_DEFAULT_RE = /(?:\?\?|\|\|)\s*(['"])((?:(?!\1).)*)\1/g;
+
+// Ternary TRUE-branch literal: `cond ? "English" : ...`. Anchored on a `?`
+// immediately before the string so it can't be confused with a plain object
+// property (`key: "value"`) or optional chaining (`?.`).
+const TERNARY_TRUE_BRANCH_RE = /\?(?!\.)\s*(['"])((?:(?!\1).)*)\1\s*:/g;
+
+// Destructuring / parameter default: `identName = "English"`. Anchored with
+// a lookahead requiring the next non-whitespace token to be `,` or `}` —
+// this is the shape of a destructured prop default
+// (`{ searchPlaceholder = "Search…", other }`) and excludes JSX attribute
+// literals (`type="text"`), which are followed by another attribute, `/`,
+// or `>`, never by `,`/`}`.
+const DESTRUCTURE_DEFAULT_RE = /\b[A-Za-z_$][\w$]*\s*=\s*(['"])((?:(?!\1).)*)\1\s*(?=[,}])/g;
+
 function isBenign(text: string): boolean {
   if (/^\d+$/.test(text)) return true;
+  return false;
+}
+
+/**
+ * Predicate for a string-literal default (`?? "..."`, `|| "..."`, a ternary
+ * true-branch, or a destructuring/parameter default): is it a genuine
+ * hardcoded English user-facing string (violation), or a technical value
+ * that must stay legal (empty string, HTML input type, CSS classes, a bare
+ * identifier/enum token, a single punctuation char)?
+ *
+ * Flags when the literal:
+ *   - is a single capitalised word (`"Role"`, `"Cancel"`, `"Model"`), OR
+ *   - contains 2+ alphabetic word-tokens (`"Custom Instructions (Optional)"`,
+ *     `"Select modules to build your custom agent"`), OR
+ *   - ends with an ellipsis or a period, signalling prose
+ *     (`"Add item…"`, `"Loading."`)
+ *
+ * ...UNLESS the whole string looks like CSS classes / an identifier / an
+ * enum token: every whitespace-separated token is lowercase-only with
+ * `[a-z0-9-]` (Tailwind utility classes are exactly this shape, including
+ * multi-class strings like `"bg-muted text-muted-foreground"`, and single
+ * lowercase enum values like `"admin"`, `"light"`, `"blue"`).
+ *
+ * Does NOT flag: empty string, single punctuation/short (`"?"`, `"text"`),
+ * a single lowercase identifier/enum word, CSS class lists.
+ */
+function isEnglishDefault(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return false;
+
+  // CSS-class-list / identifier / enum-token shape: every token starts with
+  // a lowercase letter (or a `-` for negative utilities) and is otherwise
+  // built only from Tailwind's own alphabet — letters, digits, `-_./:%[]()`
+  // for hover:/arbitrary-value/opacity-modifier syntax (`bg-primary/5`,
+  // `hover:bg-secondary/80`, `bg-[oklch(0.6_0.15_250_/_0.5)]`). Covers
+  // "text", "admin", "light", "blue", "bg-muted text-muted-foreground", etc.
+  const tokens = trimmed.split(/\s+/);
+  const allTokensLowerIdentifier = tokens.every((t) => /^-?[a-z][a-z0-9\-_./:%[\]()]*$/.test(t));
+  if (allTokensLowerIdentifier) return false;
+
+  // Single punctuation / very short non-alphabetic value (e.g. "?", "-", "…").
+  if (!/[A-Za-z]/.test(trimmed)) return false;
+
+  // Single capitalised word (e.g. "Role", "Cancel", "Model").
+  if (/^[A-Z][a-zA-Z]*$/.test(trimmed)) return true;
+
+  // 2+ alphabetic word-tokens anywhere in the string.
+  const alphabeticWordTokens = trimmed
+    .split(/\s+/)
+    .filter((t) => /[A-Za-z]{2,}/.test(t.replace(/[^\w]/g, "")));
+  if (alphabeticWordTokens.length >= 2) return true;
+
+  // Prose signal: ends with an ellipsis or a period (e.g. "Add item…").
+  if (/[….]$/.test(trimmed)) return true;
+
   return false;
 }
 
@@ -196,6 +279,27 @@ function findViolations(relPath: string, rawContent: string): string[] {
     if (isBenign(text)) continue;
     const idx = (m.index ?? 0) + m[0].indexOf(text);
     violations.push(`${relPath}:${lineAt(content, idx)}: ${attr}="${text}"`);
+  }
+
+  for (const m of content.matchAll(FALLBACK_DEFAULT_RE)) {
+    const text = m[2];
+    if (!isEnglishDefault(text)) continue;
+    const idx = (m.index ?? 0) + m[0].indexOf(text);
+    violations.push(`${relPath}:${lineAt(content, idx)}: fallback default "${text}"`);
+  }
+
+  for (const m of content.matchAll(TERNARY_TRUE_BRANCH_RE)) {
+    const text = m[2];
+    if (!isEnglishDefault(text)) continue;
+    const idx = (m.index ?? 0) + m[0].indexOf(text);
+    violations.push(`${relPath}:${lineAt(content, idx)}: ternary default "${text}"`);
+  }
+
+  for (const m of content.matchAll(DESTRUCTURE_DEFAULT_RE)) {
+    const text = m[2];
+    if (!isEnglishDefault(text)) continue;
+    const idx = (m.index ?? 0) + m[0].indexOf(text);
+    violations.push(`${relPath}:${lineAt(content, idx)}: destructuring default "${text}"`);
   }
 
   return violations;

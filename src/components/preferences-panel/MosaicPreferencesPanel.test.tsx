@@ -39,7 +39,13 @@ describe("MosaicPreferencesPanel", () => {
   it("renders group titles", () => {
     render(
       <Wrapper>
-        <MosaicPreferencesPanel groups={groups} onChange={() => {}} onSave={() => {}} />
+        <MosaicPreferencesPanel
+          groups={groups}
+          onChange={() => {}}
+          onSave={() => {}}
+          saveLabel="Save Preferences"
+          savingLabel="Saving…"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Appearance")).toBeTruthy();
@@ -48,7 +54,13 @@ describe("MosaicPreferencesPanel", () => {
   it("renders preference labels", () => {
     render(
       <Wrapper>
-        <MosaicPreferencesPanel groups={groups} onChange={() => {}} onSave={() => {}} />
+        <MosaicPreferencesPanel
+          groups={groups}
+          onChange={() => {}}
+          onSave={() => {}}
+          saveLabel="Save Preferences"
+          savingLabel="Saving…"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Theme")).toBeTruthy();
@@ -63,6 +75,7 @@ describe("MosaicPreferencesPanel", () => {
           onChange={() => {}}
           onSave={() => {}}
           saveLabel="Save Settings"
+          savingLabel="Saving…"
         />
       </Wrapper>,
     );
@@ -73,7 +86,13 @@ describe("MosaicPreferencesPanel", () => {
     const onSave = vi.fn();
     const { getByRole } = render(
       <Wrapper>
-        <MosaicPreferencesPanel groups={groups} onChange={() => {}} onSave={onSave} />
+        <MosaicPreferencesPanel
+          groups={groups}
+          onChange={() => {}}
+          onSave={onSave}
+          saveLabel="Save Preferences"
+          savingLabel="Saving…"
+        />
       </Wrapper>,
     );
     const saveBtn = getByRole("button", { name: /save/i });
@@ -85,7 +104,13 @@ describe("MosaicPreferencesPanel", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicPreferencesPanel groups={[]} onChange={() => {}} onSave={() => {}} />
+          <MosaicPreferencesPanel
+            groups={[]}
+            onChange={() => {}}
+            onSave={() => {}}
+            saveLabel="Save Preferences"
+            savingLabel="Saving…"
+          />
         </Wrapper>,
       ),
     ).not.toThrow();

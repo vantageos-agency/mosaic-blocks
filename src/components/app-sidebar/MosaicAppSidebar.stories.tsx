@@ -37,6 +37,8 @@ const requiredSidebarLabels = {
   mainNavAriaLabel: "Main navigation",
   quickActionsHeading: "Quick Actions",
   recentHeading: "Recent",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
 };
 
 export const Default: Story = {

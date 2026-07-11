@@ -25,6 +25,8 @@ describe("MosaicAdaptiveNavigation", () => {
           onItemChange={() => {}}
           stepNavAriaLabel="Step navigation"
           tabNavAriaLabel="Tab navigation"
+          completeStatusLabel="Complete"
+          inProgressStatusLabel="In progress"
         />
       </Wrapper>,
     );
@@ -42,6 +44,8 @@ describe("MosaicAdaptiveNavigation", () => {
           onItemChange={onItemChange}
           stepNavAriaLabel="Step navigation"
           tabNavAriaLabel="Tab navigation"
+          completeStatusLabel="Complete"
+          inProgressStatusLabel="In progress"
         />
       </Wrapper>,
     );
@@ -72,6 +76,8 @@ describe("MosaicAdaptiveNavigation", () => {
             onItemChange={() => {}}
             stepNavAriaLabel="Step navigation"
             tabNavAriaLabel="Tab navigation"
+            completeStatusLabel="Complete"
+            inProgressStatusLabel="In progress"
           />
         </Wrapper>,
       ),
@@ -87,6 +93,8 @@ describe("MosaicAdaptiveNavigation", () => {
           onItemChange={() => {}}
           stepNavAriaLabel="Step navigation"
           tabNavAriaLabel="Tab navigation"
+          completeStatusLabel="Complete"
+          inProgressStatusLabel="In progress"
         />
       </Wrapper>,
     );
@@ -107,6 +115,8 @@ describe("MosaicAdaptiveNavigation", () => {
           onItemChange={() => {}}
           stepNavAriaLabel="Step navigation"
           tabNavAriaLabel="Tab navigation"
+          completeStatusLabel="Complete"
+          inProgressStatusLabel="In progress"
         />
       </Wrapper>,
     );

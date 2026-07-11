@@ -67,10 +67,14 @@ export interface MosaicModuleLibraryProps {
   tabFilter?: (item: MosaicModuleItem, tabId: string) => boolean;
   /** Additional form fields beyond name/description */
   formFields?: MosaicModuleFormField[];
-  title?: string;
-  createLabel?: string;
-  searchPlaceholder?: string;
-  emptyMessage?: string;
+  /** Library heading. Required, no default. */
+  title: string;
+  /** Label for the "create item" button. Required, no default. */
+  createLabel: string;
+  /** Search input placeholder. Required, no default. */
+  searchPlaceholder: string;
+  /** Message shown when the filtered list is empty. Required, no default. */
+  emptyMessage: string;
   /**
    * Required host-owned strings — no default, no fallback. The host owns
    * the language (e.g. next-intl `t()`).
@@ -88,6 +92,12 @@ export interface MosaicModuleLibraryProps {
   closeEditorAriaLabel: string;
   /** Modal title for the editor. Required — `(itemName) => string`. */
   editModalTitle: (itemName: string) => string;
+  /**
+   * Placeholder for the "add a tag" input in `tag-list` fields (used only
+   * when the field itself doesn't set its own `placeholder`). Required,
+   * no default.
+   */
+  tagListAddPlaceholder: string;
   className?: string;
 }
 
@@ -193,6 +203,12 @@ export interface MosaicModuleFormProps {
   cancelLabel: string;
   saveChangesLabel: string;
   createItemLabel: string;
+  /**
+   * Placeholder for the "add a tag" input in `tag-list` fields (used only
+   * when the field itself doesn't set its own `placeholder`). Required,
+   * no default.
+   */
+  tagListAddPlaceholder: string;
 }
 
 export function MosaicModuleForm({
@@ -208,6 +224,7 @@ export function MosaicModuleForm({
   cancelLabel,
   saveChangesLabel,
   createItemLabel,
+  tagListAddPlaceholder,
 }: MosaicModuleFormProps) {
   const [formData, setFormData] = React.useState<Partial<MosaicModuleItem>>({
     name: item?.name ?? "",
@@ -360,7 +377,7 @@ export function MosaicModuleForm({
                       addTag(field.id);
                     }
                   }}
-                  placeholder={field.placeholder ?? "Add item…"}
+                  placeholder={field.placeholder ?? tagListAddPlaceholder}
                   className={cn(
                     "flex-1 rounded-md border border-input bg-background px-3 py-2 min-h-[36px]",
                     "text-sm placeholder:text-muted-foreground",
@@ -540,10 +557,10 @@ function LibraryContent({
   tabs,
   tabFilter,
   formFields,
-  title = "Module Library", // allow-hardcode-i18n: pre-existing optional default, unrelated to this PR's guard scope
-  createLabel = "New Module",
-  searchPlaceholder = "Search modules…",
-  emptyMessage = "No modules found.",
+  title,
+  createLabel,
+  searchPlaceholder,
+  emptyMessage,
   nameFieldLabel,
   descriptionFieldLabel,
   namePlaceholder,
@@ -556,6 +573,7 @@ function LibraryContent({
   deleteItemLabel,
   closeEditorAriaLabel,
   editModalTitle,
+  tagListAddPlaceholder,
 }: MosaicModuleLibraryProps) {
   const [query, setQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState(tabs?.[0]?.id ?? "all");
@@ -700,6 +718,7 @@ function LibraryContent({
           cancelLabel={cancelLabel}
           saveChangesLabel={saveChangesLabel}
           createItemLabel={createItemLabel}
+          tagListAddPlaceholder={tagListAddPlaceholder}
         />
       </MosaicAdaptiveModal>
     </div>

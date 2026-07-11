@@ -30,6 +30,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("Team Strategy Session")).toBeTruthy();
@@ -42,6 +43,7 @@ describe("MosaicActivityFeed", () => {
         activities={[]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("No recent activity")).toBeTruthy();
@@ -53,6 +55,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     // active / completed badges should appear
@@ -66,6 +69,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
         className="my-feed"
       />,
     );
@@ -78,6 +82,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("Recent Activity")).toBeTruthy();
@@ -98,6 +103,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("VP Free Status")).toBeTruthy();
@@ -118,6 +124,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("Numeric Timestamp")).toBeTruthy();
@@ -140,6 +147,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("Structured Participant")).toBeTruthy();
@@ -161,6 +169,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByText("Dashboard migration complete")).toBeTruthy();
@@ -180,6 +189,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        viewAllLabel="View All"
       />,
     );
     expect(screen.getByLabelText("Alice")).toBeTruthy();

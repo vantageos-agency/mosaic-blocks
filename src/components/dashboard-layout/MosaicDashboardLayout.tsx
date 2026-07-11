@@ -81,8 +81,8 @@ export interface MosaicDashboardLayoutProps {
   sidebarProps: Omit<MosaicAppSidebarProps, "isCollapsed" | "onToggleCollapse">;
   /** Whether sidebar starts collapsed (default false) */
   defaultSidebarCollapsed?: boolean;
-  /** Mobile modal title (default "Navigation") */
-  mobileSidebarTitle?: string;
+  /** Mobile sidebar modal title. Required, no default. */
+  mobileSidebarTitle: string;
   /**
    * Custom link renderer for breadcrumbs (e.g. Next.js Link).
    * Default: native <a>.
@@ -163,13 +163,13 @@ function ChevronRightIcon() {
  */
 export function MosaicDashboardLayout({
   children,
-  title = "Dashboard",
+  title,
   subtitle,
   breadcrumbs,
   actions,
   sidebarProps,
   defaultSidebarCollapsed = false,
-  mobileSidebarTitle = "Navigation",
+  mobileSidebarTitle,
   renderLink,
   headerAriaLabel,
   openNavigationAriaLabel,

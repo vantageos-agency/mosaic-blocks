@@ -47,8 +47,8 @@ export interface MosaicProfilePanelProps {
   onAvatarUpload?: () => void;
   /** Custom sections to render below the form */
   extraSections?: React.ReactNode;
-  /** Label for the save button */
-  saveLabel?: string;
+  /** Label for the save button. Required, no default. */
+  saveLabel: string;
   /** Security section: called when user clicks "Change Password" */
   onChangePassword?: () => void;
   /**
@@ -64,6 +64,11 @@ export interface MosaicProfilePanelProps {
   securitySubheading: string;
   changePasswordLabel: string;
   savingLabel: string;
+  /**
+   * Fallback name used for avatar initials when `displayName` is empty.
+   * Required, no default.
+   */
+  unnamedUserLabel: string;
   className?: string;
 }
 
@@ -111,7 +116,7 @@ export function MosaicProfilePanel({
   isSaving = false,
   onAvatarUpload,
   extraSections,
-  saveLabel = "Save Profile",
+  saveLabel,
   onChangePassword,
   avatarHeading,
   avatarSubheading,
@@ -122,6 +127,7 @@ export function MosaicProfilePanel({
   securitySubheading,
   changePasswordLabel,
   savingLabel,
+  unnamedUserLabel,
   className,
 }: MosaicProfilePanelProps) {
   const { isMobile } = useDevice();
@@ -140,7 +146,7 @@ export function MosaicProfilePanel({
           <div className="flex items-center gap-4">
             <AvatarDisplay
               src={avatarSrc}
-              name={displayName || "User"}
+              name={displayName || unnamedUserLabel}
               size={isMobile ? "md" : "lg"}
             />
             {onAvatarUpload && (

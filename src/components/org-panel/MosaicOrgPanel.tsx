@@ -177,7 +177,8 @@ export interface MosaicCreateOrgDialogProps {
   onOpenChange: (open: boolean) => void;
   onCreateOrg: (data: { name: string; slug: string; description?: string }) => void | Promise<void>;
   isLoading?: boolean;
-  title?: string;
+  /** Dialog title. Required, no default. */
+  title: string;
   /**
    * Required host-owned strings — no default, no fallback. The host owns
    * the language (e.g. next-intl `t()`).
@@ -198,7 +199,7 @@ export function MosaicCreateOrgDialog({
   onOpenChange,
   onCreateOrg,
   isLoading = false,
-  title = "Create Organization", // allow-hardcode-i18n: pre-existing optional default, unrelated to this PR's guard scope
+  title,
   closeAriaLabel,
   orgNameFieldLabel,
   orgNamePlaceholder,
@@ -350,7 +351,8 @@ export interface MosaicInviteMemberDialogProps {
   onInvite: (data: { email: string; role: MosaicOrgRole }) => void | Promise<void>;
   isLoading?: boolean;
   roles?: Array<{ value: MosaicOrgRole; label: string }>;
-  title?: string;
+  /** Dialog title. Required, no default. */
+  title: string;
   /**
    * Required host-owned strings — no default, no fallback. The host owns
    * the language (e.g. next-intl `t()`).
@@ -375,7 +377,7 @@ export function MosaicInviteMemberDialog({
   onInvite,
   isLoading = false,
   roles = DEFAULT_ROLES,
-  title = "Invite Member", // allow-hardcode-i18n: pre-existing optional default, unrelated to this PR's guard scope
+  title,
   closeAriaLabel,
   emailFieldLabel,
   emailPlaceholder,
@@ -487,7 +489,7 @@ export interface MosaicMemberListProps {
   onInvite?: () => void;
   roles?: Array<{ value: MosaicOrgRole; label: string }>;
   isLoading?: boolean;
-  searchPlaceholder?: string;
+  searchPlaceholder: string;
   /**
    * Required host-owned strings — no default, no fallback. The host owns
    * the language (e.g. next-intl `t()`).
@@ -644,7 +646,7 @@ export function MosaicMemberList({
   onInvite,
   roles = DEFAULT_ROLES,
   isLoading,
-  searchPlaceholder = "Search members…",
+  searchPlaceholder,
   youLabel,
   memberActionsAriaLabel,
   removeMemberLabel,

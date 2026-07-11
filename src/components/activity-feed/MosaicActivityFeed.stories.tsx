@@ -50,6 +50,7 @@ export const Default: Story = {
     activities,
     heading: "Recent Activity",
     emptyMessage: "No recent activity",
+    viewAllLabel: "View All",
   },
 };
 
@@ -58,6 +59,7 @@ export const Empty: Story = {
     activities: [],
     heading: "Recent Activity",
     emptyMessage: "No recent activity",
+    viewAllLabel: "View All",
   },
 };
 

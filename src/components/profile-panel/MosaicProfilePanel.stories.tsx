@@ -50,6 +50,7 @@ const requiredProfilePanelLabels = {
   securitySubheading: "Manage your password and security settings",
   changePasswordLabel: "Change Password",
   savingLabel: "Saving…",
+  unnamedUserLabel: "User",
 };
 
 export const Default: Story = {
@@ -59,8 +60,8 @@ export const Default: Story = {
     onSave: () => console.log("save"),
     onFieldChange: (id, val) => console.log(id, val),
     onAvatarUpload: () => console.log("upload avatar"),
-    saveLabel: "Save Profile",
     ...requiredProfilePanelLabels,
+    saveLabel: "Save Profile",
   },
 };
 
@@ -70,7 +71,7 @@ export const Saving: Story = {
     fields,
     onSave: () => {},
     isSaving: true,
-    saveLabel: "Saving…",
     ...requiredProfilePanelLabels,
+    saveLabel: "Saving…",
   },
 };

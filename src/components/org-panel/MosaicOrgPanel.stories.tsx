@@ -69,6 +69,7 @@ export const Default: Story = {
               removeMemberLabel="Remove member"
               emptyMessage="No members found."
               inviteLabel="Invite"
+              searchPlaceholder="Search members…"
             />
           </MosaicDeviceProvider>
         ),

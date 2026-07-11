@@ -134,6 +134,10 @@ export interface MosaicAppSidebarProps {
   quickActionsHeading: string;
   /** Heading above the recent-items section. Required — host-owned, no default. */
   recentHeading: string;
+  /** aria-label for the collapse-toggle button when expanded. Required, no default. */
+  collapseSidebarAriaLabel: string;
+  /** aria-label for the collapse-toggle button when collapsed. Required, no default. */
+  expandSidebarAriaLabel: string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -268,6 +272,8 @@ export function MosaicAppSidebar({
   mainNavAriaLabel,
   quickActionsHeading,
   recentHeading,
+  collapseSidebarAriaLabel,
+  expandSidebarAriaLabel,
   className,
   ref,
 }: MosaicAppSidebarProps) {
@@ -324,7 +330,7 @@ export function MosaicAppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={isCollapsed ? expandSidebarAriaLabel : collapseSidebarAriaLabel}
               className={cn(
                 "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
                 "hover:bg-sidebar-accent text-sidebar-foreground",

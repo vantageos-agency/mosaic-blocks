@@ -60,6 +60,11 @@ const requiredModuleLibraryLabels = {
   deleteItemLabel: "Delete",
   closeEditorAriaLabel: "Close dialog",
   editModalTitle: (name: string) => `Edit ${name || "Module"}`,
+  title: "Module Library",
+  createLabel: "New Module",
+  searchPlaceholder: "Search modules…",
+  emptyMessage: "No modules found.",
+  tagListAddPlaceholder: "Add item…",
 };
 
 const requiredModuleFormLabels = {
@@ -70,16 +75,17 @@ const requiredModuleFormLabels = {
   cancelLabel: "Cancel",
   saveChangesLabel: "Save Changes",
   createItemLabel: "Create",
+  tagListAddPlaceholder: "Add item…",
 };
 
 export const Default: Story = {
   args: {
     items,
-    title: "Module Library",
     onCreateItem: (data) => console.log("create", data),
     onUpdateItem: (id, data) => console.log("update", id, data),
     onDeleteItem: (id) => console.log("delete", id),
     ...requiredModuleLibraryLabels,
+    title: "Module Library",
   },
 };
 

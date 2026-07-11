@@ -23,6 +23,10 @@ function Demo({ itemType = "agent", itemName = "Strategy Bot" }) {
         }}
         itemName={itemName}
         itemType={itemType}
+        title={`Delete ${itemType}?`}
+        description={`Are you sure you want to delete "${itemName}"? This action cannot be undone.`}
+        cancelLabel="Cancel"
+        confirmLabel={`Delete ${itemType}`}
       />
     </>
   );
@@ -43,6 +47,11 @@ const baseArgs = {
   onOpenChange: () => {},
   onConfirm: () => {},
   itemName: "Item",
+  itemType: "item",
+  title: "Delete item?",
+  description: 'Are you sure you want to delete "Item"? This action cannot be undone.',
+  cancelLabel: "Cancel",
+  confirmLabel: "Delete item",
 } as const;
 
 export const Default: Story = {

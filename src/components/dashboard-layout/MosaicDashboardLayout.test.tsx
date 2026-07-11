@@ -9,11 +9,14 @@ const requiredLayoutLabels = {
   openNavigationAriaLabel: "Open navigation",
   breadcrumbAriaLabel: "Breadcrumb",
   mobileSidebarCloseAriaLabel: "Close dialog",
+  mobileSidebarTitle: "Navigation",
   sidebarProps: {
     sidebarAriaLabel: "Application sidebar",
     mainNavAriaLabel: "Main navigation",
     quickActionsHeading: "Quick Actions",
     recentHeading: "Recent",
+    collapseSidebarAriaLabel: "Collapse sidebar",
+    expandSidebarAriaLabel: "Expand sidebar",
   },
 };
 

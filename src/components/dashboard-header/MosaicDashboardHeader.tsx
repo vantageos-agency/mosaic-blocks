@@ -143,7 +143,7 @@ function SparklesIcon() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function MosaicDashboardHeader({
-  title = "Dashboard",
+  title,
   subtitle,
   notificationCount = 0,
   onNotificationsClick,

@@ -48,6 +48,11 @@ export interface MosaicMessageListProps {
   /** Required host-owned strings forwarded to every MosaicMessageCard. */
   replyLabel: string;
   moreOptionsAriaLabel: string;
+  removeBookmarkAriaLabel: string;
+  bookmarkAriaLabel: string;
+  removeBookmarkLabel: string;
+  bookmarkLabel: string;
+  copyMessageLabel: string;
   className?: string;
 }
 
@@ -90,6 +95,11 @@ function MessageListDesktop({
   loadMoreLabel,
   replyLabel,
   moreOptionsAriaLabel,
+  removeBookmarkAriaLabel,
+  bookmarkAriaLabel,
+  removeBookmarkLabel,
+  bookmarkLabel,
+  copyMessageLabel,
   className,
 }: MosaicMessageListProps) {
   const [query, setQuery] = React.useState("");
@@ -145,6 +155,11 @@ function MessageListDesktop({
               onCopy={onCopy}
               replyLabel={replyLabel}
               moreOptionsAriaLabel={moreOptionsAriaLabel}
+              removeBookmarkAriaLabel={removeBookmarkAriaLabel}
+              bookmarkAriaLabel={bookmarkAriaLabel}
+              removeBookmarkLabel={removeBookmarkLabel}
+              bookmarkLabel={bookmarkLabel}
+              copyMessageLabel={copyMessageLabel}
             />
           ))}
         {!isLoading && filtered.length === 0 && (
@@ -187,6 +202,11 @@ function MessageListMobile({
   loadMoreLabel,
   replyLabel,
   moreOptionsAriaLabel,
+  removeBookmarkAriaLabel,
+  bookmarkAriaLabel,
+  removeBookmarkLabel,
+  bookmarkLabel,
+  copyMessageLabel,
   className,
 }: MosaicMessageListProps) {
   return (
@@ -216,6 +236,11 @@ function MessageListMobile({
               onCopy={onCopy}
               replyLabel={replyLabel}
               moreOptionsAriaLabel={moreOptionsAriaLabel}
+              removeBookmarkAriaLabel={removeBookmarkAriaLabel}
+              bookmarkAriaLabel={bookmarkAriaLabel}
+              removeBookmarkLabel={removeBookmarkLabel}
+              bookmarkLabel={bookmarkLabel}
+              copyMessageLabel={copyMessageLabel}
               compact
             />
           ))}

@@ -73,6 +73,10 @@ const requiredMarketplaceLabels = {
   closeFiltersAriaLabel: "Close dialog",
   expandFiltersAriaLabel: "Expand filters",
   categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
+  installLabel: "Install",
+  uninstallLabel: "Uninstall",
 };
 
 export const Default: Story = {

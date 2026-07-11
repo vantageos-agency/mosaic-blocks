@@ -76,6 +76,8 @@ const requiredGalleryLabels = {
   closeFiltersAriaLabel: "Close dialog",
   expandFiltersAriaLabel: "Expand filters",
   categoriesHeading: "Categories",
+  collapseSidebarAriaLabel: "Collapse sidebar",
+  expandSidebarAriaLabel: "Expand sidebar",
   previewLabel: "Preview",
   duplicateLabel: "Duplicate",
 };

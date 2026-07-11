@@ -14,7 +14,7 @@ import { MosaicFilterBar } from "./MosaicFilterBar.js";
 describe("MosaicFilterBar", () => {
   it("renders children", () => {
     render(
-      <MosaicFilterBar>
+      <MosaicFilterBar clearLabel="Clear">
         <span>Filter A</span>
         <span>Filter B</span>
       </MosaicFilterBar>,
@@ -25,7 +25,7 @@ describe("MosaicFilterBar", () => {
 
   it("sets data-slot='filter-bar' on the root element", () => {
     const { container } = render(
-      <MosaicFilterBar>
+      <MosaicFilterBar clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -35,7 +35,7 @@ describe("MosaicFilterBar", () => {
 
   it("renders label when provided", () => {
     render(
-      <MosaicFilterBar label="Filtres">
+      <MosaicFilterBar label="Filtres" clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -45,7 +45,7 @@ describe("MosaicFilterBar", () => {
 
   it("does not render label slot when label is omitted", () => {
     render(
-      <MosaicFilterBar>
+      <MosaicFilterBar clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -56,7 +56,7 @@ describe("MosaicFilterBar", () => {
     const user = userEvent.setup();
     const handleClear = vi.fn();
     render(
-      <MosaicFilterBar onClearAll={handleClear}>
+      <MosaicFilterBar onClearAll={handleClear} clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -68,7 +68,7 @@ describe("MosaicFilterBar", () => {
 
   it("omits Clear button when onClearAll is absent", () => {
     render(
-      <MosaicFilterBar>
+      <MosaicFilterBar clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -86,7 +86,7 @@ describe("MosaicFilterBar", () => {
 
   it("applies 'between' alignment class when align='between'", () => {
     const { container } = render(
-      <MosaicFilterBar align="between">
+      <MosaicFilterBar align="between" clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -96,7 +96,7 @@ describe("MosaicFilterBar", () => {
 
   it("applies 'start' alignment class by default", () => {
     const { container } = render(
-      <MosaicFilterBar>
+      <MosaicFilterBar clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -106,7 +106,7 @@ describe("MosaicFilterBar", () => {
 
   it("forwards extra className to the root element", () => {
     const { container } = render(
-      <MosaicFilterBar className="my-4">
+      <MosaicFilterBar className="my-4" clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );
@@ -117,7 +117,7 @@ describe("MosaicFilterBar", () => {
   it("forwards ref to the root div element", () => {
     const ref = { current: null as HTMLDivElement | null };
     render(
-      <MosaicFilterBar ref={ref as React.RefObject<HTMLDivElement>}>
+      <MosaicFilterBar ref={ref as React.RefObject<HTMLDivElement>} clearLabel="Clear">
         <span>Child</span>
       </MosaicFilterBar>,
     );

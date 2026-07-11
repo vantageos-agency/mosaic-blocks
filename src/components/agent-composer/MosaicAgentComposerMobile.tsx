@@ -268,7 +268,7 @@ export function MosaicAgentComposerMobile({
   canSave,
   isEditMode = false,
   isLoading = false,
-  labels = {},
+  labels,
   agentNameLabel,
   agentNamePlaceholder,
   instructionsPlaceholder,
@@ -279,19 +279,9 @@ export function MosaicAgentComposerMobile({
   creatingLabel,
   optionalInstructionsHelp,
 }: MosaicAgentComposerMobileProps) {
-  const L = {
-    role: labels.role ?? "Role",
-    persona: labels.persona ?? "Persona",
-    framework: labels.framework ?? "Framework",
-    model: labels.model ?? "Model",
-    customInstructions: labels.customInstructions ?? "Custom Instructions (Optional)",
-    saveLabel: labels.saveLabel ?? (isEditMode ? "Save Changes" : "Create Agent"),
-    cancelLabel: labels.cancelLabel ?? "Cancel",
-    heading: labels.heading ?? "Compose Agent",
-    subheading: labels.subheading ?? "Select modules to build your custom agent",
-    headingEdit: labels.headingEdit ?? "Edit Agent",
-    subheadingEdit: labels.subheadingEdit ?? "Update your agent configuration",
-  };
+  // `labels` is fully required — every field is host-supplied, no default,
+  // no fallback. Aliased to `L` only for call-site brevity below.
+  const L = labels;
 
   const instructionsId = React.useId();
 

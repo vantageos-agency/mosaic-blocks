@@ -47,10 +47,10 @@ export interface MosaicMainNavProps {
     className: string,
     onClick?: () => void,
   ) => React.ReactNode;
-  /** Mobile drawer title */
-  drawerTitle?: string;
-  /** Mobile drawer subtitle */
-  drawerSubtitle?: string;
+  /** Mobile drawer title. Required, no default. */
+  drawerTitle: string;
+  /** Mobile drawer subtitle. Required, no default. */
+  drawerSubtitle: string;
   /**
    * Required host-owned strings — no default, no fallback. The host owns
    * the language (e.g. next-intl `t()`).
@@ -159,8 +159,8 @@ export function MosaicMainNav({
   activePath,
   isAdmin = false,
   renderLink,
-  drawerTitle = "Navigation",
-  drawerSubtitle = "Access all features",
+  drawerTitle,
+  drawerSubtitle,
   openMenuAriaLabel,
   closeMenuAriaLabel,
   drawerNavAriaLabel,

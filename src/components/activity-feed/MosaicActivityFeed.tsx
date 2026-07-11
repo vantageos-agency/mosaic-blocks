@@ -122,7 +122,7 @@ export interface MosaicActivityFeedProps {
    * Label for the "View All" link, shown when `viewAllHref` is set.
    * Required whenever `viewAllHref` is provided — host-owned, no default.
    */
-  viewAllLabel?: string;
+  viewAllLabel: string;
   /**
    * Message shown when `activities` is empty. Required — the host owns
    * the language (e.g. `t('ActivityFeed.empty')`). No default, no fallback.

@@ -30,6 +30,8 @@ function NavDemo() {
         onToggleExpanded={toggle}
         stepNavAriaLabel="Step navigation"
         tabNavAriaLabel="Tab navigation"
+        completeStatusLabel="Complete"
+        inProgressStatusLabel="In progress"
       />
     </MosaicDeviceProvider>
   );
@@ -59,6 +61,8 @@ export const Default: Story = {
     onItemChange: () => {},
     stepNavAriaLabel: "Step navigation",
     tabNavAriaLabel: "Tab navigation",
+    completeStatusLabel: "Complete",
+    inProgressStatusLabel: "In progress",
   },
   render: () => <NavDemo />,
 };
@@ -70,5 +74,7 @@ export const AllComplete: Story = {
     onItemChange: () => {},
     stepNavAriaLabel: "Step navigation",
     tabNavAriaLabel: "Tab navigation",
+    completeStatusLabel: "Complete",
+    inProgressStatusLabel: "In progress",
   },
 };

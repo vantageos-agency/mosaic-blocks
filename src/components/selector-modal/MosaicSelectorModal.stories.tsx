@@ -43,6 +43,9 @@ function SelectorDemo() {
         allCategoryLabel="All"
         emptyMessage="No results found."
         closeAriaLabel="Close dialog"
+        searchPlaceholder="Search…"
+        confirmLabel="Select"
+        cancelLabel="Cancel"
       />
     </MosaicDeviceProvider>
   );
@@ -67,6 +70,9 @@ const baseModalArgs = {
   allCategoryLabel: "All",
   emptyMessage: "No results found.",
   closeAriaLabel: "Close dialog",
+  searchPlaceholder: "Search…",
+  confirmLabel: "Select",
+  cancelLabel: "Cancel",
 };
 
 export const Default: Story = {
@@ -91,6 +97,9 @@ export const PreSelected: Story = {
           allCategoryLabel="All"
           emptyMessage="No results found."
           closeAriaLabel="Close dialog"
+          searchPlaceholder="Search…"
+          confirmLabel="Select"
+          cancelLabel="Cancel"
         />
       </MosaicDeviceProvider>
     );
