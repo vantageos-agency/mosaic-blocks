@@ -184,8 +184,21 @@ export { MosaicTextarea } from "./components/textarea/MosaicTextarea.js";
 export type { MosaicTextareaProps } from "./components/textarea/MosaicTextarea.js";
 
 // Tooltip (@base-ui/react/tooltip)
-export { MosaicTooltip, Tooltip } from "./components/tooltip/MosaicTooltip.js";
-export type { MosaicTooltipProps } from "./components/tooltip/MosaicTooltip.js";
+export {
+  MosaicTooltip,
+  MosaicTooltipProvider,
+  MosaicTooltipRoot,
+  MosaicTooltipTrigger,
+  MosaicTooltipContent,
+  Tooltip,
+} from "./components/tooltip/MosaicTooltip.js";
+export type {
+  MosaicTooltipProps,
+  MosaicTooltipProviderProps,
+  MosaicTooltipRootProps,
+  MosaicTooltipTriggerProps,
+  MosaicTooltipContentProps,
+} from "./components/tooltip/MosaicTooltip.js";
 
 // ── T3-C Batch C: base-ui atoms ──────────────────────────────────────────────
 
