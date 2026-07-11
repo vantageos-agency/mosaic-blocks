@@ -362,6 +362,13 @@ export type { MosaicThemeProviderProps } from "./components/theme-provider/Mosai
 export { MosaicDeleteConfirmationDialog } from "./components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.js";
 export type { MosaicDeleteConfirmationDialogProps } from "./components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.js";
 
+// ── i18n foundation: MosaicI18nProvider + useMosaicT ─────────────────────────
+
+export { MosaicI18nProvider } from "./i18n/MosaicI18nProvider.js";
+export type { MosaicI18nProviderProps } from "./i18n/MosaicI18nProvider.js";
+export { useMosaicT } from "./i18n/useMosaicT.js";
+export type { MosaicT, MosaicTranslateParams } from "./i18n/useMosaicT.js";
+
 // MosaicPreferencesPanel — generic user preferences form
 export { MosaicPreferencesPanel } from "./components/preferences-panel/MosaicPreferencesPanel.js";
 export type {
@@ -570,6 +577,13 @@ export type {
   MosaicStep,
   MosaicStepStatus,
 } from "./components/step-pipeline/MosaicStepPipeline.js";
+
+// ── #18: MosaicKanban ────────────────────────────────────────────────────────
+export { MosaicKanbanBoard } from "./components/kanban/MosaicKanbanBoard.js";
+export type { MosaicKanbanBoardProps } from "./components/kanban/MosaicKanbanBoard.js";
+
+export { MosaicKanbanColumn } from "./components/kanban/MosaicKanbanColumn.js";
+export type { MosaicKanbanColumnProps } from "./components/kanban/MosaicKanbanColumn.js";
 
 // ── T1.5: Multi-tenant (Clerk + cloud-identity peer) ─────────────────────────
 

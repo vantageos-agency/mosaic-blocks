@@ -10,6 +10,7 @@
  */
 
 import * as React from "react";
+import { useMosaicT } from "../../i18n/useMosaicT.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  * />
  */
 export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarProps) {
+  const t = useMosaicT();
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isHidden, setIsHidden] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -86,7 +88,7 @@ export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarP
   return (
     <nav
       ref={ref}
-      aria-label="Main navigation"
+      aria-label={t("Navbar.aria.main")}
       className={cn(
         "fixed left-0 right-0 top-0 z-50 px-4 pt-4 mx-auto w-full max-w-6xl transition-all duration-300 ease-out",
         isHidden ? "opacity-0 -translate-y-5 pointer-events-none" : "opacity-100 translate-y-0",
@@ -145,7 +147,7 @@ export function MosaicNavbar({ logo, links, cta, className, ref }: MosaicNavbarP
             )}
             <button
               type="button"
-              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-label={isOpen ? t("Navbar.aria.closeMenu") : t("Navbar.aria.openMenu")}
               aria-expanded={isOpen}
               aria-controls="mosaic-mobile-menu"
               onClick={() => setIsOpen((v) => !v)}

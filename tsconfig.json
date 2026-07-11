@@ -12,6 +12,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

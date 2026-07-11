@@ -1,0 +1,14 @@
+{
+  "Navbar": {
+    "aria": {
+      "main": "Navigation principale",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu"
+    }
+  },
+  "KanbanColumn": {
+    "aria": {
+      "count": "{{count}} éléments"
+    }
+  }
+}

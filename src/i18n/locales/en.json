@@ -1,0 +1,14 @@
+{
+  "Navbar": {
+    "aria": {
+      "main": "Main navigation",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    }
+  },
+  "KanbanColumn": {
+    "aria": {
+      "count": "{{count}} items"
+    }
+  }
+}

@@ -3,6 +3,7 @@
  */
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { MosaicI18nProvider } from "../../i18n/MosaicI18nProvider.js";
 import { MosaicNavbar } from "./MosaicNavbar.js";
 
 afterEach(() => cleanup());
@@ -32,5 +33,19 @@ describe("MosaicNavbar", () => {
       />,
     );
     expect(screen.getAllByText("Get started").length).toBeGreaterThan(0);
+  });
+
+  it("falls back to the bundled EN aria-label when no MosaicI18nProvider is mounted", () => {
+    render(<MosaicNavbar logo={<span>Logo</span>} links={links} />);
+    expect(screen.getByRole("navigation").getAttribute("aria-label")).toBe("Main navigation");
+  });
+
+  it("renders the FR aria-label under a fr MosaicI18nProvider", () => {
+    render(
+      <MosaicI18nProvider locale="fr">
+        <MosaicNavbar logo={<span>Logo</span>} links={links} />
+      </MosaicI18nProvider>,
+    );
+    expect(screen.getByRole("navigation").getAttribute("aria-label")).toBe("Navigation principale");
   });
 });
