@@ -73,8 +73,12 @@ export interface MosaicDashboardLayoutProps {
   breadcrumbs?: MosaicBreadcrumb[];
   /** Slot for header-right actions (theme toggle, avatar, etc.) */
   actions?: React.ReactNode;
-  /** Props forwarded to MosaicAppSidebar (navItems, quickActions, etc.) */
-  sidebarProps?: Omit<MosaicAppSidebarProps, "isCollapsed" | "onToggleCollapse">;
+  /**
+   * Props forwarded to MosaicAppSidebar (navItems, quickActions, etc.).
+   * Required — MosaicAppSidebar itself requires host-owned aria-label /
+   * heading strings with no default.
+   */
+  sidebarProps: Omit<MosaicAppSidebarProps, "isCollapsed" | "onToggleCollapse">;
   /** Whether sidebar starts collapsed (default false) */
   defaultSidebarCollapsed?: boolean;
   /** Mobile modal title (default "Navigation") */
@@ -84,6 +88,14 @@ export interface MosaicDashboardLayoutProps {
    * Default: native <a>.
    */
   renderLink?: (href: string, children: React.ReactNode) => React.ReactNode;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  headerAriaLabel: string;
+  openNavigationAriaLabel: string;
+  breadcrumbAriaLabel: string;
+  mobileSidebarCloseAriaLabel: string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -155,10 +167,14 @@ export function MosaicDashboardLayout({
   subtitle,
   breadcrumbs,
   actions,
-  sidebarProps = {},
+  sidebarProps,
   defaultSidebarCollapsed = false,
   mobileSidebarTitle = "Navigation",
   renderLink,
+  headerAriaLabel,
+  openNavigationAriaLabel,
+  breadcrumbAriaLabel,
+  mobileSidebarCloseAriaLabel,
   className,
   ref,
 }: MosaicDashboardLayoutProps) {
@@ -198,7 +214,7 @@ export function MosaicDashboardLayout({
         {/* Header */}
         <header
           className="mosaic-dashboard-header sticky top-0 z-40 shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-sm"
-          aria-label="Dashboard header"
+          aria-label={headerAriaLabel}
         >
           <div className="flex items-center justify-between gap-4 p-3 md:p-4">
             {/* Left: mobile hamburger + title + breadcrumbs */}
@@ -206,7 +222,7 @@ export function MosaicDashboardLayout({
               {isMobile && (
                 <button
                   type="button"
-                  aria-label="Open navigation"
+                  aria-label={openNavigationAriaLabel}
                   onClick={() => setIsMobileSidebarOpen(true)}
                   className={cn(
                     "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
@@ -228,7 +244,7 @@ export function MosaicDashboardLayout({
 
                 {/* Breadcrumbs */}
                 {breadcrumbs && breadcrumbs.length > 0 && (
-                  <nav aria-label="Breadcrumb" className="mt-0.5 hidden md:block">
+                  <nav aria-label={breadcrumbAriaLabel} className="mt-0.5 hidden md:block">
                     <ol className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       {breadcrumbs.map((crumb, idx) => {
                         const isLast = idx === breadcrumbs.length - 1;
@@ -274,6 +290,7 @@ export function MosaicDashboardLayout({
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
           title={mobileSidebarTitle}
+          closeAriaLabel={mobileSidebarCloseAriaLabel}
         >
           <MosaicAppSidebar
             isCollapsed={false}

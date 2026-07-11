@@ -4,6 +4,19 @@ import { describe, expect, it } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicDashboardLayout } from "./MosaicDashboardLayout.js";
 
+const requiredLayoutLabels = {
+  headerAriaLabel: "Dashboard header",
+  openNavigationAriaLabel: "Open navigation",
+  breadcrumbAriaLabel: "Breadcrumb",
+  mobileSidebarCloseAriaLabel: "Close dialog",
+  sidebarProps: {
+    sidebarAriaLabel: "Application sidebar",
+    mainNavAriaLabel: "Main navigation",
+    quickActionsHeading: "Quick Actions",
+    recentHeading: "Recent",
+  },
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -12,7 +25,7 @@ describe("MosaicDashboardLayout", () => {
   it("renders children", () => {
     render(
       <Wrapper>
-        <MosaicDashboardLayout>
+        <MosaicDashboardLayout {...requiredLayoutLabels}>
           <p>Page content</p>
         </MosaicDashboardLayout>
       </Wrapper>,
@@ -23,7 +36,7 @@ describe("MosaicDashboardLayout", () => {
   it("renders title when provided", () => {
     render(
       <Wrapper>
-        <MosaicDashboardLayout title="My Dashboard">
+        <MosaicDashboardLayout title="My Dashboard" {...requiredLayoutLabels}>
           <p>Content</p>
         </MosaicDashboardLayout>
       </Wrapper>,
@@ -34,7 +47,7 @@ describe("MosaicDashboardLayout", () => {
   it("renders subtitle when provided", () => {
     render(
       <Wrapper>
-        <MosaicDashboardLayout title="Dashboard" subtitle="Welcome back">
+        <MosaicDashboardLayout title="Dashboard" subtitle="Welcome back" {...requiredLayoutLabels}>
           <p>Content</p>
         </MosaicDashboardLayout>
       </Wrapper>,
@@ -45,7 +58,10 @@ describe("MosaicDashboardLayout", () => {
   it("renders breadcrumbs when provided", () => {
     render(
       <Wrapper>
-        <MosaicDashboardLayout breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reports" }]}>
+        <MosaicDashboardLayout
+          breadcrumbs={[{ label: "Home", href: "/" }, { label: "Reports" }]}
+          {...requiredLayoutLabels}
+        >
           <p>Content</p>
         </MosaicDashboardLayout>
       </Wrapper>,
@@ -57,7 +73,7 @@ describe("MosaicDashboardLayout", () => {
   it("has data-slot on root element", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicDashboardLayout>
+        <MosaicDashboardLayout {...requiredLayoutLabels}>
           <p>X</p>
         </MosaicDashboardLayout>
       </Wrapper>,

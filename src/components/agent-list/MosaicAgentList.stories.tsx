@@ -3,6 +3,26 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentList } from "./MosaicAgentList.js";
 
+const requiredListLabels = {
+  emptyMessage: "No agents found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersModalTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  agentCardLabels: {
+    activeBadgeLabel: "Active",
+    agentActionsAriaLabel: "Agent actions",
+    deactivateLabel: "Deactivate",
+    activateLabel: "Activate",
+    editLabel: "Edit",
+    deleteLabel: "Delete",
+    pauseLabel: "Pause",
+    startLabel: "Start",
+    createdLabel: (d: string) => `Created ${d}`,
+  },
+};
+
 const agents = [
   {
     id: "a1",
@@ -73,6 +93,7 @@ export const Default: Story = {
     onToggleStatus: (id) => console.log("toggle", id),
     onEditAgent: (id) => console.log("edit", id),
     onDeleteAgent: (id) => console.log("delete", id),
+    ...requiredListLabels,
   },
 };
 
@@ -87,5 +108,6 @@ export const Empty: Story = {
     selectedCategory: "",
     onCategoryChange: () => {},
     onCreateAgent: () => console.log("create"),
+    ...requiredListLabels,
   },
 };

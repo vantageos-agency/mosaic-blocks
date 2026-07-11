@@ -39,6 +39,15 @@ export interface MosaicMessageListProps {
   title?: string;
   /** Whether messages are loading */
   isLoading?: boolean;
+  /** Placeholder for the desktop search input. Required, no default. */
+  searchPlaceholder: string;
+  /** Message shown when the filtered list is empty. Required, no default. */
+  emptyMessage: string;
+  /** Label for the "load more" button. Required, no default. */
+  loadMoreLabel: string;
+  /** Required host-owned strings forwarded to every MosaicMessageCard. */
+  replyLabel: string;
+  moreOptionsAriaLabel: string;
   className?: string;
 }
 
@@ -76,6 +85,11 @@ function MessageListDesktop({
   hasMore,
   title,
   isLoading,
+  searchPlaceholder,
+  emptyMessage,
+  loadMoreLabel,
+  replyLabel,
+  moreOptionsAriaLabel,
   className,
 }: MosaicMessageListProps) {
   const [query, setQuery] = React.useState("");
@@ -101,7 +115,7 @@ function MessageListDesktop({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search messages…"
+            placeholder={searchPlaceholder}
             className={cn(
               "w-full rounded-md border border-input bg-background py-2 pl-9 pr-3",
               "text-sm placeholder:text-muted-foreground",
@@ -129,10 +143,12 @@ function MessageListDesktop({
               onReaction={onReaction}
               onBookmark={onBookmark}
               onCopy={onCopy}
+              replyLabel={replyLabel}
+              moreOptionsAriaLabel={moreOptionsAriaLabel}
             />
           ))}
         {!isLoading && filtered.length === 0 && (
-          <p className="py-12 text-center text-sm text-muted-foreground">No messages found.</p>
+          <p className="py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         )}
       </div>
 
@@ -147,7 +163,7 @@ function MessageListDesktop({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             )}
           >
-            Load more
+            {loadMoreLabel}
           </button>
         </div>
       )}
@@ -167,6 +183,10 @@ function MessageListMobile({
   hasMore,
   title,
   isLoading,
+  emptyMessage,
+  loadMoreLabel,
+  replyLabel,
+  moreOptionsAriaLabel,
   className,
 }: MosaicMessageListProps) {
   return (
@@ -194,11 +214,13 @@ function MessageListMobile({
               onReaction={onReaction}
               onBookmark={onBookmark}
               onCopy={onCopy}
+              replyLabel={replyLabel}
+              moreOptionsAriaLabel={moreOptionsAriaLabel}
               compact
             />
           ))}
         {!isLoading && messages.length === 0 && (
-          <p className="py-10 text-center text-sm text-muted-foreground">No messages yet.</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         )}
       </div>
 
@@ -213,7 +235,7 @@ function MessageListMobile({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             )}
           >
-            Load more
+            {loadMoreLabel}
           </button>
         </div>
       )}

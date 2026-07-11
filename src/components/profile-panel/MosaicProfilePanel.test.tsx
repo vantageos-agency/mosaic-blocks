@@ -4,6 +4,18 @@ import { describe, expect, it, vi } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicProfilePanel } from "./MosaicProfilePanel.js";
 
+const requiredProfilePanelLabels = {
+  avatarHeading: "Profile Picture",
+  avatarSubheading: "Update your avatar",
+  uploadPhotoLabel: "Upload Photo",
+  personalInfoHeading: "Personal Information",
+  personalInfoSubheading: "Update your profile details",
+  securityHeading: "Account Security",
+  securitySubheading: "Manage your password and security settings",
+  changePasswordLabel: "Change Password",
+  savingLabel: "Saving…",
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -23,7 +35,12 @@ describe("MosaicProfilePanel", () => {
   it("renders field labels", () => {
     render(
       <Wrapper>
-        <MosaicProfilePanel fields={fields} onSave={() => {}} displayName="Alice Martin" />
+        <MosaicProfilePanel
+          fields={fields}
+          onSave={() => {}}
+          displayName="Alice Martin"
+          {...requiredProfilePanelLabels}
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Full Name")).toBeTruthy();
@@ -33,7 +50,12 @@ describe("MosaicProfilePanel", () => {
   it("renders field values in inputs", () => {
     render(
       <Wrapper>
-        <MosaicProfilePanel fields={fields} onSave={() => {}} displayName="Alice Martin" />
+        <MosaicProfilePanel
+          fields={fields}
+          onSave={() => {}}
+          displayName="Alice Martin"
+          {...requiredProfilePanelLabels}
+        />
       </Wrapper>,
     );
     const nameInput = screen.getByDisplayValue("Alice Martin");
@@ -43,7 +65,12 @@ describe("MosaicProfilePanel", () => {
   it("renders save button", () => {
     render(
       <Wrapper>
-        <MosaicProfilePanel fields={fields} onSave={() => {}} saveLabel="Update Profile" />
+        <MosaicProfilePanel
+          fields={fields}
+          onSave={() => {}}
+          saveLabel="Update Profile"
+          {...requiredProfilePanelLabels}
+        />
       </Wrapper>,
     );
     expect(screen.getByRole("button", { name: /Update Profile/i })).toBeTruthy();
@@ -53,7 +80,7 @@ describe("MosaicProfilePanel", () => {
     const onSave = vi.fn();
     render(
       <Wrapper>
-        <MosaicProfilePanel fields={fields} onSave={onSave} />
+        <MosaicProfilePanel fields={fields} onSave={onSave} {...requiredProfilePanelLabels} />
       </Wrapper>,
     );
     const btn = screen.getByRole("button", { name: /save/i });
@@ -64,7 +91,12 @@ describe("MosaicProfilePanel", () => {
   it("renders avatar with initials fallback", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicProfilePanel fields={[]} onSave={() => {}} displayName="Bob Smith" />
+        <MosaicProfilePanel
+          fields={[]}
+          onSave={() => {}}
+          displayName="Bob Smith"
+          {...requiredProfilePanelLabels}
+        />
       </Wrapper>,
     );
     // Check avatar area renders

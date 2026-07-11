@@ -20,6 +20,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredHeaderLabels = {
+  searchPlaceholder: "Search…",
+  searchAriaLabel: "Search",
+};
+
 export const Default: Story = {
   args: {
     title: "Dashboard",
@@ -27,6 +32,7 @@ export const Default: Story = {
     notificationCount: 3,
     onNotificationsClick: () => console.log("notifications"),
     onSearchChange: (q) => console.log("search", q),
+    ...requiredHeaderLabels,
   },
 };
 
@@ -35,6 +41,7 @@ export const NoNotifications: Story = {
     title: "Agent Library",
     subtitle: "Manage your AI agents",
     notificationCount: 0,
+    ...requiredHeaderLabels,
   },
 };
 
@@ -51,5 +58,6 @@ export const WithActions: Story = {
     ),
     notificationCount: 12,
     onNotificationsClick: () => {},
+    ...requiredHeaderLabels,
   },
 };

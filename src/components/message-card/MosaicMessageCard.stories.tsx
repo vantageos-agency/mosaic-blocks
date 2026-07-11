@@ -35,10 +35,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredMessageCardLabels = {
+  replyLabel: "Reply",
+  moreOptionsAriaLabel: "More options",
+};
+
 export const UserMessage: Story = {
   args: {
     message: userMessage,
     onReply: (id) => console.log("reply", id),
+    ...requiredMessageCardLabels,
   },
 };
 
@@ -47,6 +53,7 @@ export const AiMessage: Story = {
     message: aiMessage,
     onReply: (id) => console.log("reply", id),
     onReaction: (id, type) => console.log("react", id, type),
+    ...requiredMessageCardLabels,
   },
 };
 
@@ -54,5 +61,6 @@ export const Compact: Story = {
   args: {
     message: aiMessage,
     compact: true,
+    ...requiredMessageCardLabels,
   },
 };

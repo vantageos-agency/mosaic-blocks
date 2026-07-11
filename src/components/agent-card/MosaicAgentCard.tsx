@@ -46,6 +46,33 @@ export interface MosaicAgentCardProps {
   onEdit?: (agentId: string) => void;
   /** Whether a toggle/save action is in progress */
   isLoading?: boolean;
+  /**
+   * Label shown in the "active" badge next to the agent name. Required —
+   * the host owns the language (e.g. `t('AgentCard.active')`). No default.
+   */
+  activeBadgeLabel: string;
+  /**
+   * aria-label for the 3-dot actions menu trigger. Required — host-owned,
+   * no default.
+   */
+  agentActionsAriaLabel: string;
+  /** Label for the "deactivate" menu item. Required — host-owned, no default. */
+  deactivateLabel: string;
+  /** Label for the "activate" menu item. Required — host-owned, no default. */
+  activateLabel: string;
+  /** Label for the "edit" menu item. Required — host-owned, no default. */
+  editLabel: string;
+  /** Label for the "delete" menu item. Required — host-owned, no default. */
+  deleteLabel: string;
+  /** Label for the "pause" toggle button. Required — host-owned, no default. */
+  pauseLabel: string;
+  /** Label for the "start" toggle button. Required — host-owned, no default. */
+  startLabel: string;
+  /**
+   * Formatter for the "Created <date>" caption. Required — the host owns
+   * the language (e.g. `(date) => t('AgentCard.created', { date })`).
+   */
+  createdLabel: (date: string) => string;
   className?: string;
 }
 
@@ -159,6 +186,15 @@ export function MosaicAgentCard({
   onDelete,
   onEdit,
   isLoading = false,
+  activeBadgeLabel,
+  agentActionsAriaLabel,
+  deactivateLabel,
+  activateLabel,
+  editLabel,
+  deleteLabel,
+  pauseLabel,
+  startLabel,
+  createdLabel,
   className,
 }: MosaicAgentCardProps) {
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -212,7 +248,7 @@ export function MosaicAgentCard({
                 <p className="truncate text-base font-semibold">{agent.name}</p>
                 {agent.isActive && (
                   <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                    Active
+                    {activeBadgeLabel}
                   </span>
                 )}
               </div>
@@ -232,7 +268,7 @@ export function MosaicAgentCard({
                 "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               )}
-              aria-label="Agent actions"
+              aria-label={agentActionsAriaLabel}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
             >
@@ -263,7 +299,7 @@ export function MosaicAgentCard({
                     )}
                   >
                     {agent.isActive ? <PauseIcon /> : <PlayIcon />}
-                    {agent.isActive ? "Deactivate" : "Activate"}
+                    {agent.isActive ? deactivateLabel : activateLabel}
                   </button>
                 )}
                 {agent.isEditable && onEdit && (
@@ -277,7 +313,7 @@ export function MosaicAgentCard({
                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <EditIcon />
-                    Edit
+                    {editLabel}
                   </button>
                 )}
                 {agent.isEditable && onDelete && (
@@ -291,7 +327,7 @@ export function MosaicAgentCard({
                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
                   >
                     <TrashIcon />
-                    Delete
+                    {deleteLabel}
                   </button>
                 )}
               </div>
@@ -307,7 +343,7 @@ export function MosaicAgentCard({
               </span>
             )}
             {formattedDate && (
-              <span className="text-xs text-muted-foreground">Created {formattedDate}</span>
+              <span className="text-xs text-muted-foreground">{createdLabel(formattedDate)}</span>
             )}
           </div>
 
@@ -325,7 +361,7 @@ export function MosaicAgentCard({
                   : "bg-primary text-primary-foreground hover:bg-primary/90",
               )}
             >
-              {agent.isActive ? "Pause" : "Start"}
+              {agent.isActive ? pauseLabel : startLabel}
             </button>
           )}
         </div>

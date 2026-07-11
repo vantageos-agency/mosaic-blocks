@@ -17,7 +17,15 @@ describe("MosaicAppSidebar", () => {
   it("renders with data-slot=app-sidebar", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicAppSidebar isCollapsed={false} onToggleCollapse={() => {}} navItems={navItems} />
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+        />
       </Wrapper>,
     );
     expect(container.querySelector('[data-slot="app-sidebar"]')).toBeTruthy();
@@ -26,7 +34,15 @@ describe("MosaicAppSidebar", () => {
   it("renders nav items when expanded", () => {
     render(
       <Wrapper>
-        <MosaicAppSidebar isCollapsed={false} onToggleCollapse={() => {}} navItems={navItems} />
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Home")).toBeTruthy();
@@ -36,7 +52,15 @@ describe("MosaicAppSidebar", () => {
   it("renders with accessible landmark role", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicAppSidebar isCollapsed={false} onToggleCollapse={() => {}} navItems={navItems} />
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+        />
       </Wrapper>,
     );
     // aria-label on the root div makes it a region landmark
@@ -48,7 +72,15 @@ describe("MosaicAppSidebar", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicAppSidebar isCollapsed={true} onToggleCollapse={() => {}} navItems={navItems} />
+          <MosaicAppSidebar
+            isCollapsed={true}
+            onToggleCollapse={() => {}}
+            navItems={navItems}
+            sidebarAriaLabel="Application sidebar"
+            mainNavAriaLabel="Main navigation"
+            quickActionsHeading="Quick Actions"
+            recentHeading="Recent"
+          />
         </Wrapper>,
       ),
     ).not.toThrow();

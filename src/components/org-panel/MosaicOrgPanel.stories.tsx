@@ -63,6 +63,11 @@ export const Default: Story = {
               members={members}
               onRemoveMember={(id) => console.log("remove", id)}
               onChangeRole={(id, role) => console.log("role", id, role)}
+              youLabel="You"
+              memberActionsAriaLabel="Member actions"
+              removeMemberLabel="Remove member"
+              emptyMessage="No members found."
+              inviteLabel="Invite"
             />
           </MosaicDeviceProvider>
         ),

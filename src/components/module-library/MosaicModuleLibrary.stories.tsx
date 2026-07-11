@@ -47,6 +47,31 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredModuleLibraryLabels = {
+  nameFieldLabel: "Name *",
+  descriptionFieldLabel: "Description",
+  namePlaceholder: "Module name…",
+  descriptionPlaceholder: "Describe this module…",
+  cancelLabel: "Cancel",
+  saveChangesLabel: "Save Changes",
+  createItemLabel: "Create",
+  itemActionsAriaLabel: "Item actions",
+  editItemLabel: "Edit",
+  deleteItemLabel: "Delete",
+  closeEditorAriaLabel: "Close dialog",
+  editModalTitle: (name: string) => `Edit ${name || "Module"}`,
+};
+
+const requiredModuleFormLabels = {
+  nameFieldLabel: "Name *",
+  descriptionFieldLabel: "Description",
+  namePlaceholder: "Module name…",
+  descriptionPlaceholder: "Describe this module…",
+  cancelLabel: "Cancel",
+  saveChangesLabel: "Save Changes",
+  createItemLabel: "Create",
+};
+
 export const Default: Story = {
   args: {
     items,
@@ -54,6 +79,7 @@ export const Default: Story = {
     onCreateItem: (data) => console.log("create", data),
     onUpdateItem: (id, data) => console.log("update", id, data),
     onDeleteItem: (id) => console.log("delete", id),
+    ...requiredModuleLibraryLabels,
   },
 };
 
@@ -62,6 +88,7 @@ const baseLibArgs = {
   onCreateItem: () => {},
   onUpdateItem: () => {},
   onDeleteItem: () => {},
+  ...requiredModuleLibraryLabels,
 } as const;
 
 export const CreateForm: Story = {
@@ -73,6 +100,7 @@ export const CreateForm: Story = {
           mode="create"
           onSave={(module) => console.log("save", module)}
           onCancel={() => console.log("cancel")}
+          {...requiredModuleFormLabels}
         />
       </div>
     </MosaicDeviceProvider>
@@ -95,6 +123,7 @@ export const EditForm: Story = {
           }}
           onSave={(module) => console.log("save", module)}
           onCancel={() => console.log("cancel")}
+          {...requiredModuleFormLabels}
         />
       </div>
     </MosaicDeviceProvider>

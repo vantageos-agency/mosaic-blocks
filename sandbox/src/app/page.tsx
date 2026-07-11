@@ -59,6 +59,7 @@ function ModalDemo() {
         onClose={() => setOpen(false)}
         title="Adaptive Modal"
         description="Dialog on desktop, bottom sheet on mobile."
+        closeAriaLabel="Close dialog"
       >
         <p className="text-sm text-gray-600">
           This is the modal body. On mobile it slides up from the bottom.
@@ -447,6 +448,7 @@ export default function SandboxPage() {
                 { value: "js", label: "JavaScript" },
               ]}
               placeholder="Search…"
+              emptyMessage="No results found."
             />
             <MosaicDropdownMenu
               trigger={<MosaicButton variant="outline">Open menu</MosaicButton>}
@@ -522,6 +524,8 @@ export default function SandboxPage() {
                 ]}
                 activeItem="step2"
                 onItemChange={() => {}}
+                stepNavAriaLabel="Step navigation"
+                tabNavAriaLabel="Tab navigation"
               />
             </div>
 
@@ -544,6 +548,10 @@ export default function SandboxPage() {
                     { id: "settings", label: "Settings", href: "/settings" },
                   ]}
                   footerStatus={{ label: "All systems go", sublabel: "Healthy" }}
+                  sidebarAriaLabel="Application sidebar"
+                  mainNavAriaLabel="Main navigation"
+                  quickActionsHeading="Quick Actions"
+                  recentHeading="Recent"
                 />
                 <div className="flex-1 bg-gray-50 p-4 text-sm text-gray-500">Main content area</div>
               </div>
@@ -597,6 +605,8 @@ export default function SandboxPage() {
               <MosaicActivityFeed
                 heading="Recent Activity"
                 viewAllHref="#"
+                viewAllLabel="View All"
+                emptyMessage="No recent activity"
                 activities={[
                   {
                     id: "a1",
@@ -641,6 +651,9 @@ export default function SandboxPage() {
                 }}
                 onEdit={() => {}}
                 onRemove={() => {}}
+                customBadgeLabel="CUSTOM"
+                editAriaLabel="Edit module"
+                removeAriaLabel="Remove module"
               />
             </div>
 
@@ -664,6 +677,21 @@ export default function SandboxPage() {
                   onRemoveFramework={() => {}}
                   onSave={() => {}}
                   canSave={false}
+                  agentNameLabel="Agent Name"
+                  agentNamePlaceholder="Enter agent name…"
+                  instructionsPlaceholder="Add any specific instructions or behaviors…"
+                  modelDescriptionLabel="AI model that powers your agent"
+                  recommendedBadgeLabel="RECOMMENDED"
+                  livePreviewHeading="Live Preview"
+                  livePreviewSubheading="See how your agent will behave"
+                  previewConfigLabel="Your custom AI agent configuration"
+                  customInstructionsPreviewLabel="Custom Instructions"
+                  selectAllModulesLabel="Select all modules to see preview"
+                  requiredLabel="Required"
+                  goBackAriaLabel="Go back"
+                  savingLabel="Saving…"
+                  creatingLabel="Creating…"
+                  optionalInstructionsHelp="Optional: Add specific behaviors or constraints for your agent"
                 />
               </div>
             </div>
@@ -678,12 +706,20 @@ export default function SandboxPage() {
                   title="Dashboard"
                   subtitle="Overview of your workspace"
                   breadcrumbs={[{ label: "Home", href: "#" }, { label: "Dashboard" }]}
+                  headerAriaLabel="Dashboard header"
+                  openNavigationAriaLabel="Open navigation"
+                  breadcrumbAriaLabel="Breadcrumb"
+                  mobileSidebarCloseAriaLabel="Close dialog"
                   sidebarProps={{
                     logoSlot: <span className="text-sm font-bold">Mosaic</span>,
                     navItems: [
                       { id: "home", label: "Home", href: "/" },
                       { id: "analytics", label: "Analytics", href: "/analytics" },
                     ],
+                    sidebarAriaLabel: "Application sidebar",
+                    mainNavAriaLabel: "Main navigation",
+                    quickActionsHeading: "Quick Actions",
+                    recentHeading: "Recent",
                   }}
                 >
                   <p className="text-sm text-gray-500">Dashboard body — children render here.</p>

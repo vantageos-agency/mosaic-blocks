@@ -18,7 +18,14 @@ describe("MosaicMainNav", () => {
   it("renders nav items", () => {
     render(
       <Wrapper>
-        <MosaicMainNav items={navItems} />
+        <MosaicMainNav
+          items={navItems}
+          openMenuAriaLabel="Open navigation menu"
+          closeMenuAriaLabel="Close navigation menu"
+          drawerNavAriaLabel="Navigation"
+          mainNavAriaLabel="Main navigation"
+          adminBadgeLabel="Admin"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Home")).toBeTruthy();
@@ -28,7 +35,15 @@ describe("MosaicMainNav", () => {
   it("hides adminOnly items when isAdmin=false", () => {
     render(
       <Wrapper>
-        <MosaicMainNav items={navItems} isAdmin={false} />
+        <MosaicMainNav
+          items={navItems}
+          isAdmin={false}
+          openMenuAriaLabel="Open navigation menu"
+          closeMenuAriaLabel="Close navigation menu"
+          drawerNavAriaLabel="Navigation"
+          mainNavAriaLabel="Main navigation"
+          adminBadgeLabel="Admin"
+        />
       </Wrapper>,
     );
     expect(screen.queryByText("Admin")).toBeNull();
@@ -37,7 +52,15 @@ describe("MosaicMainNav", () => {
   it("shows adminOnly items when isAdmin=true", () => {
     render(
       <Wrapper>
-        <MosaicMainNav items={navItems} isAdmin={true} />
+        <MosaicMainNav
+          items={navItems}
+          isAdmin={true}
+          openMenuAriaLabel="Open navigation menu"
+          closeMenuAriaLabel="Close navigation menu"
+          drawerNavAriaLabel="Navigation"
+          mainNavAriaLabel="Main navigation"
+          adminBadgeLabel="Admin"
+        />
       </Wrapper>,
     );
     // "Admin" appears in nav items (may appear multiple times in mobile+desktop duplicated renderings)
@@ -54,7 +77,15 @@ describe("MosaicMainNav", () => {
     );
     render(
       <Wrapper>
-        <MosaicMainNav items={navItems} renderLink={renderLink} />
+        <MosaicMainNav
+          items={navItems}
+          renderLink={renderLink}
+          openMenuAriaLabel="Open navigation menu"
+          closeMenuAriaLabel="Close navigation menu"
+          drawerNavAriaLabel="Navigation"
+          mainNavAriaLabel="Main navigation"
+          adminBadgeLabel="Admin"
+        />
       </Wrapper>,
     );
     expect(renderLink).toHaveBeenCalled();
@@ -64,7 +95,14 @@ describe("MosaicMainNav", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicMainNav items={[]} />
+          <MosaicMainNav
+            items={[]}
+            openMenuAriaLabel="Open navigation menu"
+            closeMenuAriaLabel="Close navigation menu"
+            drawerNavAriaLabel="Navigation"
+            mainNavAriaLabel="Main navigation"
+            adminBadgeLabel="Admin"
+          />
         </Wrapper>,
       ),
     ).not.toThrow();

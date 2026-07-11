@@ -49,6 +49,7 @@ export const Default: Story = {
   args: {
     activities,
     heading: "Recent Activity",
+    emptyMessage: "No recent activity",
   },
 };
 
@@ -56,6 +57,7 @@ export const Empty: Story = {
   args: {
     activities: [],
     heading: "Recent Activity",
+    emptyMessage: "No recent activity",
   },
 };
 
@@ -63,6 +65,8 @@ export const WithViewAll: Story = {
   args: {
     activities,
     heading: "Recent Activity",
+    emptyMessage: "No recent activity",
     viewAllHref: "/activity",
+    viewAllLabel: "View All",
   },
 };

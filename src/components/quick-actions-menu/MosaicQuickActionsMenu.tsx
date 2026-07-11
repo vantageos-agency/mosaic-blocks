@@ -51,6 +51,8 @@ export interface MosaicQuickActionsMenuProps {
     children: React.ReactNode,
     className: string,
   ) => React.ReactNode;
+  /** Message shown when `actions` is empty. Required, no default. */
+  emptyMessage: string;
   className?: string;
 }
 
@@ -88,6 +90,7 @@ export function MosaicQuickActionsMenu({
   triggerIcon,
   menuTitle = "Quick Actions",
   renderLink,
+  emptyMessage,
   className,
 }: MosaicQuickActionsMenuProps) {
   const { isMobile } = useDevice();
@@ -182,9 +185,7 @@ export function MosaicQuickActionsMenu({
           ))}
 
           {actions.length === 0 && (
-            <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-              No actions available.
-            </p>
+            <p className="px-3 py-4 text-center text-sm text-muted-foreground">{emptyMessage}</p>
           )}
         </div>
       )}

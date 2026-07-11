@@ -34,6 +34,8 @@ function FilterDemo() {
           selectedCategory={category}
           onCategoryChange={setCategory}
           title="Filters"
+          expandFiltersAriaLabel="Expand filters"
+          categoriesHeading="Categories"
         />
       </div>
     </MosaicDeviceProvider>
@@ -64,6 +66,8 @@ const baseFilterArgs = {
   onFilterChange: () => {},
   selectedCategory: "strategy",
   onCategoryChange: () => {},
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
 } as const;
 
 export const Default: Story = {
@@ -82,5 +86,7 @@ export const Collapsed: Story = {
     selectedCategory: "strategy",
     onCategoryChange: () => {},
     title: "Filters",
+    expandFiltersAriaLabel: "Expand filters",
+    categoriesHeading: "Categories",
   },
 };

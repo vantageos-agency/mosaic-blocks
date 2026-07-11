@@ -51,6 +51,19 @@ export interface MosaicProfilePanelProps {
   saveLabel?: string;
   /** Security section: called when user clicks "Change Password" */
   onChangePassword?: () => void;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  avatarHeading: string;
+  avatarSubheading: string;
+  uploadPhotoLabel: string;
+  personalInfoHeading: string;
+  personalInfoSubheading: string;
+  securityHeading: string;
+  securitySubheading: string;
+  changePasswordLabel: string;
+  savingLabel: string;
   className?: string;
 }
 
@@ -100,6 +113,15 @@ export function MosaicProfilePanel({
   extraSections,
   saveLabel = "Save Profile",
   onChangePassword,
+  avatarHeading,
+  avatarSubheading,
+  uploadPhotoLabel,
+  personalInfoHeading,
+  personalInfoSubheading,
+  securityHeading,
+  securitySubheading,
+  changePasswordLabel,
+  savingLabel,
   className,
 }: MosaicProfilePanelProps) {
   const { isMobile } = useDevice();
@@ -110,9 +132,9 @@ export function MosaicProfilePanel({
       <div className="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
         <div className="flex flex-col space-y-1.5 p-6">
           <h3 className="text-lg font-semibold leading-none tracking-tight md:text-xl">
-            Profile Picture
+            {avatarHeading}
           </h3>
-          <p className="text-sm text-muted-foreground">Update your avatar</p>
+          <p className="text-sm text-muted-foreground">{avatarSubheading}</p>
         </div>
         <div className="p-6 pt-0">
           <div className="flex items-center gap-4">
@@ -149,7 +171,7 @@ export function MosaicProfilePanel({
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                Upload Photo
+                {uploadPhotoLabel}
               </button>
             )}
           </div>
@@ -161,9 +183,9 @@ export function MosaicProfilePanel({
         <div className="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
           <div className="flex flex-col space-y-1.5 p-6">
             <h3 className="text-lg font-semibold leading-none tracking-tight md:text-xl">
-              Personal Information
+              {personalInfoHeading}
             </h3>
-            <p className="text-sm text-muted-foreground">Update your profile details</p>
+            <p className="text-sm text-muted-foreground">{personalInfoSubheading}</p>
           </div>
           <div className="p-6 pt-0 space-y-4 md:space-y-6">
             {fields.map((field) => (
@@ -213,11 +235,9 @@ export function MosaicProfilePanel({
         <div className="rounded-lg border border-border bg-card text-card-foreground shadow-sm">
           <div className="flex flex-col space-y-1.5 p-6">
             <h3 className="text-lg font-semibold leading-none tracking-tight md:text-xl">
-              Account Security
+              {securityHeading}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Manage your password and security settings
-            </p>
+            <p className="text-sm text-muted-foreground">{securitySubheading}</p>
           </div>
           <div className="p-6 pt-0">
             <button
@@ -231,7 +251,7 @@ export function MosaicProfilePanel({
                 isMobile ? "w-full" : "w-auto",
               )}
             >
-              Change Password
+              {changePasswordLabel}
             </button>
           </div>
         </div>
@@ -270,7 +290,7 @@ export function MosaicProfilePanel({
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
           </svg>
-          {isSaving ? "Saving…" : saveLabel}
+          {isSaving ? savingLabel : saveLabel}
         </button>
       </div>
     </div>

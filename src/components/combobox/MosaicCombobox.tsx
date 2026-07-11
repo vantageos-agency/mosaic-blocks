@@ -42,6 +42,11 @@ export interface MosaicComboboxProps {
   placeholder?: string;
   disabled?: boolean;
   name?: string;
+  /**
+   * Message shown when no item matches the filter. Required — the host
+   * owns the language (e.g. `t('Combobox.empty')`). No default, no fallback.
+   */
+  emptyMessage: string;
   className?: string;
 }
 
@@ -59,6 +64,7 @@ export interface MosaicComboboxProps {
  *   items={[{ value: "ts", label: "TypeScript" }]}
  *   placeholder="Search…"
  *   onValueChange={(v) => console.log(v)}
+ *   emptyMessage={t('Combobox.empty')}
  * />
  */
 export function MosaicCombobox({
@@ -69,6 +75,7 @@ export function MosaicCombobox({
   placeholder = "Search…",
   disabled,
   name,
+  emptyMessage,
   className,
 }: MosaicComboboxProps) {
   const [inputValue, setInputValue] = React.useState("");
@@ -133,7 +140,7 @@ export function MosaicCombobox({
                   </Combobox.Item>
                 ))}
                 <Combobox.Empty className="py-2 text-center text-sm text-muted-foreground">
-                  No results found.
+                  {emptyMessage}
                 </Combobox.Empty>
               </Combobox.List>
             </Combobox.Popup>

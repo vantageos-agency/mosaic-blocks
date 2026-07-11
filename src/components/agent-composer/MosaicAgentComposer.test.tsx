@@ -22,6 +22,21 @@ const baseProps = {
   onRemoveFramework: vi.fn(),
   onSave: vi.fn(),
   canSave: true,
+  agentNameLabel: "Agent Name",
+  agentNamePlaceholder: "Enter agent name…",
+  instructionsPlaceholder: "Add any specific instructions or behaviors…",
+  modelDescriptionLabel: "AI model that powers your agent",
+  recommendedBadgeLabel: "RECOMMENDED",
+  livePreviewHeading: "Live Preview",
+  livePreviewSubheading: "See how your agent will behave",
+  previewConfigLabel: "Your custom AI agent configuration",
+  customInstructionsPreviewLabel: "Custom Instructions",
+  selectAllModulesLabel: "Select all modules to see preview",
+  requiredLabel: "Required",
+  goBackAriaLabel: "Go back",
+  savingLabel: "Saving…",
+  creatingLabel: "Creating…",
+  optionalInstructionsHelp: "Optional: Add specific behaviors or constraints for your agent",
 };
 
 describe("MosaicAgentComposer", () => {

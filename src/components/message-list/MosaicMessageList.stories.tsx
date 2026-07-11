@@ -51,12 +51,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredMessageListLabels = {
+  searchPlaceholder: "Search messages…",
+  emptyMessage: "No messages found.",
+  loadMoreLabel: "Load more",
+  replyLabel: "Reply",
+  moreOptionsAriaLabel: "More options",
+};
+
 export const Default: Story = {
   args: {
     messages,
     title: "Discussion",
     onReply: (id) => console.log("reply", id),
     onReaction: (id, type) => console.log("react", id, type),
+    ...requiredMessageListLabels,
   },
 };
 
@@ -64,6 +73,7 @@ export const Empty: Story = {
   args: {
     messages: [],
     title: "Messages",
+    ...requiredMessageListLabels,
   },
 };
 
@@ -73,5 +83,6 @@ export const WithLoadMore: Story = {
     title: "Discussion",
     hasMore: true,
     onLoadMore: () => console.log("load more"),
+    ...requiredMessageListLabels,
   },
 };

@@ -25,6 +25,7 @@ export const Default: Story = {
     onSelectOrg: (id) => console.log("selected", id),
     onCreateOrg: () => console.log("create org"),
     createOrgLabel: "Create organization",
+    triggerAriaLabel: "Select organization",
   },
 };
 
@@ -33,5 +34,6 @@ export const NoCreateAction: Story = {
     organizations: orgs,
     currentOrgId: "org-2",
     onSelectOrg: () => {},
+    triggerAriaLabel: "Select organization",
   },
 };

@@ -56,6 +56,15 @@ export interface MosaicQuickAgentSelectorProps {
   addLabel?: string;
   /** Label for the create-custom CTA */
   createLabel?: string;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  quickAddHeading: string;
+  configureBehaviorCaption: string;
+  noAgentsAvailableMessage: string;
+  addAgentModalTitle: string;
+  closeAriaLabel: string;
   className?: string;
 }
 
@@ -128,15 +137,21 @@ function PickerContent({
   onAdd,
   onOpenBuilder,
   createLabel,
+  quickAddHeading,
+  configureBehaviorCaption,
+  noAgentsAvailableMessage,
 }: {
   available: MosaicQuickAgent[];
   onAdd: (id: string) => void;
   onOpenBuilder?: () => void;
   createLabel: string;
+  quickAddHeading: string;
+  configureBehaviorCaption: string;
+  noAgentsAvailableMessage: string;
 }) {
   return (
     <div className="p-4">
-      <h4 className="mb-3 font-medium text-foreground">Quick Add</h4>
+      <h4 className="mb-3 font-medium text-foreground">{quickAddHeading}</h4>
       <div className="space-y-1">
         {available.map((agent) => (
           <button
@@ -178,14 +193,14 @@ function PickerContent({
               <SparklesIcon />
               <div className="text-left">
                 <p className="font-medium text-primary">{createLabel}</p>
-                <p className="text-xs text-muted-foreground">Configure roles and behavior</p>
+                <p className="text-xs text-muted-foreground">{configureBehaviorCaption}</p>
               </div>
             </button>
           </div>
         )}
 
         {available.length === 0 && !onOpenBuilder && (
-          <p className="px-3 py-2 text-sm text-muted-foreground">No agents available to add.</p>
+          <p className="px-3 py-2 text-sm text-muted-foreground">{noAgentsAvailableMessage}</p>
         )}
       </div>
     </div>
@@ -203,6 +218,11 @@ export function MosaicQuickAgentSelector({
   maxAgents = 4,
   addLabel = "Add Agent",
   createLabel = "Create Custom Agent",
+  quickAddHeading,
+  configureBehaviorCaption,
+  noAgentsAvailableMessage,
+  addAgentModalTitle,
+  closeAriaLabel,
   className,
 }: MosaicQuickAgentSelectorProps) {
   const { isMobile } = useDevice();
@@ -306,6 +326,9 @@ export function MosaicQuickAgentSelector({
                     : undefined
                 }
                 createLabel={createLabel}
+                quickAddHeading={quickAddHeading}
+                configureBehaviorCaption={configureBehaviorCaption}
+                noAgentsAvailableMessage={noAgentsAvailableMessage}
               />
             </div>
           )}
@@ -315,7 +338,8 @@ export function MosaicQuickAgentSelector({
             <MosaicAdaptiveModal
               isOpen={pickerOpen}
               onClose={() => setPickerOpen(false)}
-              title="Add Agent"
+              title={addAgentModalTitle}
+              closeAriaLabel={closeAriaLabel}
             >
               <PickerContent
                 available={availableAgents}
@@ -329,6 +353,9 @@ export function MosaicQuickAgentSelector({
                     : undefined
                 }
                 createLabel={createLabel}
+                quickAddHeading={quickAddHeading}
+                configureBehaviorCaption={configureBehaviorCaption}
+                noAgentsAvailableMessage={noAgentsAvailableMessage}
               />
             </MosaicAdaptiveModal>
           )}

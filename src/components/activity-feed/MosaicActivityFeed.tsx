@@ -111,10 +111,23 @@ export interface MosaicActivity {
 
 export interface MosaicActivityFeedProps {
   activities: MosaicActivity[];
-  /** Section heading */
-  heading?: string;
+  /**
+   * Section heading. Required — the host owns the language
+   * (e.g. `t('ActivityFeed.heading')`). No default, no fallback.
+   */
+  heading: string;
   /** Href for "View All" link */
   viewAllHref?: string;
+  /**
+   * Label for the "View All" link, shown when `viewAllHref` is set.
+   * Required whenever `viewAllHref` is provided — host-owned, no default.
+   */
+  viewAllLabel?: string;
+  /**
+   * Message shown when `activities` is empty. Required — the host owns
+   * the language (e.g. `t('ActivityFeed.empty')`). No default, no fallback.
+   */
+  emptyMessage: string;
   /**
    * Map of activity.type → icon ReactNode.
    * Default: generic clock icon for all types.
@@ -297,9 +310,12 @@ MosaicActivityItem.displayName = "MosaicActivityItem";
  * MosaicActivityFeed — scrollable card listing recent activities with stagger reveal.
  *
  * @example
+ * // Host owns i18n (e.g. next-intl) — heading/viewAllLabel/emptyMessage are required.
  * <MosaicActivityFeed
- *   heading="Recent Activity"
+ *   heading={t('ActivityFeed.heading')}
  *   viewAllHref="/history"
+ *   viewAllLabel={t('ActivityFeed.viewAll')}
+ *   emptyMessage={t('ActivityFeed.empty')}
  *   activities={[
  *     { id: "1", type: "task", title: "Published report", description: "PDF export", timestamp: "2h ago", status: "completed" },
  *   ]}
@@ -307,8 +323,10 @@ MosaicActivityItem.displayName = "MosaicActivityItem";
  */
 export function MosaicActivityFeed({
   activities,
-  heading = "Recent Activity",
+  heading,
   viewAllHref,
+  viewAllLabel,
+  emptyMessage,
   iconMap,
   renderLink,
   className,
@@ -342,7 +360,7 @@ export function MosaicActivityFeed({
           link(
             viewAllHref,
             <>
-              View All
+              {viewAllLabel}
               <ArrowRightIcon />
             </>,
           )}
@@ -351,7 +369,7 @@ export function MosaicActivityFeed({
       {/* Activity rows */}
       <div className="divide-y divide-border p-2">
         {activities.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">No recent activity</p>
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         ) : (
           activities.map((activity, idx) => (
             <div

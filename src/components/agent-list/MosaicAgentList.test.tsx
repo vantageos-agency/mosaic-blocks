@@ -4,6 +4,26 @@ import { describe, expect, it } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentList } from "./MosaicAgentList.js";
 
+const requiredListLabels = {
+  emptyMessage: "No agents found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersModalTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  agentCardLabels: {
+    activeBadgeLabel: "Active",
+    agentActionsAriaLabel: "Agent actions",
+    deactivateLabel: "Deactivate",
+    activateLabel: "Activate",
+    editLabel: "Edit",
+    deleteLabel: "Delete",
+    pauseLabel: "Pause",
+    startLabel: "Start",
+    createdLabel: (d: string) => `Created ${d}`,
+  },
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -28,6 +48,7 @@ describe("MosaicAgentList", () => {
           categories={categories}
           selectedCategory="default"
           onCategoryChange={() => {}}
+          {...requiredListLabels}
         />
       </Wrapper>,
     );
@@ -47,6 +68,7 @@ describe("MosaicAgentList", () => {
           selectedCategory="default"
           onCategoryChange={() => {}}
           title="Agent Library"
+          {...requiredListLabels}
         />
       </Wrapper>,
     );
@@ -65,6 +87,7 @@ describe("MosaicAgentList", () => {
             categories={categories}
             selectedCategory="default"
             onCategoryChange={() => {}}
+            {...requiredListLabels}
           />
         </Wrapper>,
       ),
@@ -84,6 +107,7 @@ describe("MosaicAgentList", () => {
           onCategoryChange={() => {}}
           onCreateAgent={() => {}}
           createLabel="New Agent"
+          {...requiredListLabels}
         />
       </Wrapper>,
     );
@@ -101,6 +125,7 @@ describe("MosaicAgentList", () => {
           categories={categories}
           selectedCategory="default"
           onCategoryChange={() => {}}
+          {...requiredListLabels}
         />
       </Wrapper>,
     );

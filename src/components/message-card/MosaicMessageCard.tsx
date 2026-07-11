@@ -70,6 +70,10 @@ export interface MosaicMessageCardProps {
   onCopy?: (messageId: string, content: string) => void;
   showThread?: boolean;
   compact?: boolean;
+  /** Label for the reply button. Required — host-owned, no default. */
+  replyLabel: string;
+  /** aria-label for the more-options menu trigger. Required — host-owned, no default. */
+  moreOptionsAriaLabel: string;
   className?: string;
 }
 
@@ -243,6 +247,8 @@ export function MosaicMessageCard({
   onCopy,
   showThread = true,
   compact = false,
+  replyLabel,
+  moreOptionsAriaLabel,
   className,
 }: MosaicMessageCardProps) {
   const [bookmarked, setBookmarked] = React.useState(message.bookmarked ?? false);
@@ -421,7 +427,7 @@ export function MosaicMessageCard({
                 className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {icons.reply}
-                <span>Reply</span>
+                <span>{replyLabel}</span>
               </button>
             </div>
 
@@ -447,7 +453,7 @@ export function MosaicMessageCard({
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label="More options"
+                  aria-label={moreOptionsAriaLabel}
                   aria-haspopup="menu"
                 >
                   {icons.more}

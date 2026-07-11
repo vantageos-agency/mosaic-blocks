@@ -178,6 +178,19 @@ export interface MosaicCreateOrgDialogProps {
   onCreateOrg: (data: { name: string; slug: string; description?: string }) => void | Promise<void>;
   isLoading?: boolean;
   title?: string;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  closeAriaLabel: string;
+  orgNameFieldLabel: string;
+  orgNamePlaceholder: string;
+  slugFieldLabel: string;
+  descriptionFieldLabel: string;
+  descriptionPlaceholder: string;
+  cancelLabel: string;
+  creatingLabel: string;
+  createLabel: string;
 }
 
 export function MosaicCreateOrgDialog({
@@ -185,7 +198,16 @@ export function MosaicCreateOrgDialog({
   onOpenChange,
   onCreateOrg,
   isLoading = false,
-  title = "Create Organization",
+  title = "Create Organization", // allow-hardcode-i18n: pre-existing optional default, unrelated to this PR's guard scope
+  closeAriaLabel,
+  orgNameFieldLabel,
+  orgNamePlaceholder,
+  slugFieldLabel,
+  descriptionFieldLabel,
+  descriptionPlaceholder,
+  cancelLabel,
+  creatingLabel,
+  createLabel,
 }: MosaicCreateOrgDialogProps) {
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
@@ -232,7 +254,12 @@ export function MosaicCreateOrgDialog({
   }, [name]);
 
   return (
-    <MosaicAdaptiveModal isOpen={open} onClose={() => onOpenChange(false)} title={title}>
+    <MosaicAdaptiveModal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title={title}
+      closeAriaLabel={closeAriaLabel}
+    >
       <form
         data-slot="create-org-dialog"
         onSubmit={handleSubmit}
@@ -241,14 +268,14 @@ export function MosaicCreateOrgDialog({
         {/* Name */}
         <div className="space-y-1.5">
           <label htmlFor="org-name" className="text-sm font-medium">
-            Organization Name *
+            {orgNameFieldLabel}
           </label>
           <input
             id="org-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Acme Inc."
+            placeholder={orgNamePlaceholder}
             required
             className={cn(
               "w-full rounded-md border bg-background px-3 py-2 min-h-[40px] text-sm placeholder:text-muted-foreground",
@@ -261,7 +288,7 @@ export function MosaicCreateOrgDialog({
         {/* Slug */}
         <div className="space-y-1.5">
           <label htmlFor="org-slug" className="text-sm font-medium">
-            Slug *
+            {slugFieldLabel}
           </label>
           <input
             id="org-slug"
@@ -281,13 +308,13 @@ export function MosaicCreateOrgDialog({
         {/* Description */}
         <div className="space-y-1.5">
           <label htmlFor="org-desc" className="text-sm font-medium">
-            Description
+            {descriptionFieldLabel}
           </label>
           <textarea
             id="org-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description…"
+            placeholder={descriptionPlaceholder}
             rows={3}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
@@ -298,14 +325,14 @@ export function MosaicCreateOrgDialog({
             onClick={() => onOpenChange(false)}
             className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             type="submit"
             disabled={isLoading}
             className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none"
           >
-            {isLoading ? "Creating…" : "Create Organization"}
+            {isLoading ? creatingLabel : createLabel}
           </button>
         </div>
       </form>
@@ -324,6 +351,17 @@ export interface MosaicInviteMemberDialogProps {
   isLoading?: boolean;
   roles?: Array<{ value: MosaicOrgRole; label: string }>;
   title?: string;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  closeAriaLabel: string;
+  emailFieldLabel: string;
+  emailPlaceholder: string;
+  roleFieldLabel: string;
+  cancelLabel: string;
+  sendingLabel: string;
+  sendInvitationLabel: string;
 }
 
 const DEFAULT_ROLES: Array<{ value: MosaicOrgRole; label: string }> = [
@@ -337,7 +375,14 @@ export function MosaicInviteMemberDialog({
   onInvite,
   isLoading = false,
   roles = DEFAULT_ROLES,
-  title = "Invite Member",
+  title = "Invite Member", // allow-hardcode-i18n: pre-existing optional default, unrelated to this PR's guard scope
+  closeAriaLabel,
+  emailFieldLabel,
+  emailPlaceholder,
+  roleFieldLabel,
+  cancelLabel,
+  sendingLabel,
+  sendInvitationLabel,
 }: MosaicInviteMemberDialogProps) {
   const [email, setEmail] = React.useState("");
   const [role, setRole] = React.useState<MosaicOrgRole>("member");
@@ -362,7 +407,12 @@ export function MosaicInviteMemberDialog({
   };
 
   return (
-    <MosaicAdaptiveModal isOpen={open} onClose={() => onOpenChange(false)} title={title}>
+    <MosaicAdaptiveModal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title={title}
+      closeAriaLabel={closeAriaLabel}
+    >
       <form
         data-slot="invite-member-dialog"
         onSubmit={handleSubmit}
@@ -370,14 +420,14 @@ export function MosaicInviteMemberDialog({
       >
         <div className="space-y-1.5">
           <label htmlFor="invite-email" className="text-sm font-medium">
-            Email address *
+            {emailFieldLabel}
           </label>
           <input
             id="invite-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="colleague@example.com"
+            placeholder={emailPlaceholder}
             required
             className={cn(
               "w-full rounded-md border bg-background px-3 py-2 min-h-[40px] text-sm placeholder:text-muted-foreground",
@@ -389,7 +439,7 @@ export function MosaicInviteMemberDialog({
         </div>
         <div className="space-y-1.5">
           <label htmlFor="invite-role" className="text-sm font-medium">
-            Role
+            {roleFieldLabel}
           </label>
           <select
             id="invite-role"
@@ -410,14 +460,14 @@ export function MosaicInviteMemberDialog({
             onClick={() => onOpenChange(false)}
             className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             type="submit"
             disabled={isLoading}
             className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none"
           >
-            {isLoading ? "Sending…" : "Send Invitation"}
+            {isLoading ? sendingLabel : sendInvitationLabel}
           </button>
         </div>
       </form>
@@ -438,6 +488,15 @@ export interface MosaicMemberListProps {
   roles?: Array<{ value: MosaicOrgRole; label: string }>;
   isLoading?: boolean;
   searchPlaceholder?: string;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  youLabel: string;
+  memberActionsAriaLabel: string;
+  removeMemberLabel: string;
+  emptyMessage: string;
+  inviteLabel: string;
   className?: string;
 }
 
@@ -447,12 +506,18 @@ function MemberRow({
   onChangeRole,
   onRemoveMember,
   roles,
+  youLabel,
+  memberActionsAriaLabel,
+  removeMemberLabel,
 }: {
   member: MosaicOrgMember;
   currentUserId?: string;
   onChangeRole?: (id: string, role: MosaicOrgRole) => void;
   onRemoveMember?: (id: string) => void;
   roles?: Array<{ value: MosaicOrgRole; label: string }>;
+  youLabel: string;
+  memberActionsAriaLabel: string;
+  removeMemberLabel: string;
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
@@ -494,7 +559,7 @@ function MemberRow({
           <p className="text-sm font-medium truncate">{member.name}</p>
           {isSelf && (
             <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              You
+              {youLabel}
             </span>
           )}
         </div>
@@ -508,7 +573,7 @@ function MemberRow({
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Member actions"
+            aria-label={memberActionsAriaLabel}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -560,7 +625,7 @@ function MemberRow({
                   }}
                   className="flex w-full items-center px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
                 >
-                  Remove member
+                  {removeMemberLabel}
                 </button>
               )}
             </div>
@@ -580,6 +645,11 @@ export function MosaicMemberList({
   roles = DEFAULT_ROLES,
   isLoading,
   searchPlaceholder = "Search members…",
+  youLabel,
+  memberActionsAriaLabel,
+  removeMemberLabel,
+  emptyMessage,
+  inviteLabel,
   className,
 }: MosaicMemberListProps) {
   const [query, setQuery] = React.useState("");
@@ -643,7 +713,7 @@ export function MosaicMemberList({
               <line x1="19" y1="8" x2="19" y2="14" />
               <line x1="22" y1="11" x2="16" y2="11" />
             </svg>
-            Invite
+            {inviteLabel}
           </button>
         )}
       </div>
@@ -664,10 +734,13 @@ export function MosaicMemberList({
               onChangeRole={onChangeRole}
               onRemoveMember={onRemoveMember}
               roles={roles}
+              youLabel={youLabel}
+              memberActionsAriaLabel={memberActionsAriaLabel}
+              removeMemberLabel={removeMemberLabel}
             />
           ))}
           {filtered.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">No members found.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
           )}
         </div>
       )}

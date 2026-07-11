@@ -62,6 +62,26 @@ export interface MosaicMarketplaceListProps {
   searchPlaceholder?: string;
   installLabel?: string;
   uninstallLabel?: string;
+  /**
+   * Label for the preview button on each card. Required — host-owned,
+   * no default.
+   */
+  previewLabel: string;
+  /**
+   * Message shown when the filtered item list is empty. Required —
+   * host-owned, no default.
+   */
+  emptyMessage: string;
+  /** aria-label for the mobile "open filters" button. Required, no default. */
+  openFiltersAriaLabel: string;
+  /** Title of the mobile filters modal. Required, no default. */
+  filtersModalTitle: string;
+  /** aria-label for the mobile filters modal close button. Required, no default. */
+  closeFiltersAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  expandFiltersAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  categoriesHeading: string;
   className?: string;
 }
 
@@ -155,6 +175,7 @@ function MarketplaceCard({
   onPreview,
   installLabel,
   uninstallLabel,
+  previewLabel,
   compact = false,
 }: {
   item: MosaicMarketplaceItem;
@@ -163,6 +184,7 @@ function MarketplaceCard({
   onPreview?: (id: string) => void;
   installLabel: string;
   uninstallLabel: string;
+  previewLabel: string;
   compact?: boolean;
 }) {
   const ratingInt = Math.round(item.rating ?? 0);
@@ -239,7 +261,7 @@ function MarketplaceCard({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             )}
           >
-            Preview
+            {previewLabel}
           </button>
         )}
         {item.isInstalled
@@ -294,6 +316,10 @@ function MarketplaceListDesktop(props: MosaicMarketplaceListProps) {
     searchPlaceholder = "Search marketplace…",
     installLabel = "Install",
     uninstallLabel = "Uninstall",
+    previewLabel,
+    emptyMessage,
+    expandFiltersAriaLabel,
+    categoriesHeading,
   } = props;
 
   const [query, setQuery] = React.useState("");
@@ -321,6 +347,8 @@ function MarketplaceListDesktop(props: MosaicMarketplaceListProps) {
           categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={onCategoryChange}
+          expandFiltersAriaLabel={expandFiltersAriaLabel}
+          categoriesHeading={categoriesHeading}
         />
         <div className="flex flex-1 flex-col min-w-0">
           <div className="border-b border-border px-6 py-4">
@@ -352,11 +380,12 @@ function MarketplaceListDesktop(props: MosaicMarketplaceListProps) {
                   onPreview={onPreview}
                   installLabel={installLabel}
                   uninstallLabel={uninstallLabel}
+                  previewLabel={previewLabel}
                 />
               ))}
             </div>
             {filtered.length === 0 && (
-              <p className="py-12 text-center text-sm text-muted-foreground">No items found.</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>
             )}
           </div>
         </div>
@@ -383,6 +412,13 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
     searchPlaceholder = "Search marketplace…",
     installLabel = "Install",
     uninstallLabel = "Uninstall",
+    previewLabel,
+    emptyMessage,
+    openFiltersAriaLabel,
+    filtersModalTitle,
+    closeFiltersAriaLabel,
+    expandFiltersAriaLabel,
+    categoriesHeading,
   } = props;
 
   const [filterOpen, setFilterOpen] = React.useState(false);
@@ -404,7 +440,7 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
             type="button"
             onClick={() => setFilterOpen(true)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Open filters"
+            aria-label={openFiltersAriaLabel}
           >
             <FilterIcon />
           </button>
@@ -437,15 +473,21 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
             onPreview={onPreview}
             installLabel={installLabel}
             uninstallLabel={uninstallLabel}
+            previewLabel={previewLabel}
             compact
           />
         ))}
         {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-muted-foreground">No items found.</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         )}
       </div>
 
-      <MosaicAdaptiveModal isOpen={filterOpen} onClose={() => setFilterOpen(false)} title="Filters">
+      <MosaicAdaptiveModal
+        isOpen={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        title={filtersModalTitle}
+        closeAriaLabel={closeFiltersAriaLabel}
+      >
         <div className="p-4">
           <MosaicFilterSidebar
             isCollapsed={false}
@@ -458,6 +500,8 @@ function MarketplaceListMobile(props: MosaicMarketplaceListProps) {
             }}
             categories={categories}
             selectedCategory={selectedCategory}
+            expandFiltersAriaLabel={expandFiltersAriaLabel}
+            categoriesHeading={categoriesHeading}
             onCategoryChange={(id) => {
               onCategoryChange(id);
               setFilterOpen(false);

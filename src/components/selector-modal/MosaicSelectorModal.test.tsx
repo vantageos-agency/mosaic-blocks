@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicSelectorModal } from "./MosaicSelectorModal.js";
 
+const requiredSelectorModalLabels = {
+  allCategoryLabel: "All",
+  emptyMessage: "No results found.",
+  closeAriaLabel: "Close dialog",
+};
+
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
 }
@@ -23,6 +29,7 @@ describe("MosaicSelectorModal", () => {
           title="Select Framework"
           items={items}
           onSelect={() => {}}
+          {...requiredSelectorModalLabels}
         />
       </Wrapper>,
     );
@@ -38,6 +45,7 @@ describe("MosaicSelectorModal", () => {
           title="Select Framework"
           items={items}
           onSelect={() => {}}
+          {...requiredSelectorModalLabels}
         />
       </Wrapper>,
     );
@@ -54,6 +62,7 @@ describe("MosaicSelectorModal", () => {
           title="Pick a Framework"
           items={items}
           onSelect={() => {}}
+          {...requiredSelectorModalLabels}
         />
       </Wrapper>,
     );
@@ -70,6 +79,7 @@ describe("MosaicSelectorModal", () => {
           title="Select"
           items={items}
           onSelect={onSelect}
+          {...requiredSelectorModalLabels}
         />
       </Wrapper>,
     );
@@ -88,6 +98,7 @@ describe("MosaicSelectorModal", () => {
           title="Select"
           items={items}
           onSelect={() => {}}
+          {...requiredSelectorModalLabels}
         />
       </Wrapper>,
     );

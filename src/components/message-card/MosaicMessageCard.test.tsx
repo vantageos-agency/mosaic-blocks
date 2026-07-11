@@ -18,17 +18,38 @@ const message = {
 
 describe("MosaicMessageCard", () => {
   it("renders message content", () => {
-    render(<MosaicMessageCard message={message} />);
+    render(
+      <MosaicMessageCard
+        message={message}
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+      />,
+    );
     expect(screen.getByText("This is a great discussion point.")).toBeTruthy();
   });
 
   it("renders sender name", () => {
-    render(<MosaicMessageCard message={message} />);
+    render(
+      <MosaicMessageCard
+        message={message}
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+      />,
+    );
     expect(screen.getByText("Alice")).toBeTruthy();
   });
 
   it("renders without crashing in compact mode", () => {
-    expect(() => render(<MosaicMessageCard message={message} compact />)).not.toThrow();
+    expect(() =>
+      render(
+        <MosaicMessageCard
+          message={message}
+          compact
+          replyLabel="Reply"
+          moreOptionsAriaLabel="More options"
+        />,
+      ),
+    ).not.toThrow();
   });
 
   it("renders like/dislike buttons for ai sender type", () => {
@@ -36,14 +57,27 @@ describe("MosaicMessageCard", () => {
       ...message,
       sender: { id: "ai-1", name: "Bot", type: "ai" as const },
     };
-    const { container } = render(<MosaicMessageCard message={aiMessage} />);
+    const { container } = render(
+      <MosaicMessageCard
+        message={aiMessage}
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+      />,
+    );
     // Like button renders for AI messages only
     const likeBtn = container.querySelector('[aria-label^="Like"]');
     expect(likeBtn).toBeTruthy();
   });
 
   it("accepts custom className", () => {
-    const { container } = render(<MosaicMessageCard message={message} className="my-message" />);
+    const { container } = render(
+      <MosaicMessageCard
+        message={message}
+        className="my-message"
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+      />,
+    );
     expect(container.querySelector(".my-message")).toBeTruthy();
   });
 });

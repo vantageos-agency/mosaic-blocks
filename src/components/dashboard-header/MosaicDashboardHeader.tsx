@@ -64,6 +64,16 @@ export interface MosaicDashboardHeaderProps {
   actions?: React.ReactNode;
   /** Logo/brand slot (left of title) */
   logoSlot?: React.ReactNode;
+  /**
+   * Placeholder for the desktop search input. Required — the host owns
+   * the language (e.g. `t('DashboardHeader.searchPlaceholder')`). No default.
+   */
+  searchPlaceholder: string;
+  /**
+   * aria-label for the mobile search icon button. Required — host-owned,
+   * no default.
+   */
+  searchAriaLabel: string;
   className?: string;
 }
 
@@ -140,6 +150,8 @@ export function MosaicDashboardHeader({
   onSearchChange,
   actions,
   logoSlot,
+  searchPlaceholder,
+  searchAriaLabel,
   className,
 }: MosaicDashboardHeaderProps) {
   const { isMobile } = useDevice();
@@ -191,7 +203,7 @@ export function MosaicDashboardHeader({
                   type="search"
                   value={searchQuery}
                   onChange={handleSearch}
-                  placeholder="Search…"
+                  placeholder={searchPlaceholder}
                   className={cn(
                     "w-full rounded-md border border-input bg-background py-2 pl-9 pr-3",
                     "text-sm placeholder:text-muted-foreground",
@@ -209,7 +221,7 @@ export function MosaicDashboardHeader({
               <button
                 type="button"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Search"
+                aria-label={searchAriaLabel}
                 onClick={() => {
                   // Consumers can intercept via onSearchChange
                 }}

@@ -37,6 +37,8 @@ export interface MosaicOrgSwitcherProps {
   onSelectOrg?: (orgId: string) => void;
   onCreateOrg?: () => void;
   createOrgLabel?: string;
+  /** aria-label for the trigger button. Required, no default. */
+  triggerAriaLabel: string;
   className?: string;
 }
 
@@ -108,6 +110,7 @@ export function MosaicOrgSwitcher({
   onSelectOrg,
   onCreateOrg,
   createOrgLabel = "Create organization",
+  triggerAriaLabel,
   className,
 }: MosaicOrgSwitcherProps) {
   const [open, setOpen] = React.useState(false);
@@ -167,7 +170,7 @@ export function MosaicOrgSwitcher({
       {open && (
         <div
           role="menu"
-          aria-label="Select organization"
+          aria-label={triggerAriaLabel}
           className={cn(
             "absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-md border border-border",
             "bg-popover py-1 shadow-md",

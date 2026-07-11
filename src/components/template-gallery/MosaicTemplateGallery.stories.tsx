@@ -69,6 +69,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredGalleryLabels = {
+  emptyMessage: "No templates found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+  previewLabel: "Preview",
+  duplicateLabel: "Duplicate",
+};
+
 export const Default: Story = {
   args: {
     templates,
@@ -81,6 +92,7 @@ export const Default: Story = {
     onCategoryChange: (id) => console.log("category", id),
     onSelectTemplate: (t) => console.log("select", t.id),
     onPreviewTemplate: (t) => console.log("preview", t.id),
+    ...requiredGalleryLabels,
   },
 };
 
@@ -95,6 +107,7 @@ export const Empty: Story = {
     selectedCategory: "all",
     onCategoryChange: () => {},
     onSelectTemplate: () => {},
+    ...requiredGalleryLabels,
   },
 };
 
@@ -106,6 +119,7 @@ export const QuickStart: Story = {
     selectedCategory: "all",
     onCategoryChange: () => {},
     onSelectTemplate: () => {},
+    ...requiredGalleryLabels,
   },
   render: () => (
     <MosaicDeviceProvider>
@@ -127,6 +141,7 @@ export const AgentTeam: Story = {
     selectedCategory: "all",
     onCategoryChange: () => {},
     onSelectTemplate: () => {},
+    ...requiredGalleryLabels,
   },
   render: () => (
     <MosaicDeviceProvider>

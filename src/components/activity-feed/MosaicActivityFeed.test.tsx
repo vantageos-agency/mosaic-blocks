@@ -25,18 +25,36 @@ const activities = [
 
 describe("MosaicActivityFeed", () => {
   it("renders activity titles", () => {
-    render(<MosaicActivityFeed activities={activities} />);
+    render(
+      <MosaicActivityFeed
+        activities={activities}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("Team Strategy Session")).toBeTruthy();
     expect(screen.getByText("Code Review")).toBeTruthy();
   });
 
   it("renders empty state when activities array is empty", () => {
-    render(<MosaicActivityFeed activities={[]} />);
+    render(
+      <MosaicActivityFeed
+        activities={[]}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("No recent activity")).toBeTruthy();
   });
 
   it("renders status badge for each activity", () => {
-    render(<MosaicActivityFeed activities={activities} />);
+    render(
+      <MosaicActivityFeed
+        activities={activities}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     // active / completed badges should appear
     const active = screen.getAllByText(/active/i);
     expect(active.length).toBeGreaterThan(0);
@@ -44,13 +62,24 @@ describe("MosaicActivityFeed", () => {
 
   it("accepts custom className", () => {
     const { container } = render(
-      <MosaicActivityFeed activities={activities} className="my-feed" />,
+      <MosaicActivityFeed
+        activities={activities}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+        className="my-feed"
+      />,
     );
     expect(container.querySelector(".my-feed")).toBeTruthy();
   });
 
   it("renders heading when provided", () => {
-    render(<MosaicActivityFeed activities={activities} heading="Recent Activity" />);
+    render(
+      <MosaicActivityFeed
+        activities={activities}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("Recent Activity")).toBeTruthy();
   });
 
@@ -64,7 +93,13 @@ describe("MosaicActivityFeed", () => {
       timestamp: new Date().toISOString(),
       status: "pending", // not in enum
     };
-    render(<MosaicActivityFeed activities={[item]} />);
+    render(
+      <MosaicActivityFeed
+        activities={[item]}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("VP Free Status")).toBeTruthy();
     expect(screen.getByText("pending")).toBeTruthy();
   });
@@ -78,7 +113,13 @@ describe("MosaicActivityFeed", () => {
       timestamp: ts,
       status: "active" as const,
     };
-    render(<MosaicActivityFeed activities={[item]} />);
+    render(
+      <MosaicActivityFeed
+        activities={[item]}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("Numeric Timestamp")).toBeTruthy();
     // The formatted date should be present (locale-dependent, just check non-empty)
     const slot = screen.getByText("Numeric Timestamp").closest('[data-slot="activity-item"]');
@@ -94,7 +135,13 @@ describe("MosaicActivityFeed", () => {
       status: "active" as const,
       participants: [{ actor: "Kappa", excerpt: "merged PR #33" }],
     };
-    render(<MosaicActivityFeed activities={[item]} />);
+    render(
+      <MosaicActivityFeed
+        activities={[item]}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("Structured Participant")).toBeTruthy();
     // actor label rendered as initials
     expect(screen.getByLabelText("Kappa")).toBeTruthy();
@@ -109,7 +156,13 @@ describe("MosaicActivityFeed", () => {
       status: "active" as const,
       excerpt: "Dashboard migration complete",
     };
-    render(<MosaicActivityFeed activities={[item]} />);
+    render(
+      <MosaicActivityFeed
+        activities={[item]}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByText("Dashboard migration complete")).toBeTruthy();
   });
 
@@ -122,7 +175,13 @@ describe("MosaicActivityFeed", () => {
       status: "completed" as const,
       participants: ["Alice", { actor: "Bob", excerpt: "reviewed" }],
     };
-    render(<MosaicActivityFeed activities={[item]} />);
+    render(
+      <MosaicActivityFeed
+        activities={[item]}
+        heading="Recent Activity"
+        emptyMessage="No recent activity"
+      />,
+    );
     expect(screen.getByLabelText("Alice")).toBeTruthy();
     expect(screen.getByLabelText("Bob")).toBeTruthy();
   });

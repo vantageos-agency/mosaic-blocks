@@ -44,6 +44,13 @@ export interface MosaicFilterSidebarProps {
   onCategoryChange: (categoryId: string) => void;
   /** Optional title for the sidebar */
   title?: string;
+  /**
+   * aria-label for the collapsed "expand filters" icon button. Required —
+   * host-owned, no default.
+   */
+  expandFiltersAriaLabel: string;
+  /** Heading above the categories list. Required — host-owned, no default. */
+  categoriesHeading: string;
   className?: string;
 }
 
@@ -118,6 +125,8 @@ export function MosaicFilterSidebar({
   selectedCategory,
   onCategoryChange,
   title = "Filters",
+  expandFiltersAriaLabel,
+  categoriesHeading,
   className,
 }: MosaicFilterSidebarProps) {
   const { isMobile, isTablet } = useDevice();
@@ -167,7 +176,7 @@ export function MosaicFilterSidebar({
             type="button"
             onClick={onToggleCollapse}
             className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            aria-label="Expand filters"
+            aria-label={expandFiltersAriaLabel}
           >
             <FilterIcon />
           </button>
@@ -213,7 +222,7 @@ export function MosaicFilterSidebar({
           {categories.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Categories
+                {categoriesHeading}
               </p>
               <div className="flex flex-col gap-1">
                 {categories.map((cat) => (

@@ -19,7 +19,7 @@ describe("MosaicQuickActionsMenu", () => {
   it("renders trigger button", () => {
     render(
       <Wrapper>
-        <MosaicQuickActionsMenu actions={actions} />
+        <MosaicQuickActionsMenu actions={actions} emptyMessage="No actions available." />
       </Wrapper>,
     );
     const btn = screen.getByRole("button");
@@ -29,7 +29,7 @@ describe("MosaicQuickActionsMenu", () => {
   it("opens menu and shows action items on click", async () => {
     render(
       <Wrapper>
-        <MosaicQuickActionsMenu actions={actions} />
+        <MosaicQuickActionsMenu actions={actions} emptyMessage="No actions available." />
       </Wrapper>,
     );
     await userEvent.click(screen.getByRole("button"));
@@ -42,7 +42,7 @@ describe("MosaicQuickActionsMenu", () => {
     const acts = [{ id: "new", label: "New", onClick: onNew }];
     render(
       <Wrapper>
-        <MosaicQuickActionsMenu actions={acts} />
+        <MosaicQuickActionsMenu actions={acts} emptyMessage="No actions available." />
       </Wrapper>,
     );
     await userEvent.click(screen.getByRole("button"));
@@ -53,7 +53,11 @@ describe("MosaicQuickActionsMenu", () => {
   it("renders custom label on trigger", () => {
     render(
       <Wrapper>
-        <MosaicQuickActionsMenu actions={actions} label="Quick Actions" />
+        <MosaicQuickActionsMenu
+          actions={actions}
+          label="Quick Actions"
+          emptyMessage="No actions available."
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Quick Actions")).toBeTruthy();
@@ -63,7 +67,7 @@ describe("MosaicQuickActionsMenu", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicQuickActionsMenu actions={[]} />
+          <MosaicQuickActionsMenu actions={[]} emptyMessage="No actions available." />
         </Wrapper>,
       ),
     ).not.toThrow();

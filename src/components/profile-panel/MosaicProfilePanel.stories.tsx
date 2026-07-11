@@ -40,6 +40,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredProfilePanelLabels = {
+  avatarHeading: "Profile Picture",
+  avatarSubheading: "Update your avatar",
+  uploadPhotoLabel: "Upload Photo",
+  personalInfoHeading: "Personal Information",
+  personalInfoSubheading: "Update your profile details",
+  securityHeading: "Account Security",
+  securitySubheading: "Manage your password and security settings",
+  changePasswordLabel: "Change Password",
+  savingLabel: "Saving…",
+};
+
 export const Default: Story = {
   args: {
     displayName: "Alice Martin",
@@ -48,6 +60,7 @@ export const Default: Story = {
     onFieldChange: (id, val) => console.log(id, val),
     onAvatarUpload: () => console.log("upload avatar"),
     saveLabel: "Save Profile",
+    ...requiredProfilePanelLabels,
   },
 };
 
@@ -58,5 +71,6 @@ export const Saving: Story = {
     onSave: () => {},
     isSaving: true,
     saveLabel: "Saving…",
+    ...requiredProfilePanelLabels,
   },
 };

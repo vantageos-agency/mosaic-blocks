@@ -51,6 +51,15 @@ export interface MosaicMainNavProps {
   drawerTitle?: string;
   /** Mobile drawer subtitle */
   drawerSubtitle?: string;
+  /**
+   * Required host-owned strings — no default, no fallback. The host owns
+   * the language (e.g. next-intl `t()`).
+   */
+  openMenuAriaLabel: string;
+  closeMenuAriaLabel: string;
+  drawerNavAriaLabel: string;
+  mainNavAriaLabel: string;
+  adminBadgeLabel: string;
   className?: string;
 }
 
@@ -152,6 +161,11 @@ export function MosaicMainNav({
   renderLink,
   drawerTitle = "Navigation",
   drawerSubtitle = "Access all features",
+  openMenuAriaLabel,
+  closeMenuAriaLabel,
+  drawerNavAriaLabel,
+  mainNavAriaLabel,
+  adminBadgeLabel,
   className,
 }: MosaicMainNavProps) {
   const { isMobile } = useDevice();
@@ -188,7 +202,7 @@ export function MosaicMainNav({
             "text-foreground hover:bg-accent hover:text-accent-foreground",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}
-          aria-label="Open navigation menu"
+          aria-label={openMenuAriaLabel}
           aria-expanded={isOpen}
         >
           <HamburgerIcon />
@@ -200,14 +214,14 @@ export function MosaicMainNav({
             type="button"
             className="fixed inset-0 z-40 bg-black/50 cursor-default"
             onClick={() => setIsOpen(false)}
-            aria-label="Close navigation menu"
+            aria-label={closeMenuAriaLabel}
             tabIndex={-1}
           />
         )}
 
         {/* Drawer */}
         <dialog
-          aria-label="Navigation"
+          aria-label={drawerNavAriaLabel}
           open={isOpen}
           data-open={isOpen ? "true" : "false"}
           className={cn(
@@ -230,12 +244,12 @@ export function MosaicMainNav({
                 "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               )}
-              aria-label="Close navigation menu"
+              aria-label={closeMenuAriaLabel}
             >
               <CloseIcon />
             </button>
           </div>
-          <nav className="flex flex-col gap-1 p-4" aria-label="Main navigation">
+          <nav className="flex flex-col gap-1 p-4" aria-label={mainNavAriaLabel}>
             {filteredItems.map((item) => {
               const Icon = item.icon;
               const active = isItemActive(item);
@@ -254,7 +268,7 @@ export function MosaicMainNav({
                       <span>{item.label}</span>
                       {item.adminOnly && (
                         <span className="ml-auto rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                          Admin
+                          {adminBadgeLabel}
                         </span>
                       )}
                     </>,
@@ -274,7 +288,7 @@ export function MosaicMainNav({
     <nav
       data-slot="main-nav"
       className={cn("flex items-center gap-1", className)}
-      aria-label="Main navigation"
+      aria-label={mainNavAriaLabel}
     >
       {filteredItems.map((item) => {
         const Icon = item.icon;
@@ -294,7 +308,7 @@ export function MosaicMainNav({
                 <span>{item.label}</span>
                 {item.adminOnly && (
                   <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-                    Admin
+                    {adminBadgeLabel}
                   </span>
                 )}
               </>,

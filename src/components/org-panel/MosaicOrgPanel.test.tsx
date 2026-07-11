@@ -102,7 +102,20 @@ describe("MosaicCreateOrgDialog", () => {
   it("renders form when open", () => {
     render(
       <Wrapper>
-        <MosaicCreateOrgDialog open={true} onOpenChange={() => {}} onCreateOrg={() => {}} />
+        <MosaicCreateOrgDialog
+          open={true}
+          onOpenChange={() => {}}
+          onCreateOrg={() => {}}
+          closeAriaLabel="Close dialog"
+          orgNameFieldLabel="Organization Name *"
+          orgNamePlaceholder="Acme Inc."
+          slugFieldLabel="Slug *"
+          descriptionFieldLabel="Description"
+          descriptionPlaceholder="Optional description…"
+          cancelLabel="Cancel"
+          creatingLabel="Creating…"
+          createLabel="Create Organization"
+        />
       </Wrapper>,
     );
     // Form should be visible
@@ -119,6 +132,13 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          closeAriaLabel="Close dialog"
+          emailFieldLabel="Email address *"
+          emailPlaceholder="colleague@example.com"
+          roleFieldLabel="Role"
+          cancelLabel="Cancel"
+          sendingLabel="Sending…"
+          sendInvitationLabel="Send Invitation"
         />
       </Wrapper>,
     );
@@ -131,7 +151,16 @@ describe("MosaicMemberList", () => {
   it("renders member names", () => {
     render(
       <Wrapper>
-        <MosaicMemberList members={members} onRemoveMember={() => {}} onChangeRole={() => {}} />
+        <MosaicMemberList
+          members={members}
+          onRemoveMember={() => {}}
+          onChangeRole={() => {}}
+          youLabel="You"
+          memberActionsAriaLabel="Member actions"
+          removeMemberLabel="Remove member"
+          emptyMessage="No members found."
+          inviteLabel="Invite"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Alice")).toBeTruthy();

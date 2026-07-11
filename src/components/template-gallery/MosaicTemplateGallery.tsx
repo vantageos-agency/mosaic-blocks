@@ -184,6 +184,10 @@ export interface MosaicTemplateCardProps {
   onDuplicate?: (template: MosaicTemplate) => void;
   showActions?: boolean;
   compact?: boolean;
+  /** Label for the preview action button. Required, no default. */
+  previewLabel: string;
+  /** Label for the duplicate action button. Required, no default. */
+  duplicateLabel: string;
 }
 
 export function MosaicTemplateCard({
@@ -194,6 +198,8 @@ export function MosaicTemplateCard({
   onDuplicate,
   showActions = false,
   compact = false,
+  previewLabel,
+  duplicateLabel,
 }: MosaicTemplateCardProps) {
   const isPopular = (template.metadata?.usageCount ?? 0) > 10;
   const isTrending = (template.metadata?.usageCount ?? 0) > 5;
@@ -264,7 +270,7 @@ export function MosaicTemplateCard({
               }}
               className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              Preview
+              {previewLabel}
             </button>
           )}
           {onDuplicate && (
@@ -276,7 +282,7 @@ export function MosaicTemplateCard({
               }}
               className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              Duplicate
+              {duplicateLabel}
             </button>
           )}
         </div>
@@ -294,6 +300,8 @@ export interface MosaicTemplatePreviewProps {
   onSelect: (template: MosaicTemplate) => void;
   onClose?: () => void;
   selectLabel?: string;
+  /** Label for the cancel button (shown when `onClose` is set). Required, no default. */
+  cancelLabel: string;
 }
 
 export function MosaicTemplatePreview({
@@ -301,6 +309,7 @@ export function MosaicTemplatePreview({
   onSelect,
   onClose,
   selectLabel = "Use Template",
+  cancelLabel,
 }: MosaicTemplatePreviewProps) {
   return (
     <div data-slot="template-preview" className="flex flex-col gap-4 p-4">
@@ -367,7 +376,7 @@ export function MosaicTemplatePreview({
             onClick={onClose}
             className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Cancel
+            {cancelLabel}
           </button>
         )}
         <button
@@ -571,6 +580,21 @@ export interface MosaicTemplateGalleryProps {
   showActions?: boolean;
   title?: string;
   searchPlaceholder?: string;
+  /** Message shown when the filtered template list is empty. Required, no default. */
+  emptyMessage: string;
+  /** aria-label for the mobile "open filters" button. Required, no default. */
+  openFiltersAriaLabel: string;
+  /** Title of the filter sidebar / mobile filters modal. Required, no default. */
+  filtersTitle: string;
+  /** aria-label for the mobile filters modal close button. Required, no default. */
+  closeFiltersAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  expandFiltersAriaLabel: string;
+  /** Forwarded to MosaicFilterSidebar — required, no default. */
+  categoriesHeading: string;
+  /** Required host-owned strings forwarded to every MosaicTemplateCard. */
+  previewLabel: string;
+  duplicateLabel: string;
   className?: string;
 }
 
@@ -589,6 +613,14 @@ function TemplateGalleryContent({
   showActions,
   title = "Templates",
   searchPlaceholder = "Search templates…",
+  emptyMessage,
+  openFiltersAriaLabel,
+  filtersTitle,
+  closeFiltersAriaLabel,
+  expandFiltersAriaLabel,
+  categoriesHeading,
+  previewLabel,
+  duplicateLabel,
   isMobile,
 }: MosaicTemplateGalleryProps & { isMobile: boolean }) {
   const [query, setQuery] = React.useState("");
@@ -626,7 +658,9 @@ function TemplateGalleryContent({
             }
           : onCategoryChange
       }
-      title="Filters"
+      title={filtersTitle}
+      expandFiltersAriaLabel={expandFiltersAriaLabel}
+      categoriesHeading={categoriesHeading}
     />
   );
 
@@ -640,7 +674,7 @@ function TemplateGalleryContent({
               type="button"
               onClick={() => setFilterOpen(true)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Open filters"
+              aria-label={openFiltersAriaLabel}
             >
               <FilterIcon />
             </button>
@@ -670,17 +704,20 @@ function TemplateGalleryContent({
               onPreview={onPreviewTemplate}
               onDuplicate={onDuplicateTemplate}
               showActions={showActions}
+              previewLabel={previewLabel}
+              duplicateLabel={duplicateLabel}
               compact
             />
           ))}
           {filtered.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted-foreground">No templates found.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage}</p>
           )}
         </div>
         <MosaicAdaptiveModal
           isOpen={filterOpen}
           onClose={() => setFilterOpen(false)}
-          title="Filters"
+          title={filtersTitle}
+          closeAriaLabel={closeFiltersAriaLabel}
         >
           <div className="p-4">{sidebar}</div>
         </MosaicAdaptiveModal>
@@ -723,11 +760,13 @@ function TemplateGalleryContent({
                   onPreview={onPreviewTemplate}
                   onDuplicate={onDuplicateTemplate}
                   showActions={showActions}
+                  previewLabel={previewLabel}
+                  duplicateLabel={duplicateLabel}
                 />
               ))}
             </div>
             {filtered.length === 0 && (
-              <p className="py-12 text-center text-sm text-muted-foreground">No templates found.</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{emptyMessage}</p>
             )}
           </div>
         </div>

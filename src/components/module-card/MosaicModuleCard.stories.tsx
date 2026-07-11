@@ -21,6 +21,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredModuleCardLabels = {
+  customBadgeLabel: "CUSTOM",
+  editAriaLabel: "Edit module",
+  removeAriaLabel: "Remove module",
+};
+
 export const Framework: Story = {
   args: {
     type: "framework",
@@ -28,6 +34,7 @@ export const Framework: Story = {
     isSelected: true,
     onEdit: () => console.log("edit"),
     onRemove: () => console.log("remove"),
+    ...requiredModuleCardLabels,
   },
 };
 
@@ -42,6 +49,7 @@ export const Role: Story = {
     },
     onEdit: () => {},
     onRemove: () => {},
+    ...requiredModuleCardLabels,
   },
 };
 
@@ -53,5 +61,6 @@ export const NoActions: Story = {
       description: "Challenges assumptions and explores alternative viewpoints.",
       icon: "😈",
     },
+    ...requiredModuleCardLabels,
   },
 };

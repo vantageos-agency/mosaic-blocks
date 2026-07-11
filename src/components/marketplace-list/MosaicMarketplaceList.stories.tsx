@@ -65,6 +65,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredMarketplaceLabels = {
+  previewLabel: "Preview",
+  emptyMessage: "No items found.",
+  openFiltersAriaLabel: "Open filters",
+  filtersModalTitle: "Filters",
+  closeFiltersAriaLabel: "Close dialog",
+  expandFiltersAriaLabel: "Expand filters",
+  categoriesHeading: "Categories",
+};
+
 export const Default: Story = {
   args: {
     items,
@@ -77,6 +87,7 @@ export const Default: Story = {
     onCategoryChange: (id) => console.log("category", id),
     onInstall: (id) => console.log("install", id),
     onUninstall: (id) => console.log("uninstall", id),
+    ...requiredMarketplaceLabels,
   },
 };
 
@@ -90,5 +101,6 @@ export const Empty: Story = {
     categories,
     selectedCategory: "all",
     onCategoryChange: () => {},
+    ...requiredMarketplaceLabels,
   },
 };

@@ -28,6 +28,19 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const requiredLayoutLabels = {
+  headerAriaLabel: "Dashboard header",
+  openNavigationAriaLabel: "Open navigation",
+  breadcrumbAriaLabel: "Breadcrumb",
+  mobileSidebarCloseAriaLabel: "Close dialog",
+  sidebarProps: {
+    sidebarAriaLabel: "Application sidebar",
+    mainNavAriaLabel: "Main navigation",
+    quickActionsHeading: "Quick Actions",
+    recentHeading: "Recent",
+  },
+};
+
 export const Default: Story = {
   args: {
     title: "Agent Details",
@@ -38,6 +51,7 @@ export const Default: Story = {
         <p className="text-sm text-muted-foreground">Dashboard content goes here.</p>
       </div>
     ),
+    ...requiredLayoutLabels,
   },
 };
 
@@ -54,5 +68,6 @@ export const WithActions: Story = {
       </button>
     ),
     children: <p className="text-sm text-muted-foreground">Report content goes here.</p>,
+    ...requiredLayoutLabels,
   },
 };

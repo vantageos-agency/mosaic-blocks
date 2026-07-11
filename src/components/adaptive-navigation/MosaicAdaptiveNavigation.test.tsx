@@ -19,7 +19,13 @@ describe("MosaicAdaptiveNavigation", () => {
   it("renders navigation items", () => {
     render(
       <Wrapper>
-        <MosaicAdaptiveNavigation items={items} activeItem="tab-1" onItemChange={() => {}} />
+        <MosaicAdaptiveNavigation
+          items={items}
+          activeItem="tab-1"
+          onItemChange={() => {}}
+          stepNavAriaLabel="Step navigation"
+          tabNavAriaLabel="Tab navigation"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Overview")).toBeTruthy();
@@ -30,7 +36,13 @@ describe("MosaicAdaptiveNavigation", () => {
     const onItemChange = vi.fn();
     render(
       <Wrapper>
-        <MosaicAdaptiveNavigation items={items} activeItem="tab-1" onItemChange={onItemChange} />
+        <MosaicAdaptiveNavigation
+          items={items}
+          activeItem="tab-1"
+          onItemChange={onItemChange}
+          stepNavAriaLabel="Step navigation"
+          tabNavAriaLabel="Tab navigation"
+        />
       </Wrapper>,
     );
     // On desktop (jsdom default), tabs have role="tab"
@@ -54,7 +66,13 @@ describe("MosaicAdaptiveNavigation", () => {
     expect(() =>
       render(
         <Wrapper>
-          <MosaicAdaptiveNavigation items={[]} activeItem="" onItemChange={() => {}} />
+          <MosaicAdaptiveNavigation
+            items={[]}
+            activeItem=""
+            onItemChange={() => {}}
+            stepNavAriaLabel="Step navigation"
+            tabNavAriaLabel="Tab navigation"
+          />
         </Wrapper>,
       ),
     ).not.toThrow();
@@ -63,7 +81,13 @@ describe("MosaicAdaptiveNavigation", () => {
   it("marks active item as selected (aria or class)", () => {
     const { container } = render(
       <Wrapper>
-        <MosaicAdaptiveNavigation items={items} activeItem="tab-2" onItemChange={() => {}} />
+        <MosaicAdaptiveNavigation
+          items={items}
+          activeItem="tab-2"
+          onItemChange={() => {}}
+          stepNavAriaLabel="Step navigation"
+          tabNavAriaLabel="Tab navigation"
+        />
       </Wrapper>,
     );
     // Active item should have some visual indicator; check container renders
@@ -77,7 +101,13 @@ describe("MosaicAdaptiveNavigation", () => {
     ];
     render(
       <Wrapper>
-        <MosaicAdaptiveNavigation items={withComplete} activeItem="s2" onItemChange={() => {}} />
+        <MosaicAdaptiveNavigation
+          items={withComplete}
+          activeItem="s2"
+          onItemChange={() => {}}
+          stepNavAriaLabel="Step navigation"
+          tabNavAriaLabel="Tab navigation"
+        />
       </Wrapper>,
     );
     expect(screen.getByText("Step 1")).toBeTruthy();
