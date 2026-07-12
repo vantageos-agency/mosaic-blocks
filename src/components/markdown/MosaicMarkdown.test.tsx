@@ -179,5 +179,42 @@ describe("MosaicMarkdown", () => {
       expect(container.querySelector("a")).toBeNull();
       expect(screen.getByText("open")).toBeTruthy();
     });
+
+    describe("control-character-obfuscated schemes (sanitizeHref must reject these unaided)", () => {
+      // Payloads are built with String.fromCharCode so the literal
+      // "javascript:" / "data:" substring is assembled at runtime rather than
+      // written as a plain literal — the assertion exercises the actual
+      // string content sanitizeHref receives, matching the real-world
+      // obfuscation vector (control char inserted mid-scheme), not merely a
+      // linter-visible token.
+      const TAB = String.fromCharCode(9);
+      const LF = String.fromCharCode(10);
+      const CR = String.fromCharCode(13);
+      const NUL = String.fromCharCode(0);
+
+      it.each([
+        ["internal TAB", TAB],
+        ["internal LF", LF],
+        ["internal CR", CR],
+        ["internal NUL", NUL],
+      ])("rejects javascript: scheme obfuscated with %s", (_label, ctrl) => {
+        const href = `java${ctrl}script:alert(1)`;
+        const { container } = render(<MosaicMarkdown content={`[click me](${href})`} />);
+        expect(container.querySelector("a")).toBeNull();
+        expect(screen.getByText("click me")).toBeTruthy();
+      });
+
+      it.each([
+        ["internal TAB", TAB],
+        ["internal LF", LF],
+        ["internal CR", CR],
+        ["internal NUL", NUL],
+      ])("rejects data: scheme obfuscated with %s", (_label, ctrl) => {
+        const href = `da${ctrl}ta:text/html,<script>alert(1)</script>`;
+        const { container } = render(<MosaicMarkdown content={`[open](${href})`} />);
+        expect(container.querySelector("a")).toBeNull();
+        expect(screen.getByText("open")).toBeTruthy();
+      });
+    });
   });
 });

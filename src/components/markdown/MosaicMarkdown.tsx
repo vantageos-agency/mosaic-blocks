@@ -11,8 +11,11 @@
  * token is turned into React elements built from parsed TEXT, so anything
  * that looks like an HTML tag (`<script>…</script>`, `<img onerror=…>`) is
  * rendered as an inert text node, never as an active DOM element. Link
- * `href`s are scheme-checked (`http:`/`https:`/`mailto:`/relative only) —
- * `javascript:`/`data:` and any other scheme are stripped and the link
+ * `href`s are scheme-checked (`http:`/`https:`/`mailto:`/relative only), after
+ * every ASCII control character is stripped from the whole string (not just
+ * the edges) so a scheme obfuscated with an internal control character (e.g.
+ * a TAB inserted mid-`javascript:`) cannot slip past as scheme-less —
+ * `javascript:`/`data:` and any other scheme are rejected and the link
  * degrades to its plain label text. Every external link renders with
  * `rel="noopener noreferrer"` and `target="_blank"`.
  *
@@ -72,9 +75,24 @@ function cn(...classes: (string | undefined | null | false)[]): string {
  * Allow-list link scheme check. `javascript:`, `data:`, `vbscript:` and any
  * other active/opaque scheme are rejected — only `http:`, `https:`,
  * `mailto:`, or a scheme-less (relative/anchor) URL are considered safe.
+ *
+ * This guarantee holds on its own, independent of any host-runtime behavior:
+ * every ASCII control character (`\x00`-`\x20`, which includes tab, newline,
+ * and carriage return) is stripped from the ENTIRE string — not just the
+ * leading/trailing edges — before the scheme is matched. Without this, a
+ * scheme obfuscated with an internal control character (e.g. `java` + TAB +
+ * `script:...`) would fail the scheme regex, get treated as scheme-less, and
+ * be returned unmodified; only React's own href-sanitization would then
+ * block it at render time — a filter this component must not rely on.
  */
 function sanitizeHref(rawHref: string): string | null {
-  const href = rawHref.trim();
+  // Strip every ASCII control character (\x00-\x20) anywhere in the string,
+  // not merely at the edges: trim() alone only removes edge whitespace and
+  // leaves an internally-inserted control character (e.g. a TAB placed
+  // mid-scheme) untouched — exactly the obfuscation vector this guards
+  // against.
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — stripping control chars is the security fix itself
+  const href = rawHref.replace(/[\x00-\x20]/g, "");
   if (!href) return null;
   const schemeMatch = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(href);
   if (!schemeMatch) return href; // scheme-less: relative path, anchor, etc.
