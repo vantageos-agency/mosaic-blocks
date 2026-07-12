@@ -81,10 +81,23 @@ describe("MosaicMemoryCard", () => {
     expect(screen.getByText(memory.content)).toBeTruthy();
   });
 
-  it("does not render the usage count footer text in the compact variant", () => {
+  it("renders the usage count via formatUsageCount in the compact variant", () => {
     render(<MosaicMemoryCard memory={memory} variant="compact" {...requiredLabels} />);
-    expect(screen.queryByText("12 uses")).toBeNull();
-    expect(screen.getByText("12")).toBeTruthy();
+    expect(screen.getByText("12 uses")).toBeTruthy();
+  });
+
+  it("calls formatUsageCount (not the raw number) in the compact variant", () => {
+    const formatUsageCount = (count: number) => `USES:${count}`;
+    render(
+      <MosaicMemoryCard
+        memory={memory}
+        variant="compact"
+        {...requiredLabels}
+        formatUsageCount={formatUsageCount}
+      />,
+    );
+    expect(screen.getByText("USES:12")).toBeTruthy();
+    expect(screen.queryByText("12", { exact: true })).toBeNull();
   });
 
   it("opens the actions menu and calls onEdit", async () => {

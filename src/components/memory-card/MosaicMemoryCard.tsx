@@ -9,7 +9,9 @@
  * - Layout density: detailed uses a leading icon chip + title/scope-badge
  *   stack + separate content paragraph + tags row + footer with a labelled
  *   usage count; compact folds title + content into one truncated header
- *   row and drops the tags row entirely, showing only a raw usage number.
+ *   row and drops the tags row entirely. Both variants call
+ *   `formatUsageCount` for the footer usage count — the caller decides
+ *   whether that renders a label or a bare number.
  * - Hover-reveal actions: the 3-dot menu trigger is `opacity-0
  *   group-hover:opacity-100` in detailed (desktop hover affordance), always
  *   visible in compact (no hover on touch).
@@ -48,7 +50,8 @@
  * />
  *
  * @example
- * // Compact variant — condensed list row, no tags, raw usage number
+ * // Compact variant — condensed list row, no tags row. formatUsageCount is
+ * // still called here; this host simply chooses to render the bare number.
  * <MosaicMemoryCard
  *   memory={memory}
  *   variant="compact"
@@ -123,9 +126,10 @@ export interface MosaicMemoryCardProps {
   formatTimeAgo: (createdAt: number) => React.ReactNode;
   /**
    * Formatter producing the labelled usage-count caption from
-   * `memory.usageCount`. Only rendered in the detailed variant — the
-   * compact variant shows the raw number with no label (mirrors the
-   * source mobile layout, which carried no usage-count copy at all).
+   * `memory.usageCount`. Applied in BOTH variants — the raw number is never
+   * rendered directly. A host that wants the bare number in compact passes
+   * `formatUsageCount={(count) => String(count)}`; that is the host's
+   * choice, not a hidden default of the library.
    * Required — host-owned (e.g. `(count) => t("memory.usageCount", { count })`).
    */
   formatUsageCount: (count: number) => React.ReactNode;
@@ -455,7 +459,7 @@ export function MosaicMemoryCard({
             </div>
             <span className="flex items-center gap-1">
               <TagIcon />
-              {memory.usageCount}
+              {formatUsageCount(memory.usageCount)}
             </span>
           </div>
         </div>
