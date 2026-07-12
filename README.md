@@ -10,7 +10,7 @@
 
 ## 1. Hero & Positioning
 
-`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 85+ opinionated, fully-typed UI components that integrate natively with:
+`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 122 opinionated, fully-typed UI components that integrate natively with:
 
 - **Clerk** — auth sign-in/up flows, org switcher, RBAC, webhook sync
 - **Convex** — real-time data binding ready
@@ -67,25 +67,17 @@ pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss @clerk/nextjs @van
 
 ---
 
-## Optional peer dependencies
+## svix — webhook signature verification
 
-Some components in `@vantageos/mosaic-blocks` depend on packages that are NOT bundled into the library. Install them only when using the relevant component. The library never bundles these packages and throws a clear error at runtime if the required optional peer is absent.
+`MosaicClerkWebhookHandler` dynamically imports `svix` at runtime (not at module load) to verify Clerk webhook signatures, and throws an explicit `Error` with installation instructions if it cannot be resolved — it never silently fails.
 
-| Package | Required for | Install |
-|---|---|---|
-| `svix` | `MosaicClerkWebhookHandler` (Clerk webhook signature verification) | `npm install svix` |
-
-### svix — webhook signature verification
-
-`MosaicClerkWebhookHandler` dynamically imports `svix` at runtime to verify Clerk webhook signatures. If `svix` is not installed in your app, the handler throws an explicit `Error` with installation instructions — it never silently fails.
+**Known gap (not fixed by this doc pass):** `svix` is currently declared as a regular `dependencies` entry in `package.json`, not a `peerDependencies`/`optionalDependencies` entry. In practice this means `svix` installs automatically for every consumer of `@vantageos/mosaic-blocks`, whether or not you use `MosaicClerkWebhookHandler` — it is not truly opt-in today. Tracked as a follow-up; do not assume you can skip installing it based on this README alone until the `package.json` classification changes.
 
 ```bash
 npm install svix
 # or
 pnpm add svix
 ```
-
-If you do not use `MosaicClerkWebhookHandler`, you do not need to install `svix`.
 
 ---
 
@@ -177,18 +169,21 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 
 ## 6. Component Catalogue Summary
 
-85 exported components and hooks across 8 sections. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+122 exported `Mosaic*` components across 9 sections (139 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+
+> There is **no "Debate" section**. No `Mosaic*` debate component (room/timer/participant) is exported by this package — despite the "absorbed from anydebate" origin story below, the debate UI was never ported. If you need debate-room UI, it does not exist here yet.
 
 | Section | Top components | Count |
 |---|---|---|
-| Layout | `MosaicDashboardLayout`, `MosaicSidebar`, `MosaicHeader` | 8 |
-| Device / Adaptive | `MosaicDeviceProvider`, `MosaicAdaptiveGrid`, `MosaicAdaptiveModal`, `MosaicAdaptiveNavigation` | 7 |
-| Auth / Multi-tenant | `MosaicMultiTenantProvider`, `MosaicSignInCard`, `MosaicOrgPanel`, `MosaicClerkWebhookHandler` | 12 |
-| Agents | `MosaicAgentComposer`, `MosaicAgentCard`, `MosaicAgentGrid` | 9 |
-| Debate | `MosaicDebateRoom`, `MosaicDebateTimer`, `MosaicDebateParticipant` | 11 |
-| Data display | `MosaicDataTable`, `MosaicKpiCard`, `MosaicActivityFeed` | 14 |
-| Forms | `MosaicForm`, `MosaicRichInput`, `MosaicSelect`, `MosaicTagInput` | 18 |
-| Primitives | `MosaicButton`, `MosaicBadge`, `MosaicAvatar`, `MosaicToast` | 6 |
+| Layout & navigation | `MosaicDashboardLayout`, `MosaicAppSidebar`, `MosaicDashboardHeader` | 9 |
+| Device / Adaptive | `MosaicDeviceProvider`, `MosaicAdaptiveGrid`, `MosaicAdaptiveModal`, `MosaicAdaptiveNavigation` | 4 |
+| Auth / Multi-tenant | `MosaicMultiTenantProvider`, `MosaicSignInLayout`, `MosaicOrgPanel`, `MosaicClerkWebhookHandler` | 14 |
+| Agents & messaging | `MosaicAgentComposer`, `MosaicAgentCard`, `MosaicAgentList`, `MosaicMessageList`, `MosaicMarketplaceList` | 28 |
+| Data display | `MosaicDataTable`, `MosaicKanbanBoard`, `MosaicStepPipeline`, `MosaicActivityFeed` | 6 |
+| Forms & inputs | `MosaicInput`, `MosaicSelect`, `MosaicField`, `MosaicCombobox`, `MosaicFilterBar` | 17 |
+| Primitives (incl. base-ui atoms) | `MosaicButton`, `MosaicBadge`, `MosaicCard`, `MosaicTabs`, `MosaicTooltip`, `MosaicAccordion` | 30 |
+| Landing & utility blocks | `MosaicHeroSplit`, `MosaicStatsGrid`, `MosaicPricingCard`, `MosaicCounter`, `MosaicThemeToggle` | 13 |
+| Theming | `MosaicThemeProvider` | 1 |
 
 All exports: `import { ComponentName } from "@vantageos/mosaic-blocks"`
 
@@ -216,7 +211,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 Key auth components:
 
-- `MosaicSignInCard` / `MosaicSignUpCard` — styled Clerk auth flows
+- `MosaicSignInLayout` / `MosaicSignUpLayout` — styled Clerk auth flows
 - `MosaicOrgSwitcher` — organization switcher with avatar, plan badge
 - `MosaicOrgPanel` — full org management (members, roles, invitations)
 - `MosaicClerkWebhookHandler` — Next.js route handler for Clerk webhook sync (requires `svix`)
@@ -284,7 +279,7 @@ import { mergeMosaicTranslations } from "@vantageos/mosaic-i18n";
 
 mergeMosaicTranslations("fr", {
   "mosaic.button.confirm": "Valider",
-  "mosaic.debate.start": "Commencer le débat",
+  "mosaic.agentComposer.launch": "Lancer l'agent",
 });
 ```
 
@@ -345,7 +340,7 @@ Named exports only — tree-shakeable. Types are co-located with each component 
 import {
   MosaicDashboardLayout,
   MosaicDeviceProvider,
-  MosaicKpiCard,
+  MosaicActivityFeed,
 } from "@vantageos/mosaic-blocks";
 import Link from "next/link";
 
@@ -365,8 +360,12 @@ export default function DashboardPage() {
         renderLink={(href, children) => <Link href={href}>{children}</Link>}
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <MosaicKpiCard title="Active Agents" value={24} trend="+12%" />
-          <MosaicKpiCard title="Debates Today" value={8} trend="+3" />
+          <MosaicActivityFeed
+            activities={[]}
+            heading="Recent activity"
+            viewAllLabel="View all"
+            emptyMessage="No activity yet"
+          />
         </div>
       </MosaicDashboardLayout>
     </MosaicDeviceProvider>
@@ -417,9 +416,10 @@ export default function AgentsPage({ agents }: { agents: Agent[] }) {
 
 ```tsx
 import { ClerkProvider } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs";
 import {
   MosaicMultiTenantProvider,
-  MosaicSignInCard,
+  MosaicSignInLayout,
 } from "@vantageos/mosaic-blocks";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -433,13 +433,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 }
 
 // app/sign-in/page.tsx
+// clerkSignIn is injected by the caller so mosaic-blocks never bundles Clerk directly.
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <MosaicSignInCard
-        redirectUrl="/dashboard"
-        locale="fr"
-        showSocialLogin
+      <MosaicSignInLayout
+        clerkSignIn={SignIn}
+        path="/sign-in"
+        routing="path"
+        afterSignInUrl="/dashboard"
       />
     </div>
   );
@@ -468,8 +470,9 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.2.0-alpha` | Current | anydebate absorb complete — 85 components, Clerk auth, mobile-first, Storybook 10, 69 stories |
-| `0.1.0-alpha.1` | Previous | Initial alpha publish |
+| `0.4.5-alpha` | Current | 122 exported `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories |
+| `0.2.0-alpha` | Historical | anydebate absorb (partial) — counts quoted for this release are historical and superseded by the Current row above; see [CHANGELOG.md](CHANGELOG.md) |
+| `0.1.0-alpha.1` | Historical | Initial alpha publish |
 
 Full release history: [CHANGELOG.md](CHANGELOG.md)
 
@@ -486,10 +489,10 @@ Quick summary:
 1. Fork and clone the repo
 2. `pnpm install` at repo root
 3. `pnpm build` — compiles the package
-4. `pnpm test` — runs vitest suite (396 tests)
+4. `pnpm test` — runs vitest suite (557+ tests; exact count grows with every PR, see CI output)
 5. `pnpm lint` — biome check
 6. `pnpm storybook` — component sandbox at localhost:6006
-7. Open a PR — CI gate has 7 required checks (typecheck, lint, test, build, size, a11y, storybook)
+7. Open a PR — CI gate has 7 required checks (Lint, Typecheck, Test, Parse guard, Build, Sandbox build, React-doctor — see `.github/workflows/ci.yml`)
 
 All PRs require a passing CI and a review. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design and [docs/adr/](docs/adr/) for architecture decisions.
 

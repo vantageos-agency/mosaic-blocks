@@ -1,6 +1,6 @@
 {
   "name": "@vantageos/mosaic-blocks",
-  "version": "0.4.4-alpha",
+  "version": "0.4.5-alpha",
   "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Published alpha.",
   "license": "FSL-1.1-Apache-2.0",
   "type": "module",
@@ -70,6 +70,7 @@
     "@vantageos/cloud-identity": "^0.2",
     "react": "^19",
     "react-dom": "^19",
+    "svix": "^1.0.0",
     "tailwindcss": "^4.3.1"
   },
   "peerDependenciesMeta": {
@@ -78,12 +79,14 @@
     },
     "@vantageos/cloud-identity": {
       "optional": true
+    },
+    "svix": {
+      "optional": true
     }
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
-    "class-variance-authority": "^0.7.1",
-    "svix": "^1.0.0"
+    "class-variance-authority": "^0.7.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -101,6 +104,7 @@
     "react-dom": "^19",
     "rimraf": "^6.0.1",
     "storybook": "^10.4.6",
+    "svix": "^1.0.0",
     "tailwindcss": "^4.3.1",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
