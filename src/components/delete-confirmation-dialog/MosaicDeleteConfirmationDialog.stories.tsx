@@ -21,8 +21,6 @@ function Demo({ itemType = "agent", itemName = "Strategy Bot" }) {
           console.log("confirmed");
           setOpen(false);
         }}
-        itemName={itemName}
-        itemType={itemType}
         title={`Delete ${itemType}?`}
         description={`Are you sure you want to delete "${itemName}"? This action cannot be undone.`}
         cancelLabel="Cancel"
@@ -46,8 +44,6 @@ const baseArgs = {
   open: false,
   onOpenChange: () => {},
   onConfirm: () => {},
-  itemName: "Item",
-  itemType: "item",
   title: "Delete item?",
   description: 'Are you sure you want to delete "Item"? This action cannot be undone.',
   cancelLabel: "Cancel",

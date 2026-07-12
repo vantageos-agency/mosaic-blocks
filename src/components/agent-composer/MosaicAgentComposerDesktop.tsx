@@ -99,7 +99,12 @@ export interface MosaicAgentComposerProps {
   previewConfigLabel: string;
   customInstructionsPreviewLabel: string;
   selectAllModulesLabel: string;
-  requiredLabel: string;
+  // NOTE: `requiredLabel` used to be declared here, on the SHARED props type,
+  // but the desktop composer never renders it — only MosaicAgentComposerMobile
+  // does (its module slots show a "required" marker). Requiring it here forced
+  // every desktop host to supply a string this component never displays. It now
+  // lives on MosaicAgentComposerMobileProps, i.e. exactly where it is read.
+  // Found by the no-lying-prop-contract guard.
   /** Fallback name shown in the preview when `agentName` is empty. Required, no default. */
   unnamedAgentLabel: string;
 }

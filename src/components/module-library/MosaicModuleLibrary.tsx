@@ -186,9 +186,9 @@ function XIcon() {
 
 // ── MosaicModuleForm ──────────────────────────────────────────────────────────
 
-export interface MosaicModuleFormProps {
+/** Props shared by both form modes — read unconditionally. */
+export interface MosaicModuleFormBaseProps {
   item?: MosaicModuleItem;
-  mode: "create" | "edit";
   formFields?: MosaicModuleFormField[];
   onSave: (data: Omit<MosaicModuleItem, "id"> | MosaicModuleItem) => void;
   onCancel: () => void;
@@ -201,8 +201,6 @@ export interface MosaicModuleFormProps {
   namePlaceholder: string;
   descriptionPlaceholder: string;
   cancelLabel: string;
-  saveChangesLabel: string;
-  createItemLabel: string;
   /**
    * Placeholder for the "add a tag" input in `tag-list` fields (used only
    * when the field itself doesn't set its own `placeholder`). Required,
@@ -211,21 +209,42 @@ export interface MosaicModuleFormProps {
   tagListAddPlaceholder: string;
 }
 
-export function MosaicModuleForm({
-  item,
-  mode,
-  formFields = [],
-  onSave,
-  onCancel,
-  nameFieldLabel,
-  descriptionFieldLabel,
-  namePlaceholder,
-  descriptionPlaceholder,
-  cancelLabel,
-  saveChangesLabel,
-  createItemLabel,
-  tagListAddPlaceholder,
-}: MosaicModuleFormProps) {
+/**
+ * Discriminated union on `mode`. The submit button renders EXACTLY ONE label:
+ * `createItemLabel` in "create", `saveChangesLabel` in "edit". Requiring both
+ * in both modes forced every host to supply a string the form never displays —
+ * a "lying prop contract", found by the `no-lying-prop-contract` guard (the
+ * same defect class as MosaicMemoryCard's `formatMoreTags`). Each label now
+ * lives on the branch that actually renders it.
+ */
+export type MosaicModuleFormModeProps =
+  | {
+      mode: "create";
+      /** Submit-button label in create mode. Required here — not in "edit". */
+      createItemLabel: string;
+    }
+  | {
+      mode: "edit";
+      /** Submit-button label in edit mode. Required here — not in "create". */
+      saveChangesLabel: string;
+    };
+
+export type MosaicModuleFormProps = MosaicModuleFormBaseProps & MosaicModuleFormModeProps;
+
+export function MosaicModuleForm(props: MosaicModuleFormProps) {
+  const {
+    item,
+    mode,
+    formFields = [],
+    onSave,
+    onCancel,
+    nameFieldLabel,
+    descriptionFieldLabel,
+    namePlaceholder,
+    descriptionPlaceholder,
+    cancelLabel,
+    tagListAddPlaceholder,
+  } = props;
   const [formData, setFormData] = React.useState<Partial<MosaicModuleItem>>({
     name: item?.name ?? "",
     description: item?.description ?? "",
@@ -430,7 +449,7 @@ export function MosaicModuleForm({
           disabled={!formData.name}
           className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none"
         >
-          {mode === "edit" ? saveChangesLabel : createItemLabel}
+          {props.mode === "edit" ? props.saveChangesLabel : props.createItemLabel}
         </button>
       </div>
     </div>
@@ -707,7 +726,6 @@ function LibraryContent({
       >
         <MosaicModuleForm
           item={editingItem}
-          mode={editorMode}
           formFields={formFields}
           onSave={handleSave}
           onCancel={() => setEditorOpen(false)}
@@ -716,9 +734,13 @@ function LibraryContent({
           namePlaceholder={namePlaceholder}
           descriptionPlaceholder={descriptionPlaceholder}
           cancelLabel={cancelLabel}
-          saveChangesLabel={saveChangesLabel}
-          createItemLabel={createItemLabel}
           tagListAddPlaceholder={tagListAddPlaceholder}
+          // The library renders the form in BOTH modes, so it legitimately
+          // keeps both labels required on its OWN props — and hands the form
+          // exactly the one that its mode actually renders.
+          {...(editorMode === "edit"
+            ? ({ mode: "edit", saveChangesLabel } as const)
+            : ({ mode: "create", createItemLabel } as const))}
         />
       </MosaicAdaptiveModal>
     </div>

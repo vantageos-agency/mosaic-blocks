@@ -27,10 +27,13 @@ export interface MosaicDeleteConfirmationDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Called when the user confirms deletion */
   onConfirm: () => void;
-  /** Human-readable name of the item to be deleted */
-  itemName: string;
-  /** Type label shown in the title and button ("agent", "template", etc.). Required, no default. */
-  itemType: string;
+  // NOTE: `itemName` and `itemType` used to live here, documented as "shown in
+  // the title and button". The i18n refactor moved that copy into the
+  // host-supplied `title` / `description` / `confirmLabel` (the host bakes the
+  // item's name and type into those strings itself), leaving both props read
+  // NOWHERE in this component. Required-but-never-rendered = a lying prop
+  // contract; they are removed rather than left forcing every host to supply a
+  // value the dialog never displays. Found by the no-lying-prop-contract guard.
   /** Dialog title. Required — the host owns the language, no default. */
   title: string;
   /** Dialog description. Required — the host owns the language, no default. */
