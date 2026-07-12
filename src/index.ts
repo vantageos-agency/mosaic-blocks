@@ -652,3 +652,7 @@ export type {
   MosaicChatComposerProps,
   MosaicChatComposerState,
 } from "./components/chat-composer/MosaicChatComposer.js";
+
+// ── MosaicMarkdown — presentational, dependency-free markdown renderer ──────
+export { MosaicMarkdown } from "./components/markdown/MosaicMarkdown.js";
+export type { MosaicMarkdownProps } from "./components/markdown/MosaicMarkdown.js";
