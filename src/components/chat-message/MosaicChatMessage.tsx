@@ -52,7 +52,7 @@
  * @example
  * // text + reasoning + a completed tool call
  * <MosaicChatMessage
- *   role="assistant"
+ *   messageRole="assistant"
  *   parts={[
  *     { type: "reasoning", text: "Je vérifie la doc avant de répondre." },
  *     { type: "text", text: "Voici la réponse." },
@@ -111,7 +111,7 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type MosaicChatMessageRole = "user" | "assistant";
+export type MosaicChatMessageSenderRole = "user" | "assistant";
 
 /** Plain assistant/user text part. */
 export interface MosaicChatMessageTextPart {
@@ -191,8 +191,15 @@ export interface MosaicChatMessageToolStatusLabels {
 }
 
 export interface MosaicChatMessageProps {
-  /** Who sent the message — drives bubble alignment/styling. */
-  role: MosaicChatMessageRole;
+  /**
+   * Who sent the message — drives bubble alignment/styling. Named
+   * `messageRole` (not `role`) so no host ever writes a `role="user"` /
+   * `role="assistant"` JSX attribute — `"user"`/`"assistant"` are not valid
+   * WAI-ARIA roles, and a linter (or a screen reader) reading a literal
+   * `role` attribute cannot tell a domain enum from a DOM ARIA role.
+   * Exposed on the DOM as `data-role`, never as `role`.
+   */
+  messageRole: MosaicChatMessageSenderRole;
   /** Ordered message parts. */
   parts: MosaicChatMessagePart[];
   /**
@@ -392,7 +399,7 @@ function ChatMessagePartView({
  * points.
  */
 export function MosaicChatMessage({
-  role,
+  messageRole,
   parts,
   renderText,
   reasoningLabel,
@@ -401,16 +408,16 @@ export function MosaicChatMessage({
   className,
   ref,
 }: MosaicChatMessageProps) {
-  const isUser = role === "user";
+  const isUser = messageRole === "user";
 
   return (
     <article
       ref={ref}
       data-slot="chat-message"
-      data-role={role}
+      data-role={messageRole}
       className={cn(chatMessageContainerVariants({ align: isUser ? "end" : "start" }), className)}
     >
-      <div className={chatMessageBubbleVariants({ role })}>
+      <div className={chatMessageBubbleVariants({ role: messageRole })}>
         {parts.map((part, index) => (
           <ChatMessagePartView
             key={partKey(part, index)}

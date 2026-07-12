@@ -27,19 +27,6 @@
           }
         }
       }
-    },
-    {
-      "include": [
-        "src/components/chat-message/MosaicChatMessage.tsx",
-        "src/components/chat-message/MosaicChatMessage.test.tsx"
-      ],
-      "linter": {
-        "rules": {
-          "a11y": {
-            "useValidAriaRole": "off"
-          }
-        }
-      }
     }
   ],
   "formatter": {

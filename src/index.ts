@@ -661,7 +661,7 @@ export type { MosaicMarkdownProps } from "./components/markdown/MosaicMarkdown.j
 export { MosaicChatMessage } from "./components/chat-message/MosaicChatMessage.js";
 export type {
   MosaicChatMessageProps,
-  MosaicChatMessageRole,
+  MosaicChatMessageSenderRole,
   MosaicChatMessagePart,
   MosaicChatMessageTextPart,
   MosaicChatMessageReasoningPart,

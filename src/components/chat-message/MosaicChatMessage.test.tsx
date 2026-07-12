@@ -34,7 +34,11 @@ const BASE_PROPS = {
 describe("MosaicChatMessage", () => {
   it("sets data-slot='chat-message' and data-role on the root", () => {
     const { container } = render(
-      <MosaicChatMessage {...BASE_PROPS} role="user" parts={[{ type: "text", text: "Salut" }]} />,
+      <MosaicChatMessage
+        {...BASE_PROPS}
+        messageRole="user"
+        parts={[{ type: "text", text: "Salut" }]}
+      />,
     );
     const root = container.querySelector("[data-slot='chat-message']");
     expect(root).toBeTruthy();
@@ -43,7 +47,11 @@ describe("MosaicChatMessage", () => {
 
   it("aligns a user message to the end", () => {
     const { container } = render(
-      <MosaicChatMessage {...BASE_PROPS} role="user" parts={[{ type: "text", text: "Salut" }]} />,
+      <MosaicChatMessage
+        {...BASE_PROPS}
+        messageRole="user"
+        parts={[{ type: "text", text: "Salut" }]}
+      />,
     );
     const root = container.querySelector("[data-slot='chat-message']");
     expect(root?.className).toContain("justify-end");
@@ -53,7 +61,7 @@ describe("MosaicChatMessage", () => {
     const { container } = render(
       <MosaicChatMessage
         {...BASE_PROPS}
-        role="assistant"
+        messageRole="assistant"
         parts={[{ type: "text", text: "Bonjour" }]}
       />,
     );
@@ -67,7 +75,7 @@ describe("MosaicChatMessage", () => {
       <MosaicChatMessage
         {...BASE_PROPS}
         renderText={renderText}
-        role="assistant"
+        messageRole="assistant"
         parts={[{ type: "text", text: "Bonjour le monde" }]}
       />,
     );
@@ -79,7 +87,7 @@ describe("MosaicChatMessage", () => {
     const { container } = render(
       <MosaicChatMessage
         {...BASE_PROPS}
-        role="assistant"
+        messageRole="assistant"
         parts={[{ type: "text", text: "Bonjour" }]}
         className="my-custom-class"
       />,
@@ -93,7 +101,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[{ type: "reasoning", text: "J'analyse la question." }]}
         />,
       );
@@ -105,7 +113,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[{ type: "reasoning", text: "J'analyse la question." }]}
         />,
       );
@@ -117,7 +125,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[{ type: "reasoning", text: "En cours de réflexion…", isStreaming: true }]}
         />,
       );
@@ -131,7 +139,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[
             {
               type: "tool",
@@ -153,7 +161,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[
             {
               type: "tool",
@@ -179,7 +187,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[
             {
               type: "tool",
@@ -201,7 +209,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[
             {
               type: "tool",
@@ -221,7 +229,7 @@ describe("MosaicChatMessage", () => {
       render(
         <MosaicChatMessage
           {...BASE_PROPS}
-          role="assistant"
+          messageRole="assistant"
           parts={[
             {
               type: "tool",
@@ -242,7 +250,7 @@ describe("MosaicChatMessage", () => {
     render(
       <MosaicChatMessage
         {...BASE_PROPS}
-        role="assistant"
+        messageRole="assistant"
         parts={[
           {
             type: "tool",
@@ -261,7 +269,7 @@ describe("MosaicChatMessage", () => {
     render(
       <MosaicChatMessage
         {...BASE_PROPS}
-        role="assistant"
+        messageRole="assistant"
         parts={[
           { type: "reasoning", text: "Je réfléchis." },
           { type: "text", text: "Voici la réponse." },
