@@ -470,7 +470,7 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.4.6-alpha` | Current | 123 exported `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories |
+| `0.4.7-alpha` | Current | 123 exported `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories |
 | `0.2.0-alpha` | Historical | anydebate absorb (partial) — counts quoted for this release are historical and superseded by the Current row above; see [CHANGELOG.md](CHANGELOG.md) |
 | `0.1.0-alpha.1` | Historical | Initial alpha publish |
 
