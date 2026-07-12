@@ -674,3 +674,10 @@ export {
   chatMessageContainerVariants,
   chatMessageToolStatusVariants,
 } from "./components/chat-message/chat-message-variants.js";
+
+// ── MVP-3: MosaicApprovalPrompt — "reprendre la main" tool-call approve/deny ──
+export { MosaicApprovalPrompt } from "./components/approval-prompt/MosaicApprovalPrompt.js";
+export type {
+  MosaicApprovalPromptProps,
+  MosaicApprovalPromptState,
+} from "./components/approval-prompt/MosaicApprovalPrompt.js";
