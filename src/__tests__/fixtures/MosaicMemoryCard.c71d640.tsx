@@ -9,9 +9,7 @@
  * - Layout density: detailed uses a leading icon chip + title/scope-badge
  *   stack + separate content paragraph + tags row + footer with a labelled
  *   usage count; compact folds title + content into one truncated header
- *   row and drops the tags row entirely. Both variants call
- *   `formatUsageCount` for the footer usage count — the caller decides
- *   whether that renders a label or a bare number.
+ *   row and drops the tags row entirely, showing only a raw usage number.
  * - Hover-reveal actions: the 3-dot menu trigger is `opacity-0
  *   group-hover:opacity-100` in detailed (desktop hover affordance), always
  *   visible in compact (no hover on touch).
@@ -32,15 +30,6 @@
  * required prop or a required formatter function — no optional prop with an
  * English default anywhere in this file.
  *
- * Props are pushed into the `MosaicMemoryCardVariantProps` discriminated
- * union exactly where they are read — no prop is required on a variant that
- * never renders it. `formatMoreTags` is required only on the `"detailed"`
- * (default) member: the `"compact"` variant drops the tags row entirely and
- * never calls it, so it is not part of `"compact"`'s member of the union
- * (fixed after being flagged as a "lying prop contract" by the
- * `no-lying-prop-contract` guard test — see that file and the memory-card's
- * own type definitions below).
- *
  * Closes T1 (bu-mcp memory wave) — mosaic-memory-card.
  *
  * @example
@@ -59,8 +48,7 @@
  * />
  *
  * @example
- * // Compact variant — condensed list row, no tags row. formatUsageCount is
- * // still called here; this host simply chooses to render the bare number.
+ * // Compact variant — condensed list row, no tags, raw usage number
  * <MosaicMemoryCard
  *   memory={memory}
  *   variant="compact"
@@ -105,12 +93,15 @@ export interface MosaicMemoryData {
   usageCount: number;
 }
 
-/**
- * Props shared by both variants — read unconditionally regardless of
- * `variant`.
- */
-export interface MosaicMemoryCardBaseProps {
+export interface MosaicMemoryCardProps {
   memory: MosaicMemoryData;
+  /**
+   * Layout density.
+   * - `"detailed"` (default): icon chip + tags row + labelled usage footer.
+   * - `"compact"`: condensed header row, no tags row, raw usage number.
+   * @default "detailed"
+   */
+  variant?: "detailed" | "compact";
   onEdit?: (memory: MosaicMemoryData) => void;
   onDelete?: (memoryId: string) => void;
   /** Label for the "edit" menu item. Required — host-owned, no default. */
@@ -132,49 +123,22 @@ export interface MosaicMemoryCardBaseProps {
   formatTimeAgo: (createdAt: number) => React.ReactNode;
   /**
    * Formatter producing the labelled usage-count caption from
-   * `memory.usageCount`. Applied in BOTH variants — the raw number is never
-   * rendered directly. A host that wants the bare number in compact passes
-   * `formatUsageCount={(count) => String(count)}`; that is the host's
-   * choice, not a hidden default of the library.
+   * `memory.usageCount`. Only rendered in the detailed variant — the
+   * compact variant shows the raw number with no label (mirrors the
+   * source mobile layout, which carried no usage-count copy at all).
    * Required — host-owned (e.g. `(count) => t("memory.usageCount", { count })`).
    */
   formatUsageCount: (count: number) => React.ReactNode;
+  /**
+   * Formatter producing the "+N" overflow caption when a memory has more
+   * than 3 tags. Only rendered in the detailed variant. Required —
+   * host-owned (e.g. `(count) => \`+\${count}\`` or a pluralized `t()` call).
+   */
+  formatMoreTags: (count: number) => React.ReactNode;
   className?: string;
   /** React 19 ref prop — forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
 }
-
-/**
- * Discriminated union on `variant` — the sole property that differs between
- * variants (`formatMoreTags`) is required EXACTLY on the branch that reads
- * it (`"detailed"`, the default), not on the shared base. The `"compact"`
- * variant never renders a tags row and therefore never calls
- * `formatMoreTags` — requiring it there would force every host to supply a
- * value the library never displays (a "lying prop contract"; see the
- * `no-lying-prop-contract` guard test and the file's changelog note below).
- */
-export type MosaicMemoryCardVariantProps =
-  | {
-      /**
-       * Full-density layout: icon chip + tags row + labelled usage footer.
-       * Default when omitted.
-       * @default "detailed"
-       */
-      variant?: "detailed";
-      /**
-       * Formatter producing the "+N" overflow caption when a memory has more
-       * than 3 tags. Only ever rendered in the detailed variant — required
-       * here, not on `"compact"`. Host-owned (e.g. `(count) => \`+\${count}\``
-       * or a pluralized `t()` call).
-       */
-      formatMoreTags: (count: number) => React.ReactNode;
-    }
-  | {
-      /** Condensed list row, no tags row, no `formatMoreTags` call. */
-      variant: "compact";
-    };
-
-export type MosaicMemoryCardProps = MosaicMemoryCardBaseProps & MosaicMemoryCardVariantProps;
 
 const MAX_VISIBLE_TAGS = 3;
 
@@ -319,24 +283,25 @@ const SOURCE_ICONS: Record<MosaicMemorySource, () => React.ReactElement> = {
  * see file JSDoc for the exact desktop/mobile differences and how they were
  * modeled as `variant` + CVA compound variants rather than as two components.
  */
-export function MosaicMemoryCard(props: MosaicMemoryCardProps) {
-  const {
-    memory,
-    onEdit,
-    onDelete,
-    editLabel,
-    deleteLabel,
-    moreActionsLabel,
-    formatScope,
-    formatTimeAgo,
-    formatUsageCount,
-    className,
-    ref,
-  } = props;
-  const variant = props.variant ?? "detailed";
+export function MosaicMemoryCard({
+  memory,
+  variant = "detailed",
+  onEdit,
+  onDelete,
+  editLabel,
+  deleteLabel,
+  moreActionsLabel,
+  formatScope,
+  formatTimeAgo,
+  formatUsageCount,
+  formatMoreTags,
+  className,
+  ref,
+}: MosaicMemoryCardProps) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const SourceIcon = SOURCE_ICONS[memory.source];
+  const isDetailed = variant === "detailed";
 
   React.useEffect(() => {
     if (!menuOpen) return;
@@ -411,7 +376,7 @@ export function MosaicMemoryCard(props: MosaicMemoryCardProps) {
       data-variant={variant}
       className={cn(memoryCardVariants({ variant }), className)}
     >
-      {props.variant !== "compact" ? (
+      {isDetailed ? (
         <div className="space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
@@ -445,9 +410,7 @@ export function MosaicMemoryCard(props: MosaicMemoryCardProps) {
               </span>
             ))}
             {hiddenTagCount > 0 && (
-              <span className={cn(memoryTagBadgeVariants())}>
-                {props.formatMoreTags(hiddenTagCount)}
-              </span>
+              <span className={cn(memoryTagBadgeVariants())}>{formatMoreTags(hiddenTagCount)}</span>
             )}
           </div>
 
@@ -492,7 +455,7 @@ export function MosaicMemoryCard(props: MosaicMemoryCardProps) {
             </div>
             <span className="flex items-center gap-1">
               <TagIcon />
-              {formatUsageCount(memory.usageCount)}
+              {memory.usageCount}
             </span>
           </div>
         </div>

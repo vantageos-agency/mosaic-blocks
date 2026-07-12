@@ -39,6 +39,13 @@ export interface MosaicAgentComposerMobileProps extends MosaicAgentComposerProps
   /** Show loading state on submit button */
   isLoading?: boolean;
   /**
+   * "Required" marker shown on a mandatory module slot. Declared HERE, not on
+   * the shared MosaicAgentComposerProps, because only the mobile composer
+   * renders it — the desktop one never does. (Moved by the
+   * no-lying-prop-contract guard: a prop is required exactly where it is read.)
+   */
+  requiredLabel: string;
+  /**
    * Required host-owned strings (mobile-only extras) — no default,
    * no fallback. The host owns the language (e.g. next-intl `t()`).
    */

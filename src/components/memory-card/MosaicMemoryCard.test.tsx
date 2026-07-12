@@ -16,13 +16,19 @@ const memory: MosaicMemoryData = {
   usageCount: 12,
 };
 
-const requiredLabels = {
+const baseLabels = {
   editLabel: "Edit",
   deleteLabel: "Delete",
   moreActionsLabel: "Memory actions",
   formatScope: (scope: MosaicMemoryData["scope"]) => scope,
   formatTimeAgo: () => "5m ago",
   formatUsageCount: (count: number) => `${count} uses`,
+};
+
+// Detailed (default) variant requires `formatMoreTags` — only this member of
+// the MosaicMemoryCardVariantProps union declares it.
+const requiredLabels = {
+  ...baseLabels,
   formatMoreTags: (count: number) => `+${count}`,
 };
 
@@ -136,5 +142,17 @@ describe("MosaicMemoryCard", () => {
     const ref = { current: null as HTMLDivElement | null };
     render(<MosaicMemoryCard memory={memory} ref={ref} {...requiredLabels} />);
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it("compact variant does not require formatMoreTags (discriminated union contract)", () => {
+    // No `formatMoreTags` in props here — the compact member of
+    // MosaicMemoryCardVariantProps does not declare it, because the compact
+    // layout never renders a tags row and never calls it. This is the exact
+    // "no lying prop contract" fix: proves the type contract matches what
+    // is actually read at runtime for this variant.
+    const { container } = render(
+      <MosaicMemoryCard memory={memory} variant="compact" {...baseLabels} />,
+    );
+    expect(container.querySelector("[data-slot='memory-tags']")).toBeNull();
   });
 });

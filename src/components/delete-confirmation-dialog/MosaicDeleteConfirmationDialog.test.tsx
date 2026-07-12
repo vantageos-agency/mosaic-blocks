@@ -11,8 +11,6 @@ describe("MosaicDeleteConfirmationDialog", () => {
         open={false}
         onOpenChange={() => {}}
         onConfirm={() => {}}
-        itemName="Test Item"
-        itemType="item"
         title="Delete item?"
         description='Are you sure you want to delete "Test Item"? This action cannot be undone.'
         cancelLabel="Cancel"
@@ -29,8 +27,6 @@ describe("MosaicDeleteConfirmationDialog", () => {
         open={true}
         onOpenChange={() => {}}
         onConfirm={() => {}}
-        itemName="My Agent"
-        itemType="agent"
         title="Delete agent?"
         description='Are you sure you want to delete "My Agent"? This action cannot be undone.'
         cancelLabel="Cancel"
@@ -46,8 +42,6 @@ describe("MosaicDeleteConfirmationDialog", () => {
         open={true}
         onOpenChange={() => {}}
         onConfirm={() => {}}
-        itemName="Item"
-        itemType="item"
         title="Are you absolutely sure?"
         description='Are you sure you want to delete "Item"? This action cannot be undone.'
         cancelLabel="Cancel"
@@ -64,8 +58,6 @@ describe("MosaicDeleteConfirmationDialog", () => {
         open={true}
         onOpenChange={() => {}}
         onConfirm={onConfirm}
-        itemName="Agent X"
-        itemType="agent"
         title="Delete agent?"
         description='Are you sure you want to delete "Agent X"? This action cannot be undone.'
         cancelLabel="Cancel"
@@ -83,8 +75,6 @@ describe("MosaicDeleteConfirmationDialog", () => {
         open={true}
         onOpenChange={() => {}}
         onConfirm={() => {}}
-        itemName="Agent X"
-        itemType="agent"
         title="Delete agent?"
         description='Are you sure you want to delete "Agent X"? This action cannot be undone.'
         cancelLabel="Go back"
