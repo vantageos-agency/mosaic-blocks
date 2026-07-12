@@ -641,3 +641,7 @@ export type {
   MosaicUrlScraperContent,
   MosaicUrlScraperState,
 } from "./components/url-scraper/MosaicUrlScraper.js";
+
+// ── MVP-1: MosaicChatThread — presentational auto-scrolling chat stream ──────
+export { MosaicChatThread } from "./components/chat-thread/MosaicChatThread.js";
+export type { MosaicChatThreadProps } from "./components/chat-thread/MosaicChatThread.js";
