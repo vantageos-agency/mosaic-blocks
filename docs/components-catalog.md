@@ -428,7 +428,7 @@ Full documentation in `docs/auth.md`.
 
 This catalog is a **curated subset**, not the full public API. It documents
 **82 `Mosaic*` components** and **10 hooks** out of the **123** `Mosaic*`
-components (**139** total named exports) that `src/index.ts` actually
+components (**140** total named exports) that `src/index.ts` actually
 exports. The full 1:1 list lives in `README.md` Section 6, which is guarded
 by a CI test against drift.
 

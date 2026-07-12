@@ -119,6 +119,132 @@ function extractCatalogDocumentedMosaicNames(catalog: string): Set<string> {
   return names;
 }
 
+/**
+ * Generic count-claim extraction — the blind-spot fix.
+ *
+ * Trigger (Eta review): the targeted regexes above only anchor ONE specific
+ * wording per number per file (e.g. the Section-1 hero line, or the Section-6
+ * summary line). A count restated in a DIFFERENT wording elsewhere in the same
+ * file (e.g. "**123** `Mosaic*` components (**139** total named exports)" in
+ * the "Documented / exported ratio" prose of docs/components-catalog.md) was
+ * invisible to those regexes — CI stayed green while `docs/components-catalog.md:431`
+ * advertised a stale "139" against the real "140".
+ *
+ * This scanner walks the ENTIRE doc text (not just one known line) and pulls
+ * out every occurrence — in any of the wordings actually used across
+ * README.md and docs/components-catalog.md — of a "Mosaic* component count"
+ * or a "total named exports count" claim, then checks EVERY occurrence
+ * against the real numbers. It runs across the WHOLE document, so a 2nd, 3rd,
+ * Nth restatement of the same count is caught exactly like the 1st.
+ */
+type GenericCountClaim = {
+  line: number;
+  snippet: string;
+  claimed: number;
+  kind: "mosaic-count" | "total-exports-count";
+};
+
+const MOSAIC_COUNT_PATTERNS = [
+  // "**123** `Mosaic*` components" (bold number, backtick-wrapped keyword,
+  // \s* allows the number/keyword to be split across a markdown line wrap —
+  // see docs/components-catalog.md:430-431).
+  /\*\*(\d+)\*\*\s*`Mosaic\*`\s*components/gs,
+  // "123 exported `Mosaic*` components" (README Section 6 + version table).
+  /(\d+)\s*exported\s*`Mosaic\*`\s*components/gs,
+  // "It provides 123 opinionated" (README hero line).
+  /(\d+)\s*opinionated/gs,
+];
+
+const TOTAL_EXPORTS_PATTERNS = [
+  // "(**140** total named exports)" — bold, any surrounding punctuation.
+  /\*\*(\d+)\*\*\s*total named exports/gs,
+  // "140 total named exports" — bare, no bold markers.
+  /(\d+)\s*total named exports/gs,
+];
+
+function lineNumberAt(doc: string, index: number): number {
+  return doc.slice(0, index).split("\n").length;
+}
+
+function extractGenericCountClaims(doc: string): GenericCountClaim[] {
+  const claims: GenericCountClaim[] = [];
+  const seenAt = new Set<string>(); // dedupe: bold pattern + bare pattern can both stage-match the same span start
+  const scan = (patterns: RegExp[], kind: GenericCountClaim["kind"]) => {
+    for (const pattern of patterns) {
+      let match: RegExpExecArray | null;
+      // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+      while ((match = pattern.exec(doc))) {
+        const key = `${kind}:${match.index}`;
+        if (seenAt.has(key)) continue;
+        seenAt.add(key);
+        const line = lineNumberAt(doc, match.index);
+        claims.push({
+          line,
+          snippet: match[0].replace(/\s+/g, " ").trim(),
+          claimed: Number(match[1]),
+          kind,
+        });
+      }
+    }
+  };
+  scan(MOSAIC_COUNT_PATTERNS, "mosaic-count");
+  scan(TOTAL_EXPORTS_PATTERNS, "total-exports-count");
+  return claims;
+}
+
+/**
+ * Deliberately NOT covered by extractGenericCountClaims (documented, not
+ * silent — a guard that ignores silently is a guard with a hole):
+ *
+ *   - "82 `Mosaic*` components" / "**82 `Mosaic*` components**" — the
+ *     curated-SUBSET count of docs/components-catalog.md ("Documented: N
+ *     Mosaic* components + M hooks"), not the full src/index.ts export count.
+ *     This number is legitimately != 123. It IS still enforced, by the
+ *     dedicated "documented-count claims match" test below (headerMatch /
+ *     footerMatch against `actuallyDocumented`), just not by this generic
+ *     scanner (which only knows the two FULL-surface invariants: 123 and 140).
+ *   - "10 hooks" — same curated-subset reasoning as above.
+ *   - "9 sections" in "123 exported `Mosaic*` components across 9 sections"
+ *     — a section count, not a component/export count.
+ *   - Semver strings ("0.4.6-alpha", "0.2.0-alpha") and Storybook/story
+ *     counts ("Storybook 10, 30 stories") — unrelated numbers, out of this
+ *     guard's scope by design (see the file-header doc comment above).
+ */
+function assertGenericCountClaimsAreCurrent(
+  doc: string,
+  docLabel: string,
+  expected: { mosaicCount: number; totalExports: number },
+) {
+  const claims = extractGenericCountClaims(doc);
+  expect(
+    claims.length,
+    `${docLabel}: extracted zero generic count claims — did all count wording change? Update MOSAIC_COUNT_PATTERNS / TOTAL_EXPORTS_PATTERNS to match the new phrasing (this sanity check exists so the scanner never silently stops checking).`,
+  ).toBeGreaterThan(0);
+
+  const stale = claims.filter((claim) =>
+    claim.kind === "mosaic-count"
+      ? claim.claimed !== expected.mosaicCount
+      : claim.claimed !== expected.totalExports,
+  );
+
+  if (stale.length > 0) {
+    const details = stale
+      .map(
+        (claim) =>
+          `  - ${docLabel}:${claim.line} claims ${claim.claimed} (expected ` +
+          `${claim.kind === "mosaic-count" ? expected.mosaicCount : expected.totalExports}) ` +
+          `in "${claim.snippet}"`,
+      )
+      .join("\n");
+    throw new Error(
+      `${docLabel} has ${stale.length} stale count claim(s) not caught by the ` +
+        `wording-specific regexes above:\n${details}`,
+    );
+  }
+
+  expect(stale).toEqual([]);
+}
+
 describe("README ↔ exports guard — no phantom components, no stale counts", () => {
   const readme = readFile(README_PATH);
   const indexSource = readFile(INDEX_PATH);
@@ -201,6 +327,16 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
           `actually exports ${realTotalExportCount}. Update Section 6.`,
       ).toBe(realTotalExportCount);
     }
+  });
+
+  it("EVERY Mosaic*/total-exports count restated anywhere in README.md matches src/index.ts (not just the Section 1/6 lines above)", () => {
+    const realMosaicComponentCount = [...realExports].filter((name) =>
+      name.startsWith("Mosaic"),
+    ).length;
+    assertGenericCountClaimsAreCurrent(readme, "README.md", {
+      mosaicCount: realMosaicComponentCount,
+      totalExports: realExports.size,
+    });
   });
 
   it("package.json version and src/version.ts stay in lockstep", () => {
@@ -321,6 +457,16 @@ describe("components-catalog.md ↔ exports guard — no phantom components, no 
         `docs/components-catalog.md footer claims ${claimedFooterTotal} documented Mosaic* components, but the catalog's tables actually list ${actuallyDocumented}. Fix the footer line or the tables.`,
       ).toBe(actuallyDocumented);
     }
+  });
+
+  it("EVERY Mosaic*/total-exports count restated anywhere in docs/components-catalog.md matches src/index.ts (not just the header line above) — closes the Eta-found blind spot", () => {
+    const realMosaicComponentCount = [...realExports].filter((name) =>
+      name.startsWith("Mosaic"),
+    ).length;
+    assertGenericCountClaimsAreCurrent(catalog, "docs/components-catalog.md", {
+      mosaicCount: realMosaicComponentCount,
+      totalExports: realExports.size,
+    });
   });
 
   it("docs/components-catalog.md never asserts a false '1:1 with src/index.ts' invariant", () => {
