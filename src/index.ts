@@ -656,3 +656,21 @@ export type {
 // ── MosaicMarkdown — presentational, dependency-free markdown renderer ──────
 export { MosaicMarkdown } from "./components/markdown/MosaicMarkdown.js";
 export type { MosaicMarkdownProps } from "./components/markdown/MosaicMarkdown.js";
+
+// ── MVP-2: MosaicChatMessage — presentational chat message (role + parts) ──
+export { MosaicChatMessage } from "./components/chat-message/MosaicChatMessage.js";
+export type {
+  MosaicChatMessageProps,
+  MosaicChatMessageRole,
+  MosaicChatMessagePart,
+  MosaicChatMessageTextPart,
+  MosaicChatMessageReasoningPart,
+  MosaicChatMessageToolPart,
+  MosaicChatMessageToolState,
+  MosaicChatMessageToolStatusLabels,
+} from "./components/chat-message/MosaicChatMessage.js";
+export {
+  chatMessageBubbleVariants,
+  chatMessageContainerVariants,
+  chatMessageToolStatusVariants,
+} from "./components/chat-message/chat-message-variants.js";
