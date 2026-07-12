@@ -2,77 +2,72 @@
  * Guard test — no "lying prop contract".
  *
  * Doctrine (Eta arbitration, memory-card review): a prop is required EXACTLY
- * where it is used. A required prop that is declared for a variant/branch
- * but never actually read while rendering that variant/branch is a "lying
- * prop contract" — the library forces every host to supply a value it never
+ * where it is used. A required field that is declared for a variant/branch
+ * but never actually read while rendering that branch is a "lying prop
+ * contract" — the library forces every host to supply a value it never
  * displays.
  *
  * Trigger: 3 occurrences found in one day, all caught only by eyeballing the
- * diff — 619 tests green / typecheck 0 / lint 0 / CI green every single
- * time. No test bit. This guard is the structural fix: a required prop must
- * be read inside the JSX region(s) it is actually required for.
+ * diff — 619 tests green / typecheck 0 / lint 0 / CI green every single time.
+ * No test bit.
  *
- * Scope: components whose props form a discriminated union on a literal
- * field (e.g. `{ status: "idle" } | { status: "loading"; loadingMessage:
- * string }`), OR a flat props interface with an optional literal-union field
- * (e.g. `variant?: "detailed" | "compact"`) branched on in the component
- * body via a `condition === "literal"` ternary or `&&` guard.
+ * SECOND trigger (why this file was rewritten): the guard's FIRST version
+ * shipped green while being BLIND. It knew exactly one gating form
+ * (`x === "lit" && (...)`) and one union shape (required discriminant), so
+ * `MosaicMemoryCard` — the very component it was written for — fell straight
+ * through: its default union member declares an OPTIONAL discriminant
+ * (`variant?: "detailed"`), which the member regex could not match, so the
+ * whole component was silently classified "no union → out of scope". A dead
+ * required prop injected into its `compact` branch kept the guard at
+ * "4 passed". A matcher that knows one phrasing, plus a silent "out of scope"
+ * escape, fails OPEN — it lets falsehood through.
  *
- * Algorithm (static, textual — same style as i18n-no-hardcoded-literals.test.ts
- * and readme-matches-exports.test.ts: no TS compiler / AST library, plain
- * regex + balanced-bracket scanning over the source text):
+ * Both defects are fixed here, and the fix is PROVEN by the mutation probe
+ * below rather than asserted.
  *
- *   1. Find the discriminant field's full literal set — either from the
- *      discriminated union's own members (`{ status: "idle" }`, `{ status:
- *      "loading" }`, ...) or, if there is no union, from a flat field
- *      declaration `field?: "a" | "b" | "c"`.
- *   2. For each field declared REQUIRED (no `?`) anywhere in the props type:
- *      - if declared inside ONE union member only → it is required on that
- *        member's literal alone.
- *      - if declared on the shared/base type (outside every union member,
- *        or the component's props type is flat, i.e. no union at all) → it
- *        is required on EVERY literal of the discriminant's full set.
- *   3. Find every JSX region gated by the discriminant (`X.field === "lit"
- *      && (...)`, or a `isX ? (...) : (...)` ternary where `isX` is defined
- *      as `<expr> === "lit"`) and record, for each literal, the source text
- *      of the region that renders when the discriminant equals that literal.
- *   4. For each required field, compute `requiredOn` (from step 2) minus
- *      `readOn` (the set of literals whose region text references the field
- *      identifier). A field referenced OUTSIDE every gated region (i.e. in
- *      the always-rendered part of the JSX) is read on every literal — it is
- *      never flagged, by construction (its `readOn` is the full set).
- *      Any literal left in the difference is a violation, reported as:
- *      `<file>: required prop "<field>" is never read when <discriminant>="<literal>" — declare it on the branch that renders it`
+ * ── What is analyzed ────────────────────────────────────────────────────────
+ * Every exported type/interface in a component file that carries a
+ * DISCRIMINANT — i.e. either:
+ *   (a) a discriminated union: `type T = | { k: "a"; ... } | { k: "b"; ... }`
+ *       (the discriminant may be OPTIONAL on a member — `k?: "a"` — which is
+ *       how a DEFAULT variant is spelled), possibly reached through an
+ *       intersection (`type Props = Base & Variants`), an interface
+ *       `extends`, or a union of named interfaces
+ *       (`type Props = DotsProps | SegmentsProps`); or
+ *   (b) a flat type with a field whose type is a literal union, written
+ *       inline (`status: "a" | "b"`) or behind a type alias
+ *       (`status: MosaicDocumentUploadFileStatus`). This covers DATA-ITEM
+ *       discriminants (e.g. `MosaicDocumentUploadFile.status`), where the
+ *       same lying-contract failure mode exists on the item type.
  *
- * Exemptions (written, not silent):
- *   - Callback props (`onEdit`, `onScrape`, `onReset`, ...) are still checked
- *     like any other required field — no blanket exemption. They pass
- *     naturally when genuinely used across all branches (e.g. `onScrape` is
- *     wired to the form's `onSubmit`, outside any status gate).
- *   - `imageAlt` on `MosaicUrlScraper`'s `"success"` branch (fixture
- *     `MosaicUrlScraper.d370859.tsx`): required on the WHOLE `"success"`
- *     member, invoked only when `content.image` is present — a deliberate,
- *     documented divergence (a second nested union for one optional prop
- *     would make the type hostile to the host). This guard checks at
- *     BRANCH granularity (`"success"` vs `"idle"/"loading"/"error"`), not at
- *     the nested-conditional-inside-a-branch granularity, so this case
- *     passes by construction — no special-case code needed, and none is
- *     added. Documented here so a future reader doesn't mistake the absence
- *     of a check for an oversight.
- *   - Non-discriminated-union components (no literal-union branching found
- *     at all) are skipped entirely — this guard only targets the specific
- *     "lying prop contract on a branch" failure mode, not all possible prop
- *     misuse.
+ * A field declared REQUIRED (no `?`) inside ONE union member is required on
+ * that member's literal alone. A field declared required on a shared base /
+ * flat type is required on EVERY literal.
  *
- * RED baseline (this guard's own reason to exist): run against
- * `src/__tests__/fixtures/MosaicMemoryCard.c71d640.tsx` (formatUsageCount
- * dead in "compact", historical commit c71d640) and
- * `src/__tests__/fixtures/MosaicUrlScraper.fcb0329.tsx` (loadingMessage /
- * resetButtonLabel / openLinkAriaLabel / imageAlt all dead in "idle",
- * historical commit fcb0329) — both MUST fail the analyzer, proving it
- * bites on real historical defects. GREEN: the live `src/components/**`
- * tree (fixed) and the assumed-divergence fixture
- * `MosaicUrlScraper.d370859.tsx` (imageAlt) both pass with zero violations.
+ * ── Gating forms recognized (inventoried from the real library, not guessed) ─
+ * For discriminant D and literal L, the source that renders when D === L:
+ *   1. `X.D === "L" && ( ... )`             → region owned by L
+ *   2. `X.D !== "L" ? ( A ) : ( B )`        → A owned by ¬L, B owned by L
+ *   3. `X.D === "L" ? ( A ) : ( B )`        → A owned by L,  B owned by ¬L
+ *   4. `if (X.D === "L") { ... return ... }` → block owned by L, and the code
+ *                                              AFTER the if-block owned by ¬L
+ *                                              (early return — MosaicStepPipeline)
+ *   5. `const isFoo = X.D === "L";` … `isFoo ? ( A ) : ( B )` / `isFoo && ( A )`
+ * The `X.` prefix is optional (`props.variant`, `file.status`, or a bare
+ * destructured `variant`). Text inside NO region is unconditional and counts
+ * as read on every literal.
+ *
+ * ── Fail-CLOSED, never fail-open ───────────────────────────────────────────
+ * If a type declares per-branch required fields (fields inside union members)
+ * but the guard cannot locate any gated region for that discriminant, that is
+ * NOT "out of scope" — it is a BLIND SPOT of the guard itself, and the test
+ * FAILS loudly naming the component, the type and the discriminant. The
+ * previous silent `return []` escape is gone. A guard that ignores in silence
+ * is a guard with a hole.
+ *
+ * ── Exemptions: written, named, justified — never silent ────────────────────
+ * See EXEMPTIONS below. Each entry names the type, the discriminant, and WHY.
+ * The only way to let an exception through is to write it down.
  */
 
 import fs from "node:fs";
@@ -81,6 +76,26 @@ import { describe, expect, it } from "vitest";
 
 const COMPONENTS_ROOT = path.resolve(__dirname, "..", "components");
 const FIXTURES_ROOT = path.resolve(__dirname, "fixtures");
+
+/**
+ * Written, named, justified exemptions. `type` + `discriminant` identify the
+ * declaration; the guard then reports nothing for it.
+ *
+ * Currently EMPTY — there is no component in the library that needs one.
+ *
+ * In particular, the one documented DIVERGENCE in the library —
+ * `MosaicUrlScraper.imageAlt`, required on the whole `status: "success"`
+ * branch but only invoked when `content.image` is present — needs NO
+ * exemption entry: this guard checks at BRANCH granularity (`"success"` vs
+ * `"idle"`/`"loading"`/`"error"`), not at the granularity of a nested
+ * conditional INSIDE a branch. `imageAlt` IS read somewhere within the
+ * `success` region, which is exactly what its contract claims. Narrowing
+ * further would demand a second nested union for one optional prop and make
+ * the type hostile to the host — a deliberate, declared divergence (see
+ * MosaicUrlScraper.tsx's own JSDoc). It is asserted as an explicit MUST_PASS
+ * case below rather than hidden behind an exemption.
+ */
+const EXEMPTIONS: { type: string; discriminant: string; reason: string }[] = [];
 
 // ── File discovery ──────────────────────────────────────────────────────────
 
@@ -104,7 +119,7 @@ function walkComponents(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-// ── Comment stripping (reused shape from i18n-no-hardcoded-literals.test.ts) ─
+// ── Comment stripping (same shape as i18n-no-hardcoded-literals.test.ts) ────
 
 function stripComments(source: string): string {
   const out: string[] = new Array(source.length);
@@ -147,7 +162,6 @@ function stripComments(source: string): string {
       if (c === "`" && prev !== "\\") state = "normal";
       continue;
     }
-    // state === "normal"
     if (c === "/" && next === "/") {
       state = "line-comment";
       out[i] = " ";
@@ -158,18 +172,8 @@ function stripComments(source: string): string {
       out[i] = " ";
       continue;
     }
-    if (c === "'") {
-      state = "single";
-      out[i] = c;
-      continue;
-    }
-    if (c === '"') {
-      state = "double";
-      out[i] = c;
-      continue;
-    }
-    if (c === "`") {
-      state = "template";
+    if (c === "'" || c === '"' || c === "`") {
+      state = c === "'" ? "single" : c === '"' ? "double" : "template";
       out[i] = c;
       continue;
     }
@@ -179,9 +183,8 @@ function stripComments(source: string): string {
   return out.join("");
 }
 
-// ── Balanced-bracket scan ────────────────────────────────────────────────────
+// ── Bracket helpers ─────────────────────────────────────────────────────────
 
-/** Index of the char matching `openChar` at `openIndex`, scanning forward. */
 function findMatchingClose(
   source: string,
   openIndex: number,
@@ -199,116 +202,6 @@ function findMatchingClose(
   return -1;
 }
 
-// ── Step 1 + 2: discriminant literal set + required-field-to-literals map ──
-
-type RequiredMap = Map<string, Set<string>>; // fieldName -> literals it is required on
-
-/**
- * Extract required (no `?`) top-level field names declared directly inside
- * `body`, excluding the discriminant field itself. Matches lines shaped like
- * `fieldName: <type>;` (not `fieldName?: <type>;`). Nested object/
- * function-type bodies are not recursed into — one level of props fields is
- * exactly what these component prop types use.
- */
-function extractRequiredFieldNames(body: string, discriminant: string): string[] {
-  const names: string[] = [];
-  const fieldRe = /(?:^|[{;])\s*(\w+)(\??)\s*:/g;
-  let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = fieldRe.exec(body))) {
-    const [, name, optionalMarker] = match;
-    if (name === discriminant) continue;
-    if (optionalMarker === "?") continue;
-    names.push(name);
-  }
-  return [...new Set(names)];
-}
-
-/** A resolved type declaration: either one flat object span, or several
- * discriminated-union member spans (each tagged with its own literal). */
-type ResolvedSpan =
-  | { kind: "flat"; text: string }
-  | { kind: "union"; discriminant: string; members: { literal: string; text: string }[] };
-
-/**
- * Find `(?:export )?(?:interface|type) <name>` and resolve it to its own
- * declaration's source text — handling three shapes actually used in this
- * codebase:
- *   - `interface Name { ... }` / `type Name = { ... }` → one flat span.
- *   - `type Name = | { lit: "a"; ... } | { lit: "b"; ... } | ...;` → a union
- *     span with one member per literal, SCOPED to this declaration only
- *     (not the whole file — this is what avoids leaking an unrelated
- *     type's literal-union field into this component's analysis).
- *   - `type Name = A & B;` → resolve `A` and `B` recursively and return the
- *     concatenation of their own resolved spans.
- * Returns `null` if `name` cannot be found/resolved (out of scope).
- */
-function resolveTypeSpans(content: string, name: string, seen = new Set<string>()): ResolvedSpan[] {
-  if (seen.has(name)) return [];
-  seen.add(name);
-
-  const interfaceRe = new RegExp(`(?:export\\s+)?interface\\s+${name}\\b[^{]*\\{`);
-  const interfaceMatch = content.match(interfaceRe);
-  if (interfaceMatch && interfaceMatch.index !== undefined) {
-    const openIdx = interfaceMatch.index + interfaceMatch[0].length - 1;
-    const closeIdx = findMatchingClose(content, openIdx, "{", "}");
-    if (closeIdx === -1) return [];
-    return [{ kind: "flat", text: content.slice(openIdx, closeIdx) }];
-  }
-
-  const typeAliasRe = new RegExp(`(?:export\\s+)?type\\s+${name}\\s*=\\s*`);
-  const typeAliasMatch = content.match(typeAliasRe);
-  if (!typeAliasMatch || typeAliasMatch.index === undefined) return [];
-  let cursor = typeAliasMatch.index + typeAliasMatch[0].length;
-  while (/\s/.test(content[cursor])) cursor++;
-
-  // Union shape: optional leading `|`, then `{ ... }` members separated by `|`.
-  if (content[cursor] === "|" || content[cursor] === "{") {
-    const members: { literal: string; text: string }[] = [];
-    let discriminant = "";
-    let c = cursor;
-    while (true) {
-      while (c < content.length && (content[c] === "|" || /\s/.test(content[c]))) c++;
-      if (content[c] !== "{") break;
-      const closeIdx = findMatchingClose(content, c, "{", "}");
-      if (closeIdx === -1) break;
-      const memberText = content.slice(c, closeIdx + 1);
-      const discMatch = memberText.match(/^\{\s*(\w+)\s*:\s*"([^"]+)"/);
-      if (discMatch) {
-        discriminant = discMatch[1];
-        members.push({ literal: discMatch[2], text: memberText });
-      }
-      c = closeIdx + 1;
-      while (/\s/.test(content[c])) c++;
-      if (content[c] === "|") continue;
-      break;
-    }
-    if (members.length >= 2) return [{ kind: "union", discriminant, members }];
-    if (members.length === 1) return [{ kind: "flat", text: members[0].text }];
-    return [];
-  }
-
-  // Intersection / bare identifier shape: `A & B` (or a single `A`, or `A &
-  // { inline object }`), up to the top-level (depth-0) `;` — depth-aware so
-  // an inline object member's OWN field-terminating `;` is never mistaken
-  // for the type alias's terminator.
-  const semiIdx = findTopLevelChar(content, cursor, ";");
-  const rhsEnd = semiIdx === -1 ? content.length : semiIdx;
-  const parts = splitTopLevel(content.slice(cursor, rhsEnd), "&").map((p) => p.trim());
-  const spans: ResolvedSpan[] = [];
-  for (const part of parts) {
-    if (part.startsWith("{") && part.endsWith("}")) {
-      spans.push({ kind: "flat", text: part });
-      continue;
-    }
-    const identifier = part.replace(/<[\s\S]*>$/, "").trim();
-    if (!/^\w+$/.test(identifier)) continue; // not a plain identifier reference — skip
-    spans.push(...resolveTypeSpans(content, identifier, seen));
-  }
-  return spans;
-}
-
-/** Index of the first occurrence of `char` at bracket-depth 0, from `start`. */
 function findTopLevelChar(content: string, start: number, char: string): number {
   let depth = 0;
   for (let i = start; i < content.length; i++) {
@@ -320,7 +213,6 @@ function findTopLevelChar(content: string, start: number, char: string): number 
   return -1;
 }
 
-/** Split `text` on `separator`, only at bracket-depth 0. */
 function splitTopLevel(text: string, separator: string): string[] {
   const parts: string[] = [];
   let depth = 0;
@@ -338,167 +230,413 @@ function splitTopLevel(text: string, separator: string): string[] {
   return parts;
 }
 
+/** Skip whitespace forward from `i`. */
+function skipWs(s: string, i: number): number {
+  let j = i;
+  while (j < s.length && /\s/.test(s[j])) j++;
+  return j;
+}
+
+// ── Type resolution ─────────────────────────────────────────────────────────
+
+type Field = { name: string; optional: boolean; type: string };
+
 /**
- * Find the main exported component's props-type NAME: `export function Name(
- * ... : PropsTypeName)` (single-param signature) or `export function Name({
- * ... }: PropsTypeName)` (destructured signature).
+ * Depth-aware scan of the DIRECT fields of an object-type body (which may be
+ * a concatenation of several `{ ... }` bodies).
+ *
+ * This replaces a `/(?:^|[{;])\s*(\w+)(\??)\s*:/g` regex that CONSUMED its
+ * `;` delimiter: under `matchAll`, consuming the separator means the next
+ * field's leading `;` is already eaten, so the scan could only ever see
+ * EVERY OTHER field. `MosaicDocumentUploadFile.status` was being skipped that
+ * way — the discriminant itself went missing and the whole type fell out of
+ * analysis, silently. Off-by-one alternation in a "cheap" regex is exactly
+ * how a guard goes blind.
+ *
+ * Fields are collected only at depth 1 (direct members), so a NESTED object
+ * value (e.g. `statusLabels: { uploading: string; success: string }`) does not
+ * leak its inner keys in as phantom top-level fields. Parenthesised /
+ * bracketed type text (function types, generics, arrays) is skipped wholesale.
  */
-function findComponentPropsTypeName(content: string): string | null {
-  const re = /export function \w+\s*\([\s\S]*?:\s*(\w+)\)/;
-  const match = content.match(re);
-  return match ? match[1] : null;
+function scanFields(text: string): Field[] {
+  const fields: Field[] = [];
+  let depth = 0;
+  let expectName = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const c = text[i];
+
+    if (c === "{") {
+      depth++;
+      if (depth === 1) expectName = true;
+      i++;
+      continue;
+    }
+    if (c === "}") {
+      depth--;
+      expectName = false;
+      i++;
+      continue;
+    }
+    if (c === "(" || c === "[") {
+      const close = findMatchingClose(text, i, c, c === "(" ? ")" : "]");
+      i = close === -1 ? text.length : close + 1;
+      continue;
+    }
+    if (c === ";" || c === ",") {
+      if (depth === 1) expectName = true;
+      i++;
+      continue;
+    }
+    if (expectName) {
+      if (/\s/.test(c)) {
+        i++;
+        continue;
+      }
+      const match = /^(\w+)(\??)\s*:/.exec(text.slice(i));
+      if (match) {
+        const typeStart = i + match[0].length;
+        // Field type = text up to the `;`/`,` that closes it at THIS depth.
+        let j = typeStart;
+        let typeDepth = 0;
+        while (j < text.length) {
+          const t = text[j];
+          if (t === "{" || t === "(" || t === "[") typeDepth++;
+          else if (t === "}" || t === ")" || t === "]") {
+            if (typeDepth === 0) break; // closing the enclosing object
+            typeDepth--;
+          } else if ((t === ";" || t === ",") && typeDepth === 0) break;
+          j++;
+        }
+        fields.push({
+          name: match[1],
+          optional: match[2] === "?",
+          type: text.slice(typeStart, j).trim(),
+        });
+        i = j;
+        expectName = false;
+        continue;
+      }
+      expectName = false;
+    }
+    i++;
+  }
+
+  return fields;
 }
 
 /**
- * Build the required-field -> required-literals map for one component
- * source file. Returns `null` if the component has no branching structure
- * this guard understands (out of scope, not a violation).
+ * Required (no `?`) direct field names of `body`, excluding the discriminant.
  */
-function buildRequiredMap(
-  content: string,
-): { discriminant: string; literals: string[]; required: RequiredMap } | null {
-  const propsTypeName = findComponentPropsTypeName(content);
-  if (!propsTypeName) return null;
+function extractRequiredFieldNames(body: string, discriminant: string): string[] {
+  const names = scanFields(body)
+    .filter((f) => !f.optional && f.name !== discriminant)
+    .map((f) => f.name);
+  return [...new Set(names)];
+}
 
-  const spans = resolveTypeSpans(content, propsTypeName);
-  let unionSpan = spans.find(
+type ResolvedSpan =
+  | { kind: "flat"; text: string }
+  | { kind: "union"; discriminant: string; members: { literal: string; text: string }[] };
+
+/**
+ * Discriminant head of a union member: `{ k: "lit"` OR `{ k?: "lit"`.
+ * The `\??` is the fix for the blind spot that let MosaicMemoryCard through —
+ * a DEFAULT variant is spelled with an OPTIONAL discriminant.
+ */
+const MEMBER_HEAD_RE = /^\{\s*(\w+)\??\s*:\s*"([^"]+)"/;
+
+/**
+ * Resolve a named type to its declaration span(s). Handles:
+ *   - `interface N { ... }` / `interface N extends B { ... }` (base folded in)
+ *   - `type N = { ... }`
+ *   - `type N = | { k: "a" } | { k: "b" }`        (inline discriminated union)
+ *   - `type N = A & B` / `type N = A & { ... }`   (intersection)
+ *   - `type N = A | B` with A, B named interfaces (union of interfaces —
+ *     MosaicStepPipeline's shape)
+ */
+function resolveTypeSpans(content: string, name: string, seen = new Set<string>()): ResolvedSpan[] {
+  if (seen.has(name)) return [];
+  seen.add(name);
+
+  const interfaceRe = new RegExp(`(?:export\\s+)?interface\\s+${name}\\b([^{]*)\\{`);
+  const interfaceMatch = content.match(interfaceRe);
+  if (interfaceMatch && interfaceMatch.index !== undefined) {
+    const openIdx = interfaceMatch.index + interfaceMatch[0].length - 1;
+    const closeIdx = findMatchingClose(content, openIdx, "{", "}");
+    if (closeIdx === -1) return [];
+    const spans: ResolvedSpan[] = [{ kind: "flat", text: content.slice(openIdx, closeIdx) }];
+    const extendsMatch = interfaceMatch[1].match(/extends\s+([\w\s,]+)/);
+    if (extendsMatch) {
+      for (const base of extendsMatch[1].split(",").map((b) => b.trim())) {
+        if (/^\w+$/.test(base)) spans.push(...resolveTypeSpans(content, base, seen));
+      }
+    }
+    return spans;
+  }
+
+  const typeAliasRe = new RegExp(`(?:export\\s+)?type\\s+${name}\\s*=\\s*`);
+  const typeAliasMatch = content.match(typeAliasRe);
+  if (!typeAliasMatch || typeAliasMatch.index === undefined) return [];
+  const cursor = skipWs(content, typeAliasMatch.index + typeAliasMatch[0].length);
+
+  // Inline object-union / single object shape.
+  if (content[cursor] === "|" || content[cursor] === "{") {
+    const members: { literal: string; text: string }[] = [];
+    let discriminant = "";
+    let c = cursor;
+    while (true) {
+      while (c < content.length && (content[c] === "|" || /\s/.test(content[c]))) c++;
+      if (content[c] !== "{") break;
+      const closeIdx = findMatchingClose(content, c, "{", "}");
+      if (closeIdx === -1) break;
+      const memberText = content.slice(c, closeIdx + 1);
+      const discMatch = memberText.match(MEMBER_HEAD_RE);
+      if (discMatch) {
+        discriminant = discMatch[1];
+        members.push({ literal: discMatch[2], text: memberText });
+      }
+      c = skipWs(content, closeIdx + 1);
+      if (content[c] === "|") continue;
+      break;
+    }
+    if (members.length >= 2) return [{ kind: "union", discriminant, members }];
+    if (members.length === 1) return [{ kind: "flat", text: members[0].text }];
+    return [];
+  }
+
+  const semiIdx = findTopLevelChar(content, cursor, ";");
+  const rhs = content.slice(cursor, semiIdx === -1 ? content.length : semiIdx);
+
+  // Union of NAMED interfaces (`type Props = DotsProps | SegmentsProps`).
+  const unionParts = splitTopLevel(rhs, "|").map((p) => p.trim());
+  if (unionParts.length >= 2 && unionParts.every((p) => /^\w+$/.test(p))) {
+    const members: { literal: string; text: string }[] = [];
+    let discriminant = "";
+    for (const part of unionParts) {
+      const text = resolveTypeSpans(content, part, new Set(seen))
+        .filter((s): s is Extract<ResolvedSpan, { kind: "flat" }> => s.kind === "flat")
+        .map((s) => s.text)
+        .join("\n");
+      const discMatch = text.match(/(?:^|[{;])\s*(\w+)\??\s*:\s*"([^"]+)"\s*;/);
+      if (discMatch) {
+        discriminant = discMatch[1];
+        members.push({ literal: discMatch[2], text });
+      }
+    }
+    if (members.length >= 2) return [{ kind: "union", discriminant, members }];
+  }
+
+  // Intersection / bare reference.
+  const spans: ResolvedSpan[] = [];
+  for (const rawPart of splitTopLevel(rhs, "&")) {
+    const part = rawPart.trim();
+    if (part.startsWith("{") && part.endsWith("}")) {
+      spans.push({ kind: "flat", text: part });
+      continue;
+    }
+    const identifier = part.replace(/<[\s\S]*>$/, "").trim();
+    if (!/^\w+$/.test(identifier)) continue;
+    spans.push(...resolveTypeSpans(content, identifier, seen));
+  }
+  return spans;
+}
+
+/** Resolve a literal-union type ALIAS (`type S = "a" | "b" | "c";`) to its literals. */
+function resolveLiteralAlias(content: string, name: string): string[] | null {
+  const re = new RegExp(`(?:export\\s+)?type\\s+${name}\\s*=\\s*((?:\\s*\\|?\\s*"[^"]+")+)\\s*;`);
+  const match = content.match(re);
+  if (!match) return null;
+  const literals = [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  return literals.length >= 2 ? literals : null;
+}
+
+type Discriminated = {
+  typeName: string;
+  discriminant: string;
+  literals: string[];
+  required: Map<string, Set<string>>;
+  /** True when fields are declared PER BRANCH (inside union members). Drives fail-closed. */
+  hasPerBranchDecls: boolean;
+};
+
+function findDeclaredTypeNames(content: string): string[] {
+  const names: string[] = [];
+  for (const m of content.matchAll(/(?:export\s+)?(?:interface|type)\s+(\w+)\b/g)) names.push(m[1]);
+  return [...new Set(names)];
+}
+
+function analyzeType(content: string, typeName: string): Discriminated | null {
+  const spans = resolveTypeSpans(content, typeName);
+  if (spans.length === 0) return null;
+
+  const unionSpan = spans.find(
     (s): s is Extract<ResolvedSpan, { kind: "union" }> => s.kind === "union",
   );
 
-  if (!unionSpan) {
-    // No real discriminated-union member found — fall back to an INLINE
-    // literal-union field on a flat span, e.g. `variant?: "detailed" |
-    // "compact";` (MosaicMemoryCard.tsx's pre-fix shape: one flat interface,
-    // no separate union type at all). Scoped to this component's OWN
-    // resolved flat span(s) only — never the whole file — so an unrelated
-    // component's cosmetic enum field (e.g. MosaicTooltip's `side?: "top" |
-    // "bottom" | "left" | "right"`) can never leak in as a false positive.
+  if (unionSpan) {
+    const { discriminant, members } = unionSpan;
+    const literals = members.map((m) => m.literal);
+    const required = new Map<string, Set<string>>();
+    for (const member of members) {
+      for (const field of extractRequiredFieldNames(member.text, discriminant)) {
+        const set = required.get(field) ?? new Set<string>();
+        set.add(member.literal);
+        required.set(field, set);
+      }
+    }
+    const perBranchCount = required.size;
+    // Shared base fields (the flat side of `Base & Union`) → required on every literal.
     for (const span of spans) {
       if (span.kind !== "flat") continue;
-      const inlineRe = /(\w+)\??\s*:\s*("(?:[^"]+)"(?:\s*\|\s*"[^"]+")+)\s*;/;
-      const match = span.text.match(inlineRe);
-      if (!match) continue;
-      const field = match[1];
-      const literals = [...match[2].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-      unionSpan = { kind: "union", discriminant: field, members: [] };
-      unionSpan.members = literals.map((literal) => ({ literal, text: "" }));
+      for (const field of extractRequiredFieldNames(span.text, discriminant)) {
+        if (required.has(field)) continue;
+        required.set(field, new Set(literals));
+      }
+    }
+    return { typeName, discriminant, literals, required, hasPerBranchDecls: perBranchCount > 0 };
+  }
+
+  // Flat type with a literal-union field — inline or behind an alias.
+  const flatText = spans
+    .filter((s): s is Extract<ResolvedSpan, { kind: "flat" }> => s.kind === "flat")
+    .map((s) => s.text)
+    .join("\n");
+  if (!flatText) return null;
+
+  let discriminant = "";
+  let literals: string[] = [];
+
+  // The discriminant is the first direct field whose type is a literal union,
+  // written inline (`status: "a" | "b"`) or behind a type alias
+  // (`status: MosaicDocumentUploadFileStatus`).
+  for (const field of scanFields(flatText)) {
+    if (/^"[^"]+"(\s*\|\s*"[^"]+")+$/.test(field.type)) {
+      discriminant = field.name;
+      literals = [...field.type.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
       break;
     }
-  }
-  if (!unionSpan) return null; // no real branching found in this component's OWN props type — out of scope
-
-  const { discriminant, members } = unionSpan;
-  const literals = members.map((m) => m.literal);
-  const required: RequiredMap = new Map();
-
-  for (const member of members) {
-    for (const field of extractRequiredFieldNames(member.text, discriminant)) {
-      const set = required.get(field) ?? new Set<string>();
-      set.add(member.literal);
-      required.set(field, set);
-    }
-  }
-
-  // Base (shared) required fields: declared on the OTHER (flat) span(s) of
-  // the props type's intersection, e.g. `MosaicMemoryCardBaseProps` in
-  // `Base & Variant` — or, for the un-fixed pre-union shape, resolveTypeSpans
-  // already folded the single flat interface's ONE member into a synthetic
-  // 1-member "union" via the `findFlatLiteralUnionField`-equivalent path
-  // below, so this loop only ever sees genuinely separate base spans.
-  for (const span of spans) {
-    if (span.kind !== "flat") continue;
-    for (const field of extractRequiredFieldNames(span.text, discriminant)) {
-      if (required.has(field)) continue;
-      required.set(field, new Set(literals));
-    }
-  }
-
-  return { discriminant, literals, required };
-}
-
-// ── Step 3: gated-JSX region extraction ─────────────────────────────────────
-
-type Region = { literal: string; text: string };
-
-/**
- * Find every JSX region gated by `<discriminant> === "literal"`, covering
- * both syntaxes actually used in this codebase:
- *   - `<expr>.<discriminant> === "literal" && ( ... )`
- *   - `isXxx ? ( ... ) : ( ... )` where `const isXxx = <expr> === "literal";`
- *     appears earlier in the function body (2-way boolean branch — the
- *     ternary's true side is `literal`, the false side is every OTHER
- *     literal in the discriminant's full set).
- */
-function findGatedRegions(content: string, discriminant: string, allLiterals: string[]): Region[] {
-  const regions: Region[] = [];
-
-  // `X.discriminant === "literal" && (`
-  const andGuardRe = new RegExp(`\\w+(?:\\.${discriminant})\\s*===\\s*"([^"]+)"\\s*&&\\s*\\(`, "g");
-  let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = andGuardRe.exec(content))) {
-    const openIdx = content.indexOf("(", match.index);
-    const closeIdx = findMatchingClose(content, openIdx, "(", ")");
-    if (closeIdx === -1) continue;
-    regions.push({ literal: match[1], text: content.slice(openIdx, closeIdx) });
-  }
-
-  // `const isXxx = <expr> === "literal";` ... `isXxx ? ( ... ) : ( ... )`
-  const boolAssignRe = new RegExp(
-    `\\bconst\\s+(is[A-Za-z0-9]+)\\s*=\\s*[\\w.]*${discriminant}\\s*===\\s*"([^"]+)"`,
-    "g",
-  );
-  const boolLiterals = new Map<string, string>();
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = boolAssignRe.exec(content))) {
-    boolLiterals.set(match[1], match[2]);
-  }
-  // Also handle the direct-narrowing ternary form: `props.discriminant !== "literal" ? (` (true side excludes literal)
-  const notEqTernaryRe = new RegExp(
-    `[\\w.]*${discriminant}\\s*!==\\s*"([^"]+)"\\s*\\?\\s*\\(`,
-    "g",
-  );
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = notEqTernaryRe.exec(content))) {
-    const trueOpenIdx = content.indexOf("(", match.index);
-    const trueCloseIdx = findMatchingClose(content, trueOpenIdx, "(", ")");
-    if (trueCloseIdx === -1) continue;
-    const excludedLiteral = match[1];
-    const trueLiterals = allLiterals.filter((l) => l !== excludedLiteral);
-    for (const lit of trueLiterals) {
-      regions.push({ literal: lit, text: content.slice(trueOpenIdx, trueCloseIdx) });
-    }
-    const rest = content.slice(trueCloseIdx + 1);
-    const elseMatch = rest.match(/^\s*:\s*\(/);
-    if (elseMatch) {
-      const elseOpenIdx = trueCloseIdx + 1 + rest.indexOf("(");
-      const elseCloseIdx = findMatchingClose(content, elseOpenIdx, "(", ")");
-      if (elseCloseIdx !== -1) {
-        regions.push({ literal: excludedLiteral, text: content.slice(elseOpenIdx, elseCloseIdx) });
+    if (/^\w+$/.test(field.type)) {
+      const aliasLiterals = resolveLiteralAlias(content, field.type);
+      if (aliasLiterals) {
+        discriminant = field.name;
+        literals = aliasLiterals;
+        break;
       }
     }
   }
+  if (!discriminant || literals.length < 2) return null;
 
-  for (const [boolName, literal] of boolLiterals) {
-    const ternaryRe = new RegExp(`\\b${boolName}\\s*\\?\\s*\\(`, "g");
-    // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-    while ((match = ternaryRe.exec(content))) {
-      const trueOpenIdx = content.indexOf("(", match.index);
-      const trueCloseIdx = findMatchingClose(content, trueOpenIdx, "(", ")");
-      if (trueCloseIdx === -1) continue;
-      regions.push({ literal, text: content.slice(trueOpenIdx, trueCloseIdx) });
+  const required = new Map<string, Set<string>>();
+  for (const field of extractRequiredFieldNames(flatText, discriminant)) {
+    required.set(field, new Set(literals));
+  }
+  // A flat type declares NOTHING per-branch, so an absent gating region means
+  // "this type simply isn't branched on" (e.g. MosaicMemoryData.scope, merely
+  // formatted) — legitimately skippable, not a blind spot.
+  return { typeName, discriminant, literals, required, hasPerBranchDecls: false };
+}
 
-      const rest = content.slice(trueCloseIdx + 1);
-      const elseMatch = rest.match(/^\s*:\s*\(/);
-      if (elseMatch) {
-        const elseOpenIdx = trueCloseIdx + 1 + rest.indexOf("(");
-        const elseCloseIdx = findMatchingClose(content, elseOpenIdx, "(", ")");
-        if (elseCloseIdx !== -1) {
-          const otherLiterals = allLiterals.filter((l) => l !== literal);
-          for (const otherLiteral of otherLiterals) {
-            regions.push({ literal: otherLiteral, text: content.slice(elseOpenIdx, elseCloseIdx) });
-          }
+// ── Gated-region extraction ─────────────────────────────────────────────────
+
+type Region = { owners: Set<string>; start: number; end: number };
+
+/**
+ * Every region of the component body whose rendering is gated on `discriminant`.
+ * Recognizes all five forms inventoried from the real library (file header).
+ * Each region carries the SET of literals for which it renders — `!==` and
+ * ternary else-arms own the complement.
+ */
+function findGatedRegions(body: string, discriminant: string, allLiterals: string[]): Region[] {
+  const regions: Region[] = [];
+  const complement = (lit: string) => new Set(allLiterals.filter((l) => l !== lit));
+
+  const parenAt = (i: number): { start: number; end: number } | null => {
+    const open = skipWs(body, i);
+    if (body[open] !== "(") return null;
+    const close = findMatchingClose(body, open, "(", ")");
+    return close === -1 ? null : { start: open, end: close };
+  };
+
+  // Forms 1-4: a direct comparison against a literal.
+  const cmpRe = new RegExp(`[\\w.]*\\b${discriminant}\\s*(===|!==)\\s*"([^"]+)"`, "g");
+  let match: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((match = cmpRe.exec(body))) {
+    const [, operator, literal] = match;
+    const trueOwners = operator === "===" ? new Set([literal]) : complement(literal);
+    const falseOwners = operator === "===" ? complement(literal) : new Set([literal]);
+    let after = skipWs(body, match.index + match[0].length);
+
+    // Form 1: `&& ( ... )`
+    if (body.startsWith("&&", after)) {
+      const span = parenAt(after + 2);
+      if (span) regions.push({ owners: trueOwners, start: span.start, end: span.end });
+      continue;
+    }
+
+    // Forms 2-3: `? ( A ) : ( B )`
+    if (body[after] === "?") {
+      const trueSpan = parenAt(after + 1);
+      if (!trueSpan) continue;
+      regions.push({ owners: trueOwners, start: trueSpan.start, end: trueSpan.end });
+      after = skipWs(body, trueSpan.end + 1);
+      if (body[after] === ":") {
+        const falseSpan = parenAt(after + 1);
+        if (falseSpan) {
+          regions.push({ owners: falseOwners, start: falseSpan.start, end: falseSpan.end });
         }
+      }
+      continue;
+    }
+
+    // Form 4: early return — `if (X.D === "L") { ... return ... }`
+    const ifIdx = body.lastIndexOf("if", match.index);
+    if (ifIdx === -1) continue;
+    const ifOpen = skipWs(body, ifIdx + 2);
+    if (body[ifOpen] !== "(") continue;
+    const ifClose = findMatchingClose(body, ifOpen, "(", ")");
+    if (ifClose <= match.index) continue;
+    const blockOpen = skipWs(body, ifClose + 1);
+    if (body[blockOpen] !== "{") continue;
+    const blockClose = findMatchingClose(body, blockOpen, "{", "}");
+    if (blockClose === -1) continue;
+    regions.push({ owners: trueOwners, start: blockOpen, end: blockClose });
+    // If the gated block RETURNS, everything after it renders only for ¬L.
+    if (/\breturn\b/.test(body.slice(blockOpen, blockClose))) {
+      regions.push({ owners: falseOwners, start: blockClose + 1, end: body.length - 1 });
+    }
+  }
+
+  // Form 5: `const isFoo = X.D === "L";` … `isFoo ? ( A ) : ( B )` / `isFoo && ( A )`
+  const boolRe = new RegExp(
+    `\\bconst\\s+(\\w+)\\s*=\\s*[\\w.]*\\b${discriminant}\\s*(===|!==)\\s*"([^"]+)"\\s*;`,
+    "g",
+  );
+  const bools: { name: string; trueOwners: Set<string>; falseOwners: Set<string> }[] = [];
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((match = boolRe.exec(body))) {
+    const [, name, operator, literal] = match;
+    bools.push({
+      name,
+      trueOwners: operator === "===" ? new Set([literal]) : complement(literal),
+      falseOwners: operator === "===" ? complement(literal) : new Set([literal]),
+    });
+  }
+  for (const bool of bools) {
+    const useRe = new RegExp(`\\b${bool.name}\\s*(\\?|&&)`, "g");
+    // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+    while ((match = useRe.exec(body))) {
+      const trueSpan = parenAt(match.index + match[0].length);
+      if (!trueSpan) continue;
+      regions.push({ owners: bool.trueOwners, start: trueSpan.start, end: trueSpan.end });
+      if (match[1] !== "?") continue;
+      const after = skipWs(body, trueSpan.end + 1);
+      if (body[after] !== ":") continue;
+      const falseSpan = parenAt(after + 1);
+      if (falseSpan) {
+        regions.push({ owners: bool.falseOwners, start: falseSpan.start, end: falseSpan.end });
       }
     }
   }
@@ -506,104 +644,187 @@ function findGatedRegions(content: string, discriminant: string, allLiterals: st
   return regions;
 }
 
-/** Every `&&`-gated / ternary-gated region's start index, used to compute the "always" (unconditional) text. */
-function computeUnconditionalText(
-  content: string,
-  discriminant: string,
-  allLiterals: string[],
-): string {
-  // Cheap approximation: remove every gated region's text from the full
-  // content. What remains (including duplicated fragments from ternary
-  // false-arms attributed to multiple literals) is treated as "unconditional"
-  // — good enough to catch fields wired outside any status/variant gate
-  // (form inputs, always-visible menu, etc.), which is this function's only
-  // purpose.
-  let remaining = content;
-  for (const region of findGatedRegions(content, discriminant, allLiterals)) {
-    remaining = remaining.replace(region.text, " ");
+/**
+ * EVERY function body in the file, each returned separately.
+ *
+ * Not just the first exported component: gating form 6 in this library is
+ * DELEGATION — a dispatcher gates on the discriminant and forwards the props
+ * to a branch sub-component that does the actual reading:
+ *
+ *   export function MosaicStepPipeline(props: MosaicStepPipelineProps) {
+ *     if (props.variant === "segments") return <MosaicStepPipelineSegments {...props} />;
+ *     return <MosaicStepPipelineDots {...props} />;
+ *   }
+ *   function MosaicStepPipelineSegments({ steps, progressAriaLabel, ... }) { ... }
+ *
+ * Scanning only the dispatcher made `steps` and `progressAriaLabel` look
+ * "never read" in both branches — a false positive. Bodies are kept SEPARATE
+ * (not concatenated) so that form 4's "everything after the early-return
+ * block" region cannot spill out of its own function and wrongly claim the
+ * next function's text.
+ *
+ * Destructuring (`const { a, b } = props;` and the parameter destructuring
+ * pattern itself) is blanked: naming a prop in a destructuring pattern is not
+ * READING it, and leaving it in would make every field look unconditionally
+ * read.
+ */
+function extractFunctionBodies(content: string): string[] {
+  const bodies: string[] = [];
+  const fnRe = /\bfunction\s+\w+\s*\(/g;
+  let match: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((match = fnRe.exec(content))) {
+    const parenOpen = content.indexOf("(", match.index);
+    const parenClose = findMatchingClose(content, parenOpen, "(", ")");
+    if (parenClose === -1) continue;
+    const braceOpen = content.indexOf("{", parenClose);
+    if (braceOpen === -1) continue;
+    // Guard against a return-type annotation containing a `{` before the body.
+    const between = content.slice(parenClose + 1, braceOpen);
+    if (/[;)]/.test(between)) continue;
+    const braceClose = findMatchingClose(content, braceOpen, "{", "}");
+    if (braceClose === -1) continue;
+    bodies.push(
+      content
+        .slice(braceOpen, braceClose)
+        .replace(/const\s*\{[\s\S]*?\}\s*=\s*\w+\s*;/g, (m) => " ".repeat(m.length)),
+    );
   }
-  return remaining;
+  return bodies;
 }
 
-// ── Step 4: assemble violations ──────────────────────────────────────────────
-
-/**
- * Slice out the exported component FUNCTION body only (from `export
- * function Name(` to its matching closing brace). Region/unconditional-usage
- * detection must be scoped to the actual render code — not the type
- * declarations above it, where every field name trivially appears once in
- * its own declaration and would otherwise be misread as "read
- * unconditionally".
- */
-function extractComponentBody(content: string): string {
-  const fnHeadRe = /export function \w+\s*\([\s\S]*?\)\s*(?::[\s\S]*?)?\{/;
-  const match = content.match(fnHeadRe);
-  if (!match || match.index === undefined) return content;
-  const openBraceIdx = match.index + match[0].length - 1;
-  const closeIdx = findMatchingClose(content, openBraceIdx, "{", "}");
-  if (closeIdx === -1) return content;
-  return stripDestructuringFromProps(content.slice(openBraceIdx, closeIdx));
-}
-
-/**
- * Strip `const { a, b, c } = props;` destructuring assignments. Destructuring
- * every prop name into a local binding is NOT "reading" any of them — it
- * merely names them — so leaving these statements in would make every
- * required field look "read unconditionally" (present in the un-gated part
- * of the function body) regardless of whether the resulting local variable
- * is ever actually referenced inside a gated JSX region. Must be stripped
- * BEFORE gated-region / unconditional-usage detection runs.
- */
-function stripDestructuringFromProps(body: string): string {
-  const destructureRe = /const\s*\{[\s\S]*?\}\s*=\s*props\s*;/g;
-  return body.replace(destructureRe, " ");
-}
+// ── Violation assembly ──────────────────────────────────────────────────────
 
 function findViolations(relPath: string, rawContent: string): string[] {
   const content = stripComments(rawContent);
-  const built = buildRequiredMap(content);
-  if (!built) return [];
-
-  const { discriminant, literals, required } = built;
-  const componentBody = extractComponentBody(content);
-  const regions = findGatedRegions(componentBody, discriminant, literals);
-  // No JSX region is actually gated on this discriminant at all (e.g. a
-  // cosmetic `routing?: "hash" | "path" | "virtual"` field that is merely
-  // forwarded, never branched on) → this component has no real per-branch
-  // rendering for this guard to check. Out of scope, not a violation.
-  if (regions.length === 0) return [];
-  const unconditionalText = computeUnconditionalText(componentBody, discriminant, literals);
+  const bodies = extractFunctionBodies(content);
+  if (bodies.length === 0) return [];
 
   const violations: string[] = [];
 
-  for (const [field, requiredOn] of required) {
-    const fieldRe = new RegExp(`\\b${field}\\b`);
-    if (fieldRe.test(unconditionalText)) continue; // read outside every gate → covers all literals
+  for (const typeName of findDeclaredTypeNames(content)) {
+    const analysis = analyzeType(content, typeName);
+    if (!analysis) continue;
 
-    const readOn = new Set<string>();
-    for (const region of regions) {
-      if (fieldRe.test(region.text)) readOn.add(region.literal);
+    const { discriminant, literals, required, hasPerBranchDecls } = analysis;
+
+    if (EXEMPTIONS.some((e) => e.type === typeName && e.discriminant === discriminant)) continue;
+
+    // Regions are computed PER function body (see extractFunctionBodies): an
+    // early-return region must not spill across a function boundary.
+    const analyzed = bodies.map((body) => ({
+      body,
+      regions: findGatedRegions(body, discriminant, literals),
+    }));
+    const totalRegions = analyzed.reduce((n, a) => n + a.regions.length, 0);
+
+    if (totalRegions === 0) {
+      // FAIL-CLOSED. A type that declares required fields PER BRANCH, whose
+      // discriminant the guard finds no gating for ANYWHERE in the file, is a
+      // BLIND SPOT — exactly the failure that let MosaicMemoryCard through.
+      // Never silent.
+      if (hasPerBranchDecls) {
+        violations.push(
+          `${relPath}: cannot locate gated regions for discriminant "${discriminant}" in type "${typeName}" — guard blind spot (teach findGatedRegions the gating form, or add a written EXEMPTIONS entry)`,
+        );
+      }
+      continue;
     }
 
-    for (const literal of requiredOn) {
-      if (readOn.has(literal)) continue;
-      violations.push(
-        `${relPath}: required prop "${field}" is never read when ${discriminant}="${literal}" — declare it on the branch that renders it`,
-      );
+    for (const [field, requiredOn] of required) {
+      const fieldRe = new RegExp(`\\b${field}\\b`);
+      const readOn = new Set<string>();
+      let readUnconditionally = false;
+
+      for (const { body, regions } of analyzed) {
+        // Unconditional text of THIS body = the body minus its gated regions.
+        // A body with no regions at all (e.g. a branch sub-component the
+        // dispatcher delegates to) is entirely unconditional — reads there
+        // count for every literal, which is correct: the dispatcher already
+        // proved that body only runs for its own branch, and any field it
+        // reads is genuinely consumed.
+        const chars = body.split("");
+        for (const region of regions) {
+          for (let i = region.start; i <= Math.min(region.end, chars.length - 1); i++) {
+            chars[i] = " ";
+          }
+        }
+        if (fieldRe.test(chars.join(""))) readUnconditionally = true;
+
+        for (const region of regions) {
+          if (!fieldRe.test(body.slice(region.start, region.end + 1))) continue;
+          for (const owner of region.owners) readOn.add(owner);
+        }
+      }
+
+      if (readUnconditionally) continue; // read outside every gate → all literals
+
+      for (const literal of requiredOn) {
+        if (readOn.has(literal)) continue;
+        violations.push(
+          `${relPath}: required prop "${field}" is never read when ${discriminant}="${literal}" — declare it on the branch that renders it`,
+        );
+      }
     }
   }
 
   return violations;
 }
 
-// ── Suite ─────────────────────────────────────────────────────────────────
+// ── Mutation probe: prove the guard BITES on REAL code ──────────────────────
+
+/**
+ * Each probe injects a dead REQUIRED field into a REAL component's real branch
+ * (in memory — the file on disk is never touched) and asserts the guard names
+ * it. A guard that only passes its own fixtures proves nothing but that its
+ * matcher understands itself; these probes prove it bites the shapes that
+ * actually ship, one per distinct gating form found in the library.
+ *
+ * `anchor` must exist verbatim in the source — if a refactor moves it, the
+ * probe fails LOUDLY rather than silently testing nothing (the "mutation that
+ * never landed" trap, which produces a false green).
+ */
+const MUTATION_PROBES: {
+  file: string;
+  anchor: string;
+  inject: string;
+  probeField: string;
+  expectLiteral: string;
+  gatingForm: string;
+}[] = [
+  {
+    file: "memory-card/MosaicMemoryCard.tsx",
+    anchor: `variant: "compact";`,
+    inject: `variant: "compact";\n      gammaProbeLabel: string;`,
+    probeField: "gammaProbeLabel",
+    expectLiteral: "compact",
+    gatingForm: "negative ternary + optional discriminant",
+  },
+  {
+    file: "step-pipeline/MosaicStepPipeline.tsx",
+    anchor: `variant: "segments";`,
+    inject: `variant: "segments";\n  gammaProbeLabel: string;`,
+    probeField: "gammaProbeLabel",
+    expectLiteral: "segments",
+    gatingForm: "early return from a union of named interfaces",
+  },
+  {
+    file: "document-upload/MosaicDocumentUpload.tsx",
+    anchor: "status: MosaicDocumentUploadFileStatus;",
+    inject: "status: MosaicDocumentUploadFileStatus;\n  gammaProbeLabel: string;",
+    probeField: "gammaProbeLabel",
+    expectLiteral: "uploading",
+    gatingForm: "item-level discriminant behind a literal-union type alias",
+  },
+];
+
+// ── Suite ───────────────────────────────────────────────────────────────────
 
 describe("no-lying-prop-contract guard — a required prop must be read exactly where it is required", () => {
   it("MUST_BLOCK: historical MosaicMemoryCard (c71d640) — formatUsageCount dead in compact", () => {
-    const fixturePath = path.join(FIXTURES_ROOT, "MosaicMemoryCard.c71d640.tsx");
     const violations = findViolations(
       "MosaicMemoryCard.tsx",
-      fs.readFileSync(fixturePath, "utf-8"),
+      fs.readFileSync(path.join(FIXTURES_ROOT, "MosaicMemoryCard.c71d640.tsx"), "utf-8"),
     );
     expect(
       violations.some((v) => v.includes('"formatUsageCount"') && v.includes('variant="compact"')),
@@ -612,10 +833,9 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
   });
 
   it("MUST_BLOCK: historical MosaicUrlScraper (fcb0329) — 4 props dead in idle", () => {
-    const fixturePath = path.join(FIXTURES_ROOT, "MosaicUrlScraper.fcb0329.tsx");
     const violations = findViolations(
       "MosaicUrlScraper.tsx",
-      fs.readFileSync(fixturePath, "utf-8"),
+      fs.readFileSync(path.join(FIXTURES_ROOT, "MosaicUrlScraper.fcb0329.tsx"), "utf-8"),
     );
     for (const field of ["loadingMessage", "resetButtonLabel", "openLinkAriaLabel", "imageAlt"]) {
       expect(
@@ -625,28 +845,60 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
     }
   });
 
+  it.each(MUTATION_PROBES)(
+    "MUST_BLOCK (mutation probe, REAL code): $file — dead required prop in the $expectLiteral branch [$gatingForm]",
+    ({ file, anchor, inject, probeField, expectLiteral }) => {
+      const source = fs.readFileSync(path.join(COMPONENTS_ROOT, file), "utf-8");
+
+      // The mutation must LAND. If the anchor is gone, fail loudly — a probe
+      // that silently mutates nothing is a false green.
+      expect(
+        source.includes(anchor),
+        `mutation probe anchor not found in ${file}: ${JSON.stringify(anchor)} — the component was refactored; update the probe (a probe that does not land tests nothing).`,
+      ).toBe(true);
+
+      const mutated = source.replace(anchor, inject);
+      expect(mutated).not.toBe(source);
+      expect(mutated).toContain(`${probeField}: string;`);
+
+      const violations = findViolations(file, mutated);
+      expect(
+        violations.some((v) => v.includes(`"${probeField}"`) && v.includes(`="${expectLiteral}"`)),
+        `guard did NOT bite the injected dead prop "${probeField}" in ${file} (${expectLiteral} branch). Violations were:\n${violations.join("\n") || "(none)"}`,
+      ).toBe(true);
+    },
+  );
+
+  it.each(MUTATION_PROBES)(
+    "MUST_PASS (mutation probe control): $file is clean WITHOUT the injected prop",
+    ({ file }) => {
+      const violations = findViolations(
+        file,
+        fs.readFileSync(path.join(COMPONENTS_ROOT, file), "utf-8"),
+      );
+      expect(violations, `expected zero violations, got:\n${violations.join("\n")}`).toEqual([]);
+    },
+  );
+
   it("MUST_PASS: assumed divergence — MosaicUrlScraper (d370859) imageAlt on the whole success branch", () => {
-    const fixturePath = path.join(FIXTURES_ROOT, "MosaicUrlScraper.d370859.tsx");
     const violations = findViolations(
       "MosaicUrlScraper.tsx",
-      fs.readFileSync(fixturePath, "utf-8"),
+      fs.readFileSync(path.join(FIXTURES_ROOT, "MosaicUrlScraper.d370859.tsx"), "utf-8"),
     );
     expect(violations, `expected zero violations, got:\n${violations.join("\n")}`).toEqual([]);
   });
 
-  it("MUST_PASS: every live component under src/components/ has zero lying-prop-contract violations", () => {
+  it("MUST_PASS: every live component under src/components/ is clean AND fully analyzable (no blind spot)", () => {
     const files = walkComponents(COMPONENTS_ROOT);
     expect(files.length).toBeGreaterThan(20);
 
     const allViolations: string[] = [];
     for (const file of files) {
       const rel = path.relative(path.resolve(__dirname, ".."), file).replace(/\\/g, "/");
-      const content = fs.readFileSync(file, "utf-8");
-      allViolations.push(...findViolations(rel, content));
+      allViolations.push(...findViolations(rel, fs.readFileSync(file, "utf-8")));
     }
 
     if (allViolations.length > 0) {
-      // eslint-disable-next-line no-console
       console.error(
         `no-lying-prop-contract violations (${allViolations.length}):\n${allViolations.join("\n")}`,
       );
