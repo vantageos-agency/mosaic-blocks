@@ -645,3 +645,10 @@ export type {
 // ── MVP-1: MosaicChatThread — presentational auto-scrolling chat stream ──────
 export { MosaicChatThread } from "./components/chat-thread/MosaicChatThread.js";
 export type { MosaicChatThreadProps } from "./components/chat-thread/MosaicChatThread.js";
+
+// ── T10: MosaicChatComposer — presentational chat input + send/stop button ──
+export { MosaicChatComposer } from "./components/chat-composer/MosaicChatComposer.js";
+export type {
+  MosaicChatComposerProps,
+  MosaicChatComposerState,
+} from "./components/chat-composer/MosaicChatComposer.js";
