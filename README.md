@@ -471,13 +471,13 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 | Version | Status | Notes |
 |---|---|---|
 | `0.5.10-alpha` | Current | 131 exported `Mosaic*` components, adds `MosaicToolToggleList` (per-tool switch + approval-level selector) — superseded row below is the previous Current |
-| `0.5.9-alpha` | Historical | 130 shipped `Mosaic*` components — adds `MosaicApprovalPrompt` (tool-call approve/deny) — superseded by the Current row above |
-| `0.5.8-alpha` | Historical | 129 shipped `Mosaic*` components — adds `MosaicChatMessage` (chat message: role + text/reasoning/tool-call parts) — superseded by the Current row above |
-| `0.5.7-alpha` | Historical | 128 shipped `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread), `MosaicChatComposer` (chat input + send/stop button), and `MosaicMarkdown` (dependency-free markdown renderer), Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |
-| `0.5.6-alpha` | Historical | 127 shipped `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread) and `MosaicChatComposer` (chat input + send/stop button), Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |
-| `0.5.1-alpha` | Historical | 126 shipped `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread) — superseded by the Current row above |
-| `0.4.8-alpha` | Historical | 125 shipped `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |
-| `0.4.7-alpha` | Historical | 124 shipped `Mosaic*` components — superseded by the Current row above |
+| `0.5.9-alpha` | Historical | 130 exported `Mosaic*` components — adds `MosaicApprovalPrompt` (tool-call approve/deny) — superseded by the Current row above |
+| `0.5.8-alpha` | Historical | 129 exported `Mosaic*` components — adds `MosaicChatMessage` (chat message: role + text/reasoning/tool-call parts) — superseded by the Current row above |
+| `0.5.7-alpha` | Historical | 128 exported `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread), `MosaicChatComposer` (chat input + send/stop button), and `MosaicMarkdown` (dependency-free markdown renderer), Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |
+| `0.5.6-alpha` | Historical | 127 exported `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread) and `MosaicChatComposer` (chat input + send/stop button), Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |
+| `0.5.1-alpha` | Historical | 126 exported `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread) — superseded by the Current row above |
+| `0.4.8-alpha` | Historical | 125 exported `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |
+| `0.4.7-alpha` | Historical | 124 exported `Mosaic*` components — superseded by the Current row above |
 | `0.2.0-alpha` | Historical | anydebate absorb (partial) — counts quoted for this release are historical and superseded by the Current row above; see [CHANGELOG.md](CHANGELOG.md) |
 | `0.1.0-alpha.1` | Historical | Initial alpha publish |
 
