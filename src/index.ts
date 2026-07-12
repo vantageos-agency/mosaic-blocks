@@ -625,3 +625,11 @@ export type {
   MosaicClerkOrganization,
   MosaicClerkMembership,
 } from "./components/multi-tenant/webhook-handler/MosaicClerkWebhookHandler.js";
+
+// ── T8: MosaicDocumentUpload — presentational document drop-zone + status list ──
+export { MosaicDocumentUpload } from "./components/document-upload/MosaicDocumentUpload.js";
+export type {
+  MosaicDocumentUploadProps,
+  MosaicDocumentUploadFile,
+  MosaicDocumentUploadFileStatus,
+} from "./components/document-upload/MosaicDocumentUpload.js";

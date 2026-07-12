@@ -10,7 +10,7 @@
 
 ## 1. Hero & Positioning
 
-`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 123 opinionated, fully-typed UI components that integrate natively with:
+`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 124 opinionated, fully-typed UI components that integrate natively with:
 
 - **Clerk** — auth sign-in/up flows, org switcher, RBAC, webhook sync
 - **Convex** — real-time data binding ready
@@ -169,7 +169,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 
 ## 6. Component Catalogue Summary
 
-123 exported `Mosaic*` components across 9 sections (140 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+124 exported `Mosaic*` components across 9 sections (141 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
 
 > There is **no "Debate" section**. No `Mosaic*` debate component (room/timer/participant) is exported by this package — despite the "absorbed from anydebate" origin story below, the debate UI was never ported. If you need debate-room UI, it does not exist here yet.
 
@@ -179,7 +179,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 | Device / Adaptive | `MosaicDeviceProvider`, `MosaicAdaptiveGrid`, `MosaicAdaptiveModal`, `MosaicAdaptiveNavigation` | 4 |
 | Auth / Multi-tenant | `MosaicMultiTenantProvider`, `MosaicSignInLayout`, `MosaicOrgPanel`, `MosaicClerkWebhookHandler` | 14 |
 | Agents & messaging | `MosaicAgentComposer`, `MosaicAgentCard`, `MosaicAgentList`, `MosaicMessageList`, `MosaicMarketplaceList` | 28 |
-| Data display | `MosaicDataTable`, `MosaicKanbanBoard`, `MosaicStepPipeline`, `MosaicActivityFeed` | 6 |
+| Data display | `MosaicDataTable`, `MosaicKanbanBoard`, `MosaicStepPipeline`, `MosaicActivityFeed`, `MosaicDocumentUpload` | 7 |
 | Forms & inputs | `MosaicInput`, `MosaicSelect`, `MosaicField`, `MosaicCombobox`, `MosaicFilterBar` | 17 |
 | Primitives (incl. base-ui atoms) | `MosaicButton`, `MosaicBadge`, `MosaicCard`, `MosaicTabs`, `MosaicTooltip`, `MosaicAccordion` | 30 |
 | Landing & utility blocks | `MosaicHeroSplit`, `MosaicStatsGrid`, `MosaicPricingCard`, `MosaicCounter`, `MosaicThemeToggle` | 13 |
@@ -470,7 +470,7 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.4.6-alpha` | Current | 123 exported `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories |
+| `0.4.7-alpha` | Current | 124 exported `Mosaic*` components, Clerk auth, mobile-first, Storybook 10, 30 stories |
 | `0.2.0-alpha` | Historical | anydebate absorb (partial) — counts quoted for this release are historical and superseded by the Current row above; see [CHANGELOG.md](CHANGELOG.md) |
 | `0.1.0-alpha.1` | Historical | Initial alpha publish |
 
