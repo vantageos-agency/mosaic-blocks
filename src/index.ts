@@ -681,3 +681,16 @@ export type {
   MosaicApprovalPromptProps,
   MosaicApprovalPromptState,
 } from "./components/approval-prompt/MosaicApprovalPrompt.js";
+
+// ── MVP-4: MosaicToolToggleList — per-tool switch + approval-level selector ──
+export { MosaicToolToggleList } from "./components/tool-toggle-list/MosaicToolToggleList.js";
+export type {
+  MosaicToolToggleListProps,
+  MosaicToolToggleListApprovalLevel,
+  MosaicToolToggleListSection,
+  MosaicToolToggleListTool,
+} from "./components/tool-toggle-list/MosaicToolToggleList.js";
+export {
+  toolToggleListRowVariants,
+  toolToggleListSectionVariants,
+} from "./components/tool-toggle-list/tool-toggle-list-variants.js";
