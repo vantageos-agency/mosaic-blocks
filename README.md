@@ -179,7 +179,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 | Device / Adaptive | `MosaicDeviceProvider`, `MosaicAdaptiveGrid`, `MosaicAdaptiveModal`, `MosaicAdaptiveNavigation` | 4 |
 | Auth / Multi-tenant | `MosaicMultiTenantProvider`, `MosaicSignInLayout`, `MosaicOrgPanel`, `MosaicClerkWebhookHandler` | 14 |
 | Agents & messaging | `MosaicAgentComposer`, `MosaicAgentCard`, `MosaicAgentList`, `MosaicMessageList`, `MosaicMarketplaceList` | 28 |
-| Data display | `MosaicDataTable`, `MosaicKanbanBoard`, `MosaicStepPipeline`, `MosaicActivityFeed`, `MosaicDocumentUpload`, `MosaicUrlScraper` | 8 |
+| Data display | `MosaicDataTable`, `MosaicKanbanBoard`, `MosaicStepPipeline`, `MosaicActivityFeed`, `MosaicDocumentUpload`, `MosaicUrlScraper`, `MosaicMarkdown` | 9 |
 | Forms & inputs | `MosaicInput`, `MosaicSelect`, `MosaicField`, `MosaicCombobox`, `MosaicFilterBar` | 17 |
 | Primitives (incl. base-ui atoms) | `MosaicButton`, `MosaicBadge`, `MosaicCard`, `MosaicTabs`, `MosaicTooltip`, `MosaicAccordion` | 30 |
 | Landing & utility blocks | `MosaicHeroSplit`, `MosaicStatsGrid`, `MosaicPricingCard`, `MosaicCounter`, `MosaicThemeToggle` | 13 |
@@ -470,7 +470,7 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.5.6-alpha` | Current | 127 exported `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread) and `MosaicChatComposer` (chat input + send/stop button), Clerk auth, mobile-first, Storybook 10, 30 stories |
+| `0.5.7-alpha` | Current | PLACEHOLDER_COUNT exported `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread), `MosaicChatComposer` (chat input + send/stop button), and `MosaicMarkdown` (dependency-free markdown renderer), Clerk auth, mobile-first, Storybook 10, 30 stories |
 | `0.4.8-alpha` | Historical | 125 shipped `Mosaic*` components — superseded by the Current row above |
 | `0.4.7-alpha` | Historical | 124 shipped `Mosaic*` components — superseded by the Current row above |
 | `0.2.0-alpha` | Historical | anydebate absorb (partial) — counts quoted for this release are historical and superseded by the Current row above; see [CHANGELOG.md](CHANGELOG.md) |
