@@ -816,6 +816,16 @@ const MUTATION_PROBES: {
     expectLiteral: "uploading",
     gatingForm: "item-level discriminant behind a literal-union type alias",
   },
+  {
+    // Landed on main via PR #55 — now REAL code, so it is probed as real code
+    // rather than only as a historical fixture.
+    file: "url-scraper/MosaicUrlScraper.tsx",
+    anchor: `status: "loading";`,
+    inject: `status: "loading";\n      gammaProbeLabel: string;`,
+    probeField: "gammaProbeLabel",
+    expectLiteral: "loading",
+    gatingForm: "&& gate on a props-level discriminated union",
+  },
 ];
 
 // ── Suite ───────────────────────────────────────────────────────────────────
