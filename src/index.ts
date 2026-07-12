@@ -412,6 +412,15 @@ export type {
   MosaicQuickAgent,
 } from "./components/quick-agent-selector/MosaicQuickAgentSelector.js";
 
+// MosaicMemoryCard — memory item card (detailed / compact variants)
+export { MosaicMemoryCard } from "./components/memory-card/MosaicMemoryCard.js";
+export type {
+  MosaicMemoryCardProps,
+  MosaicMemoryData,
+  MosaicMemoryScope,
+  MosaicMemorySource,
+} from "./components/memory-card/MosaicMemoryCard.js";
+
 // MosaicSelectorModal — generic searchable item picker modal
 export { MosaicSelectorModal } from "./components/selector-modal/MosaicSelectorModal.js";
 export type {
