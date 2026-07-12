@@ -2,7 +2,10 @@
 
 **All imports:** `import { ComponentName } from "@vantageos/mosaic-blocks"`
 
-Documented: **85 exported Mosaic* components + hooks** (1:1 with `src/index.ts`).
+Documented: **82 Mosaic* components + 10 hooks** — a curated subset with usage
+snippets and prop notes, not the full public API. `src/index.ts` exports
+**122** `Mosaic*` components and **139** total named exports; see `README.md`
+Section 6 for the complete, machine-checked list of every export.
 
 For mobile-first conventions and the responsive-pair pattern see `docs/mobile-first.md`.
 For auth and multi-tenant components see `docs/auth.md`.
@@ -423,13 +426,15 @@ Full documentation in `docs/auth.md`.
 
 ## Documented / exported ratio
 
-**85 Mosaic* component/hook values exported from `src/index.ts`, 85 documented in this catalog (1:1).**
+This catalog is a **curated subset**, not the full public API. It documents
+**82 `Mosaic*` components** and **10 hooks** out of the **122** `Mosaic*`
+components (**139** total named exports) that `src/index.ts` actually
+exports. The full 1:1 list lives in `README.md` Section 6, which is guarded
+by a CI test against drift.
 
-Count breakdown by section:
-- Device system: 8 (provider + 7 hooks)
-- Adaptive primitives: 3
-- Dashboard shell: 4
-- Agent composer: 4
+Count breakdown by section (Mosaic* components only, hooks counted separately
+below):
+- Foundation (device system + adaptive primitives + dashboard shell + agent composer): 12
 - Organization: 7
 - Templates: 5
 - Marketplace: 3
@@ -442,10 +447,14 @@ Count breakdown by section:
 - Shared utilities: 1
 - Theme provider: 1
 - Auth (Clerk-backed): 5
-- Multi-tenant: 4
+- Multi-tenant: 2
 - Landing blocks: 9
 - Utility blocks: 6
 - Base-UI atoms: 11
-- Hooks summary (distinct, already counted above)
 
-Total unique exported Mosaic* values: **85**
+Total unique `Mosaic*` components documented in this catalog: **82**
+
+Hooks documented in the "Hooks summary" table: **10**
+(`useDevice`, `useBreakpoint`, `useIsMobile`, `useIsTablet`, `useIsDesktop`,
+`useViewport`, `useOrientation`, `useMediaQuery`, `useMosaicWorkspace`,
+`useEffectiveWorkspaceId`)
