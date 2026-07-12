@@ -470,7 +470,8 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.5.10-alpha` | Current | 131 exported `Mosaic*` components, adds `MosaicToolToggleList` (per-tool switch + approval-level selector) — superseded row below is the previous Current |
+| `0.5.11-alpha` | Current | 131 exported `Mosaic*` components — guard fix only, no new component: `readme-matches-exports.test.ts` now exempts Historical rows by their Status column (structural), not by wording |
+| `0.5.10-alpha` | Historical | 131 exported `Mosaic*` components, adds `MosaicToolToggleList` (per-tool switch + approval-level selector) — superseded by the Current row above |
 | `0.5.9-alpha` | Historical | 130 exported `Mosaic*` components — adds `MosaicApprovalPrompt` (tool-call approve/deny) — superseded by the Current row above |
 | `0.5.8-alpha` | Historical | 129 exported `Mosaic*` components — adds `MosaicChatMessage` (chat message: role + text/reasoning/tool-call parts) — superseded by the Current row above |
 | `0.5.7-alpha` | Historical | 128 exported `Mosaic*` components, adds `MosaicChatThread` (presentational auto-scrolling chat thread), `MosaicChatComposer` (chat input + send/stop button), and `MosaicMarkdown` (dependency-free markdown renderer), Clerk auth, mobile-first, Storybook 10, 30 stories — superseded by the Current row above |

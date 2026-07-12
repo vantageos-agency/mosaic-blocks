@@ -227,7 +227,11 @@ function extractVersionTableRowStatusByLine(doc: string): Map<number, VersionTab
     if (!semverCell.test(versionCell)) continue; // not a versioning-table row — out of scope, structurally
     const statusCell = match[2].trim();
     const status: VersionTableRowStatus =
-      statusCell === "Current" ? "Current" : statusCell === "Historical" ? "Historical" : "unclassified";
+      statusCell === "Current"
+        ? "Current"
+        : statusCell === "Historical"
+          ? "Historical"
+          : "unclassified";
     statusByLine.set(i + 1, status);
   }
   return statusByLine;
@@ -301,9 +305,7 @@ function assertGenericCountClaimsAreCurrent(
     const details = unclassified
       .map(
         (claim) =>
-          `  - ${docLabel}:${claim.line} carries a Mosaic* count but the guard cannot classify ` +
-          `it (no Status column) in "${claim.snippet}" — classify it (Status = "Current" or ` +
-          `"Historical") or add a written exemption`,
+          `  - ${docLabel}:${claim.line} carries a Mosaic* count but the guard cannot classify it (no Status column) in "${claim.snippet}" — classify it (Status = "Current" or "Historical") or add a written exemption`,
       )
       .join("\n");
     throw new Error(
