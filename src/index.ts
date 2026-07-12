@@ -633,3 +633,11 @@ export type {
   MosaicDocumentUploadFile,
   MosaicDocumentUploadFileStatus,
 } from "./components/document-upload/MosaicDocumentUpload.js";
+
+// ── T9: MosaicUrlScraper — presentational URL input + scraped-content preview ──
+export { MosaicUrlScraper } from "./components/url-scraper/MosaicUrlScraper.js";
+export type {
+  MosaicUrlScraperProps,
+  MosaicUrlScraperContent,
+  MosaicUrlScraperState,
+} from "./components/url-scraper/MosaicUrlScraper.js";
