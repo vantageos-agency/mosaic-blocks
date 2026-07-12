@@ -39,24 +39,37 @@
  * rule), kept the URL input + scrape action + scraped-content preview +
  * error-state shape.
  *
+ * Props are pushed into the `MosaicUrlScraperState` discriminated union
+ * exactly where they are read — no prop is required in a status branch
+ * that never renders it (e.g. `loadingMessage` only exists on the
+ * "loading" variant, `content`/`resetButtonLabel`/`onReset` only on
+ * "success", etc.). Known, documented exception: `imageAlt` is required
+ * on the whole "success" branch, not narrowed further by
+ * `content.image` presence — see the prop's own JSDoc.
+ *
  * @example
+ * // idle
  * <MosaicUrlScraper
- *   status={status}
+ *   status="idle"
  *   url={url}
  *   onUrlChange={setUrl}
  *   onScrape={(scrapedUrl) => scrapePage(scrapedUrl)}
- *   onReset={() => reset()}
  *   inputAriaLabel="URL de la page à aspirer"
  *   inputPlaceholder="https://exemple.com/article"
  *   scrapeButtonLabel="Aspirer"
- *   scrapingLabel="Aspiration en cours"
- *   loadingMessage="Récupération du contenu de la page…"
  *   invalidUrlMessage="Veuillez saisir une URL valide"
- *   resetButtonLabel="Aspirer une autre page"
+ * />
+ *
+ * @example
+ * // success
+ * <MosaicUrlScraper
+ *   {...baseProps}
+ *   status="success"
+ *   content={content}
  *   openLinkAriaLabel={(pageUrl) => `Ouvrir ${pageUrl} dans un nouvel onglet`}
  *   imageAlt={(title) => `Aperçu de ${title}`}
- *   content={content}
- *   errorMessage={errorMessage}
+ *   resetButtonLabel="Aspirer une autre page"
+ *   onReset={() => reset()}
  * />
  */
 
@@ -99,26 +112,11 @@ export interface MosaicUrlScraperContent {
 }
 
 /**
- * Host-controlled scrape status, discriminating which of `content` /
- * `errorMessage` is required — mirrors MosaicDocumentUploadFile's
- * status-driven shape.
+ * Base props required in EVERY status — read unconditionally by the
+ * component regardless of `status` (input row + local URL-syntax
+ * validation, both reachable from "idle").
  */
-export type MosaicUrlScraperState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "success"; content: MosaicUrlScraperContent }
-  | {
-      status: "error";
-      /**
-       * Host-provided, host-localized error message (e.g. "Invalid URL",
-       * "Page unreachable", "Empty content"). The library never generates
-       * its own error strings — every occurrence is a distinct required
-       * value supplied by the caller.
-       */
-      errorMessage: string;
-    };
-
-export type MosaicUrlScraperProps = MosaicUrlScraperState & {
+type MosaicUrlScraperBaseProps = {
   /** Host-controlled current input value. */
   url: string;
   /** Called with the raw input value on every keystroke. */
@@ -130,41 +128,78 @@ export type MosaicUrlScraperProps = MosaicUrlScraperState & {
    * afterward.
    */
   onScrape: (url: string) => void;
-  /** Called when the reset/"scrape another" button is activated. */
-  onReset: () => void;
   /** Accessible name for the URL input (`aria-label`). Required, no default. */
   inputAriaLabel: string;
   /** Placeholder text for the URL input. Required, no default. */
   inputPlaceholder: string;
   /** Label for the submit button when idle/ready. Required, no default. */
   scrapeButtonLabel: string;
-  /** Label for the submit button while status === "loading". Required, no default. */
-  scrapingLabel: string;
-  /** Label for the reset/"scrape another" button. Required, no default. */
-  resetButtonLabel: string;
   /**
    * Message shown when the local `new URL()` syntax check fails on submit.
    * Required, no default — this is host copy, not an English fallback.
+   * Reachable from "idle": the local check runs on the first submit,
+   * before the host ever sets `status` to "loading".
    */
   invalidUrlMessage: string;
-  /** Message shown inside the loading region while status === "loading". Required, no default. */
-  loadingMessage: string;
-  /**
-   * Per-content accessible name for the external "open" link, e.g.
-   * `(pageUrl) => \`Open ${pageUrl}\``. Required — no hardcoded string.
-   */
-  openLinkAriaLabel: (pageUrl: string) => string;
-  /**
-   * Per-content alt text for the optional preview image, e.g.
-   * `(title) => \`Preview of ${title}\``. Required — invoked only when
-   * `content.image` is present.
-   */
-  imageAlt: (title: string) => string;
   /** Additional Tailwind classes on the root element. */
   className?: string;
   /** React 19 ref prop — forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
 };
+
+/**
+ * Host-controlled scrape status. Every prop that is only ever rendered in
+ * ONE status branch lives on that branch's variant — not on the base
+ * props — so the type contract matches exactly what the component reads
+ * (mirrors MosaicDocumentUploadFile's status-driven shape, and the
+ * memory-card "a required prop must be used exactly where it's declared"
+ * rule).
+ */
+export type MosaicUrlScraperState =
+  | { status: "idle" }
+  | {
+      status: "loading";
+      /** Label for the submit button while status === "loading". Required, no default. */
+      scrapingLabel: string;
+      /** Message shown inside the loading region while status === "loading". Required, no default. */
+      loadingMessage: string;
+    }
+  | {
+      status: "success";
+      content: MosaicUrlScraperContent;
+      /**
+       * Per-content accessible name for the external "open" link, e.g.
+       * `(pageUrl) => \`Open ${pageUrl}\``. Required — no hardcoded string.
+       */
+      openLinkAriaLabel: (pageUrl: string) => string;
+      /**
+       * Per-content alt text for the preview image. Required on this
+       * branch (not narrowed further by `content.image` presence — see
+       * MosaicUrlScraper.tsx JSDoc for why); invoked only when
+       * `content.image` is actually present.
+       */
+      imageAlt: (title: string) => string;
+      /** Label for the reset/"scrape another" button. Required, no default. */
+      resetButtonLabel: string;
+      /** Called when the reset/"scrape another" button is activated. */
+      onReset: () => void;
+    }
+  | {
+      status: "error";
+      /**
+       * Host-provided, host-localized error message (e.g. "Invalid URL",
+       * "Page unreachable", "Empty content"). The library never generates
+       * its own error strings — every occurrence is a distinct required
+       * value supplied by the caller.
+       */
+      errorMessage: string;
+      /** Label for the reset/"scrape another" button. Required, no default. */
+      resetButtonLabel: string;
+      /** Called when the reset/"scrape another" button is activated. */
+      onReset: () => void;
+    };
+
+export type MosaicUrlScraperProps = MosaicUrlScraperBaseProps & MosaicUrlScraperState;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -181,16 +216,10 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
     url,
     onUrlChange,
     onScrape,
-    onReset,
     inputAriaLabel,
     inputPlaceholder,
     scrapeButtonLabel,
-    scrapingLabel,
-    resetButtonLabel,
     invalidUrlMessage,
-    loadingMessage,
-    openLinkAriaLabel,
-    imageAlt,
     className,
     ref,
   } = props;
@@ -237,7 +266,7 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
           disabled={isBusy}
           className="min-h-9 inline-flex items-center justify-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-accent/50 disabled:opacity-50"
         >
-          {props.status === "loading" ? scrapingLabel : scrapeButtonLabel}
+          {props.status === "loading" ? props.scrapingLabel : scrapeButtonLabel}
         </button>
       </form>
 
@@ -255,7 +284,7 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
           data-slot="url-scraper-loading"
           className={urlScraperCardVariants({ tone: "neutral" })}
         >
-          <p className={urlScraperMessageVariants({ tone: "muted" })}>{loadingMessage}</p>
+          <p className={urlScraperMessageVariants({ tone: "muted" })}>{props.loadingMessage}</p>
         </output>
       )}
 
@@ -270,10 +299,10 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
           <button
             type="button"
             data-slot="url-scraper-reset-button"
-            onClick={onReset}
+            onClick={props.onReset}
             className="min-h-9 inline-flex w-fit items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-accent/50"
           >
-            {resetButtonLabel}
+            {props.resetButtonLabel}
           </button>
         </div>
       )}
@@ -287,7 +316,7 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
             <img
               data-slot="url-scraper-image"
               src={props.content.image}
-              alt={imageAlt(props.content.title)}
+              alt={props.imageAlt(props.content.title)}
               className="h-32 w-full rounded-md object-cover md:h-48"
             />
           )}
@@ -300,7 +329,7 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
               href={props.content.url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={openLinkAriaLabel(props.content.url)}
+              aria-label={props.openLinkAriaLabel(props.content.url)}
               className="shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               ↗
@@ -315,10 +344,10 @@ export function MosaicUrlScraper(props: MosaicUrlScraperProps) {
           <button
             type="button"
             data-slot="url-scraper-reset-button"
-            onClick={onReset}
+            onClick={props.onReset}
             className="min-h-9 inline-flex w-fit items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-accent/50"
           >
-            {resetButtonLabel}
+            {props.resetButtonLabel}
           </button>
         </div>
       )}
