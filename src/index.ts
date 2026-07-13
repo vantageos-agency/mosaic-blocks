@@ -357,6 +357,11 @@ export type {
 } from "./components/agent-composer/MosaicAgentComposer.js";
 export type { MosaicAgentComposerMobileProps } from "./components/agent-composer/MosaicAgentComposerMobile.js";
 
+// AgentEditor — agent config form (name / role / instructions), fully host-controlled
+export { MosaicAgentEditor } from "./components/agent-editor/MosaicAgentEditor.js";
+export type { MosaicAgentEditorProps } from "./components/agent-editor/MosaicAgentEditor.js";
+export { agentEditorVariants } from "./components/agent-editor/agent-editor-variants.js";
+
 // ModuleCard (PC-11) — selected module display card
 export { MosaicModuleCard } from "./components/module-card/MosaicModuleCard.js";
 export type {
