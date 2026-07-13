@@ -181,8 +181,20 @@ jobs:
       - name: Verify derived counts
         run: pnpm docs:counts --check
 
-      - name: Verify derived docs suite (excluded from the PR run by design)
-        run: pnpm vitest run src/__tests__/derived
+      # The dedicated config is not a detail: the shared config EXCLUDES this
+      # directory (a PR must not be forced to touch derived counts), and that
+      # exclusion also silenced the suite when asked for BY NAME — it collected
+      # ZERO tests and exited green. So the run is followed by a count assertion:
+      # a guard that measures nothing must never be mistaken for a guard that
+      # found nothing.
+      - name: Verify derived docs suite (its own config — excluded from the PR run by design)
+        run: |
+          set -o pipefail
+          pnpm vitest run --config vitest.derived.config.ts 2>&1 | tee /tmp/derived.log
+          if ! grep -qE '^ *Tests +[1-9]' /tmp/derived.log; then
+            echo "::error::the derived-docs suite collected ZERO tests — it is guarding nothing. Refusing to pass."
+            exit 1
+          fi
 
       - name: Commit + push if changed
         run: |

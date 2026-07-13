@@ -67,7 +67,13 @@ import {
   totalExportsPatterns,
 } from "../../../scripts/docs-counts-shared.mjs";
 
-const REPO_ROOT = path.resolve(__dirname, "..", "..");
+// Three levels up: this file lives in src/__tests__/derived/. It moved one level
+// deeper when it was excluded from the PR run, and the hop silently pointed
+// REPO_ROOT at src/ — the suite then failed to even LOAD, and vitest reported
+// "no tests" rather than a failure anyone would read as one. Hence the count
+// assertion in CI: a suite that collects zero tests is not a suite that found
+// nothing wrong.
+const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 const README_PATH = path.resolve(REPO_ROOT, "README.md");
 const INDEX_PATH = path.resolve(REPO_ROOT, "src", "index.ts");
 const CATALOG_PATH = path.resolve(REPO_ROOT, "docs", "components-catalog.md");
