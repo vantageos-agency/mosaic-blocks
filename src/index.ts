@@ -852,6 +852,16 @@ export type {
 } from "./components/template-category-chips/MosaicTemplateCategoryChips.js";
 export { templateCategoryChipVariants } from "./components/template-category-chips/template-category-chips-variants.js";
 
+// ── MosaicEditMemoryDialog — correct a stale memory: content/type/tags ─────
+export { MosaicEditMemoryDialog } from "./components/edit-memory-dialog/MosaicEditMemoryDialog.js";
+export type { MosaicEditMemoryDialogProps } from "./components/edit-memory-dialog/MosaicEditMemoryDialog.js";
+export {
+  editMemoryDialogBackdropVariants,
+  editMemoryDialogErrorVariants,
+  editMemoryDialogFieldVariants,
+  editMemoryDialogPopupVariants,
+} from "./components/edit-memory-dialog/edit-memory-dialog-variants.js";
+
 // ── M1: MosaicSaveTemplateModal — presentational "save as template" form modal ─
 export { MosaicSaveTemplateModal } from "./components/save-template-modal/MosaicSaveTemplateModal.js";
 export type { MosaicSaveTemplateModalProps } from "./components/save-template-modal/MosaicSaveTemplateModal.js";
