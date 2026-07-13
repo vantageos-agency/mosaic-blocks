@@ -928,3 +928,11 @@ export {
   memoryListItemVariants,
   memoryListVariants,
 } from "./components/memory-list/memory-list-variants.js";
+
+// ── M1: MosaicMemorySearch — host-driven knowledge-base search bar ─────────
+export { MosaicMemorySearch } from "./components/memory-search/MosaicMemorySearch.js";
+export type {
+  MosaicMemorySearchFilter,
+  MosaicMemorySearchProps,
+} from "./components/memory-search/MosaicMemorySearch.js";
+export { memorySearchFilterChipVariants } from "./components/memory-search/memory-search-variants.js";
