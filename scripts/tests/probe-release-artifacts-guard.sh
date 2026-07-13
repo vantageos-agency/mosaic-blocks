@@ -25,7 +25,31 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SOURCE_REPO="/root/coding/mosaic-blocks"
+
+# DERIVED, never typed — and the correction is the point.
+#
+# This line used to read SOURCE_REPO="/root/coding/mosaic-blocks": an absolute
+# path hand-typed into the probe that tests the guard AGAINST hand-typed values.
+# It resolved on the machine where it was written and nowhere else, so on the CI
+# runner the clone below died at setup with "repository does not exist" — before
+# the first assertion ever ran. The probe reported nothing, the guard was proven
+# nowhere, and the "5/5" that was cited was a LOCAL green.
+#
+# The lesson is not the path. It is that a green obtained where the author sits
+# proves nothing about where the code actually runs.
+#
+# Resolved via git itself, because REPO_ROOT is not always clonable: on the CI
+# runner it is a plain checkout (common dir = ./.git), but locally it is often a
+# WORKTREE, whose .git is a file pointing elsewhere — cloning that yields a repo
+# with no `main` ref. Asking git for the common dir covers both, and asking is
+# exactly the point: the value is resolved, never assumed.
+SOURCE_REPO="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir)"
+if [ ! -d "$SOURCE_REPO" ]; then
+  echo "probe: cannot resolve a clonable git repository from $REPO_ROOT (got '$SOURCE_REPO')." >&2
+  echo "probe: refusing to run — a probe that cannot clone its own material proves NOTHING," >&2
+  echo "probe: and a setup failure must never be read as a pass." >&2
+  exit 1
+fi
 SCRATCH="$(mktemp -d)"
 CLONE="$SCRATCH/clone"
 trap 'rm -rf "$SCRATCH"' EXIT
@@ -50,6 +74,12 @@ log() { echo "[$1] $2"; }
 PRE_PROBE_DIFF="$(cd "$REPO_ROOT" && git diff --stat)"
 
 git clone --quiet "$SOURCE_REPO" "$CLONE"
+
+# `git clone` copies LOCAL branches only. A CI runner checking out a
+# pull_request has NO local `main` — just the remote-tracking `origin/main` —
+# so the clone above would land with no base to diff against at all. Pull every
+# ref explicitly, and the clone carries the same history wherever it runs.
+git -C "$CLONE" fetch --quiet "$SOURCE_REPO" '+refs/heads/*:refs/heads/*' '+refs/remotes/origin/*:refs/remotes/origin/*' 2>/dev/null || true
 cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
 # docs-counts-shared.mjs already exists identically in $CLONE (it predates
 # this branch) — do NOT overwrite it, that would defeat "foreign material".
@@ -112,7 +142,23 @@ done
 # a count line (add a harmless new file only).
 # ---------------------------------------------------------------------------
 MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
-base="$(cd "$CLONE" && git rev-parse main)"
+# RESOLVED, not assumed. A local `main` branch is not a given: a CI runner
+# checking out a pull_request lands on a DETACHED head and carries `origin/main`
+# only. Assuming `main` here is the same disease as the hand-typed absolute path
+# two blocks up — a value that happens to exist where the author sits.
+base=""
+for candidate in main origin/main; do
+  if (cd "$CLONE" && git rev-parse --verify --quiet "$candidate" >/dev/null); then
+    base="$(cd "$CLONE" && git rev-parse "$candidate")"
+    break
+  fi
+done
+if [ -z "$base" ]; then
+  echo "probe: no base commit resolvable (tried: main, origin/main) in the clone." >&2
+  echo "probe: refusing to run — a probe with no base has nothing to diff against," >&2
+  echo "probe: and a setup failure must never be read as a pass." >&2
+  exit 1
+fi
 (cd "$CLONE" && git checkout --quiet -b probe-pass-clean "$base")
 echo "// probe: harmless new file, no release artifact touched" > "$CLONE/src/probe-harmless.ts"
 (cd "$CLONE" && git add -- src/probe-harmless.ts && git commit --quiet -m "feat(probe): harmless component-only change")
