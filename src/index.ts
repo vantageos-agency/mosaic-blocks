@@ -741,3 +741,12 @@ export {
   pdfViewerStatusVariants,
   pdfViewerToolbarButtonVariants,
 } from "./components/pdf-viewer/pdf-viewer-variants.js";
+
+// ── UC2-3: MosaicResizableSplitPane — resizable content-split layout ───────
+export { MosaicResizableSplitPane } from "./components/resizable-split-pane/MosaicResizableSplitPane.js";
+export type { MosaicResizableSplitPaneProps } from "./components/resizable-split-pane/MosaicResizableSplitPane.js";
+export {
+  splitPaneCollapseButtonVariants,
+  splitPaneHandleVariants,
+  splitPaneRootVariants,
+} from "./components/resizable-split-pane/split-pane-variants.js";
