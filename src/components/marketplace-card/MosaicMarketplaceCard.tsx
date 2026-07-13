@@ -209,5 +209,3 @@ export function MosaicMarketplaceCard({
 }
 
 MosaicMarketplaceCard.displayName = "MosaicMarketplaceCard";
-
-export { marketplaceCardVariants };

@@ -535,11 +535,9 @@ export type {
 } from "./components/marketplace-list/MosaicMarketplaceList.js";
 
 // MosaicMarketplaceCard (M1) — standalone agent-type gallery tile
-export {
-  MosaicMarketplaceCard,
-  marketplaceCardVariants,
-} from "./components/marketplace-card/MosaicMarketplaceCard.js";
+export { MosaicMarketplaceCard } from "./components/marketplace-card/MosaicMarketplaceCard.js";
 export type { MosaicMarketplaceCardProps } from "./components/marketplace-card/MosaicMarketplaceCard.js";
+export { marketplaceCardVariants } from "./components/marketplace-card/marketplace-card-variants.js";
 
 // MosaicTemplateGallery — generic template browser (responsive-pair)
 export {
