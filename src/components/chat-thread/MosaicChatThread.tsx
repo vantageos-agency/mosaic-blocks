@@ -53,7 +53,7 @@
  */
 
 import type * as React from "react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   chatThreadContentVariants,
   chatThreadRootVariants,
@@ -72,6 +72,9 @@ const BOTTOM_THRESHOLD_PX = 24;
 function isNearBottom(element: HTMLDivElement): boolean {
   return element.scrollHeight - element.scrollTop - element.clientHeight <= BOTTOM_THRESHOLD_PX;
 }
+
+/** Keyboard keys that express manual navigation intent — disengage the anchor. */
+const NAVIGATION_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -135,6 +138,47 @@ export function MosaicChatThread({
     setIsAtBottom(true);
   }
 
+  /** Disengages the bottom anchor — same effect as the user scrolling up. */
+  function disengageBottomAnchor() {
+    isAtBottomRef.current = false;
+    setIsAtBottom(false);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (NAVIGATION_KEYS.has(event.key)) {
+      disengageBottomAnchor();
+    }
+  }
+
+  // `selectionchange` only ever fires on `document` (never on a specific
+  // element), so this listener must live on `document` and be torn down on
+  // unmount. A selection is only meaningful when it (a) is non-empty — a
+  // plain click also fires `selectionchange` with an empty selection, and
+  // disengaging there would be a false positive breaking stick-to-bottom on
+  // the very first click — and (b) falls inside this thread's container.
+  useEffect(() => {
+    function handleSelectionChange() {
+      const container = containerRef.current;
+      if (!container) {
+        return;
+      }
+      const selection = document.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+        return;
+      }
+      const anchorNode = selection.anchorNode;
+      if (anchorNode && container.contains(anchorNode)) {
+        isAtBottomRef.current = false;
+        setIsAtBottom(false);
+      }
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, []);
+
   // `children` is a deliberate re-run trigger (a new message was appended),
   // not a value read inside the effect body — the effect only touches refs.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
@@ -151,6 +195,7 @@ export function MosaicChatThread({
       data-slot="chat-thread"
       role="log"
       onScroll={handleScroll}
+      onKeyDown={handleKeyDown}
       className={cn(chatThreadRootVariants(), className)}
     >
       <div data-slot="chat-thread-content" className={chatThreadContentVariants()}>

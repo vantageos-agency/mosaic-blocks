@@ -20,7 +20,7 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MosaicChatThread } from "./MosaicChatThread.js";
 
 const SCROLL_LABEL = "Revenir au dernier message";
@@ -158,5 +158,235 @@ describe("MosaicChatThread", () => {
     );
     const root = container.querySelector("[data-slot='chat-thread']");
     expect(root?.className).toContain("my-custom-class");
+  });
+
+  function fireSelectionChange(
+    withRange: { node: Node; startOffset: number; endOffset: number } | null,
+  ) {
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    if (withRange) {
+      const range = document.createRange();
+      range.setStart(withRange.node, withRange.startOffset);
+      range.setEnd(withRange.node, withRange.endOffset);
+      selection?.addRange(range);
+    }
+    document.dispatchEvent(new Event("selectionchange"));
+  }
+
+  it("disengages the bottom anchor when the user selects text inside the thread", () => {
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    const textNode = screen.getByText("message 1").firstChild as Text;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    fireSelectionChange({ node: textNode, startOffset: 0, endOffset: 7 });
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    // Selecting text disengaged the anchor: a new child must NOT force scroll.
+    expect(root.scrollTop).toBe(0);
+    expect(screen.getByRole("button", { name: SCROLL_LABEL })).toBeTruthy();
+  });
+
+  it("does NOT disengage on an empty selection (a plain click producing selectionchange)", () => {
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    // Empty selection: no range added, just the event firing (simple click).
+    fireSelectionChange(null);
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    // Anchor remains engaged: still stuck to bottom, no scroll button.
+    expect(root.scrollTop).toBe(600);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeNull();
+  });
+
+  /**
+   * `selectionchange` fires on `document` — it is GLOBAL. Every selection
+   * anywhere on the page reaches this thread's handler, including one made in
+   * a completely unrelated pane.
+   *
+   * That is not hypothetical here: this library ships a split-pane whose whole
+   * purpose is putting a document viewer BESIDE the editing surface. Selecting
+   * a line in the document must not silently kill the thread's stick-to-bottom.
+   *
+   * The `container.contains(anchorNode)` guard is what prevents it — and a
+   * guard nobody pins is a guard that will be refactored away.
+   */
+  it("does NOT disengage when the selection lands OUTSIDE the thread (a sibling pane)", () => {
+    const outside = document.createElement("div");
+    outside.textContent = "text in another pane";
+    document.body.appendChild(outside);
+
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    // A REAL, non-empty selection — but anchored outside this thread.
+    fireSelectionChange({ node: outside.firstChild as Text, startOffset: 0, endOffset: 4 });
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    expect(root.scrollTop).toBe(600);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeNull();
+
+    outside.remove();
+  });
+
+  /**
+   * A COLLAPSED selection carrying a range (caret placed inside the text, no
+   * drag) is the click case that `rangeCount === 0` does NOT catch: the range
+   * exists, it is simply empty. Only `isCollapsed` rejects it.
+   *
+   * Without this test, neutering `isCollapsed` leaves the suite green — the
+   * empty-selection test above passes for the wrong reason (it is protected by
+   * `rangeCount`, not by `isCollapsed`). Two guards, two tests.
+   */
+  it("does NOT disengage on a COLLAPSED selection inside the thread (caret, not a drag)", () => {
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    const textNode = screen.getByText("message 1").firstChild as Text;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    // rangeCount === 1, but start === end: a caret, not a selection.
+    fireSelectionChange({ node: textNode, startOffset: 3, endOffset: 3 });
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    expect(root.scrollTop).toBe(600);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeNull();
+  });
+
+  it.each(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"])(
+    "disengages the bottom anchor on %s keyboard navigation",
+    (key) => {
+      const { container, rerender } = render(
+        <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+          <div>message 1</div>
+        </MosaicChatThread>,
+      );
+      const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+      stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+      fireEvent.keyDown(root, { key });
+
+      stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+      rerender(
+        <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+          <div>message 1</div>
+          <div>message 2</div>
+        </MosaicChatThread>,
+      );
+
+      expect(root.scrollTop).toBe(0);
+      expect(screen.getByRole("button", { name: SCROLL_LABEL })).toBeTruthy();
+    },
+  );
+
+  it("does not disengage on a non-navigation key", () => {
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    fireEvent.keyDown(root, { key: "a" });
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    expect(root.scrollTop).toBe(600);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeNull();
+  });
+
+  it("still allows manual scroll to disengage, and returning near the bottom to re-engage (non-regression)", () => {
+    const { container } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+
+    stubScrollMetrics(root, { scrollHeight: 1000, clientHeight: 300, scrollTop: 100 });
+    fireEvent.scroll(root);
+    expect(screen.getByRole("button", { name: SCROLL_LABEL })).toBeTruthy();
+
+    stubScrollMetrics(root, { scrollHeight: 1000, clientHeight: 300, scrollTop: 690 });
+    fireEvent.scroll(root);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeNull();
+  });
+
+  it("removes the document-level selectionchange listener on unmount (no leak)", () => {
+    const removeSpy = vi.spyOn(document, "removeEventListener");
+    const { unmount, container } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    const textNode = screen.getByText("message 1").firstChild as Text;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    unmount();
+
+    expect(removeSpy.mock.calls.some((call) => call[0] === "selectionchange")).toBe(true);
+
+    // Firing selectionchange after unmount must not throw / must not act on
+    // stale refs — if the listener leaked, this would still run its handler.
+    expect(() => {
+      fireSelectionChange({ node: textNode, startOffset: 0, endOffset: 7 });
+    }).not.toThrow();
+
+    removeSpy.mockRestore();
   });
 });
