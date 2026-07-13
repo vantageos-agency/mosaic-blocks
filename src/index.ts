@@ -694,3 +694,11 @@ export {
   toolToggleListRowVariants,
   toolToggleListSectionVariants,
 } from "./components/tool-toggle-list/tool-toggle-list-variants.js";
+
+// ── MVP-5: MosaicApiKeyPanel — presentational BYOK (bring your own key) panel ──
+export { MosaicApiKeyPanel } from "./components/api-key-panel/MosaicApiKeyPanel.js";
+export type {
+  MosaicApiKeyPanelProps,
+  MosaicApiKeyPanelProvider,
+  MosaicApiKeyPanelState,
+} from "./components/api-key-panel/MosaicApiKeyPanel.js";
