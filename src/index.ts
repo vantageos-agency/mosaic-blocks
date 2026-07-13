@@ -867,3 +867,11 @@ export {
 export { MosaicTemplateList } from "./components/template-list/MosaicTemplateList.js";
 export type { MosaicTemplateListProps } from "./components/template-list/MosaicTemplateList.js";
 export { templateListVariants } from "./components/template-list/template-list-variants.js";
+
+// ── M1: MosaicTemplateManagementPanel — rename/duplicate/delete saved templates ──
+export { MosaicTemplateManagementPanel } from "./components/template-management-panel/MosaicTemplateManagementPanel.js";
+export type {
+  MosaicTemplateManagementItem,
+  MosaicTemplateManagementPanelProps,
+} from "./components/template-management-panel/MosaicTemplateManagementPanel.js";
+export { templateManagementRowVariants } from "./components/template-management-panel/template-management-panel-variants.js";
