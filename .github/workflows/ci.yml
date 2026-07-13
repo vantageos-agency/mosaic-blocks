@@ -187,11 +187,23 @@ jobs:
       # ZERO tests and exited green. So the run is followed by a count assertion:
       # a guard that measures nothing must never be mistaken for a guard that
       # found nothing.
+      #
+      # The count is read from vitest's JSON reporter — a MACHINE output — and
+      # not scraped from its human report. The first version of this assertion
+      # grepped `^ *Tests +[1-9]` against the pretty printer, and vitest slips
+      # ANSI colour codes between "Tests" and the number: the pattern could never
+      # match on a real runner. It declared "ZERO tests collected" about a run
+      # that had just passed 10, and took main down with it.
+      #
+      # A guard that parses decorated prose is a guard that reads a value a
+      # machine already publishes. The producer emits a number; read the number.
       - name: Verify derived docs suite (its own config — excluded from the PR run by design)
         run: |
           set -o pipefail
-          pnpm vitest run --config vitest.derived.config.ts 2>&1 | tee /tmp/derived.log
-          if ! grep -qE '^ *Tests +[1-9]' /tmp/derived.log; then
+          pnpm vitest run --config vitest.derived.config.ts --reporter=json --outputFile=/tmp/derived.json
+          COLLECTED=$(node -e "const r=require('/tmp/derived.json');console.log(r.numTotalTests ?? 0)")
+          echo "derived-docs suite collected ${COLLECTED} test(s)."
+          if [ "${COLLECTED}" -lt 1 ]; then
             echo "::error::the derived-docs suite collected ZERO tests — it is guarding nothing. Refusing to pass."
             exit 1
           fi
