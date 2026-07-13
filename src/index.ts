@@ -838,3 +838,14 @@ export type {
   MosaicTemplateCategoryChipsProps,
 } from "./components/template-category-chips/MosaicTemplateCategoryChips.js";
 export { templateCategoryChipVariants } from "./components/template-category-chips/template-category-chips-variants.js";
+
+// ── M1: MosaicSaveTemplateModal — presentational "save as template" form modal ─
+export { MosaicSaveTemplateModal } from "./components/save-template-modal/MosaicSaveTemplateModal.js";
+export type { MosaicSaveTemplateModalProps } from "./components/save-template-modal/MosaicSaveTemplateModal.js";
+export {
+  saveTemplateModalBodyVariants,
+  saveTemplateModalButtonVariants,
+  saveTemplateModalErrorVariants,
+  saveTemplateModalFieldVariants,
+  saveTemplateModalFooterVariants,
+} from "./components/save-template-modal/save-template-modal-variants.js";
