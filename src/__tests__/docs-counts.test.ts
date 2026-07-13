@@ -33,6 +33,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const SCRIPT_PATH = path.resolve(REPO_ROOT, "scripts", "docs-counts.mjs");
+const SHARED_MODULE_PATH = path.resolve(REPO_ROOT, "scripts", "docs-counts-shared.mjs");
 
 let workDir: string | undefined;
 
@@ -44,10 +45,11 @@ afterEach(() => {
 });
 
 /**
- * Builds a minimal, self-contained fixture repo (script + src/index.ts +
- * README.md + docs/components-catalog.md) at the exact relative layout
- * `docs-counts.mjs` expects (it resolves paths from its own `import.meta.url`,
- * not from `process.cwd()`, so the script must live at `<fixture>/scripts/`).
+ * Builds a minimal, self-contained fixture repo (script + shared module +
+ * src/index.ts + README.md + docs/components-catalog.md) at the exact
+ * relative layout `docs-counts.mjs` expects (it resolves paths from its own
+ * `import.meta.url`, not from `process.cwd()`, so the script — and the
+ * shared module it imports — must live at `<fixture>/scripts/`).
  */
 function makeFixture(): string {
   const dir = mkdtempSync(path.join(tmpdir(), "docs-counts-fixture-"));
@@ -55,6 +57,7 @@ function makeFixture(): string {
   mkdirSync(path.join(dir, "src"), { recursive: true });
   mkdirSync(path.join(dir, "docs"), { recursive: true });
   cpSync(SCRIPT_PATH, path.join(dir, "scripts", "docs-counts.mjs"));
+  cpSync(SHARED_MODULE_PATH, path.join(dir, "scripts", "docs-counts-shared.mjs"));
   return dir;
 }
 
@@ -219,5 +222,95 @@ describe("docs-counts.mjs — Historical rows are dated fact, never rewritten/as
     runWrite(workDir);
     const after = readFileSync(path.join(workDir, "README.md"), "utf-8");
     expect(after).toContain("| `0.1.0` | Historical | 2 exported `Mosaic*` components");
+  });
+});
+
+describe("docs-counts-shared.mjs — sharing is PROVEN, not just claimed by comment", () => {
+  it("a brand-new count wording added ONCE to the shared module is detected by BOTH the " +
+    "producer script (docs-counts.mjs) and a guard-style generic scan built from the same " +
+    "exported patterns — if either one used its own private copy of the patterns instead of " +
+    "importing this module, one of the two assertions below would go blind and fail", () => {
+    workDir = makeFixture();
+
+    // Patch the FIXTURE's copy of the shared module (not the real repo's) to
+    // add exactly one brand-new count-claim wording no other test has ever
+    // used: "N brand-new-wording `Mosaic*` units". Both the sanity-check
+    // guard-style scan below AND the producer script import THIS SAME
+    // patched file — there is no way to fake this by hand-adding a regex to
+    // only one of the two consumers.
+    const sharedModulePath = path.join(workDir, "scripts", "docs-counts-shared.mjs");
+    const originalShared = readFileSync(sharedModulePath, "utf-8");
+    const patchedShared = originalShared.replace(
+      "export function mosaicCountPatterns() {\n  return [",
+      "export function mosaicCountPatterns() {\n  return [\n    /(\\d+)\\s*brand-new-wording\\s*`Mosaic\\*`\\s*units/gs,",
+    );
+    expect(
+      patchedShared,
+      "patch anchor not found — mosaicCountPatterns() shape changed in docs-counts-shared.mjs",
+    ).not.toBe(originalShared);
+    writeFileSync(sharedModulePath, patchedShared);
+
+    // Grep-assert the mutation actually landed on disk before trusting any
+    // verdict that follows (Day 129 doctrine: never read a "green" that
+    // never received the mutation it claims to prove).
+    const landedCheck = readFileSync(sharedModulePath, "utf-8");
+    expect(landedCheck).toContain("brand-new-wording");
+
+    writeIndex(workDir, ["MosaicAlpha", "MosaicBeta"]); // 2 real components
+    // The novel wording claims 999 — deliberately wrong, using ONLY the
+    // brand-new phrasing (no other anchor is touched), so a pass here can
+    // ONLY be explained by the new pattern being live.
+    writeFileSync(
+      path.join(workDir, "README.md"),
+      [
+        "It provides 2 opinionated, fully-typed UI components.",
+        "",
+        "2 exported `Mosaic*` components across 1 sections (2 total named exports).",
+        "",
+        "999 brand-new-wording `Mosaic*` units shipped in this release.",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(path.join(workDir, "docs", "components-catalog.md"), baseCatalog(2, 2));
+
+    // --- Assertion 1: the PRODUCER (docs-counts.mjs --check) sees it. ---
+    const producerResult = runCheck(workDir);
+    expect(
+      producerResult.status,
+      `producer must go RED on the brand-new wording's stale 999: ${producerResult.output}`,
+    ).not.toBe(0);
+    expect(producerResult.output).toContain("999");
+    expect(producerResult.output).toContain("brand-new-wording");
+
+    // --- Assertion 2: a GUARD-STYLE generic scan, built from the exact
+    // same `mosaicCountPatterns()` export of the SAME patched module (not
+    // a re-implementation), also sees it. This mirrors exactly what
+    // src/__tests__/readme-matches-exports.test.ts's extractGenericCountClaims
+    // does with the real module — run out-of-process (plain `node`, no
+    // bundler module graph involved) so this is a genuine re-import of the
+    // patched file from disk, not vitest's cached module of the pristine one.
+    const guardStyleScannerScript = [
+      "import { readFileSync } from 'node:fs';",
+      `import { mosaicCountPatterns } from ${JSON.stringify(sharedModulePath)};`,
+      `const doc = readFileSync(${JSON.stringify(path.join(workDir, "README.md"))}, 'utf-8');`,
+      "const claims = [];",
+      "for (const pattern of mosaicCountPatterns()) {",
+      "  let match;",
+      "  while ((match = pattern.exec(doc))) claims.push({ claimed: Number(match[1]), snippet: match[0] });",
+      "}",
+      "console.log(JSON.stringify(claims));",
+    ].join("\n");
+    const scannerScriptPath = path.join(workDir, "guard-style-scan.mjs");
+    writeFileSync(scannerScriptPath, guardStyleScannerScript);
+    const guardStyleClaims = JSON.parse(
+      execFileSync("node", [scannerScriptPath], { encoding: "utf-8" }),
+    ) as Array<{ claimed: number; snippet: string }>;
+    const novelClaim = guardStyleClaims.find((c) => c.snippet.includes("brand-new-wording"));
+    expect(
+      novelClaim,
+      "guard-style generic scan (built from the SAME shared module) never saw the brand-new " +
+        "wording at all — sharing is broken",
+    ).toBeDefined();
+    expect(novelClaim?.claimed).toBe(999);
   });
 });

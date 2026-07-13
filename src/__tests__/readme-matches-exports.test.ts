@@ -50,6 +50,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  CATALOG_FOOTER_RE,
+  CATALOG_HEADER_DOCUMENTED_RE,
+  CATALOG_LIVE_LIB_RE,
+  HERO_RE,
+  SECTION6_SUMMARY_RE,
+  SECTION6_TOTAL_RE,
+  extractCatalogDocumentedMosaicNames,
+  extractCitedMosaicTokens,
+  extractRealExports,
+  extractRealTypeExports,
+  extractVersionTableRowStatusByLine,
+  lineNumberAt,
+  mosaicCountPatterns,
+  totalExportsPatterns,
+} from "../../scripts/docs-counts-shared.mjs";
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const README_PATH = path.resolve(REPO_ROOT, "README.md");
@@ -61,97 +77,13 @@ function readFile(p: string): string {
 }
 
 /**
- * Extract every named VALUE export from src/index.ts (ignores `export type`
- * re-exports — types are not "components" and are not what README.md's
- * catalogue claims describe).
- */
-function extractRealExports(indexSource: string): Set<string> {
-  const names = new Set<string>();
-  const exportBlockRe = /export(?:\s+type)?\s*\{([^}]*)\}\s*from\s*"[^"]+";/gs;
-  let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = exportBlockRe.exec(indexSource))) {
-    const isTypeExport = match[0].trimStart().startsWith("export type");
-    if (isTypeExport) continue;
-    for (const rawName of match[1].split(",")) {
-      const trimmed = rawName.trim();
-      if (!trimmed) continue;
-      const asParts = trimmed.split(/\s+as\s+/);
-      const exportedName = asParts[asParts.length - 1].trim();
-      names.add(exportedName);
-    }
-  }
-  return names;
-}
-
-/**
- * Extract every named TYPE-ONLY export from src/index.ts (`export type {...}`
- * blocks). Docs legitimately cite these in code snippets (e.g.
- * `import { MosaicQuickActionCard, type MosaicQuickAction } from "..."`) —
- * a type-only export is real API surface, just not a component/value.
- */
-function extractRealTypeExports(indexSource: string): Set<string> {
-  const names = new Set<string>();
-  const exportBlockRe = /export\s+type\s*\{([^}]*)\}\s*from\s*"[^"]+";/gs;
-  let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = exportBlockRe.exec(indexSource))) {
-    for (const rawName of match[1].split(",")) {
-      const trimmed = rawName.trim();
-      if (!trimmed) continue;
-      const asParts = trimmed.split(/\s+as\s+/);
-      const exportedName = asParts[asParts.length - 1].trim();
-      names.add(exportedName);
-    }
-  }
-  return names;
-}
-
-/**
- * Extract every `Mosaic*` identifier-shaped token that appears anywhere in
- * a doc source (prose, tables, code fences, imports, JSX). Generic over any
- * markdown doc — used for both README.md and docs/components-catalog.md.
- */
-function extractCitedMosaicTokens(doc: string): string[] {
-  const matches = doc.match(/\bMosaic[A-Za-z0-9]+\b/g) ?? [];
-  return [...new Set(matches)];
-}
-
-/**
- * Extract the distinct `Mosaic*` names documented as first-column entries
- * in docs/components-catalog.md's markdown tables (lines shaped like
- * `| \`MosaicFoo\` | ... |`). This is the catalog's own "documented count",
- * independent of the full `src/index.ts` surface — the catalog is a
- * curated subset, not a 1:1 mirror.
- */
-function extractCatalogDocumentedMosaicNames(catalog: string): Set<string> {
-  const names = new Set<string>();
-  const rowRe = /^\| `(Mosaic[A-Za-z0-9]+)`/gm;
-  let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((match = rowRe.exec(catalog))) {
-    names.add(match[1]);
-  }
-  return names;
-}
-
-/**
- * Generic count-claim extraction — the blind-spot fix.
- *
- * Trigger (Eta review): the targeted regexes above only anchor ONE specific
- * wording per number per file (e.g. the Section-1 hero line, or the Section-6
- * summary line). A count restated in a DIFFERENT wording elsewhere in the same
- * file (e.g. "**123** `Mosaic*` components (**139** total named exports)" in
- * the "Documented / exported ratio" prose of docs/components-catalog.md) was
- * invisible to those regexes — CI stayed green while `docs/components-catalog.md:431`
- * advertised a stale "139" against the real "140".
- *
- * This scanner walks the ENTIRE doc text (not just one known line) and pulls
- * out every occurrence — in any of the wordings actually used across
- * README.md and docs/components-catalog.md — of a "Mosaic* component count"
- * or a "total named exports count" claim, then checks EVERY occurrence
- * against the real numbers. It runs across the WHOLE document, so a 2nd, 3rd,
- * Nth restatement of the same count is caught exactly like the 1st.
+ * Counting definition, every dedicated single-sentence anchor regex, and the
+ * two generic whole-document count-claim pattern sets are ALL imported from
+ * `scripts/docs-counts-shared.mjs` — the SAME module `scripts/docs-counts.mjs`
+ * (the producer) imports. This guard defines no count-claim regex of its
+ * own: a regex duplicated here and there would be two sources of truth for
+ * "what counts as a stale count", which is exactly the defect this whole
+ * pairing exists to close (see docs-counts-shared.mjs's header comment).
  */
 type VersionTableRowStatus = "Current" | "Historical" | "unclassified";
 
@@ -169,73 +101,6 @@ type GenericCountClaim = {
    */
   rowStatus?: VersionTableRowStatus;
 };
-
-const MOSAIC_COUNT_PATTERNS = [
-  // "**123** `Mosaic*` components" (bold number, backtick-wrapped keyword,
-  // \s* allows the number/keyword to be split across a markdown line wrap —
-  // see docs/components-catalog.md:430-431).
-  /\*\*(\d+)\*\*\s*`Mosaic\*`\s*components/gs,
-  // "123 exported `Mosaic*` components" / "123 shipped `Mosaic*` components"
-  // (README Section 6 + version table). Verb-AGNOSTIC by design: this
-  // matches ANY single word between the number and the backtick-wrapped
-  // `Mosaic*`, deliberately NOT a keyword list of specific verbs — the
-  // versioning-table exemption below is decided by the row's Status
-  // column, never by which verb a sentence happens to use.
-  /(\d+)\s+\S+\s*`Mosaic\*`\s*components/gs,
-  // "It provides 123 opinionated" (README hero line).
-  /(\d+)\s*opinionated/gs,
-];
-
-const TOTAL_EXPORTS_PATTERNS = [
-  // "(**140** total named exports)" — bold, any surrounding punctuation.
-  /\*\*(\d+)\*\*\s*total named exports/gs,
-  // "140 total named exports" — bare, no bold markers.
-  /(\d+)\s*total named exports/gs,
-];
-
-function lineNumberAt(doc: string, index: number): number {
-  return doc.slice(0, index).split("\n").length;
-}
-
-/**
- * Structurally classify every row of the "## 14. Versioning & Changelog"
- * markdown table (README.md) by reading its **Status** column — never by
- * inspecting the wording of the row's prose.
- *
- * A line is considered part of this table only if it matches the table's
- * shape (`| \`<semver>\` | <status> | ...`) AND its first cell is a
- * semver-shaped token (`X.Y.Z` or `X.Y.Z-suffix`). This keeps the
- * classifier from ever mistaking an unrelated backtick-first-cell table
- * (e.g. docs/components-catalog.md's `| \`MosaicFoo\` | ... |` component
- * rows) for a versioning row.
- *
- * Returns a map of 1-based line number -> "Current" | "Historical" |
- * "unclassified". "unclassified" means the row IS a versioning-table row
- * but its Status column is missing or holds neither "Current" nor
- * "Historical" — callers MUST treat this as a loud failure, never a silent
- * skip.
- */
-function extractVersionTableRowStatusByLine(doc: string): Map<number, VersionTableRowStatus> {
-  const statusByLine = new Map<number, VersionTableRowStatus>();
-  const semverCell = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
-  const rowRe = /^\|\s*`([^`]+)`\s*\|\s*([^|]*)\|/;
-  const lines = doc.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const match = rowRe.exec(lines[i]);
-    if (!match) continue;
-    const versionCell = match[1].trim();
-    if (!semverCell.test(versionCell)) continue; // not a versioning-table row — out of scope, structurally
-    const statusCell = match[2].trim();
-    const status: VersionTableRowStatus =
-      statusCell === "Current"
-        ? "Current"
-        : statusCell === "Historical"
-          ? "Historical"
-          : "unclassified";
-    statusByLine.set(i + 1, status);
-  }
-  return statusByLine;
-}
 
 function extractGenericCountClaims(doc: string): GenericCountClaim[] {
   const claims: GenericCountClaim[] = [];
@@ -260,8 +125,8 @@ function extractGenericCountClaims(doc: string): GenericCountClaim[] {
       }
     }
   };
-  scan(MOSAIC_COUNT_PATTERNS, "mosaic-count");
-  scan(TOTAL_EXPORTS_PATTERNS, "total-exports-count");
+  scan(mosaicCountPatterns(), "mosaic-count");
+  scan(totalExportsPatterns(), "total-exports-count");
   return claims;
 }
 
@@ -433,7 +298,7 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
     const realTotalExportCount = realExports.size;
 
     // README.md's Section 1 hero line: "It provides N opinionated ... components"
-    const heroMatch = readme.match(/It provides (\d+) opinionated/);
+    const heroMatch = readme.match(HERO_RE);
     expect(
       heroMatch,
       "README.md hero line 'It provides N opinionated, fully-typed UI components' not found " +
@@ -449,9 +314,7 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
     }
 
     // Section 6 catalogue summary: "122 exported `Mosaic*` components across 9 sections"
-    const catalogueMatch = readme.match(
-      /(\d+) exported `Mosaic\*` components across (\d+) sections/,
-    );
+    const catalogueMatch = readme.match(SECTION6_SUMMARY_RE);
     expect(
       catalogueMatch,
       "README.md Section 6 catalogue summary line not found — did the wording change? " +
@@ -467,7 +330,7 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
     }
 
     // Section 6 parenthetical total: "(139 total named exports including hooks, ...)"
-    const totalMatch = readme.match(/\((\d+) total named exports/);
+    const totalMatch = readme.match(SECTION6_TOTAL_RE);
     expect(
       totalMatch,
       "README.md Section 6 '(N total named exports ...)' parenthetical not found — did the " +
@@ -557,9 +420,7 @@ describe("components-catalog.md ↔ exports guard — no phantom components, no 
     const actuallyDocumented = extractCatalogDocumentedMosaicNames(catalog).size;
 
     // Header line: "Documented: **N Mosaic* components + M hooks** ..."
-    const headerMatch = catalog.match(
-      /Documented:\s*\*\*(\d+) Mosaic\* components \+ (\d+) hooks\*\*/,
-    );
+    const headerMatch = catalog.match(CATALOG_HEADER_DOCUMENTED_RE);
     expect(
       headerMatch,
       "docs/components-catalog.md header 'Documented: **N Mosaic* components + M hooks**' " +
@@ -575,9 +436,7 @@ describe("components-catalog.md ↔ exports guard — no phantom components, no 
 
     // Header line's live-library reference: "src/index.ts exports **122** `Mosaic*`
     // components and **139** total named exports"
-    const liveLibMatch = catalog.match(
-      /exports\s*\*\*(\d+)\*\*\s*`Mosaic\*`\s*components and\s*\*\*(\d+)\*\*\s*total named exports/,
-    );
+    const liveLibMatch = catalog.match(CATALOG_LIVE_LIB_RE);
     expect(
       liveLibMatch,
       "docs/components-catalog.md 'src/index.ts exports **N** `Mosaic*` components and **M** " +
@@ -600,9 +459,7 @@ describe("components-catalog.md ↔ exports guard — no phantom components, no 
     }
 
     // Footer line: "Total unique `Mosaic*` components documented in this catalog: **N**"
-    const footerMatch = catalog.match(
-      /Total unique `Mosaic\*` components documented in this catalog:\s*\*\*(\d+)\*\*/,
-    );
+    const footerMatch = catalog.match(CATALOG_FOOTER_RE);
     expect(
       footerMatch,
       "docs/components-catalog.md footer 'Total unique `Mosaic*` components documented in " +
