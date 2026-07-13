@@ -761,3 +761,11 @@ export {
   tagInputRootVariants,
   tagInputTagVariants,
 } from "./components/tag-input/tag-input-variants.js";
+
+// ── M1: MosaicDrawer — controlled side panel for record detail ─────────────
+export { MosaicDrawer } from "./components/drawer/MosaicDrawer.js";
+export type { MosaicDrawerProps } from "./components/drawer/MosaicDrawer.js";
+export {
+  drawerBackdropVariants,
+  drawerPopupVariants,
+} from "./components/drawer/drawer-variants.js";
