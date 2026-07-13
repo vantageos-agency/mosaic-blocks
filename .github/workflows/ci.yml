@@ -60,6 +60,13 @@ jobs:
       - name: Parse guard
         run: pnpm parse-guard
 
+      # ── 8b. Docs counts drift check (Day 129 "dériver, jamais taper") ────────
+      #    Derives Mosaic*/export counts from src/index.ts and fails, naming
+      #    file+line, if README.md / docs/components-catalog.md have drifted.
+      #    Read-only — never writes. `pnpm docs:counts` (no --check) regenerates.
+      - name: Docs counts check
+        run: pnpm docs:counts --check
+
       # ── 9. Build (tsup ESM+CJS+DTS) ──────────────────────────────────────────
       - name: Build
         run: pnpm build
