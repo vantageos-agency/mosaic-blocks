@@ -880,6 +880,29 @@
           "type": "registry:lib"
         }
       ]
+    },
+    {
+      "name": "mosaic-toast",
+      "type": "registry:ui",
+      "title": "MosaicToast",
+      "description": "Presentational ephemeral notification (success/error/info/warning), optional auto-dismiss via durationMs, host-controlled action node. Paired with MosaicToastProvider for stack positioning (top-right/top-center/bottom-right/bottom-center). No toast queue/runtime \u2014 the host owns the visible stack.",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/toast/MosaicToast.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/toast/MosaicToastProvider.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/toast/toast-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }

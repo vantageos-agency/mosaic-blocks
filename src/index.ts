@@ -717,3 +717,18 @@ export type {
   MosaicAgentChatApprovalResponsePayload,
 } from "./components/agent-chat/MosaicAgentChat.js";
 export { agentChatRootVariants } from "./components/agent-chat/agent-chat-variants.js";
+
+// ── UC2-1: MosaicToast + MosaicToastProvider — ephemeral notifications ──────
+export { MosaicToast } from "./components/toast/MosaicToast.js";
+export type { MosaicToastProps, MosaicToastVariant } from "./components/toast/MosaicToast.js";
+export { MosaicToastProvider } from "./components/toast/MosaicToastProvider.js";
+export type {
+  MosaicToastProviderProps,
+  MosaicToastProviderPosition,
+} from "./components/toast/MosaicToastProvider.js";
+export {
+  toastCardVariants,
+  toastDismissButtonVariants,
+  toastProviderPositionVariants,
+  toastTitleVariants,
+} from "./components/toast/toast-variants.js";
