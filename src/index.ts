@@ -854,3 +854,8 @@ export {
   saveTemplateModalFieldVariants,
   saveTemplateModalFooterVariants,
 } from "./components/save-template-modal/save-template-modal-variants.js";
+
+// ── M1: MosaicTemplateList — presentational, disposition-only item list ────
+export { MosaicTemplateList } from "./components/template-list/MosaicTemplateList.js";
+export type { MosaicTemplateListProps } from "./components/template-list/MosaicTemplateList.js";
+export { templateListVariants } from "./components/template-list/template-list-variants.js";
