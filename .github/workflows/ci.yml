@@ -60,12 +60,40 @@ jobs:
       - name: Parse guard
         run: pnpm parse-guard
 
-      # ── 8b. Docs counts drift check (Day 129 "dériver, jamais taper") ────────
-      #    Derives Mosaic*/export counts from src/index.ts and fails, naming
-      #    file+line, if README.md / docs/components-catalog.md have drifted.
-      #    Read-only — never writes. `pnpm docs:counts` (no --check) regenerates.
+      # ── 8b. Release artifacts guard (mosaic-blocks train TOCTOU fix) ─────────
+      #    PR-ONLY. A component PR's diff must carry NEITHER the version
+      #    (package.json/src/version.ts) NOR a README/catalog count claim —
+      #    both are DERIVED on main, once, after this PR merges (see the
+      #    derive-release-artifacts job below). Escape hatch: HEAD commit
+      #    message carries `// allow-release-artifacts: <reason>`.
+      - name: Release artifacts guard
+        if: github.event_name == 'pull_request'
+        run: node scripts/release-artifacts-guard.mjs
+
+      # ── 8c. Docs counts drift check (Day 129 "dériver, jamais taper") ───────
+      #    PR-ONLY. On `main`, the counts are stale-by-design until the
+      #    derive-release-artifacts job (below) regenerates them post-merge —
+      #    running --check here on push:main would false-positive on every
+      #    merge. Derives Mosaic*/export counts from src/index.ts and fails,
+      #    naming file+line, if README.md / docs/components-catalog.md have
+      #    drifted from what a component PR is allowed to touch. Read-only —
+      #    never writes. `pnpm docs:counts` (no --check) regenerates.
       - name: Docs counts check
+        if: github.event_name == 'pull_request'
         run: pnpm docs:counts --check
+
+      # ── 8d. The guards' own probes ──────────────────────────────────────────
+      #    A guard that is wired but never proven to BITE is indistinguishable
+      #    from an absent guard. Both probes mutate REAL historical material
+      #    (the 4 component commits of the train) and assert the mutation
+      #    LANDED before reading any verdict; both prove the refusal branches,
+      #    not just the happy path. They run on every CI pass so a future edit
+      #    that blinds a guard turns the build red instead of passing quietly.
+      - name: Probe — release artifacts guard bites
+        run: bash scripts/tests/probe-release-artifacts-guard.sh
+
+      - name: Probe — version resolver refuses loudly (unknown flag, dead registry)
+        run: bash scripts/tests/probe-derive-next-version.sh
 
       # ── 9. Build (tsup ESM+CJS+DTS) ──────────────────────────────────────────
       - name: Build
@@ -92,3 +120,65 @@ jobs:
           --fail-on error
           --annotations
           .
+
+  # ── derive-release-artifacts — the OTHER half of the TOCTOU fix ────────────
+  #    Runs ONLY on push:main, ONLY after the Gates job above is green (a
+  #    component PR carries no version/count edit by construction — see the
+  #    Release artifacts guard step above — so main is the ONLY place these
+  #    values are legitimately written, and it writes them from what the
+  #    registry / src/index.ts actually say, never from a human-typed digit).
+  derive-release-artifacts:
+    name: Derive release artifacts
+    needs: [ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Default GITHUB_TOKEN: a push made with it does NOT retrigger
+          # workflows (GitHub's own loop-prevention) — no infinite loop.
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Resolve the version to publish next — READ from the npm registry, ──
+      #    cache-busted, NEVER from `npm view` (its cache lies — see
+      #    .claude/rules/derive-never-type.md) and NEVER a hand-typed digit.
+      #    Loud failure if the registry cannot be reached: an absence of
+      #    signal is never read as "keep the old version".
+      - name: Derive next version from the npm registry
+        id: derive-version
+        run: node scripts/derive-next-version.mjs
+
+      # ── Regenerate the derived counts (producer, no --check: WRITES) ───────
+      - name: Regenerate docs counts
+        run: pnpm docs:counts
+
+      - name: Commit + push if changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add package.json src/version.ts README.md docs/components-catalog.md
+            git commit -m "chore(release): derive version ${{ steps.derive-version.outputs.next_version }} + docs counts [skip ci]"
+            git push origin HEAD:main
+          else
+            echo "derive-release-artifacts: no drift — nothing to commit."
+          fi
