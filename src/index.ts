@@ -478,6 +478,15 @@ export type {
   MosaicMemorySource,
 } from "./components/memory-card/MosaicMemoryCard.js";
 
+// MosaicMemoryDashboard — knowledge-base landing surface (header + stats + search slot + view toggle + results slot)
+export { MosaicMemoryDashboard } from "./components/memory-dashboard/MosaicMemoryDashboard.js";
+export type {
+  MosaicMemoryDashboardProps,
+  MosaicMemoryDashboardStat,
+  MosaicMemoryDashboardViewMode,
+} from "./components/memory-dashboard/MosaicMemoryDashboard.js";
+export { memoryDashboardViewToggleButtonVariants } from "./components/memory-dashboard/memory-dashboard-variants.js";
+
 // MosaicTemplateAgentCard — agent-type template preview card
 export { MosaicTemplateAgentCard } from "./components/template-agent-card/MosaicTemplateAgentCard.js";
 export type {
