@@ -10,7 +10,7 @@
 
 ## 1. Hero & Positioning
 
-`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 136 opinionated, fully-typed UI components that integrate natively with:
+`@vantageos/mosaic-blocks` is the **React composed-block layer** of the VantageOS Mosaic design system. It provides 137 opinionated, fully-typed UI components that integrate natively with:
 
 - **Clerk** — auth sign-in/up flows, org switcher, RBAC, webhook sync
 - **Convex** — real-time data binding ready
@@ -169,7 +169,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 
 ## 6. Component Catalogue Summary
 
-136 exported `Mosaic*` components across 9 sections (166 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+137 exported `Mosaic*` components across 9 sections (170 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
 
 > There is **no "Debate" section**. No `Mosaic*` debate component (room/timer/participant) is exported by this package — despite the "absorbed from anydebate" origin story below, the debate UI was never ported. If you need debate-room UI, it does not exist here yet.
 
@@ -470,7 +470,8 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.5.16-alpha` | Current | 136 exported `Mosaic*` components — adds `MosaicPdfViewer` (presentational inline PDF preview via the browser's native PDF renderer: host-controlled page navigation + zoom, local loading/error status, no PDF library, no network call by the component itself) — superseded row below kept for history |
+| `0.5.17-alpha` | Current | 137 exported `Mosaic*` components — adds `MosaicResizableSplitPane` (presentational resizable two-pane content layout: drag or arrow-key resize, host-controlled width and collapsed state; forms a pair with `MosaicPdfViewer` for side-by-side document preview + edit panel) — superseded row below kept for history |
+| `0.5.16-alpha` | Historical | 136 exported `Mosaic*` components — adds `MosaicPdfViewer` (presentational inline PDF preview via the browser's native PDF renderer: host-controlled page navigation + zoom, local loading/error status, no PDF library, no network call by the component itself) — superseded by the Current row above |
 | `0.5.15-alpha` | Historical | 135 exported `Mosaic*` components — adds `MosaicToast` + `MosaicToastProvider` (presentational ephemeral notification: 4 variants, optional `durationMs` auto-dismiss, host-controlled action node; provider positions the stack top-right/top-center/bottom-right/bottom-center) — superseded by the Current row above |
 | `0.5.14-alpha` | Historical | 133 exported `Mosaic*` components — no new component: adds `scripts/docs-counts.mjs`, a generator that derives every README.md / docs/components-catalog.md component/export count from `src/index.ts` (`pnpm docs:counts` writes, `pnpm docs:counts --check` verifies without writing, wired into CI's Gates job) — closes the class of defect where a count goes stale only AFTER two branches compose, invisible to any per-branch CI run — superseded by the Current row above |
 | `0.5.13-alpha` | Historical | 133 exported `Mosaic*` components — adds `MosaicAgentChat` (presentational session harness: send a turn, resume a session, forward approval responses to the agent runtime) — superseded by the Current row above |

@@ -922,6 +922,25 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "mosaic-resizable-split-pane",
+      "type": "registry:ui",
+      "title": "MosaicResizableSplitPane",
+      "description": "Presentational resizable two-pane content layout (drag or arrow-key resize, host-controlled width and collapsed state). Forms a pair with MosaicPdfViewer for side-by-side document preview + edit panel.",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/resizable-split-pane/MosaicResizableSplitPane.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/resizable-split-pane/split-pane-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }

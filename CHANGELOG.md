@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — 0.5.17-alpha
+
+**MosaicResizableSplitPane** (`src/components/resizable-split-pane/`) — presentational resizable two-pane content layout. Forms a pair with `MosaicPdfViewer`: replaces the modal document-preview pattern (see document OR edit fields, never both) with a draggable side-by-side split. Props: `main`, `side` (both `React.ReactNode`), `sideWidth?`/`onSideWidthChange?` (host-controlled percentage), `isSideCollapsed?`/`onToggleSideCollapsed?`, required `collapseButtonAriaLabel` + `resizeHandleAriaLabel` (no default). Resize via pointer drag on the handle or `ArrowLeft`/`ArrowRight` on the keyboard-focusable `role="separator"` handle (`aria-orientation="vertical"`, `aria-valuenow`/`aria-valuemin`/`aria-valuemax`). No split-pane library dependency. 17 TDD tests, including a mutation-proven `pointermove`/`pointerup` listener-cleanup-on-unmount test.
+
 ### Changed — Tech Debt (DETTE A + B)
 
 **DETTE A — react-doctor allow-list for 3 cva/compound false-positives (config only)**
