@@ -267,6 +267,13 @@ export type {
   MosaicComboboxProps,
 } from "./components/combobox/MosaicCombobox.js";
 
+// ModelSelector (@base-ui/react/combobox) — host-owned model catalogue
+export { MosaicModelSelector } from "./components/model-selector/MosaicModelSelector.js";
+export type {
+  MosaicModelOption,
+  MosaicModelSelectorProps,
+} from "./components/model-selector/MosaicModelSelector.js";
+
 // DropdownMenu (@base-ui/react/menu)
 export { MosaicDropdownMenu } from "./components/dropdown-menu/MosaicDropdownMenu.js";
 export type {
