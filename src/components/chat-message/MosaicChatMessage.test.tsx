@@ -265,6 +265,61 @@ describe("MosaicChatMessage", () => {
     expect(screen.getByText(/"query": "vantageos"/)).toBeTruthy();
   });
 
+  describe("attachment part", () => {
+    it("invokes the required renderAttachment extension point with the part", () => {
+      const renderAttachment = vi.fn(() => <a href="https://example.com/f.pdf">f.pdf</a>);
+      render(
+        <MosaicChatMessage
+          {...BASE_PROPS}
+          messageRole="assistant"
+          parts={[
+            {
+              type: "attachment",
+              attachmentId: "att_1",
+              fileName: "f.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024,
+              url: "https://example.com/f.pdf",
+              renderAttachment,
+            },
+          ]}
+        />,
+      );
+      expect(renderAttachment).toHaveBeenCalledTimes(1);
+      expect(renderAttachment).toHaveBeenCalledWith(
+        expect.objectContaining({ attachmentId: "att_1", fileName: "f.pdf" }),
+      );
+      expect(screen.getByText("f.pdf")).toBeTruthy();
+    });
+
+    it("exposes attachment metadata as data-* attributes without rendering it itself", () => {
+      const { container } = render(
+        <MosaicChatMessage
+          {...BASE_PROPS}
+          messageRole="assistant"
+          parts={[
+            {
+              type: "attachment",
+              attachmentId: "att_2",
+              fileName: "notes.txt",
+              mimeType: "text/plain",
+              sizeBytes: 42,
+              url: "https://example.com/notes.txt",
+              renderAttachment: () => null,
+            },
+          ]}
+        />,
+      );
+      const node = container.querySelector("[data-slot='chat-message-attachment']");
+      expect(node).toBeTruthy();
+      expect(node?.getAttribute("data-attachment-id")).toBe("att_2");
+      expect(node?.getAttribute("data-attachment-filename")).toBe("notes.txt");
+      expect(node?.getAttribute("data-attachment-mimetype")).toBe("text/plain");
+      expect(node?.getAttribute("data-attachment-size")).toBe("42");
+      expect(node?.getAttribute("data-attachment-url")).toBe("https://example.com/notes.txt");
+    });
+  });
+
   it("renders multiple ordered parts in a single message", () => {
     render(
       <MosaicChatMessage

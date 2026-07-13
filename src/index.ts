@@ -668,6 +668,7 @@ export type {
   MosaicChatMessageToolPart,
   MosaicChatMessageToolState,
   MosaicChatMessageToolStatusLabels,
+  MosaicChatMessageAttachmentPart,
 } from "./components/chat-message/MosaicChatMessage.js";
 export {
   chatMessageBubbleVariants,

@@ -16,6 +16,10 @@
  *   on a component that does not exist yet in its own package.
  * - `toolStatusLabels` — every user-facing tool-status word is host-owned
  *   copy (SIN-01 i18n), no English fallback baked in.
+ * - `renderAttachment` — required on the `"attachment"` part. The host
+ *   renders its own file/image/PDF viewer; the library bundles zero
+ *   attachment-rendering dependency and only exposes the attachment's
+ *   metadata as `data-*` attributes (never as rendered content).
  *
  * Tool-call lifecycle is a discriminated union on `state`, matching the
  * eve/react part contract exactly (input-streaming -> approval-requested ->
@@ -177,10 +181,37 @@ export type MosaicChatMessageToolState =
 
 export type MosaicChatMessageToolPart = MosaicChatMessageToolPartBase & MosaicChatMessageToolState;
 
+/**
+ * Host-rendered attachment part. Mirrors the tool-call `renderApproval`
+ * pattern: the library never bundles a file viewer/renderer — the host
+ * supplies `renderAttachment`. The metadata fields describe the attachment
+ * (never its rendering) and are exposed as `data-*` attributes on the
+ * wrapper, never as rendered text/UI.
+ */
+export interface MosaicChatMessageAttachmentPart {
+  type: "attachment";
+  /** Stable identifier for this attachment, used as the React key. */
+  attachmentId: string;
+  /** File name, exposed as `data-attachment-filename`. */
+  fileName: string;
+  /** MIME type of the attachment, exposed as `data-attachment-mimetype`. */
+  mimeType: string;
+  /** Size in bytes, exposed as `data-attachment-size`. */
+  sizeBytes: number;
+  /** URL where the attachment can be fetched/downloaded. */
+  url: string;
+  /**
+   * Renders the host-owned attachment UI (e.g. a PDF/image viewer). Required
+   * — the library never bundles a file-rendering dependency.
+   */
+  renderAttachment: (part: MosaicChatMessageAttachmentPart) => React.ReactNode;
+}
+
 export type MosaicChatMessagePart =
   | MosaicChatMessageTextPart
   | MosaicChatMessageReasoningPart
-  | MosaicChatMessageToolPart;
+  | MosaicChatMessageToolPart
+  | MosaicChatMessageAttachmentPart;
 
 /** Host-owned copy for every tool-call status label. Required, no default. */
 export interface MosaicChatMessageToolStatusLabels {
@@ -222,7 +253,9 @@ export interface MosaicChatMessageProps {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function partKey(part: MosaicChatMessagePart, index: number): string {
-  return part.type === "tool" ? part.toolCallId : `${part.type}:${index}`;
+  if (part.type === "tool") return part.toolCallId;
+  if (part.type === "attachment") return part.attachmentId;
+  return `${part.type}:${index}`;
 }
 
 function toolStatusOf(
@@ -357,6 +390,22 @@ function ChatMessageToolPartView({
   );
 }
 
+function ChatMessageAttachmentPartView({ part }: { part: MosaicChatMessageAttachmentPart }) {
+  return (
+    <div
+      data-slot="chat-message-attachment"
+      data-attachment-id={part.attachmentId}
+      data-attachment-filename={part.fileName}
+      data-attachment-mimetype={part.mimeType}
+      data-attachment-size={part.sizeBytes}
+      data-attachment-url={part.url}
+      className="my-2"
+    >
+      {part.renderAttachment(part)}
+    </div>
+  );
+}
+
 function ChatMessagePartView({
   part,
   renderText,
@@ -384,6 +433,8 @@ function ChatMessagePartView({
       );
     case "tool":
       return <ChatMessageToolPartView part={part} toolStatusLabels={toolStatusLabels} />;
+    case "attachment":
+      return <ChatMessageAttachmentPartView part={part} />;
   }
 }
 
