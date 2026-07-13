@@ -173,6 +173,22 @@ describe("MosaicToast", () => {
       vi.advanceTimersByTime(60_000);
       expect(onDismiss).not.toHaveBeenCalled();
     });
+
+    it("clears the durationMs timer on unmount — onDismiss is NOT called after the component is gone", () => {
+      const onDismiss = vi.fn();
+      const { unmount } = render(
+        <MosaicToast
+          variant="info"
+          title="Saved"
+          onDismiss={onDismiss}
+          dismissAriaLabel="Fermer"
+          durationMs={3000}
+        />,
+      );
+      unmount();
+      vi.advanceTimersByTime(10_000);
+      expect(onDismiss).not.toHaveBeenCalled();
+    });
   });
 });
 
