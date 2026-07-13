@@ -93,6 +93,8 @@ function baseCatalog(mosaicCount: number, totalExports: number): string {
     `It documents **1 \`Mosaic*\` components** and **0 hooks** out of the **${mosaicCount}** \`Mosaic*\``,
     `components (**${totalExports}** total named exports) that \`src/index.ts\` actually exports.`,
     "",
+    "Total unique `Mosaic*` components documented in this catalog: **1**",
+    "",
   ].join("\n");
 }
 
@@ -222,6 +224,160 @@ describe("docs-counts.mjs — Historical rows are dated fact, never rewritten/as
     runWrite(workDir);
     const after = readFileSync(path.join(workDir, "README.md"), "utf-8");
     expect(after).toContain("| `0.1.0` | Historical | 2 exported `Mosaic*` components");
+  });
+});
+
+describe("docs-counts.mjs — per-anchor blind spot: losing ONE anchor out of ten must never be hidden by the other nine", () => {
+  // Full-featured README / catalog fixtures that exercise EVERY dedicated
+  // anchor the producer relies on (HERO_RE, SECTION6_SUMMARY_RE,
+  // SECTION6_TOTAL_RE for README; CATALOG_HEADER_DOCUMENTED_RE,
+  // CATALOG_LIVE_LIB_RE, CATALOG_FOOTER_RE for the catalog), plus enough
+  // generic mosaicCountPatterns()/totalExportsPatterns() occurrences
+  // (the Versioning-table row) that `matchCount` NEVER drops to zero when
+  // exactly one dedicated anchor is reworded — this is what proves the
+  // file-level `matchCount === 0` check alone cannot catch this class, only
+  // the per-anchor check added by this fix can.
+  function fullReadme(n: number): string {
+    return [
+      `It provides ${n} opinionated, fully-typed UI components.`,
+      "",
+      `${n} exported \`Mosaic*\` components across 1 sections (${n} total named exports).`,
+      "",
+      "## 14. Versioning & Changelog",
+      "",
+      "| Version | Status | Notes |",
+      "|---|---|---|",
+      `| \`0.1.0\` | Current | ${n} exported \`Mosaic*\` components |`,
+      "",
+    ].join("\n");
+  }
+
+  function fullCatalog(n: number): string {
+    return [
+      "# Components Catalog",
+      "",
+      "Documented: **1 Mosaic* components + 0 hooks** — a curated subset.",
+      `\`src/index.ts\` exports **${n}** \`Mosaic*\` components and **${n}** total named exports.`,
+      "",
+      "## Documented / exported ratio",
+      "",
+      `It documents **1 \`Mosaic*\` components** and **0 hooks** out of the **${n}** \`Mosaic*\``,
+      `components (**${n}** total named exports) that \`src/index.ts\` actually exports.`,
+      "",
+      "Total unique `Mosaic*` components documented in this catalog: **1**",
+      "",
+    ].join("\n");
+  }
+
+  const readmeAnchorMutations: Array<{ name: string; mutate: (src: string) => string }> = [
+    {
+      name: "HERO_RE",
+      mutate: (src) => src.replace("It provides 2 opinionated", "It ships 2 curated"),
+    },
+    {
+      name: "SECTION6_SUMMARY_RE",
+      mutate: (src) =>
+        src.replace(
+          "2 exported `Mosaic*` components across 1 sections",
+          "2 shipped `Mosaic*` items across 1 sections",
+        ),
+    },
+    {
+      name: "SECTION6_TOTAL_RE",
+      mutate: (src) => src.replace("(2 total named exports)", "(2 total exported names)"),
+    },
+  ];
+
+  const catalogAnchorMutations: Array<{ name: string; mutate: (src: string) => string }> = [
+    {
+      name: "CATALOG_HEADER_DOCUMENTED_RE",
+      mutate: (src) =>
+        src.replace(
+          "Documented: **1 Mosaic* components + 0 hooks**",
+          "Documented: 1 Mosaic components plus 0 hooks",
+        ),
+    },
+    {
+      name: "CATALOG_LIVE_LIB_RE",
+      mutate: (src) =>
+        src.replace(
+          "`src/index.ts` exports **2** `Mosaic*` components and **2** total named exports.",
+          "`src/index.ts` ships **2** `Mosaic*` components with **2** total named exports.",
+        ),
+    },
+    {
+      name: "CATALOG_FOOTER_RE",
+      mutate: (src) =>
+        src.replace(
+          "Total unique `Mosaic*` components documented in this catalog: **1**",
+          "Grand total of unique `Mosaic*` components documented here: **1**",
+        ),
+    },
+  ];
+
+  it("sanity: the full-featured fixture (all anchors intact) is green", () => {
+    workDir = makeFixture();
+    writeIndex(workDir, ["MosaicAlpha", "MosaicBeta"]);
+    writeFileSync(path.join(workDir, "README.md"), fullReadme(2));
+    writeFileSync(path.join(workDir, "docs", "components-catalog.md"), fullCatalog(2));
+    const result = runCheck(workDir);
+    expect(result.status, result.output).toBe(0);
+  });
+
+  for (const { name, mutate } of readmeAnchorMutations) {
+    it(`README.md losing ONLY the ${name} anchor (all others intact) must make the PRODUCER go RED naming ${name} — not silently pass because the other anchors still match`, () => {
+      workDir = makeFixture();
+      writeIndex(workDir, ["MosaicAlpha", "MosaicBeta"]);
+      const mutated = mutate(fullReadme(2));
+      expect(mutated, `mutation for ${name} did not land — fixture text not found`).not.toBe(
+        fullReadme(2),
+      );
+      writeFileSync(path.join(workDir, "README.md"), mutated);
+      writeFileSync(path.join(workDir, "docs", "components-catalog.md"), fullCatalog(2));
+
+      const result = runCheck(workDir);
+      expect(
+        result.status,
+        `producer must go RED when ${name} is reworded away, even though other anchors ` +
+          `still match (matchCount stays > 0): ${result.output}`,
+      ).not.toBe(0);
+      expect(result.output).toContain(name);
+    });
+  }
+
+  for (const { name, mutate } of catalogAnchorMutations) {
+    it(`docs/components-catalog.md losing ONLY the ${name} anchor (all others intact) must make the PRODUCER go RED naming ${name} — not silently pass because the other anchors still match`, () => {
+      workDir = makeFixture();
+      writeIndex(workDir, ["MosaicAlpha", "MosaicBeta"]);
+      const mutated = mutate(fullCatalog(2));
+      expect(mutated, `mutation for ${name} did not land — fixture text not found`).not.toBe(
+        fullCatalog(2),
+      );
+      writeFileSync(path.join(workDir, "README.md"), fullReadme(2));
+      writeFileSync(path.join(workDir, "docs", "components-catalog.md"), mutated);
+
+      const result = runCheck(workDir);
+      expect(
+        result.status,
+        `producer must go RED when ${name} is reworded away, even though other anchors ` +
+          `still match (matchCount stays > 0): ${result.output}`,
+      ).not.toBe(0);
+      expect(result.output).toContain(name);
+    });
+  }
+
+  it("the exact reviewer-cited mutation (README hero 'It provides N opinionated' -> 'It ships N curated') is caught by the producer, naming HERO_RE", () => {
+    workDir = makeFixture();
+    writeIndex(workDir, ["MosaicAlpha", "MosaicBeta"]);
+    writeFileSync(
+      path.join(workDir, "README.md"),
+      fullReadme(2).replace("It provides 2 opinionated", "It ships 2 curated"),
+    );
+    writeFileSync(path.join(workDir, "docs", "components-catalog.md"), fullCatalog(2));
+
+    const result = runCheck(workDir);
+    expect(result.status, result.output).not.toBe(0);
+    expect(result.output).toContain("HERO_RE");
   });
 });
 
