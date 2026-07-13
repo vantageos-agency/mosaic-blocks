@@ -236,6 +236,139 @@ describe("MosaicChatThread", () => {
    * The `container.contains(anchorNode)` guard is what prevents it — and a
    * guard nobody pins is a guard that will be refactored away.
    */
+  /**
+   * The `Selection` interface defines exactly TWO node endpoints — `anchorNode`
+   * and `focusNode` (lib.dom.d.ts:30373 and :30391). A guard that reads one of
+   * them knows half the domain, and the half it does not know fails OPEN: it
+   * waves the case through while staying green.
+   *
+   * Here that half is a selection that ENTERS the thread — dragged from the pane
+   * next door (the split-pane's document viewer) into the messages. `anchorNode`
+   * lands outside, `focusNode` inside, and thread text is visibly selected while
+   * the anchor happily keeps yanking the view back down.
+   *
+   * The mirror case (anchor inside, focus outside) already worked, which is
+   * exactly what kept this invisible: the hole only showed in ONE direction.
+   *
+   * One test per endpoint. One mutation per endpoint.
+   */
+  /**
+   * `content-visibility: auto` lets the browser skip render work for messages
+   * far out of view. `contain-intrinsic-size` is what keeps that from being a
+   * regression: without a placeholder height, skipped children collapse to zero
+   * and the scrollbar jumps as they re-expand — which would fight the very
+   * stick-to-bottom this component exists to hold.
+   *
+   * The two belong together, so the test pins them together. jsdom computes no
+   * layout, so this asserts the contract is DECLARED on the content wrapper; the
+   * behavioural guarantee it protects (stick-to-bottom) is covered by the tests
+   * above, which keep passing with it applied.
+   */
+  it("declares content-visibility AND an intrinsic size on the thread's children", () => {
+    const { container } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const content = container.querySelector("[data-slot='chat-thread-content']") as HTMLElement;
+
+    expect(content.className).toContain("[&>*]:[content-visibility:auto]");
+    // The placeholder height is not optional garnish — it is the half that
+    // prevents the scroll jump. Pinned separately so it cannot be dropped alone.
+    expect(content.className).toContain("[&>*]:[contain-intrinsic-size:auto_4rem]");
+  });
+
+  it("DOES disengage when the selection ENTERS the thread (anchor outside, focus inside)", () => {
+    const outside = document.createElement("div");
+    outside.textContent = "text in the pane next door";
+    document.body.appendChild(outside);
+
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    const insideText = screen.getByText("message 1").firstChild as Text;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    // A selection dragged from OUTSIDE into the thread: anchor out, focus in.
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    const range = document.createRange();
+    range.setStart(outside.firstChild as Text, 0);
+    range.setEnd(insideText, 5);
+    selection?.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    // Thread text IS selected — the view must stop chasing the bottom.
+    expect(root.scrollTop).toBe(0);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeTruthy();
+
+    outside.remove();
+  });
+
+  /**
+   * The MIRROR case: dragged from inside the thread OUT into the pane next door.
+   * Anchor in, focus out.
+   *
+   * Every other selection test puts both endpoints in the same text node, so
+   * both land inside — which means deleting the `anchorNode` half of the guard
+   * left the whole suite GREEN. The mutation proved it: one endpoint of the
+   * domain was carrying no test at all, and would have been refactored away
+   * without a sound.
+   *
+   * Two endpoints in the API, two mutations, two tests. That is the whole rule.
+   */
+  it("DOES disengage when the selection LEAVES the thread (anchor inside, focus outside)", () => {
+    const { container, rerender } = render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+      </MosaicChatThread>,
+    );
+
+    // Appended AFTER the thread: a Range must run forwards in document order, or
+    // the DOM collapses it — and a collapsed selection is (correctly) ignored by
+    // the guard, which would make this test pass for a reason that has nothing
+    // to do with what it claims to check.
+    const outside = document.createElement("div");
+    outside.textContent = "text in the pane next door";
+    document.body.appendChild(outside);
+
+    const root = container.querySelector("[data-slot='chat-thread']") as HTMLElement;
+    const insideText = screen.getByText("message 1").firstChild as Text;
+    stubScrollMetrics(root, { scrollHeight: 400, clientHeight: 300, scrollTop: 0 });
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    const range = document.createRange();
+    range.setStart(insideText, 0);
+    range.setEnd(outside.firstChild as Text, 4);
+    selection?.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+
+    stubScrollMetrics(root, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 });
+    rerender(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div>message 1</div>
+        <div>message 2</div>
+      </MosaicChatThread>,
+    );
+
+    expect(root.scrollTop).toBe(0);
+    expect(container.querySelector("[data-slot='chat-thread-scroll-button']")).toBeTruthy();
+
+    outside.remove();
+  });
+
   it("does NOT disengage when the selection lands OUTSIDE the thread (a sibling pane)", () => {
     const outside = document.createElement("div");
     outside.textContent = "text in another pane";

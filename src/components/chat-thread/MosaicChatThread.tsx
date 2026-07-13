@@ -166,8 +166,25 @@ export function MosaicChatThread({
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
         return;
       }
-      const anchorNode = selection.anchorNode;
-      if (anchorNode && container.contains(anchorNode)) {
+      // BOTH endpoints, because the DOM's `Selection` interface defines exactly
+      // two node endpoints — `anchorNode` (lib.dom.d.ts:30373) and `focusNode`
+      // (:30391) — and a selection needs only ONE of them inside this thread to
+      // mean "I am reading this".
+      //
+      // Checking `anchorNode` alone was a guard that knew one formulation of the
+      // thing it guarded: a selection ENTERING the thread (anchored in the pane
+      // next door — the split-pane's document viewer — and focused in here)
+      // left `anchorNode` outside, so the handler bailed and the anchor never
+      // disengaged, while thread text was visibly selected. The mirror case
+      // worked, which is what made it invisible: the hole only showed one way.
+      //
+      // The endpoint list is DERIVED from the API, not remembered. Each endpoint
+      // has its own test, and each is proven by its own mutation.
+      const { anchorNode, focusNode } = selection;
+      const touchesThread =
+        (anchorNode !== null && container.contains(anchorNode)) ||
+        (focusNode !== null && container.contains(focusNode));
+      if (touchesThread) {
         isAtBottomRef.current = false;
         setIsAtBottom(false);
       }
