@@ -382,6 +382,33 @@ export type { MosaicThemeProviderProps } from "./components/theme-provider/Mosai
 export { MosaicDeleteConfirmationDialog } from "./components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.js";
 export type { MosaicDeleteConfirmationDialogProps } from "./components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.js";
 
+// MosaicAlertDialog — confirm-before-irreversible-action dialog (compound API)
+export {
+  MosaicAlertDialog,
+  MosaicAlertDialogAction,
+  MosaicAlertDialogCancel,
+  MosaicAlertDialogContent,
+  MosaicAlertDialogDescription,
+  MosaicAlertDialogFooter,
+  MosaicAlertDialogHeader,
+  MosaicAlertDialogOverlay,
+  MosaicAlertDialogPortal,
+  MosaicAlertDialogTitle,
+  MosaicAlertDialogTrigger,
+} from "./components/alert-dialog/MosaicAlertDialog.js";
+export type {
+  MosaicAlertDialogActionProps,
+  MosaicAlertDialogCancelProps,
+  MosaicAlertDialogContentProps,
+  MosaicAlertDialogDescriptionProps,
+  MosaicAlertDialogOverlayProps,
+  MosaicAlertDialogTitleProps,
+} from "./components/alert-dialog/MosaicAlertDialog.js";
+export {
+  alertDialogContentVariants,
+  alertDialogOverlayVariants,
+} from "./components/alert-dialog/alert-dialog-variants.js";
+
 // MosaicPreferencesPanel — generic user preferences form
 export { MosaicPreferencesPanel } from "./components/preferences-panel/MosaicPreferencesPanel.js";
 export type {
