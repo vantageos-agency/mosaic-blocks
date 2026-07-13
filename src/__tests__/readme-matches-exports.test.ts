@@ -29,6 +29,22 @@
  *     semver ranges, port numbers) are not "component counts" and are out
  *     of this guard's scope by design — this guard targets the specific
  *     "phantom component" and "stale count" failure modes only.
+ *
+ * Structural exemption for the "## 14. Versioning & Changelog" table
+ * (README.md): a row's Mosaic* count is a DATED FACT, not a live claim,
+ * when that row's **Status** column reads "Historical" — it says what was
+ * true at that release, and must NOT be forced to match today's count.
+ * Only rows whose Status column reads "Current" assert against the live
+ * `src/index.ts` count.
+ *
+ * This exemption is READ FROM THE TABLE STRUCTURE (the Status column of
+ * each row), never from the wording of the sentence. There is no verb
+ * keyword-list ("shipped" vs "exported" vs anything else) anywhere in this
+ * guard — a keyword list is just an enumeration that a future rewrite
+ * evades with the next synonym. If a row in this table carries a Mosaic*
+ * count and the guard cannot read its Status column (missing, or not one
+ * of "Current"/"Historical"), the guard FAILS LOUDLY naming the file and
+ * line — it never silently drops the row from enforcement.
  */
 
 import fs from "node:fs";
@@ -137,11 +153,21 @@ function extractCatalogDocumentedMosaicNames(catalog: string): Set<string> {
  * against the real numbers. It runs across the WHOLE document, so a 2nd, 3rd,
  * Nth restatement of the same count is caught exactly like the 1st.
  */
+type VersionTableRowStatus = "Current" | "Historical" | "unclassified";
+
 type GenericCountClaim = {
   line: number;
   snippet: string;
   claimed: number;
   kind: "mosaic-count" | "total-exports-count";
+  /**
+   * Only populated for `kind === "mosaic-count"` claims that land on a line
+   * belonging to the "## 14. Versioning & Changelog" table. `undefined`
+   * means the claim is outside that table (e.g. the Section 1 hero line,
+   * the Section 6 summary, or docs/components-catalog.md prose) and is
+   * always asserted against the live count, exactly as before.
+   */
+  rowStatus?: VersionTableRowStatus;
 };
 
 const MOSAIC_COUNT_PATTERNS = [
@@ -149,8 +175,13 @@ const MOSAIC_COUNT_PATTERNS = [
   // \s* allows the number/keyword to be split across a markdown line wrap —
   // see docs/components-catalog.md:430-431).
   /\*\*(\d+)\*\*\s*`Mosaic\*`\s*components/gs,
-  // "123 exported `Mosaic*` components" (README Section 6 + version table).
-  /(\d+)\s*exported\s*`Mosaic\*`\s*components/gs,
+  // "123 exported `Mosaic*` components" / "123 shipped `Mosaic*` components"
+  // (README Section 6 + version table). Verb-AGNOSTIC by design: this
+  // matches ANY single word between the number and the backtick-wrapped
+  // `Mosaic*`, deliberately NOT a keyword list of specific verbs — the
+  // versioning-table exemption below is decided by the row's Status
+  // column, never by which verb a sentence happens to use.
+  /(\d+)\s+\S+\s*`Mosaic\*`\s*components/gs,
   // "It provides 123 opinionated" (README hero line).
   /(\d+)\s*opinionated/gs,
 ];
@@ -166,9 +197,50 @@ function lineNumberAt(doc: string, index: number): number {
   return doc.slice(0, index).split("\n").length;
 }
 
+/**
+ * Structurally classify every row of the "## 14. Versioning & Changelog"
+ * markdown table (README.md) by reading its **Status** column — never by
+ * inspecting the wording of the row's prose.
+ *
+ * A line is considered part of this table only if it matches the table's
+ * shape (`| \`<semver>\` | <status> | ...`) AND its first cell is a
+ * semver-shaped token (`X.Y.Z` or `X.Y.Z-suffix`). This keeps the
+ * classifier from ever mistaking an unrelated backtick-first-cell table
+ * (e.g. docs/components-catalog.md's `| \`MosaicFoo\` | ... |` component
+ * rows) for a versioning row.
+ *
+ * Returns a map of 1-based line number -> "Current" | "Historical" |
+ * "unclassified". "unclassified" means the row IS a versioning-table row
+ * but its Status column is missing or holds neither "Current" nor
+ * "Historical" — callers MUST treat this as a loud failure, never a silent
+ * skip.
+ */
+function extractVersionTableRowStatusByLine(doc: string): Map<number, VersionTableRowStatus> {
+  const statusByLine = new Map<number, VersionTableRowStatus>();
+  const semverCell = /^\d+\.\d+\.\d+(?:-[\w.]+)?$/;
+  const rowRe = /^\|\s*`([^`]+)`\s*\|\s*([^|]*)\|/;
+  const lines = doc.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const match = rowRe.exec(lines[i]);
+    if (!match) continue;
+    const versionCell = match[1].trim();
+    if (!semverCell.test(versionCell)) continue; // not a versioning-table row — out of scope, structurally
+    const statusCell = match[2].trim();
+    const status: VersionTableRowStatus =
+      statusCell === "Current"
+        ? "Current"
+        : statusCell === "Historical"
+          ? "Historical"
+          : "unclassified";
+    statusByLine.set(i + 1, status);
+  }
+  return statusByLine;
+}
+
 function extractGenericCountClaims(doc: string): GenericCountClaim[] {
   const claims: GenericCountClaim[] = [];
   const seenAt = new Set<string>(); // dedupe: bold pattern + bare pattern can both stage-match the same span start
+  const versionTableRowStatusByLine = extractVersionTableRowStatusByLine(doc);
   const scan = (patterns: RegExp[], kind: GenericCountClaim["kind"]) => {
     for (const pattern of patterns) {
       let match: RegExpExecArray | null;
@@ -183,6 +255,7 @@ function extractGenericCountClaims(doc: string): GenericCountClaim[] {
           snippet: match[0].replace(/\s+/g, " ").trim(),
           claimed: Number(match[1]),
           kind,
+          rowStatus: kind === "mosaic-count" ? versionTableRowStatusByLine.get(line) : undefined,
         });
       }
     }
@@ -214,14 +287,45 @@ function assertGenericCountClaimsAreCurrent(
   doc: string,
   docLabel: string,
   expected: { mosaicCount: number; totalExports: number },
-) {
+): { total: number; asserted: number; exemptedHistorical: number; unclassified: number } {
   const claims = extractGenericCountClaims(doc);
   expect(
     claims.length,
     `${docLabel}: extracted zero generic count claims — did all count wording change? Update MOSAIC_COUNT_PATTERNS / TOTAL_EXPORTS_PATTERNS to match the new phrasing (this sanity check exists so the scanner never silently stops checking).`,
   ).toBeGreaterThan(0);
 
-  const stale = claims.filter((claim) =>
+  // Step 1 — loud, named failure for any versioning-table row this guard
+  // cannot classify. A row that carries a Mosaic* count but has no
+  // recognizable Status column is NEVER silently skipped and NEVER
+  // silently enforced against the live count — it fails CI by name.
+  const unclassified = claims.filter(
+    (claim) => claim.kind === "mosaic-count" && claim.rowStatus === "unclassified",
+  );
+  if (unclassified.length > 0) {
+    const details = unclassified
+      .map(
+        (claim) =>
+          `  - ${docLabel}:${claim.line} carries a Mosaic* count but the guard cannot classify it (no Status column) in "${claim.snippet}" — classify it (Status = "Current" or "Historical") or add a written exemption`,
+      )
+      .join("\n");
+    throw new Error(
+      `${docLabel} has ${unclassified.length} unclassifiable versioning-table row(s):\n${details}`,
+    );
+  }
+
+  // Step 2 — structural exemption: a row whose Status column reads
+  // "Historical" is a dated fact, exempted from the live-count assertion
+  // regardless of the verb its sentence uses. Every other claim (Current
+  // rows, and everything outside the versioning table entirely) IS
+  // asserted, exactly as before.
+  const exemptedHistorical = claims.filter(
+    (claim) => claim.kind === "mosaic-count" && claim.rowStatus === "Historical",
+  );
+  const asserted = claims.filter(
+    (claim) => !(claim.kind === "mosaic-count" && claim.rowStatus === "Historical"),
+  );
+
+  const stale = asserted.filter((claim) =>
     claim.kind === "mosaic-count"
       ? claim.claimed !== expected.mosaicCount
       : claim.claimed !== expected.totalExports,
@@ -243,6 +347,26 @@ function assertGenericCountClaimsAreCurrent(
   }
 
   expect(stale).toEqual([]);
+
+  // Step 3 — coverage inventory, asserted, never silent: every occurrence
+  // this scanner found is either asserted, exempted-by-structure, or
+  // unclassified (which would already have thrown above). If the
+  // partition doesn't sum to the total, the classification logic itself
+  // is broken — fail loudly rather than under-report coverage.
+  const coverage = {
+    total: claims.length,
+    asserted: asserted.length,
+    exemptedHistorical: exemptedHistorical.length,
+    unclassified: unclassified.length,
+  };
+  expect(
+    coverage.asserted + coverage.exemptedHistorical + coverage.unclassified,
+    `${docLabel} coverage inventory does not partition cleanly: asserted(${coverage.asserted}) + ` +
+      `exemptedHistorical(${coverage.exemptedHistorical}) + unclassified(${coverage.unclassified}) ` +
+      `!== total(${coverage.total})`,
+  ).toBe(coverage.total);
+
+  return coverage;
 }
 
 describe("README ↔ exports guard — no phantom components, no stale counts", () => {
@@ -254,6 +378,36 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
     // Guards the guard: if this regex ever breaks (e.g. index.ts restructured),
     // fail loudly instead of silently reporting zero phantoms.
     expect(realExports.size).toBeGreaterThan(50);
+  });
+
+  it("sanity: the versioning table's header still declares a Status column, and at least one row of each Status classifies", () => {
+    // Guards the guard: the Historical-row exemption above is keyed on the
+    // per-row Status column value, never on the header text — so a header
+    // rename alone cannot silently defeat the classifier (verified: renaming
+    // "Status" to "State" leaves per-row classification untouched, since
+    // rows still say "Current"/"Historical" verbatim). What WOULD defeat the
+    // classifier is the table's column ORDER changing (e.g. Status moved to
+    // a different cell) — this sanity check fails loudly if that happens,
+    // by requiring the header to still read "| Version | Status | Notes |"
+    // AND requiring at least one row to classify as "Current" and one as
+    // "Historical" (if the columns shifted, rows would classify as
+    // "unclassified" instead, and this assertion would go to 0/0).
+    expect(
+      /\|\s*Version\s*\|\s*Status\s*\|\s*Notes\s*\|/.test(readme),
+      'README.md "## 14. Versioning & Changelog" table header no longer reads ' +
+        '"| Version | Status | Notes |" — did the table shape change? The Historical-row ' +
+        "exemption reads the Status column by position; update extractVersionTableRowStatusByLine " +
+        "if the column order changed.",
+    ).toBe(true);
+    const rowStatuses = [...extractVersionTableRowStatusByLine(readme).values()];
+    expect(
+      rowStatuses.filter((s) => s === "Current").length,
+      "README.md versioning table has zero rows classified as Current — the per-row parser is broken.",
+    ).toBeGreaterThan(0);
+    expect(
+      rowStatuses.filter((s) => s === "Historical").length,
+      "README.md versioning table has zero rows classified as Historical — the per-row parser is broken.",
+    ).toBeGreaterThan(0);
   });
 
   it("every Mosaic* component cited in README.md is a real export of src/index.ts", () => {
@@ -333,10 +487,15 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
     const realMosaicComponentCount = [...realExports].filter((name) =>
       name.startsWith("Mosaic"),
     ).length;
-    assertGenericCountClaimsAreCurrent(readme, "README.md", {
+    const coverage = assertGenericCountClaimsAreCurrent(readme, "README.md", {
       mosaicCount: realMosaicComponentCount,
       totalExports: realExports.size,
     });
+    // Coverage inventory asserted, not silent: every occurrence found is
+    // accounted for as asserted (live), exempted-by-structure (Historical
+    // row), or unclassified (would already have thrown above).
+    expect(coverage.unclassified).toBe(0);
+    expect(coverage.asserted + coverage.exemptedHistorical).toBe(coverage.total);
   });
 
   it("package.json version and src/version.ts stay in lockstep", () => {
@@ -463,10 +622,12 @@ describe("components-catalog.md ↔ exports guard — no phantom components, no 
     const realMosaicComponentCount = [...realExports].filter((name) =>
       name.startsWith("Mosaic"),
     ).length;
-    assertGenericCountClaimsAreCurrent(catalog, "docs/components-catalog.md", {
+    const coverage = assertGenericCountClaimsAreCurrent(catalog, "docs/components-catalog.md", {
       mosaicCount: realMosaicComponentCount,
       totalExports: realExports.size,
     });
+    expect(coverage.unclassified).toBe(0);
+    expect(coverage.asserted + coverage.exemptedHistorical).toBe(coverage.total);
   });
 
   it("docs/components-catalog.md never asserts a false '1:1 with src/index.ts' invariant", () => {
