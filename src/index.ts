@@ -451,6 +451,16 @@ export type {
   MosaicQuickAgent,
 } from "./components/quick-agent-selector/MosaicQuickAgentSelector.js";
 
+// MosaicAgentPreview — presentational preview of an agent config before creation
+export { MosaicAgentPreview } from "./components/agent-preview/MosaicAgentPreview.js";
+export type {
+  MosaicAgentPreviewProps,
+  MosaicAgentPreviewSummaryProps,
+  MosaicAgentPreviewDetailedProps,
+  MosaicAgentPreviewAttribute,
+} from "./components/agent-preview/MosaicAgentPreview.js";
+export { agentPreviewVariants } from "./components/agent-preview/agent-preview-variants.js";
+
 // MosaicMemoryCard — memory item card (detailed / compact variants)
 export { MosaicMemoryCard } from "./components/memory-card/MosaicMemoryCard.js";
 export type {
