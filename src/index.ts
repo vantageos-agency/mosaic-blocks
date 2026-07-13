@@ -750,3 +750,13 @@ export {
   splitPaneHandleVariants,
   splitPaneRootVariants,
 } from "./components/resizable-split-pane/split-pane-variants.js";
+
+// ── UC2-4: MosaicTagInput — presentational tag/chip input with autocomplete ─
+export { MosaicTagInput } from "./components/tag-input/MosaicTagInput.js";
+export type { MosaicTagInputProps } from "./components/tag-input/MosaicTagInput.js";
+export {
+  tagInputFieldVariants,
+  tagInputRemoveButtonVariants,
+  tagInputRootVariants,
+  tagInputTagVariants,
+} from "./components/tag-input/tag-input-variants.js";
