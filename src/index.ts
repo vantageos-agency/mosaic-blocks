@@ -885,3 +885,16 @@ export { templateManagementRowVariants } from "./components/template-management-
 export { MosaicChatSidebar } from "./components/chat-sidebar/MosaicChatSidebar.js";
 export type { MosaicChatSidebarProps } from "./components/chat-sidebar/MosaicChatSidebar.js";
 export { chatSidebarThreadVariants } from "./components/chat-sidebar/chat-sidebar-variants.js";
+
+// ── M1: MosaicMemoryGrid — presentational, tile-disposition-only knowledge-base grid ──
+export { MosaicMemoryGrid } from "./components/memory-grid/MosaicMemoryGrid.js";
+export type { MosaicMemoryGridProps } from "./components/memory-grid/MosaicMemoryGrid.js";
+export { memoryGridVariants } from "./components/memory-grid/memory-grid-variants.js";
+
+// ── M1: MosaicMemoryList — presentational, row-disposition-only knowledge-base list ──
+export { MosaicMemoryList } from "./components/memory-list/MosaicMemoryList.js";
+export type { MosaicMemoryListProps } from "./components/memory-list/MosaicMemoryList.js";
+export {
+  memoryListItemVariants,
+  memoryListVariants,
+} from "./components/memory-list/memory-list-variants.js";
