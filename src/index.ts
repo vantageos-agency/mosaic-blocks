@@ -428,6 +428,18 @@ export type {
   MosaicMemorySource,
 } from "./components/memory-card/MosaicMemoryCard.js";
 
+// MosaicTemplateAgentCard — agent-type template preview card
+export { MosaicTemplateAgentCard } from "./components/template-agent-card/MosaicTemplateAgentCard.js";
+export type {
+  MosaicTemplateAgentCardProps,
+  MosaicTemplateAgentData,
+} from "./components/template-agent-card/MosaicTemplateAgentCard.js";
+export {
+  templateAgentCardBadgeVariants,
+  templateAgentCardTagVariants,
+  templateAgentCardVariants,
+} from "./components/template-agent-card/template-agent-card-variants.js";
+
 // MosaicSelectorModal — generic searchable item picker modal
 export { MosaicSelectorModal } from "./components/selector-modal/MosaicSelectorModal.js";
 export type {
