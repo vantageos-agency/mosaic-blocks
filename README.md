@@ -470,7 +470,8 @@ This package follows [Semantic Versioning](https://semver.org/). While in alpha 
 
 | Version | Status | Notes |
 |---|---|---|
-| `0.5.13-alpha` | Current | 133 exported `Mosaic*` components — adds `MosaicAgentChat` (presentational session harness: send a turn, resume a session, forward approval responses to the agent runtime) |
+| `0.5.14-alpha` | Current | 133 exported `Mosaic*` components — no new component: adds `scripts/docs-counts.mjs`, a generator that derives every README.md / docs/components-catalog.md component/export count from `src/index.ts` (`pnpm docs:counts` writes, `pnpm docs:counts --check` verifies without writing, wired into CI's Gates job) — closes the class of defect where a count goes stale only AFTER two branches compose, invisible to any per-branch CI run |
+| `0.5.13-alpha` | Historical | 133 exported `Mosaic*` components — adds `MosaicAgentChat` (presentational session harness: send a turn, resume a session, forward approval responses to the agent runtime) — superseded by the Current row above |
 | `0.5.12-alpha` | Historical | 132 exported `Mosaic*` components — adds `MosaicApiKeyPanel` (presentational BYOK panel: idle/validating/valid/invalid, no storage, no network) — superseded by the Current row above |
 | `0.5.11-alpha` | Historical | 131 exported `Mosaic*` components — guard fix only, no new component: `readme-matches-exports.test.ts` now exempts Historical rows by their Status column (structural), not by wording — superseded by the Current row above |
 | `0.5.10-alpha` | Historical | 131 exported `Mosaic*` components, adds `MosaicToolToggleList` (per-tool switch + approval-level selector) — superseded by the Current row above |

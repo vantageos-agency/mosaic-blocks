@@ -1,6 +1,6 @@
 {
   "name": "@vantageos/mosaic-blocks",
-  "version": "0.5.13-alpha",
+  "version": "0.5.14-alpha",
   "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Published alpha.",
   "license": "FSL-1.1-Apache-2.0",
   "type": "module",
@@ -60,6 +60,7 @@
     "sandbox:build": "cd sandbox && pnpm build",
     "prebuild": "rimraf dist",
     "sync-versions": "node scripts/sync-versions.mjs",
+    "docs:counts": "node scripts/docs-counts.mjs",
     "parse-guard": "node scripts/parse-guard.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
