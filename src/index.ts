@@ -830,3 +830,11 @@ export {
   drawerBackdropVariants,
   drawerPopupVariants,
 } from "./components/drawer/drawer-variants.js";
+
+// ── M1: MosaicTemplateCategoryChips — host-driven agent-template filter ───
+export { MosaicTemplateCategoryChips } from "./components/template-category-chips/MosaicTemplateCategoryChips.js";
+export type {
+  MosaicTemplateCategory,
+  MosaicTemplateCategoryChipsProps,
+} from "./components/template-category-chips/MosaicTemplateCategoryChips.js";
+export { templateCategoryChipVariants } from "./components/template-category-chips/template-category-chips-variants.js";
