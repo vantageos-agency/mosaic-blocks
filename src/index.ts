@@ -875,3 +875,8 @@ export type {
   MosaicTemplateManagementPanelProps,
 } from "./components/template-management-panel/MosaicTemplateManagementPanel.js";
 export { templateManagementRowVariants } from "./components/template-management-panel/template-management-panel-variants.js";
+
+// ── M1: MosaicChatSidebar — presentational, disposition-only thread column ─
+export { MosaicChatSidebar } from "./components/chat-sidebar/MosaicChatSidebar.js";
+export type { MosaicChatSidebarProps } from "./components/chat-sidebar/MosaicChatSidebar.js";
+export { chatSidebarThreadVariants } from "./components/chat-sidebar/chat-sidebar-variants.js";
