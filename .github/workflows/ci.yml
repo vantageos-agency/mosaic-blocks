@@ -70,17 +70,20 @@ jobs:
         if: github.event_name == 'pull_request'
         run: node scripts/release-artifacts-guard.mjs
 
-      # ── 8c. Docs counts drift check (Day 129 "dériver, jamais taper") ───────
-      #    PR-ONLY. On `main`, the counts are stale-by-design until the
-      #    derive-release-artifacts job (below) regenerates them post-merge —
-      #    running --check here on push:main would false-positive on every
-      #    merge. Derives Mosaic*/export counts from src/index.ts and fails,
-      #    naming file+line, if README.md / docs/components-catalog.md have
-      #    drifted from what a component PR is allowed to touch. Read-only —
-      #    never writes. `pnpm docs:counts` (no --check) regenerates.
-      - name: Docs counts check
-        if: github.event_name == 'pull_request'
-        run: pnpm docs:counts --check
+      # ── 8c. NO docs-counts check here. Deliberate, and worth reading. ───────
+      #
+      #    A component PR that adds an export makes the README/catalog counts
+      #    legitimately stale — and the release-artifacts guard (step 8b) FORBIDS
+      #    that PR from touching them, because they are derived on main.
+      #
+      #    Checking the counts here therefore demanded the one edit the guard
+      #    forbids: every export-adding PR became unmergeable. That deadlock was
+      #    real, it blocked a whole component train, and it was introduced by the
+      #    very change that closed the version TOCTOU.
+      #
+      #    The counts are now verified where they are PRODUCED — on main, inside
+      #    the derive job, on the freshly regenerated docs (see below). Refusal
+      #    on the PR side, verification on the main side: neither is dropped.
 
       # ── 8d. The guards' own probes ──────────────────────────────────────────
       #    A guard that is wired but never proven to BITE is indistinguishable
@@ -170,6 +173,16 @@ jobs:
       # ── Regenerate the derived counts (producer, no --check: WRITES) ───────
       - name: Regenerate docs counts
         run: pnpm docs:counts
+
+      # ── Verify the derived docs, HERE, where they have just been produced ──
+      #    Both checks are loud by construction: if the producer wrote counts
+      #    that still disagree with src/index.ts, the producer itself is broken,
+      #    and main goes red rather than pushing a doc that lies.
+      - name: Verify derived counts
+        run: pnpm docs:counts --check
+
+      - name: Verify derived docs suite (excluded from the PR run by design)
+        run: pnpm vitest run src/__tests__/derived
 
       - name: Commit + push if changed
         run: |

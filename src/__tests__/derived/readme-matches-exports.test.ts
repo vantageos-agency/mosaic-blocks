@@ -65,7 +65,7 @@ import {
   lineNumberAt,
   mosaicCountPatterns,
   totalExportsPatterns,
-} from "../../scripts/docs-counts-shared.mjs";
+} from "../../../scripts/docs-counts-shared.mjs";
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const README_PATH = path.resolve(REPO_ROOT, "README.md");
