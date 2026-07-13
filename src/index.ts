@@ -732,3 +732,12 @@ export {
   toastProviderPositionVariants,
   toastTitleVariants,
 } from "./components/toast/toast-variants.js";
+
+// ── UC2-2: MosaicPdfViewer — presentational inline PDF preview ─────────────
+export { MosaicPdfViewer } from "./components/pdf-viewer/MosaicPdfViewer.js";
+export type { MosaicPdfViewerProps } from "./components/pdf-viewer/MosaicPdfViewer.js";
+export {
+  pdfViewerFrameVariants,
+  pdfViewerStatusVariants,
+  pdfViewerToolbarButtonVariants,
+} from "./components/pdf-viewer/pdf-viewer-variants.js";

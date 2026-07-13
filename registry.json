@@ -903,6 +903,25 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "mosaic-pdf-viewer",
+      "type": "registry:ui",
+      "title": "MosaicPdfViewer",
+      "description": "Presentational inline PDF preview via the browser's native PDF renderer (iframe). Host-controlled page navigation and zoom, local loading/error status (no PDF library, no network call by the component itself).",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/pdf-viewer/MosaicPdfViewer.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/pdf-viewer/pdf-viewer-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }
