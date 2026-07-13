@@ -702,3 +702,18 @@ export type {
   MosaicApiKeyPanelProvider,
   MosaicApiKeyPanelState,
 } from "./components/api-key-panel/MosaicApiKeyPanel.js";
+
+// ── MVP-8: MosaicAgentChat — presentational session harness ─────────────────
+export { MosaicAgentChat } from "./components/agent-chat/MosaicAgentChat.js";
+export type {
+  MosaicAgentChatProps,
+  MosaicAgentChatState,
+  MosaicAgentChatMessage,
+  MosaicAgentChatMessagePart,
+  MosaicAgentChatToolPart,
+  MosaicAgentChatToolPartState,
+  MosaicAgentChatApprovalRequest,
+  MosaicAgentChatApprovalLabels,
+  MosaicAgentChatApprovalResponsePayload,
+} from "./components/agent-chat/MosaicAgentChat.js";
+export { agentChatRootVariants } from "./components/agent-chat/agent-chat-variants.js";
