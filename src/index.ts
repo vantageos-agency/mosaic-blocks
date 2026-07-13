@@ -369,6 +369,14 @@ export { MosaicAgentEditor } from "./components/agent-editor/MosaicAgentEditor.j
 export type { MosaicAgentEditorProps } from "./components/agent-editor/MosaicAgentEditor.js";
 export { agentEditorVariants } from "./components/agent-editor/agent-editor-variants.js";
 
+// AgentBuilderModal — modal shell to compose/configure an agent, confirm or cancel; body is host-owned
+export { MosaicAgentBuilderModal } from "./components/agent-builder-modal/MosaicAgentBuilderModal.js";
+export type { MosaicAgentBuilderModalProps } from "./components/agent-builder-modal/MosaicAgentBuilderModal.js";
+export {
+  agentBuilderModalBackdropVariants,
+  agentBuilderModalPopupVariants,
+} from "./components/agent-builder-modal/agent-builder-modal-variants.js";
+
 // ModuleCard (PC-11) — selected module display card
 export { MosaicModuleCard } from "./components/module-card/MosaicModuleCard.js";
 export type {
