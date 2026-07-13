@@ -80,6 +80,13 @@ git clone --quiet "$SOURCE_REPO" "$CLONE"
 # so the clone above would land with no base to diff against at all. Pull every
 # ref explicitly, and the clone carries the same history wherever it runs.
 git -C "$CLONE" fetch --quiet "$SOURCE_REPO" '+refs/heads/*:refs/heads/*' '+refs/remotes/origin/*:refs/remotes/origin/*' 2>/dev/null || true
+
+# The probe COMMITS inside this scratch clone, so it needs an identity. A CI
+# runner has none configured — the author's box does, which is exactly why this
+# only ever failed on the runner. Same class as the two fixes above: the probe
+# carries what it needs instead of borrowing it from wherever it happens to run.
+git -C "$CLONE" config user.name "mosaic-blocks probe"
+git -C "$CLONE" config user.email "probe@vantageos.invalid"
 cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
 # docs-counts-shared.mjs already exists identically in $CLONE (it predates
 # this branch) — do NOT overwrite it, that would defeat "foreign material".
