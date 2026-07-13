@@ -844,6 +844,11 @@ export {
   drawerPopupVariants,
 } from "./components/drawer/drawer-variants.js";
 
+// ── M1: MosaicPopover — anchored floating panel ─────────────────────────────
+export { MosaicPopover } from "./components/popover/MosaicPopover.js";
+export type { MosaicPopoverProps } from "./components/popover/MosaicPopover.js";
+export { popoverPopupVariants } from "./components/popover/popover-variants.js";
+
 // ── M1: MosaicTemplateCategoryChips — host-driven agent-template filter ───
 export { MosaicTemplateCategoryChips } from "./components/template-category-chips/MosaicTemplateCategoryChips.js";
 export type {
