@@ -96,6 +96,15 @@ run_guard() {
   # Re-install the guard script every time: it is NEVER part of any probe
   # commit (it is our own tool, not the "foreign material" under test) and a
   # `git checkout` between cases can otherwise remove it from the worktree.
+  #
+  # This copy is UNTRACKED inside the clone, and that is what broke the moment
+  # this very PR merged: main now TRACKS scripts/release-artifacts-guard.mjs, so
+  # checking out main over an untracked copy of it aborts ("would be overwritten
+  # by checkout"). The probe passed on the PR only because main did not carry the
+  # file yet — it was green against a world that was about to stop existing.
+  #
+  # `git clean -fdq` before every switch: the clone's tree is disposable, and the
+  # tool under test is re-installed here on every call anyway.
   cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
   (cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base_ref" node scripts/release-artifacts-guard.mjs)
 }
@@ -118,7 +127,7 @@ for case in "${BLOCK_CASES[@]}"; do
   MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
   parent="$(cd "$CLONE" && git rev-parse "${sha}^")"
   branch="probe-block-${sha}"
-  (cd "$CLONE" && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
   # Apply ONLY this file's hunk from the real historical commit — this is
   # foreign material: the exact bytes a real component PR shipped.
   (cd "$CLONE" && git diff "${parent}" "${sha}" -- "$file" | git apply -)
@@ -141,7 +150,7 @@ for case in "${BLOCK_CASES[@]}"; do
     fi
   fi
 
-  (cd "$CLONE" && git checkout --quiet "$parent" && git branch -D --quiet "$branch")
+  (cd "$CLONE" && git clean -fdq && git checkout --quiet "$parent" && git branch -D --quiet "$branch")
 done
 
 # ---------------------------------------------------------------------------
@@ -166,7 +175,7 @@ if [ -z "$base" ]; then
   echo "probe: and a setup failure must never be read as a pass." >&2
   exit 1
 fi
-(cd "$CLONE" && git checkout --quiet -b probe-pass-clean "$base")
+(cd "$CLONE" && git clean -fdq && git checkout --quiet -b probe-pass-clean "$base")
 echo "// probe: harmless new file, no release artifact touched" > "$CLONE/src/probe-harmless.ts"
 (cd "$CLONE" && git add -- src/probe-harmless.ts && git commit --quiet -m "feat(probe): harmless component-only change")
 if ! grep -qF "probe: harmless" "$CLONE/src/probe-harmless.ts"; then
@@ -184,14 +193,14 @@ else
     log MUST_PASS "FAIL — clean component diff — exit=$status output=$output"
   fi
 fi
-(cd "$CLONE" && git checkout --quiet "$base" && git branch -D --quiet probe-pass-clean)
+(cd "$CLONE" && git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-pass-clean)
 
 # ---------------------------------------------------------------------------
 # MUST_PASS #2 — a genuine release PR: touches version, BUT carries the
 # written escape-hatch marker on HEAD's commit message.
 # ---------------------------------------------------------------------------
 MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
-(cd "$CLONE" && git checkout --quiet -b probe-pass-release "$base")
+(cd "$CLONE" && git clean -fdq && git checkout --quiet -b probe-pass-release "$base")
 sed -i 's/"version": "[^"]*"/"version": "9.9.9-alpha"/' "$CLONE/package.json"
 (cd "$CLONE" && git add -- package.json && git commit --quiet -m "$(printf 'chore(release): bump to 9.9.9-alpha\n\n// allow-release-artifacts: probe MUST_PASS release marker case')")
 if ! grep -qF '9.9.9-alpha' "$CLONE/package.json"; then
@@ -209,7 +218,7 @@ else
     log MUST_PASS "FAIL — release-marker case — exit=$status output=$output"
   fi
 fi
-(cd "$CLONE" && git checkout --quiet "$base" && git branch -D --quiet probe-pass-release)
+(cd "$CLONE" && git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-pass-release)
 
 # ---------------------------------------------------------------------------
 # MUST_BLOCK #5 — the marker MENTIONED IN PROSE must NOT disable the guard.
@@ -224,7 +233,7 @@ fi
 # probe and protects nothing.
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
-(cd "$CLONE" && git checkout --quiet -b probe-block-prose "$base")
+(cd "$CLONE" && git clean -fdq && git checkout --quiet -b probe-block-prose "$base")
 sed -i 's/"version": "[^"]*"/"version": "9.9.9-alpha"/' "$CLONE/package.json"
 (cd "$CLONE" && git add -- package.json && git commit --quiet -m "$(printf 'feat(x): a component PR whose message merely DESCRIBES the escape hatch\n\nThe escape hatch is a written // allow-release-artifacts: <reason> line in the\nHEAD commit — quoting it here, in prose, must not disable anything.')")
 if ! grep -qF '9.9.9-alpha' "$CLONE/package.json"; then
@@ -242,7 +251,7 @@ else
     log MUST_BLOCK "FAIL — prose-quoted marker DISABLED the guard — exit=$status output=$output"
   fi
 fi
-(cd "$CLONE" && git checkout --quiet "$base" && git branch -D --quiet probe-block-prose)
+(cd "$CLONE" && git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-block-prose)
 
 # ---------------------------------------------------------------------------
 # Restoration proof — the INVOKING worktree (not the scratch clone) must be
