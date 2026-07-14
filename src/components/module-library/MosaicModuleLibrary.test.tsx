@@ -145,4 +145,39 @@ describe("MosaicModuleForm", () => {
     const buttons = screen.getAllByRole("button");
     expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
+
+  const tagListFormFields = [
+    { id: "tags", label: "Tags", type: "tag-list" as const },
+  ];
+
+  it("renders an existing tag with no aria-label when removeTagAriaLabel is absent", () => {
+    const { container } = render(
+      <MosaicModuleForm
+        mode="edit"
+        item={{ id: "fw-1", name: "Design Thinking", tags: ["innovation"] }}
+        formFields={tagListFormFields}
+        onSave={() => {}}
+        onCancel={() => {}}
+        {...requiredModuleFormLabels}
+      />,
+    );
+    const removeButton = container.querySelector("button.hover\\:text-destructive");
+    expect(removeButton).toBeTruthy();
+    expect(removeButton?.getAttribute("aria-label")).toBeNull();
+  });
+
+  it("renders the host-formatted remove-tag aria-label when supplied", () => {
+    render(
+      <MosaicModuleForm
+        mode="edit"
+        item={{ id: "fw-1", name: "Design Thinking", tags: ["innovation"] }}
+        formFields={tagListFormFields}
+        onSave={() => {}}
+        onCancel={() => {}}
+        removeTagAriaLabel={(tag) => `Remove ${tag}`}
+        {...requiredModuleFormLabels}
+      />,
+    );
+    expect(screen.getByLabelText("Remove innovation")).toBeTruthy();
+  });
 });

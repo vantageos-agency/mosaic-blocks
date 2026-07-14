@@ -48,6 +48,11 @@ export interface MosaicQuickAgentSelectorProps {
   availableAgents?: MosaicQuickAgent[];
   onAddAgent: (agentId: string) => void;
   onRemoveAgent: (agentId: string) => void;
+  /**
+   * Formatter for the remove-pill aria-label. Required, no default — the
+   * host owns the language (e.g. `(name) => t('QuickAgentSelector.remove', { name })`).
+   */
+  removeAgentAriaLabel: (agentName: string) => string;
   /** Called when user clicks "Create custom" / "Configure" CTA */
   onOpenBuilder?: () => void;
   /** Max number of agents allowed */
@@ -214,6 +219,7 @@ export function MosaicQuickAgentSelector({
   availableAgents = [],
   onAddAgent,
   onRemoveAgent,
+  removeAgentAriaLabel,
   onOpenBuilder,
   maxAgents = 4,
   addLabel,
@@ -281,7 +287,7 @@ export function MosaicQuickAgentSelector({
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isMobile ? "opacity-100" : "opacity-0 transition-opacity group-hover:opacity-100",
               )}
-              aria-label={`Remove ${agent.name}`}
+              aria-label={removeAgentAriaLabel(agent.name)}
             >
               <XIcon />
             </button>

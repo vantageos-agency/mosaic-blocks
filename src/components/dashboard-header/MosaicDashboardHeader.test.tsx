@@ -35,7 +35,7 @@ describe("MosaicDashboardHeader", () => {
     ).not.toThrow();
   });
 
-  it("renders notification count in aria-label or badge", () => {
+  it("renders no aria-label on the bell button when notificationsAriaLabel is absent", () => {
     const { container } = render(
       <Wrapper>
         <MosaicDashboardHeader
@@ -46,7 +46,23 @@ describe("MosaicDashboardHeader", () => {
         />
       </Wrapper>,
     );
-    // Notification bell button has aria-label containing count
+    const bellBtn = container.querySelector("button.relative");
+    expect(bellBtn).toBeTruthy();
+    expect(bellBtn?.getAttribute("aria-label")).toBeNull();
+  });
+
+  it("renders the host-formatted notification count in aria-label", () => {
+    const { container } = render(
+      <Wrapper>
+        <MosaicDashboardHeader
+          title="Dashboard"
+          notificationCount={5}
+          onNotificationsClick={() => {}}
+          notificationsAriaLabel={(count) => `Notifications (${count})`}
+          {...requiredHeaderLabels}
+        />
+      </Wrapper>,
+    );
     const bellBtn = container.querySelector('[aria-label*="Notifications"]');
     expect(bellBtn).toBeTruthy();
   });
@@ -72,6 +88,7 @@ describe("MosaicDashboardHeader", () => {
           title="Dashboard"
           notificationCount={3}
           onNotificationsClick={onClick}
+          notificationsAriaLabel={(count) => `Notifications (${count})`}
           {...requiredHeaderLabels}
         />
       </Wrapper>,

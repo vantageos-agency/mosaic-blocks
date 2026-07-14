@@ -31,6 +31,7 @@ export const Default: Story = {
     subtitle: "Welcome back",
     notificationCount: 3,
     onNotificationsClick: () => console.log("notifications"),
+    notificationsAriaLabel: (count) => `Notifications (${count})`,
     onSearchChange: (q) => console.log("search", q),
     ...requiredHeaderLabels,
   },
@@ -58,6 +59,7 @@ export const WithActions: Story = {
     ),
     notificationCount: 12,
     onNotificationsClick: () => {},
+    notificationsAriaLabel: (count) => `Notifications (${count})`,
     ...requiredHeaderLabels,
   },
 };

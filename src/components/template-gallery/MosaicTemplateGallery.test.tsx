@@ -123,6 +123,33 @@ describe("MosaicTemplatePreview", () => {
     );
     expect(screen.getByText("Strategy Debate")).toBeTruthy();
   });
+
+  it("does not render an agents heading when formatAgentsHeading is absent", () => {
+    render(
+      <MosaicTemplatePreview
+        template={templates[0]}
+        onSelect={() => {}}
+        onClose={() => {}}
+        cancelLabel="Cancel"
+        selectLabel="Use Template"
+      />,
+    );
+    expect(screen.queryByText(/agents/i)).toBeNull();
+  });
+
+  it("renders the host-formatted agents heading when supplied", () => {
+    render(
+      <MosaicTemplatePreview
+        template={templates[0]}
+        onSelect={() => {}}
+        onClose={() => {}}
+        cancelLabel="Cancel"
+        selectLabel="Use Template"
+        formatAgentsHeading={(count) => `Agents (${count})`}
+      />,
+    );
+    expect(screen.getByText("Agents (1)")).toBeTruthy();
+  });
 });
 
 describe("MosaicQuickStartPanel", () => {

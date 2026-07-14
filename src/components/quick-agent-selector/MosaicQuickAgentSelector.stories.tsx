@@ -41,6 +41,7 @@ function SelectorDemo() {
           if (agent) setSelected((prev) => [...prev, agent]);
         }}
         onRemoveAgent={(id) => setSelected((prev) => prev.filter((a) => a.id !== id))}
+        removeAgentAriaLabel={(name) => `Remove ${name}`}
         onOpenBuilder={() => console.log("open builder")}
         {...requiredQuickAgentLabels}
       />
@@ -80,6 +81,7 @@ export const Default: Story = {
     selectedAgents: [],
     onAddAgent: () => {},
     onRemoveAgent: () => {},
+    removeAgentAriaLabel: (name: string) => `Remove ${name}`,
     ...requiredQuickAgentLabels,
   },
   render: () => <SelectorDemo />,
@@ -91,6 +93,7 @@ export const Empty: Story = {
     availableAgents,
     onAddAgent: (id) => console.log("add", id),
     onRemoveAgent: () => {},
+    removeAgentAriaLabel: (name: string) => `Remove ${name}`,
     ...requiredQuickAgentLabels,
   },
 };
