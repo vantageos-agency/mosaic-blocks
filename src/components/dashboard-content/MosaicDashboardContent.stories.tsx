@@ -59,6 +59,7 @@ export const Default: Story = {
   args: {
     views,
     currentView: "overview",
+    viewNotFoundLabel: "View not found: ",
   },
 };
 
@@ -66,5 +67,6 @@ export const AgentsView: Story = {
   args: {
     views,
     currentView: "agents",
+    viewNotFoundLabel: "View not found: ",
   },
 };

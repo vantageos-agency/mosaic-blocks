@@ -53,6 +53,9 @@ export interface MosaicMessageListProps {
   removeBookmarkLabel: string;
   bookmarkLabel: string;
   copyMessageLabel: string;
+  viewThreadLabel: string;
+  likeAriaLabel: (count: number) => string;
+  dislikeAriaLabel: (count: number) => string;
   className?: string;
 }
 
@@ -100,6 +103,9 @@ function MessageListDesktop({
   removeBookmarkLabel,
   bookmarkLabel,
   copyMessageLabel,
+  viewThreadLabel,
+  likeAriaLabel,
+  dislikeAriaLabel,
   className,
 }: MosaicMessageListProps) {
   const [query, setQuery] = React.useState("");
@@ -160,6 +166,9 @@ function MessageListDesktop({
               removeBookmarkLabel={removeBookmarkLabel}
               bookmarkLabel={bookmarkLabel}
               copyMessageLabel={copyMessageLabel}
+              viewThreadLabel={viewThreadLabel}
+              likeAriaLabel={likeAriaLabel}
+              dislikeAriaLabel={dislikeAriaLabel}
             />
           ))}
         {!isLoading && filtered.length === 0 && (
@@ -207,6 +216,9 @@ function MessageListMobile({
   removeBookmarkLabel,
   bookmarkLabel,
   copyMessageLabel,
+  viewThreadLabel,
+  likeAriaLabel,
+  dislikeAriaLabel,
   className,
 }: MosaicMessageListProps) {
   return (
@@ -241,6 +253,9 @@ function MessageListMobile({
               removeBookmarkLabel={removeBookmarkLabel}
               bookmarkLabel={bookmarkLabel}
               copyMessageLabel={copyMessageLabel}
+              viewThreadLabel={viewThreadLabel}
+              likeAriaLabel={likeAriaLabel}
+              dislikeAriaLabel={dislikeAriaLabel}
               compact
             />
           ))}

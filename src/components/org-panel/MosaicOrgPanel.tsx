@@ -187,6 +187,7 @@ export interface MosaicCreateOrgDialogProps {
   orgNameFieldLabel: string;
   orgNamePlaceholder: string;
   slugFieldLabel: string;
+  slugPlaceholder: string;
   descriptionFieldLabel: string;
   descriptionPlaceholder: string;
   cancelLabel: string;
@@ -204,6 +205,7 @@ export function MosaicCreateOrgDialog({
   orgNameFieldLabel,
   orgNamePlaceholder,
   slugFieldLabel,
+  slugPlaceholder,
   descriptionFieldLabel,
   descriptionPlaceholder,
   cancelLabel,
@@ -296,7 +298,7 @@ export function MosaicCreateOrgDialog({
             type="text"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder="acme-inc"
+            placeholder={slugPlaceholder}
             required
             className={cn(
               "w-full rounded-md border bg-background px-3 py-2 min-h-[40px] text-sm placeholder:text-muted-foreground",

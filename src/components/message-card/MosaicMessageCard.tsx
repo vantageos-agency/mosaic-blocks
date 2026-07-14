@@ -92,6 +92,18 @@ export interface MosaicMessageCardProps {
    * library carries no English/French word of its own for this UI state.
    */
   aiSenderLabel?: string;
+  /** Label for the "view thread" button, shown when the message has a parent. Required, no default. */
+  viewThreadLabel: string;
+  /**
+   * aria-label for the like button, shown for AI-sender messages. Required —
+   * the host formats/pluralizes the count, the library owns no word.
+   */
+  likeAriaLabel: (count: number) => string;
+  /**
+   * aria-label for the dislike button, shown for AI-sender messages. Required —
+   * the host formats/pluralizes the count, the library owns no word.
+   */
+  dislikeAriaLabel: (count: number) => string;
   className?: string;
 }
 
@@ -273,6 +285,9 @@ export function MosaicMessageCard({
   bookmarkLabel,
   copyMessageLabel,
   aiSenderLabel,
+  viewThreadLabel,
+  likeAriaLabel,
+  dislikeAriaLabel,
   className,
 }: MosaicMessageCardProps) {
   const [bookmarked, setBookmarked] = React.useState(message.bookmarked ?? false);
@@ -414,7 +429,7 @@ export function MosaicMessageCard({
                       "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                       hasLiked && "text-primary",
                     )}
-                    aria-label={`Like (${likes})`}
+                    aria-label={likeAriaLabel(likes)}
                   >
                     {icons.thumbUp}
                     <span>{likes}</span>
@@ -428,7 +443,7 @@ export function MosaicMessageCard({
                       "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                       hasDisliked && "text-destructive",
                     )}
-                    aria-label={`Dislike (${dislikes})`}
+                    aria-label={dislikeAriaLabel(dislikes)}
                   >
                     {icons.thumbDown}
                     <span>{dislikes}</span>
@@ -537,7 +552,7 @@ export function MosaicMessageCard({
                 className="inline-flex h-7 items-center gap-1 rounded-md text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground px-2"
               >
                 {icons.msgSquare}
-                View thread
+                {viewThreadLabel}
               </button>
             </div>
           )}

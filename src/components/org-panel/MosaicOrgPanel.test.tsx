@@ -115,6 +115,7 @@ describe("MosaicCreateOrgDialog", () => {
           orgNameFieldLabel="Organization Name *"
           orgNamePlaceholder="Acme Inc."
           slugFieldLabel="Slug *"
+          slugPlaceholder="acme-inc"
           descriptionFieldLabel="Description"
           descriptionPlaceholder="Optional description…"
           cancelLabel="Cancel"
@@ -126,6 +127,31 @@ describe("MosaicCreateOrgDialog", () => {
     // Form should be visible
     const inputs = screen.queryAllByRole("textbox");
     expect(inputs.length).toBeGreaterThan(0);
+  });
+
+  it("renders the host-supplied slug placeholder and fabricates no word of its own", () => {
+    render(
+      <Wrapper>
+        <MosaicCreateOrgDialog
+          open={true}
+          onOpenChange={() => {}}
+          onCreateOrg={() => {}}
+          title="Create Organization"
+          closeAriaLabel="Close dialog"
+          orgNameFieldLabel="Organization Name *"
+          orgNamePlaceholder="Acme Inc."
+          slugFieldLabel="Slug *"
+          slugPlaceholder="mon-organisation"
+          descriptionFieldLabel="Description"
+          descriptionPlaceholder="Optional description…"
+          cancelLabel="Cancel"
+          creatingLabel="Creating…"
+          createLabel="Create Organization"
+        />
+      </Wrapper>,
+    );
+    expect(screen.getByPlaceholderText("mon-organisation")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("acme-inc")).toBeNull();
   });
 });
 

@@ -28,6 +28,9 @@ describe("MosaicMessageCard", () => {
         removeBookmarkLabel="Remove bookmark"
         bookmarkLabel="Bookmark"
         copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
       />,
     );
     expect(screen.getByText("This is a great discussion point.")).toBeTruthy();
@@ -44,6 +47,9 @@ describe("MosaicMessageCard", () => {
         removeBookmarkLabel="Remove bookmark"
         bookmarkLabel="Bookmark"
         copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
       />,
     );
     expect(screen.getByText("Alice")).toBeTruthy();
@@ -62,6 +68,9 @@ describe("MosaicMessageCard", () => {
           removeBookmarkLabel="Remove bookmark"
           bookmarkLabel="Bookmark"
           copyMessageLabel="Copy message"
+          viewThreadLabel="View thread"
+          likeAriaLabel={(count) => `Like (${count})`}
+          dislikeAriaLabel={(count) => `Dislike (${count})`}
         />,
       ),
     ).not.toThrow();
@@ -82,6 +91,9 @@ describe("MosaicMessageCard", () => {
         removeBookmarkLabel="Remove bookmark"
         bookmarkLabel="Bookmark"
         copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
       />,
     );
     // Like button renders for AI messages only
@@ -143,8 +155,57 @@ describe("MosaicMessageCard", () => {
         removeBookmarkLabel="Remove bookmark"
         bookmarkLabel="Bookmark"
         copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
       />,
     );
     expect(container.querySelector(".my-message")).toBeTruthy();
+  });
+
+  it("renders the host-supplied view-thread label and fabricates no word of its own", () => {
+    const threadedMessage = { ...message, parentMessageId: "msg-0" };
+    render(
+      <MosaicMessageCard
+        message={threadedMessage}
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
+        viewThreadLabel="Voir le fil"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
+      />,
+    );
+    expect(screen.getByText("Voir le fil")).toBeTruthy();
+    expect(screen.queryByText("View thread")).toBeNull();
+  });
+
+  it("renders the host-supplied like/dislike aria-labels and fabricates no word of its own", () => {
+    const aiMessage = {
+      ...message,
+      sender: { id: "ai-1", name: "Bot", type: "ai" as const },
+    };
+    const { container } = render(
+      <MosaicMessageCard
+        message={aiMessage}
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `J'aime (${count})`}
+        dislikeAriaLabel={(count) => `Je n'aime pas (${count})`}
+      />,
+    );
+    expect(container.querySelector('[aria-label="J\'aime (3)"]')).toBeTruthy();
+    expect(container.querySelector('[aria-label^="Like"]')).toBeNull();
+    expect(container.querySelector('[aria-label^="Dislike"]')).toBeNull();
   });
 });
