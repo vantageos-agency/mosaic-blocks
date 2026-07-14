@@ -95,6 +95,9 @@ jobs:
       - name: Probe — release artifacts guard bites
         run: bash scripts/tests/probe-release-artifacts-guard.sh
 
+      - name: Probe — registry.json derive + guard bite
+        run: bash scripts/tests/probe-registry-json-derive.sh
+
       - name: Probe — version resolver refuses loudly (unknown flag, dead registry)
         run: bash scripts/tests/probe-derive-next-version.sh
 
@@ -181,6 +184,17 @@ jobs:
       - name: Verify derived counts
         run: pnpm docs:counts --check
 
+      # ── Regenerate registry.json (producer, no --check: WRITES) ────────────
+      #    Same split as the counts above: a component PR carries no
+      #    registry.json edit (release-artifacts-guard refuses it on the PR
+      #    side), so main is the only legitimate writer. See
+      #    scripts/registry-json-derive.mjs's header for the full "why".
+      - name: Regenerate registry.json
+        run: pnpm registry:derive
+
+      - name: Verify derived registry.json
+        run: pnpm registry:derive --check
+
       # The dedicated config is not a detail: the shared config EXCLUDES this
       # directory (a PR must not be forced to touch derived counts), and that
       # exclusion also silenced the suite when asked for BY NAME — it collected
@@ -213,8 +227,8 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add package.json src/version.ts README.md docs/components-catalog.md
-            git commit -m "chore(release): derive version ${{ steps.derive-version.outputs.next_version }} + docs counts [skip ci]"
+            git add package.json src/version.ts README.md docs/components-catalog.md registry.json
+            git commit -m "chore(release): derive version ${{ steps.derive-version.outputs.next_version }} + docs counts + registry.json [skip ci]"
             git push origin HEAD:main
           else
             echo "derive-release-artifacts: no drift — nothing to commit."
