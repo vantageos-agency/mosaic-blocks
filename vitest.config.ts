@@ -18,6 +18,10 @@ export default defineConfig({
     // The suite is NOT dropped — it runs on `main`, inside the derive job, on
     // the freshly regenerated docs, where its verdict actually means something.
     // See ci.yml, job `derive-release-artifacts`.
-    exclude: ["**/node_modules/**", "**/dist/**", "src/__tests__/derived/**"],
+    // `e2e/**` holds real-browser Playwright specs (playwright.config.ts),
+    // deliberately outside jsdom/src/test-setup.ts — see e2e/selector-modal.spec.ts.
+    // Vitest's default glob (**/*.spec.ts) would otherwise pick these up and
+    // fail on Playwright's own test.describe() runtime guard.
+    exclude: ["**/node_modules/**", "**/dist/**", "src/__tests__/derived/**", "e2e/**"],
   },
 });

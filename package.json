@@ -57,6 +57,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "biome check .",
     "test": "vitest run",
+    "test:browser": "playwright test",
     "sandbox:build": "cd sandbox && pnpm build",
     "prebuild": "rimraf dist",
     "sync-versions": "node scripts/sync-versions.mjs",
@@ -92,6 +93,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "^1.61.1",
     "@storybook/addon-a11y": "^10.4.6",
     "@storybook/react": "^10.4.6",
     "@storybook/react-vite": "^10.4.6",
@@ -101,6 +103,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.5.2",
+    "http-server": "^14.1.1",
     "jsdom": "^26.1.0",
     "react": "^19",
     "react-dom": "^19",
