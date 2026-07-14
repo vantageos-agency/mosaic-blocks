@@ -868,6 +868,17 @@ export {
   saveTemplateModalFooterVariants,
 } from "./components/save-template-modal/save-template-modal-variants.js";
 
+// ── M1: MosaicAddMemoryForm — presentational "record a new memory" form ────
+export { MosaicAddMemoryForm } from "./components/add-memory-form/MosaicAddMemoryForm.js";
+export type { MosaicAddMemoryFormProps } from "./components/add-memory-form/MosaicAddMemoryForm.js";
+export {
+  addMemoryFormButtonVariants,
+  addMemoryFormErrorVariants,
+  addMemoryFormFieldVariants,
+  addMemoryFormFooterVariants,
+  addMemoryFormRootVariants,
+} from "./components/add-memory-form/add-memory-form-variants.js";
+
 // ── M1: MosaicTemplateList — presentational, disposition-only item list ────
 export { MosaicTemplateList } from "./components/template-list/MosaicTemplateList.js";
 export type { MosaicTemplateListProps } from "./components/template-list/MosaicTemplateList.js";
