@@ -170,14 +170,21 @@ jobs:
           .
 
   # ── derive-release-artifacts — the OTHER half of the TOCTOU fix ────────────
-  #    Runs ONLY on push:main, ONLY after the Gates job above is green (a
+  #    Runs ONLY on push:main. It writes the derived values from what the
+  #    registry / src/index.ts actually say, never from a human-typed digit (a
   #    component PR carries no version/count edit by construction — see the
   #    Release artifacts guard step above — so main is the ONLY place these
-  #    values are legitimately written, and it writes them from what the
-  #    registry / src/index.ts actually say, never from a human-typed digit).
+  #    values are legitimately written).
+  #
+  #    It deliberately does NOT depend on the Gates job. It used to: `needs:
+  #    [ci]`. That made it a repair job that only ran when the thing it repairs
+  #    was already correct — a deadlock, observed for real. A stale derived
+  #    artifact turns Gates red; Gates being red made GitHub skip this job; so
+  #    the drift could never be repaired, and with Gates a required check, NO
+  #    PR could merge — not even the one fixing it. A remedy must not depend on
+  #    the absence of the disease it treats.
   derive-release-artifacts:
     name: Derive release artifacts
-    needs: [ci]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -117,6 +117,9 @@ describe("MosaicMessageCard", () => {
         removeBookmarkLabel="Remove bookmark"
         bookmarkLabel="Bookmark"
         copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
       />,
     );
     expect(screen.getByText("Assistant IA")).toBeTruthy();
@@ -137,6 +140,9 @@ describe("MosaicMessageCard", () => {
         removeBookmarkLabel="Remove bookmark"
         bookmarkLabel="Bookmark"
         copyMessageLabel="Copy message"
+        viewThreadLabel="View thread"
+        likeAriaLabel={(count) => `Like (${count})`}
+        dislikeAriaLabel={(count) => `Dislike (${count})`}
       />,
     );
     // The library must not fabricate any label of its own (e.g. "AI").
