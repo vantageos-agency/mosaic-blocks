@@ -279,14 +279,40 @@ jobs:
             exit 1
           fi
 
-      - name: Commit + push if changed
+      # main is a protected branch, so the bot CANNOT push to it directly
+      # (GH006) — and that is the protection working, not a fault to route
+      # around. It opens a PR instead and lets GitHub auto-merge it once Gates
+      # is green: no human gesture, protection intact.
+      #
+      # The `// allow-release-artifacts:` marker must sit in the HEAD commit's
+      # message — this is the one PR that legitimately carries the derived
+      # artifacts, and release-artifacts-guard reads that commit to allow it.
+      - name: Open a PR with the derived artifacts (main is protected)
+        if: steps.derive-version.outputs.next_version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add package.json src/version.ts README.md docs/components-catalog.md registry.json
-            git commit -m "chore(release): derive version ${{ steps.derive-version.outputs.next_version }} + docs counts + registry.json [skip ci]"
-            git push origin HEAD:main
-          else
+          if [ -z "$(git status --porcelain)" ]; then
             echo "derive-release-artifacts: no drift — nothing to commit."
+            exit 0
           fi
+          VERSION="${{ steps.derive-version.outputs.next_version }}"
+          BRANCH="bot/derive-${VERSION}-${GITHUB_SHA::7}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json src/version.ts README.md docs/components-catalog.md registry.json
+          git commit -m "chore(release): derive version ${VERSION} + docs counts + registry.json
+
+          Derived from the artifact, never hand-typed: version from the npm
+          registry, counts from src/index.ts, registry.json from the exported
+          component directories.
+
+          // allow-release-artifacts: this is the derive commit — it is the one
+          commit that is SUPPOSED to carry version, counts and registry.json,
+          and its content is the deriver's output, byte for byte."
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore(release): derive version ${VERSION} + docs counts + registry.json" \
+            --body "Derived on main after merge, by the bot. Version read from the npm registry, counts from \`src/index.ts\`, \`registry.json\` from the exported component directories — nothing hand-typed. Auto-merges once Gates is green."
+          gh pr merge --auto --squash "$BRANCH"
