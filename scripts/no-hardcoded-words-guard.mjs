@@ -128,6 +128,55 @@
  *
  * Usage: node scripts/no-hardcoded-words-guard.mjs
  *   Scans dist/index.cjs (override via NO_HARDCODED_WORDS_DIST for probes).
+ *
+ * RATCHET (2026-07-14) — WHY THIS GUARD MERGES TODAY INSTEAD OF WAITING FOR
+ * EVERY OFFENDER TO BE FIXED FIRST:
+ *   "Merge the guard last, once every offender in every in-flight PR is
+ *   fixed" sounds safer but is strictly worse: it leaves the bundle
+ *   COMPLETELY unprotected — including against a brand-new offender someone
+ *   introduces tomorrow — for as long as the LAST of several independent
+ *   fix PRs takes to land, with no guarantee they land in the same order
+ *   they were written. A ratchet instead makes this guard protective FROM
+ *   THE MOMENT IT MERGES: it declares today's known offenders as a BASELINE
+ *   (below, in the code, never a hidden dotfile), and enforces three rules
+ *   that together make regression structurally impossible while giving every
+ *   fix PR credit the moment it lands:
+ *
+ *     1. A NEW offender (any value not already in BASELINE) — BLOCK. This is
+ *        what makes today's merge immediately effective: a hardcoded word
+ *        introduced tomorrow, in a component the baseline never mentions, is
+ *        caught today, not "eventually, once the guard is unconditional".
+ *     2. A BASELINE value's occurrence COUNT growing — BLOCK. The baseline
+ *        may only ever shrink; this is the ratchet's pawl. It is also what
+ *        makes the reviewer's own probe pass: re-injecting a FIXED string
+ *        (once its count is correctly lowered to 0 and the entry removed,
+ *        per rule 3) makes it a brand-new offender under rule 1 — RED, by
+ *        construction, not by a special case.
+ *     3. A BASELINE entry whose value no longer appears in the bundle at all
+ *        (count 0) — BLOCK, with a message naming exactly which line to
+ *        delete from BASELINE below. This is what forces every fix PR to
+ *        shrink the list instead of leaving a stale, silently-ignored entry
+ *        behind — a baseline that never shrinks is a permanent exemption
+ *        wearing a ratchet's clothing.
+ *
+ *   When BASELINE is empty, rules 2 and 3 are vacuously satisfied and rule 1
+ *   alone makes this guard equivalent to a plain "zero tolerance" guard — no
+ *   special-casing is needed to remove the ratchet once the cleanup is done;
+ *   deleting the last BASELINE entry is enough.
+ *
+ *   BASELINE VALUES ARE DEDUPLICATED BY LITERAL VALUE, NOT BY LINE NUMBER:
+ *   the bundle's line numbers shift on every rebuild as unrelated code moves
+ *   around, so pinning to `dist/index.cjs:<line>` (as the original prose
+ *   grid) would falsely read as "new offender" (line moved) or "stale entry"
+ *   (line no longer holds that value) on every single unrelated commit —
+ *   noise that would train reviewers to stop trusting this guard within a
+ *   week. The literal STRING VALUE is what a fix PR actually removes; that
+ *   is what the ratchet tracks, so a value can appear on several distinct
+ *   lines and the ratchet still tracks it as one row with one occurrence
+ *   COUNT (e.g. "Select " appears in 8 places in this bundle today — fixing
+ *   one instance lowers the count to 7, not to zero, and the row updates
+ *   accordingly; only when the LAST occurrence is fixed does the row become
+ *   stale and rule 3 forces its deletion).
  */
 
 import { readFileSync } from "node:fs";
@@ -219,6 +268,163 @@ const CSS_FUNCTION_FRAGMENT_RE = /^[a-z][a-zA-Z]*\(-?$/;
 const CSS_AT_RULE_RE = /@(?:keyframes|media|supports|font-face|layer)\b/;
 
 const ESCAPE_MARKER_RE = /^\s*\/\/\s*allow-hardcoded-word:\s*(\S.+)$/;
+
+// ---------------------------------------------------------------------------
+// RATCHET BASELINE — declared HERE, in the code, where a reader will see it —
+// never a hidden dotfile or a separate exclusion list. Every row is today's
+// KNOWN, not-yet-fixed offender: the literal VALUE (deduplicated across every
+// line it appears on — see the header comment on why line numbers are not the
+// key), the CURRENT occurrence count in dist/index.cjs (derived on
+// 2026-07-14 by running this guard pre-ratchet — never hand-guessed), and WHY
+// it is still here. Each row is scheduled for removal by the PR that fixes
+// its last remaining occurrence — see the ratchet rules in the header comment
+// for exactly how that removal is enforced (rule 3: a row whose count drops
+// to 0 MUST be deleted, or the guard blocks and names it).
+//
+// This baseline may only ever SHRINK (rule 2) — see PR #99/#100/#101 and
+// follow-ups for the fixes in flight.
+const BASELINE = [
+  {
+    value: "Select ",
+    maxCount: 8,
+    note: "MosaicAgentComposer / MosaicChatSidebar family — hardcoded `Select <thing>` button/action labels, scheduled for prop-driven i18n in the in-flight agent-composer follow-up PR.",
+  },
+  {
+    value: "Remove ",
+    maxCount: 4,
+    note: "Tag/badge/integrations `Remove <thing>` action labels — same follow-up PR as `Select `.",
+  },
+  {
+    value: "Edit ",
+    maxCount: 2,
+    note: "`Edit <thing>` action labels — same follow-up PR as `Select `.",
+  },
+  {
+    value: "Change ",
+    maxCount: 2,
+    note: "`Change <thing>` action labels — same follow-up PR as `Select `.",
+  },
+  {
+    value: "Member",
+    maxCount: 2,
+    note: "MosaicOrgPanel role badge/label — fixed by PR #101 (org-panel i18n props).",
+  },
+  {
+    value: "Admin",
+    maxCount: 2,
+    note: "MosaicOrgPanel role badge/label — fixed by PR #101 (org-panel i18n props).",
+  },
+  {
+    value: "acme-inc",
+    maxCount: 1,
+    note: "MosaicOrgPanel slug input placeholder — fixed by PR #101 (org-panel i18n props). This is the reviewer's own probe case: once PR #101 lands and this row is deleted, re-injecting it becomes a brand-new offender under rule 1 and the guard goes RED.",
+  },
+  {
+    value: "View thread",
+    maxCount: 1,
+    note: "MosaicChatSidebar thread action label — fixed by the in-flight chat-sidebar follow-up PR.",
+  },
+  {
+    value: "View not found: ",
+    maxCount: 1,
+    note: "Internal view-router fallback message — fixed by PR #100.",
+  },
+  {
+    value: "Thinking approach and decision-making process",
+    maxCount: 1,
+    note: "MosaicAgentComposer step description — fixed by PR #99.",
+  },
+  {
+    value: "Standard access to workspaces and content",
+    maxCount: 1,
+    note: "MosaicOrgPanel role description — fixed by PR #101.",
+  },
+  {
+    value: "Slug: lowercase letters, numbers, hyphens only",
+    maxCount: 1,
+    note: "MosaicOrgPanel form hint — fixed by PR #101.",
+  },
+  {
+    value: "Slug is required",
+    maxCount: 1,
+    note: "MosaicOrgPanel form validation message — fixed by PR #101.",
+  },
+  {
+    value: "Professional expertise and domain knowledge",
+    maxCount: 1,
+    note: "MosaicAgentComposer step description — fixed by PR #99.",
+  },
+  {
+    value: "Owner",
+    maxCount: 1,
+    note: "MosaicOrgPanel role badge/label — fixed by PR #101.",
+  },
+  {
+    value: "Notifications",
+    maxCount: 1,
+    note: "MosaicChatSidebar section heading — fixed by the in-flight chat-sidebar follow-up PR.",
+  },
+  {
+    value: "Name is required",
+    maxCount: 1,
+    note: "MosaicOrgPanel form validation message — fixed by PR #101.",
+  },
+  {
+    value: "Make ",
+    maxCount: 1,
+    note: "MosaicOrgPanel member-role action label (`Make admin`, etc.) — fixed by PR #101.",
+  },
+  {
+    value: "Like (",
+    maxCount: 1,
+    note: "MosaicChatSidebar reaction-count label — fixed by the in-flight chat-sidebar follow-up PR.",
+  },
+  {
+    value: "Joined ",
+    maxCount: 1,
+    note: "MosaicOrgPanel member-list metadata label — fixed by PR #101.",
+  },
+  {
+    value: "Invalid email",
+    maxCount: 1,
+    note: "MosaicOrgPanel invite-form validation message — fixed by PR #101.",
+  },
+  {
+    value: "Full access to organization settings and member management",
+    maxCount: 1,
+    note: "MosaicOrgPanel role description — fixed by PR #101.",
+  },
+  {
+    value: "Full access including billing and organization deletion",
+    maxCount: 1,
+    note: "MosaicOrgPanel role description — fixed by PR #101.",
+  },
+  {
+    value: "Email is required",
+    maxCount: 1,
+    note: "MosaicOrgPanel invite-form validation message — fixed by PR #101.",
+  },
+  {
+    value: "Dislike (",
+    maxCount: 1,
+    note: "MosaicChatSidebar reaction-count label — fixed by the in-flight chat-sidebar follow-up PR.",
+  },
+  {
+    value: "Communication style and personality traits",
+    maxCount: 1,
+    note: "MosaicAgentComposer step description — fixed by PR #99.",
+  },
+  {
+    value: "Agents (",
+    maxCount: 1,
+    note: "MosaicChatSidebar section heading with count — fixed by the in-flight chat-sidebar follow-up PR.",
+  },
+  {
+    value: "AI",
+    maxCount: 1,
+    note: "MosaicChatSidebar badge label — fixed by the in-flight chat-sidebar follow-up PR.",
+  },
+];
 
 /**
  * @param {string} str
@@ -718,20 +924,84 @@ function main() {
   }
   deduped.sort((a, b) => a.line - b.line);
 
-  if (deduped.length > 0) {
-    const details = deduped
-      .map((v) => `  - ${DIST_PATH}:${v.line} — "${v.snippet}"\n      ${v.reason}`)
-      .join("\n");
+  // ---------------------------------------------------------------------
+  // RATCHET — classify every violation against BASELINE. See the header
+  // comment ("RATCHET") for the three rules this enforces.
+  // ---------------------------------------------------------------------
+  const baselineByValue = new Map(BASELINE.map((b) => [b.value, b]));
+  const currentCountByValue = new Map();
+  for (const v of deduped) {
+    currentCountByValue.set(v.snippet, (currentCountByValue.get(v.snippet) ?? 0) + 1);
+  }
+
+  // Rule 1 — any violation whose value has NO baseline entry at all.
+  const newOffenders = deduped.filter((v) => !baselineByValue.has(v.snippet));
+
+  // Rule 2 — a baseline value whose CURRENT count exceeds its declared max.
+  const grownEntries = [];
+  for (const entry of BASELINE) {
+    const current = currentCountByValue.get(entry.value) ?? 0;
+    if (current > entry.maxCount) {
+      grownEntries.push({ entry, current });
+    }
+  }
+
+  // Rule 3 — a baseline entry whose value no longer appears AT ALL.
+  const staleEntries = BASELINE.filter(
+    (entry) => (currentCountByValue.get(entry.value) ?? 0) === 0,
+  );
+
+  if (newOffenders.length > 0 || grownEntries.length > 0 || staleEntries.length > 0) {
+    const sections = [];
+
+    if (newOffenders.length > 0) {
+      const details = newOffenders
+        .map((v) => `  - ${DIST_PATH}:${v.line} — "${v.snippet}"\n      ${v.reason}`)
+        .join("\n");
+      sections.push(
+        `NEW offender(s) not in BASELINE (${newOffenders.length}) — this library must ship ZERO user-facing words of its own (every user-facing string is a HOST-supplied prop):\n${details}\n\nFix: replace each with a prop the host supplies, or if genuinely not user-facing, declare it with \`// allow-hardcoded-word: <reason>\` immediately above the source statement.`,
+      );
+    }
+
+    if (grownEntries.length > 0) {
+      const details = grownEntries
+        .map(
+          ({ entry, current }) =>
+            `  - "${entry.value}" — BASELINE declares maxCount=${entry.maxCount}, but ${DIST_PATH} now has ${current} occurrence(s). The baseline may only ever SHRINK.`,
+        )
+        .join("\n");
+      sections.push(`BASELINE entry GREW (${grownEntries.length}):\n${details}`);
+    }
+
+    if (staleEntries.length > 0) {
+      const details = staleEntries
+        .map(
+          (entry) =>
+            `  - "${entry.value}" (declared maxCount=${entry.maxCount}) no longer appears anywhere in ${DIST_PATH}. Delete this row from BASELINE in scripts/no-hardcoded-words-guard.mjs — a fixed offender left in BASELINE is a stale, silent exemption.`,
+        )
+        .join("\n");
+      sections.push(
+        `STALE BASELINE entrie(s) (${staleEntries.length}) — must be removed:\n${details}`,
+      );
+    }
+
     console.error(
-      `no-hardcoded-words-guard: BLOCKED — SIN-01 violation(s): this library must ship ZERO user-facing words of its own (every user-facing string is a HOST-supplied prop). Found ${deduped.length} offender(s) in ${DIST_PATH}:\n${details}\n\nFix: replace each with a prop the host supplies. If a literal is genuinely NOT user-facing, declare it with \`// allow-hardcoded-word: <reason>\` immediately above the source statement (not in this guard's exclusion list).`,
+      `no-hardcoded-words-guard: BLOCKED — SIN-01 ratchet violation(s).\n\n${sections.join("\n\n")}`,
     );
     process.exitCode = 1;
     return;
   }
 
-  console.log(
-    `no-hardcoded-words-guard: OK — ${DIST_PATH} carries zero hardcoded user-facing words.`,
-  );
+  const baselineTotal = BASELINE.reduce((sum, e) => sum + e.maxCount, 0);
+  if (BASELINE.length === 0) {
+    console.log(
+      `no-hardcoded-words-guard: OK — ${DIST_PATH} carries zero hardcoded user-facing words. BASELINE is empty: this guard is now absolute.`,
+    );
+  } else {
+    console.log(
+      `no-hardcoded-words-guard: OK (ratchet held) — ${DIST_PATH} carries no NEW offenders and no BASELINE row grew or went stale. ${BASELINE.length} declared baseline row(s), ${baselineTotal} allowed occurrence(s) remaining to be fixed by in-flight PRs.`,
+    );
+  }
 }
 
 main();

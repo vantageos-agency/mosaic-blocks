@@ -215,6 +215,20 @@ export function MosaicDeviceProvider({ children }: MosaicDeviceProviderProps) {
 
 MosaicDeviceProvider.displayName = "MosaicDeviceProvider";
 
+// Developer-facing invariant errors — thrown only at hook-misuse time, never
+// rendered to an end user (same class as MosaicClerkWebhookHandler's own
+// errors). Kept as an object-literal constant, with the escape-hatch marker
+// interleaved BETWEEN its properties, because a `//` comment placed
+// immediately before a `throw new Error(...)` statement is stripped entirely
+// by esbuild's unminified output and never reaches dist/index.cjs — a marker
+// there would be silently ineffective (confirmed empirically; see
+// no-hardcoded-words-guard.mjs's own header comment on this exact esbuild
+// behaviour).
+const DEVICE_PROVIDER_ERRORS = {
+  // allow-hardcoded-word: developer-facing invariant error, never rendered to an end user
+  missingProvider: "useDevice must be used within a MosaicDeviceProvider",
+};
+
 /**
  * useDevice — consume the device context.
  * Must be used inside <MosaicDeviceProvider>.
@@ -222,7 +236,7 @@ MosaicDeviceProvider.displayName = "MosaicDeviceProvider";
 export function useDevice(): DeviceContextValue {
   const ctx = React.useContext(DeviceContext);
   if (!ctx) {
-    throw new Error("useDevice must be used within a MosaicDeviceProvider");
+    throw new Error(DEVICE_PROVIDER_ERRORS.missingProvider);
   }
   return ctx;
 }

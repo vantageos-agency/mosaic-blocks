@@ -329,6 +329,194 @@ fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-prose)
 
 # ---------------------------------------------------------------------------
+# MUST_BLOCK #6 (RATCHET — baseline entry GROWS) — a 9th occurrence of the
+# BASELINE value "Select " (maxCount=8 today) must BLOCK, naming the growth.
+# This is the ratchet's pawl: a baseline value existing today must never be
+# allowed to spread to a NEW site, even though it is not itself a "new"
+# string.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+git -C "$CLONE" checkout --quiet -b probe-block-grown "$BASE"
+python3 - "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    text = f.read()
+needle = '    <Checkbox.Root\n      ref={ref}\n      data-slot="checkbox"\n'
+replacement = (
+    '    <Checkbox.Root\n'
+    '      ref={ref}\n'
+    '      data-slot="checkbox"\n'
+    '      title={`Select ${"item"}`}\n'
+)
+if needle not in text:
+    raise SystemExit(f"probe: injection anchor not found in {path}")
+text = text.replace(needle, replacement, 1)
+with open(path, "w") as f:
+    f.write(text)
+PYEOF
+if ! grep -qF 'title={`Select ${"item"}`}' "$CLONE/src/components/checkbox/MosaicCheckbox.tsx"; then
+  FAILURES+=("MUST_BLOCK ratchet-grown — mutation did NOT land — probe invalid")
+else
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: 9th occurrence of baseline value 'Select ' — must grow-block")
+  log INFO "building ratchet-grown tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK ratchet-grown build — pnpm build failed")
+  else
+    set +e
+    output="$(run_guard 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "GREW" && echo "$output" | grep -qF '"Select "'; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — ratchet-grown — 9th 'Select ' occurrence blocked as BASELINE growth"
+    else
+      FAILURES+=("MUST_BLOCK ratchet-grown — guard exited $status (expected non-zero) or did not name the grown BASELINE entry — output: $output")
+      log MUST_BLOCK "FAIL — ratchet-grown — exit=$status"
+    fi
+  fi
+fi
+(cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-grown)
+
+# ---------------------------------------------------------------------------
+# MUST_BLOCK #7 (RATCHET — stale baseline entry) — fixing the ONLY
+# occurrence of a BASELINE value ("acme-inc") without deleting its BASELINE
+# row must BLOCK, naming the row to delete. This is what forces every fix PR
+# to shrink the list instead of leaving a permanent silent exemption behind.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+git -C "$CLONE" checkout --quiet -b probe-block-stale "$BASE"
+python3 - "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    text = f.read()
+needle = '            placeholder="acme-inc"\n'
+if needle not in text:
+    raise SystemExit(f"probe: injection anchor not found in {path}")
+text = text.replace(needle, "", 1)  # genuine fix: drop the hardcoded placeholder entirely
+with open(path, "w") as f:
+    f.write(text)
+PYEOF
+if grep -qF 'placeholder="acme-inc"' "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx"; then
+  FAILURES+=("MUST_BLOCK ratchet-stale — mutation did NOT land — probe invalid")
+else
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: fix the ONLY 'acme-inc' occurrence, BASELINE row left undeleted on purpose")
+  log INFO "building ratchet-stale tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK ratchet-stale build — pnpm build failed")
+  else
+    set +e
+    output="$(run_guard 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "STALE" && echo "$output" | grep -qF '"acme-inc"'; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — ratchet-stale — fixed-but-undeleted BASELINE row for 'acme-inc' blocked"
+    else
+      FAILURES+=("MUST_BLOCK ratchet-stale — guard exited $status (expected non-zero) or did not name the stale BASELINE entry — output: $output")
+      log MUST_BLOCK "FAIL — ratchet-stale — exit=$status"
+    fi
+  fi
+fi
+(cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-stale)
+
+# ---------------------------------------------------------------------------
+# MUST_BLOCK #8 (RATCHET — the reviewer's EXACT probe) — once "acme-inc" is
+# genuinely fixed AND its BASELINE row correctly deleted (the two steps
+# together, as a real fix PR would do), re-injecting `placeholder="acme-inc"`
+# ELSEWHERE must go RED again — as a brand-new offender, not a special case.
+# This is the concrete proof that the ratchet cannot be permanently
+# disarmed by a single string once leaving the baseline: it falls straight
+# back under rule 1 (new offender), by construction.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+git -C "$CLONE" checkout --quiet -b probe-block-reviewer-reinject "$BASE"
+# Step 1: genuinely fix the only existing "acme-inc" occurrence.
+python3 - "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    text = f.read()
+needle = '            placeholder="acme-inc"\n'
+if needle not in text:
+    raise SystemExit(f"probe: injection anchor not found in {path}")
+text = text.replace(needle, "", 1)  # genuine fix: drop the hardcoded placeholder entirely
+with open(path, "w") as f:
+    f.write(text)
+PYEOF
+# Step 2: delete the now-stale "acme-inc" BASELINE row (what the real fix PR
+# is required to do — see MUST_BLOCK #7 above). The guard script itself is
+# THIS branch's own tool under test, not "foreign material" the CLONE's own
+# $BASE tree necessarily carries (this PR is what introduces the guard at
+# all) — copy it in first, exactly like run_guard() does, before editing it.
+mkdir -p "$CLONE/scripts"
+cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+python3 - "$CLONE/scripts/no-hardcoded-words-guard.mjs" <<'PYEOF'
+import re
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    text = f.read()
+pattern = re.compile(
+    r"\s*\{\s*\n\s*value: \"acme-inc\",.*?\n\s*\},\n",
+    re.DOTALL,
+)
+new_text, count = pattern.subn("\n", text, count=1)
+if count != 1:
+    raise SystemExit("probe: could not find the acme-inc BASELINE row to delete")
+with open(path, "w") as f:
+    f.write(new_text)
+PYEOF
+# Step 3: re-inject the exact same offender into a DIFFERENT, currently-clean
+# file — the reviewer's precise scenario.
+python3 - "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    text = f.read()
+needle = '    <Checkbox.Root\n      ref={ref}\n      data-slot="checkbox"\n'
+replacement = (
+    '    <Checkbox.Root\n'
+    '      ref={ref}\n'
+    '      data-slot="checkbox"\n'
+    '      title="acme-inc"\n'
+)
+if needle not in text:
+    raise SystemExit(f"probe: injection anchor not found in {path}")
+text = text.replace(needle, replacement, 1)
+with open(path, "w") as f:
+    f.write(text)
+PYEOF
+if ! grep -qF 'title="acme-inc"' "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" || \
+   grep -qF 'value: "acme-inc"' "$CLONE/scripts/no-hardcoded-words-guard.mjs" || \
+   grep -qF 'placeholder="acme-inc"' "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx"; then
+  FAILURES+=("MUST_BLOCK reviewer-reinject — one of the three mutation steps did NOT land as expected — probe invalid")
+else
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: reviewer's exact scenario — fix+delete-row then re-inject acme-inc elsewhere")
+  log INFO "building reviewer-reinject tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK reviewer-reinject build — pnpm build failed")
+  else
+    set +e
+    # run_guard() re-installs THIS branch's guard.mjs on every call — but this
+    # case's whole point is testing the CLONE's own (row-deleted) guard.mjs,
+    # so it is invoked directly here instead of via run_guard().
+    output="$(cd "$CLONE" && node scripts/no-hardcoded-words-guard.mjs 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "NEW offender" && echo "$output" | grep -qF '"acme-inc"'; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — reviewer's exact probe — re-injected acme-inc goes RED as a brand-new offender"
+    else
+      FAILURES+=("MUST_BLOCK reviewer-reinject — guard exited $status (expected non-zero) or did not name acme-inc as a new offender — output: $output")
+      log MUST_BLOCK "FAIL — reviewer-reinject — exit=$status"
+    fi
+  fi
+fi
+(cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-reviewer-reinject)
+
+# ---------------------------------------------------------------------------
 # MUST_PASS #6 — a brand-new, harmless component using ONLY legitimate
 # non-word shapes must add ZERO new offenders vs the baseline count.
 # ---------------------------------------------------------------------------
