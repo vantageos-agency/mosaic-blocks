@@ -22,6 +22,13 @@
 #      commit message / comment (not anchored at start-of-line before the
 #      offending statement) must NOT disable the guard — the same class of
 #      self-disabling bug release-artifacts-guard's own probe exists to close.
+#   6-8. ratchet grown / stale / reviewer-reinject — see below.
+#   9. ratchet LOOSE BUDGET — a real BASELINE row's declared `maxCount`
+#      widened above its actual bundle count (8 -> 99 for "Select "), with
+#      ZERO component change. This is the exact hole a reviewer proved by
+#      mutation: the guard must derive the current count from the artifact
+#      and block when the declared ceiling sits above it, naming both
+#      numbers — never trust a hand-editable number to only ever shrink.
 #
 # MUST_PASS:
 #   6. A brand-new, harmless component using ONLY Tailwind-utility classes,
@@ -515,6 +522,67 @@ else
   fi
 fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-reviewer-reinject)
+
+# ---------------------------------------------------------------------------
+# MUST_BLOCK #9 (RATCHET — the ACTUAL hole a reviewer proved by mutation) —
+# widen a REAL baseline row's declared `maxCount` ABOVE its actual bundle
+# count, WITHOUT touching a single component file. The bundle never moves;
+# only the number written in BASELINE does. A guard that only checks
+# "current > maxCount" sees nothing wrong here — the current count is still
+# below the (now-inflated) ceiling — and that silence IS the hole: it turns
+# the ratchet into a plain exclusion list an author can loosen by hand
+# whenever a real fix is inconvenient. The fixed guard instead compares the
+# DERIVED actual count against the declared one in BOTH directions, so this
+# MUST go RED, naming declared vs actual.
+#
+# No component mutation, so the ALREADY-BUILT clean-baseline dist (from the
+# very first build above) is reused directly — this case's whole point is
+# that the ARTIFACT is unchanged and only the guard's own BASELINE number
+# moves. run_guard() is not used here (it re-installs the real, unmutated
+# guard.mjs on every call) — the mutated copy is invoked directly instead.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+if [ -z "$BASELINE_COUNT" ]; then
+  FAILURES+=("MUST_BLOCK loose-budget — no clean baseline dist available (baseline build failed earlier) — cannot run this case")
+  log MUST_BLOCK "FAIL — loose-budget — no baseline dist to reuse"
+else
+  MUTATED_GUARD="$SCRATCH/guard-loose-budget.mjs"
+  cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$MUTATED_GUARD"
+  python3 - "$MUTATED_GUARD" <<'PYEOF'
+import re
+import sys
+path = sys.argv[1]
+with open(path) as f:
+    text = f.read()
+# The real, currently-shipped row: value "Select ", maxCount: 8. Widen ONLY
+# the number, exactly as the reviewer did.
+pattern = re.compile(r'(value:\s*"Select "\s*,\s*\n\s*maxCount:\s*)8(\s*,)')
+new_text, count = pattern.subn(r"\g<1>99\g<2>", text, count=1)
+if count != 1:
+    raise SystemExit('probe: could not find `value: "Select ", maxCount: 8` to widen — probe invalid')
+with open(path, "w") as f:
+    f.write(new_text)
+PYEOF
+  if ! grep -qF "maxCount: 99" "$MUTATED_GUARD"; then
+    FAILURES+=("MUST_BLOCK loose-budget — mutation did NOT land in the guard copy — probe invalid")
+    log MUST_BLOCK "FAIL — loose-budget — mutation did not land"
+  else
+    set +e
+    output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$MUTATED_GUARD" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] &&
+       echo "$output" | grep -qF '"Select "' &&
+       echo "$output" | grep -qF "maxCount=99" &&
+       echo "$output" | grep -Eq "actually has only 8 occurrence"; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — loose-budget — maxCount widened 8->99 with zero bundle change blocked, naming declared vs actual"
+    else
+      FAILURES+=("MUST_BLOCK loose-budget — guard exited $status (expected non-zero) or did not name declared=99 vs actual=8 — output: $output")
+      log MUST_BLOCK "FAIL — loose-budget — exit=$status"
+    fi
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 # MUST_PASS #6 — a brand-new, harmless component using ONLY legitimate

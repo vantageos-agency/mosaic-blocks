@@ -146,12 +146,24 @@
  *        what makes today's merge immediately effective: a hardcoded word
  *        introduced tomorrow, in a component the baseline never mentions, is
  *        caught today, not "eventually, once the guard is unconditional".
- *     2. A BASELINE value's occurrence COUNT growing — BLOCK. The baseline
- *        may only ever shrink; this is the ratchet's pawl. It is also what
- *        makes the reviewer's own probe pass: re-injecting a FIXED string
- *        (once its count is correctly lowered to 0 and the entry removed,
- *        per rule 3) makes it a brand-new offender under rule 1 — RED, by
- *        construction, not by a special case.
+ *     2. A BASELINE row's declared `maxCount` must always EQUAL the actual,
+ *        DERIVED occurrence count in the bundle — never merely "not below"
+ *        it. BLOCK in BOTH directions: the count growing past `maxCount`
+ *        (the ratchet's pawl), AND `maxCount` being declared ABOVE the
+ *        actual count (a loose/inflated budget). The second direction
+ *        closes a real hole found by mutation: widening `maxCount` from 8
+ *        to 99 by hand changed nothing the guard could see under a
+ *        "current > maxCount only" check, because the bundle's actual count
+ *        never moved — only the declared ceiling did, silently, in the
+ *        guard's own source. Comparing against the count DERIVED from
+ *        `dist/index.cjs` on every run — instead of trusting whatever number
+ *        is written in BASELINE — means `maxCount` can only ever be edited
+ *        DOWN to match reality, so the ratchet is monotone BY CONSTRUCTION,
+ *        not by anyone remembering to be careful. It is also what makes the
+ *        reviewer's own probe pass: re-injecting a FIXED string (once its
+ *        count is correctly lowered to 0 and the entry removed, per rule 3)
+ *        makes it a brand-new offender under rule 1 — RED, by construction,
+ *        not by a special case.
  *     3. A BASELINE entry whose value no longer appears in the bundle at all
  *        (count 0) — BLOCK, with a message naming exactly which line to
  *        delete from BASELINE below. This is what forces every fix PR to
@@ -937,12 +949,38 @@ function main() {
   // Rule 1 — any violation whose value has NO baseline entry at all.
   const newOffenders = deduped.filter((v) => !baselineByValue.has(v.snippet));
 
-  // Rule 2 — a baseline value whose CURRENT count exceeds its declared max.
+  // Rule 2 — a baseline value's DECLARED `maxCount` must always equal the
+  // ARTIFACT's actual current occurrence count — never merely be "not lower
+  // than" it. `maxCount` is not read from anyone's memory: it is DERIVED
+  // from `dist/index.cjs` right here, every run. Two directions of drift,
+  // both blocked, for the SAME underlying reason (a declared number that
+  // does not match reality):
+  //
+  //   - current > maxCount  → the row GREW: a new site emitted an existing
+  //     baseline string. The ratchet's pawl.
+  //   - current < maxCount  → the row's declared budget is LOOSE: someone
+  //     (or a careless future edit) set `maxCount` ABOVE what the bundle
+  //     actually contains. A budget above reality is slack — a standing
+  //     licence to add up to (maxCount - current) MORE occurrences of an
+  //     already-known offender with the guard staying silently green. This
+  //     is the exact hole a reviewer proved by mutation: widening `maxCount`
+  //     from 8 to 99 changed nothing the guard could see, because the old
+  //     rule only compared "did it grow past declared", never "is declared
+  //     above what is actually there". Comparing against the DERIVED actual
+  //     count instead of trusting the declared number closes it: `maxCount`
+  //     can now only ever be lowered to match reality, so — by construction,
+  //     not by discipline — it can only ever decrease over time. Stale (0
+  //     occurrences) is handled separately by rule 3 below, so this rule
+  //     only fires while the row is still genuinely present in the bundle.
   const grownEntries = [];
+  const looseEntries = [];
   for (const entry of BASELINE) {
     const current = currentCountByValue.get(entry.value) ?? 0;
+    if (current === 0) continue; // rule 3's concern, not rule 2's
     if (current > entry.maxCount) {
       grownEntries.push({ entry, current });
+    } else if (current < entry.maxCount) {
+      looseEntries.push({ entry, current });
     }
   }
 
@@ -951,7 +989,12 @@ function main() {
     (entry) => (currentCountByValue.get(entry.value) ?? 0) === 0,
   );
 
-  if (newOffenders.length > 0 || grownEntries.length > 0 || staleEntries.length > 0) {
+  if (
+    newOffenders.length > 0 ||
+    grownEntries.length > 0 ||
+    looseEntries.length > 0 ||
+    staleEntries.length > 0
+  ) {
     const sections = [];
 
     if (newOffenders.length > 0) {
@@ -971,6 +1014,18 @@ function main() {
         )
         .join("\n");
       sections.push(`BASELINE entry GREW (${grownEntries.length}):\n${details}`);
+    }
+
+    if (looseEntries.length > 0) {
+      const details = looseEntries
+        .map(
+          ({ entry, current }) =>
+            `  - "${entry.value}" — BASELINE declares maxCount=${entry.maxCount}, but ${DIST_PATH} actually has only ${current} occurrence(s). A budget above reality is a licence to regress without the guard ever noticing — lower maxCount to ${current} in scripts/no-hardcoded-words-guard.mjs.`,
+        )
+        .join("\n");
+      sections.push(
+        `BASELINE entry's declared maxCount is ABOVE the actual bundle count (${looseEntries.length}):\n${details}`,
+      );
     }
 
     if (staleEntries.length > 0) {
