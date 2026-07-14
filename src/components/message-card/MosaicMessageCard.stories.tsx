@@ -43,6 +43,9 @@ const requiredMessageCardLabels = {
   removeBookmarkLabel: "Remove bookmark",
   bookmarkLabel: "Bookmark",
   copyMessageLabel: "Copy message",
+  viewThreadLabel: "View thread",
+  likeAriaLabel: (count: number) => `Like (${count})`,
+  dislikeAriaLabel: (count: number) => `Dislike (${count})`,
 };
 
 export const UserMessage: Story = {

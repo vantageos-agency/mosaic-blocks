@@ -61,6 +61,12 @@ export interface MosaicDashboardContentProps {
   views: MosaicDashboardView[];
   /** Currently active view id */
   currentView: string;
+  /**
+   * Label shown when `currentView` matches no entry in `views`. Rendered to
+   * the end user — required host-owned string, no default. The component
+   * appends `currentView` after it (a data value, not library-owned prose).
+   */
+  viewNotFoundLabel: string;
   className?: string;
 }
 
@@ -69,6 +75,7 @@ export interface MosaicDashboardContentProps {
 export function MosaicDashboardContent({
   views,
   currentView,
+  viewNotFoundLabel,
   className,
 }: MosaicDashboardContentProps) {
   const { isMobile } = useDevice();
@@ -90,7 +97,8 @@ export function MosaicDashboardContent({
         </div>
       ) : (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          View not found: {currentView}
+          {viewNotFoundLabel}
+          {currentView}
         </p>
       )}
     </div>
