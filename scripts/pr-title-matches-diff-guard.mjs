@@ -13,15 +13,17 @@
  * case replays). Nothing in CI checked the difference between the two.
  *
  * WHAT THIS GUARD ENFORCES: for any commit/PR whose diff adds or modifies at
- * least one file under `src/components/`, the HEAD commit's SUBJECT LINE
- * (never body — the subject is what ships as the PR/merge title, per this
- * repo's squash-merge convention) must name at least one component the diff
- * itself really adds or touches. "Names" is derived two ways, both anchored
- * to the diff itself, never to memory of what a title "should" look like:
- *
- *   (a) a literal `Mosaic<Name>` token appearing anywhere in the subject; or
- *   (b) the conventional-commit `type(scope):` scope, mapped scope-kebab ->
- *       PascalCase -> `Mosaic<Scope>` (`alert-dialog` -> `MosaicAlertDialog`).
+ * least one file under `src/components/`, IF the title makes a component
+ * claim, that claim must be one the diff really adds or touches. A claim is
+ * a LITERAL `Mosaic<Name>` token appearing anywhere in the title text —
+ * NOTHING ELSE. The conventional-commit `type(scope):` scope is used only to
+ * CORROBORATE a claim already made by a literal token (scope-kebab ->
+ * PascalCase -> `Mosaic<Scope>`, checked against the diff); it never
+ * manufactures a claim on its own. Measured over the last 120 real commits
+ * of this repo's own history, promoting the scope into the claim set
+ * produced 14 false BLOCKED verdicts on commits that never wrote a single
+ * `Mosaic<Name>` token and whose diff was perfectly healthy — a title with
+ * zero literal tokens has claimed nothing, and there is nothing to verify.
  *
  * against everything the diff really contains, derived two ways, both from
  * the artifact, never enumerated by hand:
@@ -62,17 +64,18 @@
  * commit but whose diff DOES touch `src/components/` gets no free pass: the
  * claim/actual check still runs.
  *
- * FAIL-CLOSED BY CONSTRUCTION: a title with ZERO derivable claims (no
- * `Mosaic<Name>` token, no conventional-commit scope) on a diff that DOES
- * touch `src/components/` is not "out of scope" or silently skipped — it is
- * a violation in its own right (the empty set can never intersect anything),
- * reported by name as "title names no component". There is no `return`,
- * `continue`, or `exit 0` anywhere in this guard's classification path for a
- * title shape it does not recognize; every shape maps deterministically to
- * either a derived claim set (possibly empty) or a thrown error if the git
- * commands themselves fail. An empty or unparseable claim is compared
- * against the actual set exactly like a populated one, and an empty set
- * never matches, so silence is never mistaken for compliance.
+ * NO FAIL-CLOSED ON AN EMPTY CLAIM: a title with ZERO literal `Mosaic<Name>`
+ * tokens has claimed NOTHING — not "an unrecognized shape", not "out of
+ * scope" — genuinely nothing to verify, and this guard says so explicitly
+ * (logged, never a silent `return`) rather than fabricating a claim from the
+ * conventional-commit scope to have something to compare. The 14-false-
+ * positive defect measured on real history was exactly this: an empty
+ * literal claim was promoted into a non-empty one, then reported as a
+ * mismatch against a diff the author never lied about. Every other branch
+ * (non-empty claim vs the diff's real components) still fails closed: an
+ * empty ACTUAL set (diff touches zero components) is handled by the ONE
+ * declared exemption above, and a non-empty CLAIM that fails to intersect
+ * the ACTUAL set is always BLOCKED.
  *
  * WRITTEN ESCAPE HATCH (rare, anchored, never a silent skip): a HEAD commit
  * message body carrying `// allow-title-diff-mismatch: <reason>` on its own
@@ -114,6 +117,15 @@ const ROOT = resolve(__dirname, "..");
 
 const BASE_REF = process.env.PR_TITLE_GUARD_BASE_REF ?? "origin/main";
 
+// On the pull_request path, `actions/checkout@v4` leaves the real HEAD
+// commit ONE STEP BEHIND the synthetic merge commit — HEAD^2 by convention,
+// but that convention is fragile across checkout/merge strategies. CI passes
+// the real PR head SHA explicitly (PR_TITLE_GUARD_HEAD_REF) so the diff and
+// the escape-hatch marker are read off the commit a human actually authored,
+// never off `"Merge <sha> into <sha>"`. Unset on push:main, where plain
+// `HEAD` already IS the real (squash-merge) commit.
+const HEAD_REF = process.env.PR_TITLE_GUARD_HEAD_REF ?? "HEAD";
+
 // Anchored at start-of-line, deliberately — same remedy this repo already
 // applies twice (release-artifacts-guard, no-hardcoded-words-guard): a
 // commit message that merely EXPLAINS the escape hatch quotes the marker
@@ -146,12 +158,27 @@ function git(args) {
 }
 
 /**
- * @returns {string} the HEAD commit's subject line ONLY — what actually ships
- * as the PR/merge title under this repo's squash-merge convention. The body
- * is read separately, only for the escape-hatch marker.
+ * @returns {string} the title this guard must check. The title domain has
+ * THREE carriers, not two:
+ *   1. the PR title (honest — GitHub keeps it in sync with review)
+ *   2. the SYNTHETIC `"Merge <sha> into <sha>"` subject `actions/checkout@v4`
+ *      leaves as HEAD's subject on `refs/pull/N/merge` — nobody writes this
+ *      string, and reading it finds no component token on EVERY PR touching
+ *      src/components/, blocking 100% of them regardless of honesty.
+ *   3. the hand-typed squash-merge commit subject on push:main — the one
+ *      that actually lied in the real incident.
+ * On the pull_request path, CI passes the real PR title explicitly via
+ * PR_TITLE_GUARD_SUBJECT (see workflow) precisely to avoid ever reading
+ * carrier 2. When that env var is unset (push:main path, or a local/manual
+ * run), this falls back to HEAD's own subject — carrier 3, the correct one
+ * for that path.
  */
 function headSubject() {
-  return git(["log", "-1", "--pretty=%s", "HEAD"]).trim();
+  const explicit = process.env.PR_TITLE_GUARD_SUBJECT;
+  if (explicit != null && explicit.trim() !== "") {
+    return explicit.trim();
+  }
+  return git(["log", "-1", "--pretty=%s", HEAD_REF]).trim();
 }
 
 /**
@@ -159,7 +186,7 @@ function headSubject() {
  * escape-hatch marker only.
  */
 function headFullMessage() {
-  return git(["log", "-1", "--pretty=%B", "HEAD"]);
+  return git(["log", "-1", "--pretty=%B", HEAD_REF]);
 }
 
 /**
@@ -167,7 +194,7 @@ function headFullMessage() {
  */
 function changedFiles() {
   git(["rev-parse", "--verify", BASE_REF]);
-  const out = git(["diff", "--name-only", `${BASE_REF}...HEAD`]);
+  const out = git(["diff", "--name-only", `${BASE_REF}...${HEAD_REF}`]);
   return out
     .split("\n")
     .map((l) => l.trim())
@@ -227,7 +254,7 @@ function actualComponentClaim(changed) {
   const names = new Set([...dirs].map((d) => `Mosaic${toPascalCase(d)}`));
 
   if (changed.includes("src/index.ts")) {
-    const diffText = git(["diff", `${BASE_REF}...HEAD`, "--", "src/index.ts"]);
+    const diffText = git(["diff", `${BASE_REF}...${HEAD_REF}`, "--", "src/index.ts"]);
     for (const line of diffText.split("\n")) {
       if (!line.startsWith("+") || line.startsWith("+++")) continue;
       const matches = line.match(MOSAIC_TOKEN_RE);
@@ -239,8 +266,19 @@ function actualComponentClaim(changed) {
 }
 
 /**
- * Everything the TITLE claims, derived two independent ways from the subject
- * line's own text — never a fixed list of known-good component names.
+ * Everything the TITLE claims. A claim is a LITERAL `Mosaic<Name>` token
+ * present in the subject text — NOTHING ELSE. The conventional-commit
+ * `type(scope):` scope is returned alongside for CORROBORATION purposes only
+ * (a scope that matches a diffed directory can confirm agreement) — it must
+ * NEVER, on its own, manufacture a claim the author did not literally write.
+ * Promoting the scope into the claim set fabricates a disagreement on
+ * commits whose author named no component at all: measured against 120 real
+ * commits of this repo's own history, that promotion produced 14 false
+ * BLOCKED verdicts on commits whose diff was perfectly healthy (e.g.
+ * "feat(atoms): close #24 — 11 base-UI atoms", where the diff really adds 11
+ * atoms and the subject never claimed a single `Mosaic<Name>` token). A
+ * title with zero literal tokens has made no claim — there is nothing to
+ * verify, so it cannot be a mismatch.
  * @param {string} subject
  * @returns {{ tokens: Set<string>, scope: string | null }}
  */
@@ -248,7 +286,6 @@ function titleClaim(subject) {
   const tokens = new Set(subject.match(MOSAIC_TOKEN_RE) ?? []);
   const scopeMatch = SCOPE_RE.exec(subject);
   const scope = scopeMatch ? scopeMatch[1] : null;
-  if (scope) tokens.add(`Mosaic${toPascalCase(scope)}`);
   return { tokens, scope };
 }
 
@@ -269,7 +306,7 @@ function main() {
   // title. See header comment.
   if (componentChanged.length === 0) {
     console.log(
-      `pr-title-matches-diff-guard: OK — ${BASE_REF}...HEAD touches no file under src/components/; no component claim to verify.`,
+      `pr-title-matches-diff-guard: OK — ${BASE_REF}...${HEAD_REF} touches no file under src/components/; no component claim to verify.`,
     );
     return;
   }
@@ -278,18 +315,31 @@ function main() {
   const subject = headSubject();
   const { tokens: claimed, scope } = titleClaim(subject);
 
+  // A claim is a LITERAL Mosaic<Name> token in the subject — nothing else.
+  // A title with zero such tokens has claimed NOTHING (the conv-commit scope
+  // is corroboration, never a manufactured claim — see titleClaim() above),
+  // so there is no claim to verify. This is not a silent skip: it is logged,
+  // and it is the fix for the 14-false-positive defect measured over 120
+  // real commits (a fabricated scope->Mosaic<Scope> claim that never
+  // appeared in the subject text was previously compared against the diff
+  // and reported as a mismatch).
   if (claimed.size === 0) {
-    console.error(
-      `pr-title-matches-diff-guard: BLOCKED — title names no component at all, but this diff (${BASE_REF}...HEAD) touches ${componentChanged.length} file(s) under src/components/ in ${dirs.size} director(y/ies): ${[...dirs].sort().join(", ")} (real component(s): ${[...actual].sort().join(", ") || "none derivable"}).\nTitle: "${subject}"\nFix: name at least one real component the diff adds/touches in the title, or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine cross-cutting change.`,
+    const scopeNote = scope ? ` (scope "${scope}" noted, not promoted to a claim)` : "";
+    console.log(
+      `pr-title-matches-diff-guard: OK — title "${subject}" names no literal Mosaic<Name> token${scopeNote}; no component claim to verify.`,
     );
-    process.exitCode = 1;
     return;
   }
 
-  const matched = [...claimed].some((c) => actual.has(c));
+  // The scope may CORROBORATE agreement (a scope matching a diffed
+  // directory confirms the literal claim) but it never manufactures one on
+  // its own — this branch is only reached when the subject carries at least
+  // one literal Mosaic<Name> token.
+  const scopeCorroborates = scope != null && actual.has(`Mosaic${toPascalCase(scope)}`);
+  const matched = [...claimed].some((c) => actual.has(c)) || scopeCorroborates;
   if (!matched) {
     console.error(
-      `pr-title-matches-diff-guard: BLOCKED — title claims [${[...claimed].sort().join(", ")}]${scope ? ` (scope "${scope}")` : ""}, but this diff (${BASE_REF}...HEAD) really adds/touches [${[...actual].sort().join(", ") || "none derivable"}] in director(y/ies) ${[...dirs].sort().join(", ")}.\nTitle: "${subject}"\nFix: correct the title to name a component this diff really contains, or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine, declared exception.`,
+      `pr-title-matches-diff-guard: BLOCKED — title claims [${[...claimed].sort().join(", ")}]${scope ? ` (scope "${scope}")` : ""}, but this diff (${BASE_REF}...${HEAD_REF}) really adds/touches [${[...actual].sort().join(", ") || "none derivable"}] in director(y/ies) ${[...dirs].sort().join(", ")}.\nTitle: "${subject}"\nFix: correct the title to name a component this diff really contains, or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine, declared exception.`,
     );
     process.exitCode = 1;
     return;

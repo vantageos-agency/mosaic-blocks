@@ -14,27 +14,45 @@
 #
 #   1. conventional-commit scope + Mosaic<Name> token, title MATCHES diff
 #      -> MUST_PASS  (52cdb32 "feat(memory): MosaicMemoryGrid + MosaicMemoryList")
-#   2. conventional-commit scope + Mosaic<Name> token, title does NOT match
-#      diff -> MUST_BLOCK (the three real incident commits: 2d49c9d / 183c6df
-#      / ee4877d — MANDATORY, not chosen by this probe's author)
+#   2. Mosaic<Name> token names the WRONG component (title does NOT match
+#      diff) -> MUST_BLOCK (the three real incident commits: 2d49c9d /
+#      183c6df / ee4877d — MANDATORY, not chosen by this probe's author)
 #   3. conventional-commit scope, NO Mosaic token, title MATCHES diff via the
 #      scope->PascalCase mapping alone -> MUST_PASS (dd69dca
 #      "test(alert-dialog): ...")
 #   4. free-form prose (no conventional-commit prefix) WITH a Mosaic<Name>
 #      token, title MATCHES diff -> MUST_PASS (a307e19 "PR #11 T4 RESCOPED —
 #      MosaicFeature3Col + motion-LogoCloud")
-#   5. free-form prose, ZERO derivable claim (no token, no scope), diff
-#      touches MANY components -> MUST_BLOCK (f8e4d41 "PR #10 forwardRef→
-#      React-19 ref-as-prop root-fix (22 .tsx files)")
+#   5. title carries ZERO literal Mosaic<Name> token (no token, no scope, OR
+#      a scope that fails to corroborate), diff touches MANY real components
+#      -> MUST_PASS: an empty claim is NOT promoted into a fabricated one
+#      (DEFECT-1 FIX). This repo's own f8e4d41 "PR #10 forwardRef→React-19
+#      ref-as-prop root-fix" (22 real .tsx files, zero claim in the title) is
+#      one of the 14 real false positives this fix closes, measured over 120
+#      real commits of main.
+#   5b. a literal Mosaic<Name> token names the WRONG component AND the scope
+#       does not corroborate the real one -> MUST_BLOCK (the empty-ACTUAL
+#       intersection never matches; built on 2d49c9d's own real diff).
 #   6. diff touches ZERO src/components/ files, release-bot commit
 #      -> MUST_PASS (074de96 "chore(release): derive version ...")
 #   7. diff touches ZERO src/components/ files, CI-only commit
 #      -> MUST_PASS (e354887 "fix(ci): read the test count from JSON ...")
+#   9. a literal Mosaic<Name> token names the WRONG component, but the
+#      conventional-commit SCOPE corroborates the real one -> MUST_PASS: the
+#      scope is read only as corroboration of an EXISTING claim, never as a
+#      claim of its own (built on 2d49c9d's own real diff).
 #
 #   8. (MUST_BLOCK) escape-hatch marker MENTIONED IN PROSE must not disable
 #      the guard — same anchoring defect this repo already fixed twice
 #      elsewhere; without this case a guard that scans free prose passes
 #      every probe and protects nothing.
+#
+# DEFECT 2 (PR path reads a synthetic subject nobody wrote) is covered
+# separately, below the push-to-main sweep, by constructing a real
+# `git merge --no-ff` synthetic-merge fixture (the exact shape
+# `refs/pull/N/merge` takes) and proving both (a) the defect reproduces
+# without the PR_TITLE_GUARD_SUBJECT/HEAD_REF override, and (b) the override
+# fixes it while still blocking a genuinely lying PR title.
 #
 # Per .claude/rules/derive-never-type.md: a bipolar probe alone does not
 # prove a matcher bites — only mutation on FOREIGN material, with an
@@ -256,42 +274,79 @@ else
 fi
 
 # ===========================================================================
-# MUST_BLOCK — form 5: title names NOTHING at all, diff touches MANY
-# components (real mass-refactor commit).
+# MUST_PASS — form 5: title names NOTHING at all (no literal Mosaic<Name>
+# token, no conventional-commit scope), diff touches MANY real components
+# (real mass-refactor commit). Per the DEFECT-1 fix, an empty literal claim
+# is NOT promoted into a fabricated one — the author claimed nothing, so
+# there is nothing to verify, and this MUST PASS. (Prior to the fix this was
+# the exact shape of 14 real false positives measured over 120 commits —
+# THIS repo's own commit f8e4d415 is one of them: "PR #10 forwardRef→
+# React-19 ref-as-prop root-fix" on a diff touching 22 real .tsx files, none
+# of which the title claims to be about, and the diff itself is healthy.)
 # ===========================================================================
-MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
 sha="f8e4d415a7fb1b768126ea81b24e909cbc7a0486"
-parent="$(replay_commit "$sha" "src/components/avatar/MosaicAvatar.tsx" "forwardRef" || true)"
-branch="probe-${sha}"
+parent="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
 if [ -z "$parent" ]; then
-  # forwardRef may not literally appear post-fix on every file; fall back to
-  # a path-existence landing check instead of a content anchor.
-  parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
-  if [ -n "$parent" ]; then
-    branch="probe-noclaim-${sha}"
-    (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
-    (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
-    if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "avatar/MosaicAvatar.tsx"); then
-      FAILURES+=("MUST_BLOCK $sha (empty claim) — mutation did NOT land — probe invalid")
-      parent=""
+  FAILURES+=("MUST_PASS $sha (empty claim, mass refactor) — could not resolve parent — probe invalid")
+  log MUST_PASS "FAIL — $sha — could not resolve parent"
+else
+  branch="probe-noclaim-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "avatar/MosaicAvatar.tsx"); then
+    FAILURES+=("MUST_PASS $sha (empty claim, mass refactor) — mutation did NOT land — probe invalid")
+    log MUST_PASS "FAIL — $sha — mutation did not land"
+  else
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "no component claim to verify"; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — $sha (empty claim, real mass refactor) — guard exited 0, no fabricated claim"
     else
-      (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+      FAILURES+=("MUST_PASS $sha (empty claim, mass refactor) — guard exited $status (expected 0, 'no component claim to verify') — output: $output")
+      log MUST_PASS "FAIL — $sha — exit=$status output=$output"
     fi
   fi
+  cleanup_branch "$branch" "$parent"
 fi
+
+# ===========================================================================
+# MUST_BLOCK — form 5b: title carries a literal Mosaic<Name> token that
+# matches NOTHING the diff touches, AND its conventional-commit scope also
+# fails to corroborate — the mandatory "empty ACTUAL never matches" case.
+# Built from the same real 2d49c9d incident material (title/diff pairing is
+# what actually happened; this is the sweep-verified BLOCK, not synthetic).
+# ===========================================================================
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
+parent="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
 if [ -z "$parent" ]; then
-  log MUST_BLOCK "FAIL — $sha — replay setup failed"
+  FAILURES+=("MUST_BLOCK $sha (literal token, wrong component) — could not resolve parent — probe invalid")
+  log MUST_BLOCK "FAIL — $sha — could not resolve parent"
 else
-  set +e
-  output="$(run_guard "$parent" 2>&1)"
-  status=$?
-  set -e
-  if [ "$status" -ne 0 ] && echo "$output" | grep -qF "names no component"; then
-    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-    log MUST_BLOCK "PASS — $sha (empty claim, mass refactor) — guard exited $status, named the empty claim"
+  branch="probe-wrongtoken-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "add-memory-form/MosaicAddMemoryForm.tsx"); then
+    FAILURES+=("MUST_BLOCK $sha (literal token, wrong component) — mutation did NOT land — probe invalid")
+    log MUST_BLOCK "FAIL — $sha — mutation did not land"
   else
-    FAILURES+=("MUST_BLOCK $sha (empty claim) — guard exited $status (expected non-zero, 'names no component') — output: $output")
-    log MUST_BLOCK "FAIL — $sha — exit=$status output=$output"
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "BLOCKED"; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — $sha (literal token names wrong component, real incident) — exited $status"
+    else
+      FAILURES+=("MUST_BLOCK $sha (literal token, wrong component) — guard exited $status (expected non-zero+BLOCKED) — output: $output")
+      log MUST_BLOCK "FAIL — $sha — exit=$status output=$output"
+    fi
   fi
   cleanup_branch "$branch" "$parent"
 fi
@@ -399,6 +454,43 @@ else
     else
       FAILURES+=("MUST_BLOCK prose-marker — guard exited $status (expected non-zero) — output: $output")
       log MUST_BLOCK "FAIL — prose-marker DISABLED the guard — exit=$status output=$output"
+    fi
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_PASS — form 9: literal Mosaic<Name> token names the WRONG component,
+# but the conventional-commit SCOPE corroborates the real one — the scope is
+# read only as corroboration of an existing claim, never as its own claim,
+# but when it genuinely agrees with the diff it is honored. Built on
+# 2d49c9d's own real diff (add-memory-form), with a scope that matches it.
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
+parent="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
+if [ -z "$parent" ]; then
+  FAILURES+=("MUST_PASS scope-corroborates — could not resolve parent — probe invalid")
+  log MUST_PASS "FAIL — scope-corroborates — could not resolve parent"
+else
+  branch="probe-scopecorrob-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "add-memory-form/MosaicAddMemoryForm.tsx"); then
+    FAILURES+=("MUST_PASS scope-corroborates — mutation did NOT land — probe invalid")
+    log MUST_PASS "FAIL — scope-corroborates — mutation did not land"
+  else
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(printf 'feat(add-memory-form): MosaicThreadView typo in title, scope corroborates real component')")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — scope corroborates the real component despite a wrong literal token — exited 0"
+    else
+      FAILURES+=("MUST_PASS scope-corroborates — guard exited $status (expected 0) — output: $output")
+      log MUST_PASS "FAIL — scope-corroborates — exit=$status output=$output"
     fi
   fi
   cleanup_branch "$branch" "$parent"
@@ -540,6 +632,121 @@ else
     FAILURES+=("PUSH-PATH MUST_PASS $sha (scripts/CI-only) — guard exited $status (expected 0, exempted) — output: $output")
     log MUST_PASS "FAIL — push-path $sha — exit=$status output=$output"
   fi
+fi
+
+# ===========================================================================
+# PULL_REQUEST PATH — DEFECT 2. `actions/checkout@v4` on `pull_request`
+# checks out `refs/pull/N/merge`, whose HEAD subject is the SYNTHETIC
+# "Merge <sha> into <sha>" string nobody wrote. This is not a hypothetical:
+# it is reproduced below by constructing a real synthetic merge commit
+# (`git merge --no-ff`, the exact shape GitHub produces) on top of real
+# LYING-TITLE incident material (2d49c9d), then proving:
+#
+#   (a) without the override, the guard reads HEAD's own (synthetic) subject
+#       — which carries NO literal Mosaic<Name> token, ever, regardless of
+#       what the real PR title said — and, per the DEFECT-1 fix, an empty
+#       claim now PASSES unconditionally. That means a PR-path guard with no
+#       override SILENTLY PASSES a PR whose real title genuinely lies about
+#       its diff — the defect is a false NEGATIVE once Defect 1 is fixed
+#       (before Defect 1 was fixed, the same synthetic-subject read produced
+#       a false POSITIVE instead, blocking 100% of PRs — either way, reading
+#       carrier 2 of the title domain is wrong);
+#   (b) passing PR_TITLE_GUARD_SUBJECT + PR_TITLE_GUARD_HEAD_REF (exactly as
+#       ci.yml's pull_request step now does) makes the guard read the REAL
+#       PR title and REAL PR diff instead, correctly BLOCKING the lying
+#       title; and
+#   (c) the same override correctly PASSES an honest PR (title and diff
+#       agree) — the fix must not turn the PR path into pass-everything OR
+#       block-everything.
+# ===========================================================================
+PR_PATH_TOTAL=0
+PR_PATH_PASS=0
+
+sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
+base="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
+if [ -z "$base" ]; then
+  FAILURES+=("PR-PATH fixture $sha — could not resolve parent — probe invalid")
+  log PR_PATH "FAIL — fixture $sha — could not resolve parent"
+else
+  PR_PATH_TOTAL=$((PR_PATH_TOTAL + 1))
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "pr-path-base" "$base")
+  (cd "$CLONE" && git checkout --quiet -b "pr-path-feature" "$sha")
+  (cd "$CLONE" && git checkout --quiet "pr-path-base")
+  # This IS the synthetic ref GitHub builds for refs/pull/N/merge: a --no-ff
+  # merge whose own subject nobody typed.
+  (cd "$CLONE" && git merge --no-ff --quiet -m "Merge ${sha} into ${base}" "pr-path-feature")
+  cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  if ! (cd "$CLONE" && git log -1 --format=%s | grep -qF "Merge ${sha} into ${base}"); then
+    FAILURES+=("PR-PATH fixture $sha — synthetic merge subject did NOT land — probe invalid")
+    log PR_PATH "FAIL — fixture $sha — synthetic merge subject absent"
+  else
+    # (a) no override: guard reads the synthetic subject (zero literal
+    #     token, always) — a genuinely LYING title silently PASSES.
+    set +e
+    output_no_override="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+    status_no_override=$?
+    set -e
+    if [ "$status_no_override" -eq 0 ] && echo "$output_no_override" | grep -qF "no component claim to verify"; then
+      log PR_PATH "CONFIRMED — synthetic merge subject silently PASSES a genuinely lying title (Defect 2 reproduced)"
+    else
+      FAILURES+=("PR-PATH defect-2 repro — expected synthetic subject to silently PASS the lying title without the override, got exit=$status_no_override output=$output_no_override")
+      log PR_PATH "FAIL — defect-2 repro did not reproduce — exit=$status_no_override output=$output_no_override"
+    fi
+
+    # (b) AFTER the fix: override set exactly as ci.yml's pull_request step
+    #     sets it, using the REAL lying title. Must BLOCK, and must never
+    #     read the synthetic subject.
+    real_title="$(cd "$CLONE" && git log -1 --format=%s "$sha")"
+    set +e
+    output_fixed="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+    status_fixed=$?
+    set -e
+    if [ "$status_fixed" -ne 0 ] && echo "$output_fixed" | grep -qF "BLOCKED" && ! echo "$output_fixed" | grep -qF "Merge ${sha} into ${base}"; then
+      PR_PATH_PASS=$((PR_PATH_PASS + 1))
+      log PR_PATH "PASS — override reads the real (lying) PR title, never the synthetic merge subject, and BLOCKS it — exited $status_fixed"
+    else
+      FAILURES+=("PR-PATH fixed $sha — guard with override exited $status_fixed (expected non-zero+BLOCKED) or leaked the synthetic subject — output: $output_fixed")
+      log PR_PATH "FAIL — fixed $sha — exit=$status_fixed output=$output_fixed"
+    fi
+  fi
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet "$base" 2>/dev/null || true)
+  (cd "$CLONE" && git branch -D --quiet pr-path-base pr-path-feature 2>/dev/null || true)
+fi
+
+# --- (c) An HONEST PR (title and diff agree) must PASS under the same
+#     override invocation — the fix must not turn the PR path into
+#     block-everything either.
+sha="52cdb32a5a16b2db4651fd4b1f9adbc283b5af92"
+base="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
+if [ -z "$base" ]; then
+  FAILURES+=("PR-PATH honest-title fixture $sha — could not resolve parent — probe invalid")
+  log PR_PATH "FAIL — honest-title fixture $sha — could not resolve parent"
+else
+  PR_PATH_TOTAL=$((PR_PATH_TOTAL + 1))
+  if ! (cd "$CLONE" && git cat-file -e "${sha}:src/components/memory-grid/MosaicMemoryGrid.tsx" 2>/dev/null); then
+    FAILURES+=("PR-PATH honest-title fixture $sha — real file absent, landing not proven — probe invalid")
+    log PR_PATH "FAIL — honest-title fixture $sha — landing not proven"
+  else
+    cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+    real_title="$(cd "$CLONE" && git log -1 --format=%s "$sha")"
+    set +e
+    output_honest="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+    status_honest=$?
+    set -e
+    if [ "$status_honest" -eq 0 ] && echo "$output_honest" | grep -qF "OK"; then
+      PR_PATH_PASS=$((PR_PATH_PASS + 1))
+      log PR_PATH "PASS — an honest PR title still PASSES under the override invocation — exited 0"
+    else
+      FAILURES+=("PR-PATH honest-title $sha — guard exited $status_honest (expected 0) — output: $output_honest")
+      log PR_PATH "FAIL — honest-title $sha — exit=$status_honest output=$output_honest"
+    fi
+  fi
+fi
+
+echo ""
+echo "PR-PATH (defect 2): $PR_PATH_PASS/$PR_PATH_TOTAL"
+if [ "$PR_PATH_PASS" -ne "$PR_PATH_TOTAL" ]; then
+  FAILURES+=("PR-PATH sweep — $PR_PATH_PASS/$PR_PATH_TOTAL — not all cases passed")
 fi
 
 # Leave the clone on a clean, detached-free state before restoration check

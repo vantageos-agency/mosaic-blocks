@@ -101,12 +101,25 @@ jobs:
       # ── 8e. PR title matches diff guard ──────────────────────────────────────
       #    A merge title is a hand-typed claim about an artifact a machine can
       #    read (the diff). PR-ONLY, same shape as the release artifacts guard:
-      #    a diff that touches src/components/ must have its HEAD commit
-      #    subject name at least one component the diff really adds/touches.
+      #    a diff that touches src/components/ must have its title name at
+      #    least one component the diff really adds/touches.
       #    Escape hatch: HEAD commit message carries
       #    `// allow-title-diff-mismatch: <reason>`.
+      #
+      #    `actions/checkout@v4` on `pull_request` checks out the SYNTHETIC
+      #    `refs/pull/N/merge` ref, whose HEAD subject is
+      #    `"Merge <sha> into <sha>"` — a string NOBODY wrote. Reading that as
+      #    the "title" finds no component token on every PR touching
+      #    src/components/ and blocks all of them, honest or not. So this step
+      #    passes the REAL PR title explicitly (PR_TITLE_GUARD_SUBJECT) and
+      #    diffs the REAL base/head SHAs of the PR, never the merge ref's own
+      #    parent.
       - name: PR title matches diff guard
         if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE_GUARD_SUBJECT: ${{ github.event.pull_request.title }}
+          PR_TITLE_GUARD_BASE_REF: ${{ github.event.pull_request.base.sha }}
+          PR_TITLE_GUARD_HEAD_REF: ${{ github.event.pull_request.head.sha }}
         run: node scripts/pr-title-matches-diff-guard.mjs
 
       # ── 8e-2. Same guard, run against the artifact that actually lies ──────
