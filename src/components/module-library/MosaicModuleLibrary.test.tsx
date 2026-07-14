@@ -146,9 +146,7 @@ describe("MosaicModuleForm", () => {
     expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
 
-  const tagListFormFields = [
-    { id: "tags", label: "Tags", type: "tag-list" as const },
-  ];
+  const tagListFormFields = [{ id: "tags", label: "Tags", type: "tag-list" as const }];
 
   it("renders an existing tag with no aria-label when removeTagAriaLabel is absent", () => {
     const { container } = render(
