@@ -1,0 +1,470 @@
+#!/usr/bin/env bash
+# probe-pr-title-matches-diff.sh — bipolar bite-probe for
+# scripts/pr-title-matches-diff-guard.mjs, run on REAL historical material
+# the guard's author did not choose.
+#
+# CENSUS — derived, not enumerated (per .claude/rules/guard-formulation-census.md).
+# Produced by running, against this repo's own history:
+#
+#   git log --format=%s -300
+#
+# and classifying every subject line by shape. Seven distinct forms exist in
+# real history; every one is exercised below with a MUST_BLOCK or MUST_PASS
+# case built from a REAL commit's REAL diff, never synthetic text:
+#
+#   1. conventional-commit scope + Mosaic<Name> token, title MATCHES diff
+#      -> MUST_PASS  (52cdb32 "feat(memory): MosaicMemoryGrid + MosaicMemoryList")
+#   2. conventional-commit scope + Mosaic<Name> token, title does NOT match
+#      diff -> MUST_BLOCK (the three real incident commits: 2d49c9d / 183c6df
+#      / ee4877d — MANDATORY, not chosen by this probe's author)
+#   3. conventional-commit scope, NO Mosaic token, title MATCHES diff via the
+#      scope->PascalCase mapping alone -> MUST_PASS (dd69dca
+#      "test(alert-dialog): ...")
+#   4. free-form prose (no conventional-commit prefix) WITH a Mosaic<Name>
+#      token, title MATCHES diff -> MUST_PASS (a307e19 "PR #11 T4 RESCOPED —
+#      MosaicFeature3Col + motion-LogoCloud")
+#   5. free-form prose, ZERO derivable claim (no token, no scope), diff
+#      touches MANY components -> MUST_BLOCK (f8e4d41 "PR #10 forwardRef→
+#      React-19 ref-as-prop root-fix (22 .tsx files)")
+#   6. diff touches ZERO src/components/ files, release-bot commit
+#      -> MUST_PASS (074de96 "chore(release): derive version ...")
+#   7. diff touches ZERO src/components/ files, CI-only commit
+#      -> MUST_PASS (e354887 "fix(ci): read the test count from JSON ...")
+#
+#   8. (MUST_BLOCK) escape-hatch marker MENTIONED IN PROSE must not disable
+#      the guard — same anchoring defect this repo already fixed twice
+#      elsewhere; without this case a guard that scans free prose passes
+#      every probe and protects nothing.
+#
+# Per .claude/rules/derive-never-type.md: a bipolar probe alone does not
+# prove a matcher bites — only mutation on FOREIGN material, with an
+# assertion that the mutation actually LANDED before reading the verdict,
+# proves it. Every MUST_BLOCK case below cherry-picks the EXACT commit from
+# real history to a scratch clone; every MUST_PASS case replays a real commit
+# or a declared, marker-carrying variant of one.
+#
+# Usage: bash scripts/tests/probe-pr-title-matches-diff.sh
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# DERIVED, never typed (see probe-release-artifacts-guard.sh's own comment on
+# why an absolute path here is a hand-typed value in disguise, and dies on
+# any runner but the one it was written on).
+SOURCE_REPO="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir)"
+if [ ! -d "$SOURCE_REPO" ]; then
+  echo "probe: cannot resolve a clonable git repository from $REPO_ROOT (got '$SOURCE_REPO')." >&2
+  echo "probe: refusing to run — a probe that cannot clone its own material proves NOTHING," >&2
+  echo "probe: and a setup failure must never be read as a pass." >&2
+  exit 1
+fi
+SCRATCH="$(mktemp -d)"
+CLONE="$SCRATCH/clone"
+trap 'rm -rf "$SCRATCH"' EXIT
+
+MUST_BLOCK_PASS=0
+MUST_BLOCK_TOTAL=0
+MUST_PASS_PASS=0
+MUST_PASS_TOTAL=0
+FAILURES=()
+
+log() { echo "[$1] $2"; }
+
+# ---------------------------------------------------------------------------
+# 0. Clone the REAL repo (full history) into a scratch dir; install the guard
+#    under test (this branch's own new file — the only thing legitimately
+#    "ours" here) into that clone's scripts/.
+# ---------------------------------------------------------------------------
+PRE_PROBE_DIFF="$(cd "$REPO_ROOT" && git diff --stat)"
+
+git clone --quiet "$SOURCE_REPO" "$CLONE"
+git -C "$CLONE" fetch --quiet "$SOURCE_REPO" '+refs/heads/*:refs/heads/*' '+refs/remotes/origin/*:refs/remotes/origin/*' 2>/dev/null || true
+
+git -C "$CLONE" config user.name "mosaic-blocks probe"
+git -C "$CLONE" config user.email "probe@vantageos.invalid"
+mkdir -p "$CLONE/scripts"
+cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+
+run_guard() {
+  local base_ref="$1"
+  cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  (cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base_ref" node scripts/pr-title-matches-diff-guard.mjs)
+}
+
+# Resolve a base commit ONCE for cases that need "any valid ancestor to diff
+# against" (the escape-hatch and empty-claim cases build a fresh commit ON
+# TOP of a real base, rather than replaying a historical commit verbatim).
+BASE=""
+for candidate in main origin/main; do
+  if (cd "$CLONE" && git rev-parse --verify --quiet "$candidate" >/dev/null); then
+    BASE="$(cd "$CLONE" && git rev-parse "$candidate")"
+    break
+  fi
+done
+if [ -z "$BASE" ]; then
+  echo "probe: no base commit resolvable (tried: main, origin/main) in the clone." >&2
+  echo "probe: refusing to run — a probe with no base has nothing to diff against." >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Helper — replay a REAL historical commit verbatim (full diff, not a single
+# file's hunk — this guard reads the whole changed-file list) onto a fresh
+# branch off that commit's own parent, assert the mutation landed, run the
+# guard, then restore.
+# ---------------------------------------------------------------------------
+replay_commit() {
+  local sha="$1" landing_file="$2" landing_anchor="$3"
+  local parent branch
+  parent="$(cd "$CLONE" && git rev-parse "${sha}^")"
+  branch="probe-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! grep -qF -- "$landing_anchor" "$CLONE/$landing_file"; then
+    FAILURES+=("$sha — mutation did NOT land in $landing_file (anchor \"$landing_anchor\" absent) — probe invalid")
+    (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet "$parent" && git branch -D --quiet "$branch")
+    return 1
+  fi
+  (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+  echo "$parent"
+}
+
+cleanup_branch() {
+  local branch="$1" ref="$2"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet "$ref" && git branch -D --quiet "$branch" 2>/dev/null || true)
+}
+
+# ===========================================================================
+# MUST_BLOCK — form 2: the three real incident commits (MANDATORY material).
+# ===========================================================================
+BLOCK_TITLE_MISMATCH_CASES=(
+  "2d49c9d2caa8b77aecccac6af21282234cfa5962:src/components/add-memory-form/MosaicAddMemoryForm.tsx:MosaicAddMemoryForm"
+  "183c6dfe19bd398851fa4b5b9efd195d72e6da0d:src/components/edit-memory-dialog/MosaicEditMemoryDialog.tsx:MosaicEditMemoryDialog"
+  "ee4877da9fe7ffc3c7f3a2344f74ecd321008b1c:src/components/memory-dashboard/MosaicMemoryDashboard.tsx:MosaicMemoryDashboard"
+)
+for case in "${BLOCK_TITLE_MISMATCH_CASES[@]}"; do
+  IFS=':' read -r sha file anchor <<< "$case"
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  parent="$(replay_commit "$sha" "$file" "$anchor" || true)"
+  branch="probe-${sha}"
+  if [ -z "$parent" ]; then
+    log MUST_BLOCK "FAIL — $sha — replay setup failed"
+    continue
+  fi
+  set +e
+  output="$(run_guard "$parent" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -ne 0 ] && echo "$output" | grep -qF "BLOCKED"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — $sha (real incident) — guard exited $status, BLOCKED"
+  else
+    FAILURES+=("MUST_BLOCK $sha (real incident) — guard exited $status (expected non-zero+BLOCKED) — output: $output")
+    log MUST_BLOCK "FAIL — $sha — exit=$status output=$output"
+  fi
+  cleanup_branch "$branch" "$parent"
+done
+
+# ===========================================================================
+# MUST_PASS — form 1: the true-titled sibling commit of the same train.
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="52cdb32a5a16b2db4651fd4b1f9adbc283b5af92"
+parent="$(replay_commit "$sha" "src/components/memory-grid/MosaicMemoryGrid.tsx" "MosaicMemoryGrid" || true)"
+branch="probe-${sha}"
+if [ -z "$parent" ]; then
+  log MUST_PASS "FAIL — $sha — replay setup failed"
+else
+  set +e
+  output="$(run_guard "$parent" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — $sha (true title, same train) — guard exited 0"
+  else
+    FAILURES+=("MUST_PASS $sha (true title) — guard exited $status (expected 0) — output: $output")
+    log MUST_PASS "FAIL — $sha — exit=$status output=$output"
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_PASS — form 3: conventional-commit scope, NO Mosaic token, matches via
+# scope->PascalCase mapping alone (component-scoped test-only commit).
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="dd69dcaf8b91716f1b41ebbda66a837172487630"
+parent="$(replay_commit "$sha" "src/components/alert-dialog/MosaicAlertDialog.test.tsx" "" || true)"
+branch="probe-${sha}"
+if [ -z "$parent" ]; then
+  # test file's content anchor is irrelevant here — the guard only reads the
+  # CHANGED FILE LIST + commit subject, not file content, for this case.
+  # Re-attempt with a path-existence anchor instead.
+  parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
+fi
+if [ -z "$parent" ]; then
+  FAILURES+=("MUST_PASS $sha (scope-only match) — could not resolve parent — probe invalid")
+  log MUST_PASS "FAIL — $sha — could not resolve parent"
+else
+  branch="probe-scope-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "alert-dialog/MosaicAlertDialog.test.tsx"); then
+    FAILURES+=("MUST_PASS $sha — mutation did NOT land (alert-dialog test file not in working tree change) — probe invalid")
+    log MUST_PASS "FAIL — $sha — mutation did not land"
+  else
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — $sha (scope-only match, no Mosaic token) — guard exited 0"
+    else
+      FAILURES+=("MUST_PASS $sha (scope-only match) — guard exited $status (expected 0) — output: $output")
+      log MUST_PASS "FAIL — $sha — exit=$status output=$output"
+    fi
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_PASS — form 4: free-form prose (no conventional-commit prefix) WITH a
+# Mosaic token, title matches diff.
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="a307e1932290b80158b4d46f2b8b299f1bcc8418"
+parent="$(replay_commit "$sha" "src/components/feature-3col/MosaicFeature3Col.tsx" "MosaicFeature3Col" || true)"
+branch="probe-${sha}"
+if [ -z "$parent" ]; then
+  log MUST_PASS "FAIL — $sha — replay setup failed"
+else
+  set +e
+  output="$(run_guard "$parent" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — $sha (free-form prose + Mosaic token, matches) — guard exited 0"
+  else
+    FAILURES+=("MUST_PASS $sha (free-form prose) — guard exited $status (expected 0) — output: $output")
+    log MUST_PASS "FAIL — $sha — exit=$status output=$output"
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_BLOCK — form 5: title names NOTHING at all, diff touches MANY
+# components (real mass-refactor commit).
+# ===========================================================================
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+sha="f8e4d415a7fb1b768126ea81b24e909cbc7a0486"
+parent="$(replay_commit "$sha" "src/components/avatar/MosaicAvatar.tsx" "forwardRef" || true)"
+branch="probe-${sha}"
+if [ -z "$parent" ]; then
+  # forwardRef may not literally appear post-fix on every file; fall back to
+  # a path-existence landing check instead of a content anchor.
+  parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
+  if [ -n "$parent" ]; then
+    branch="probe-noclaim-${sha}"
+    (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+    (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+    if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "avatar/MosaicAvatar.tsx"); then
+      FAILURES+=("MUST_BLOCK $sha (empty claim) — mutation did NOT land — probe invalid")
+      parent=""
+    else
+      (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+    fi
+  fi
+fi
+if [ -z "$parent" ]; then
+  log MUST_BLOCK "FAIL — $sha — replay setup failed"
+else
+  set +e
+  output="$(run_guard "$parent" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -ne 0 ] && echo "$output" | grep -qF "names no component"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — $sha (empty claim, mass refactor) — guard exited $status, named the empty claim"
+  else
+    FAILURES+=("MUST_BLOCK $sha (empty claim) — guard exited $status (expected non-zero, 'names no component') — output: $output")
+    log MUST_BLOCK "FAIL — $sha — exit=$status output=$output"
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_PASS — form 6: diff touches ZERO src/components/ files (release-bot).
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="074de96c14f515024f002f75bbc3020e5ba32b72"
+parent="$(replay_commit "$sha" "src/version.ts" "" || true)"
+if [ -z "$parent" ]; then
+  parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
+  if [ -n "$parent" ]; then
+    branch="probe-release-${sha}"
+    (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+    (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+    if ! (cd "$CLONE" && git status --porcelain | grep -qF "src/version.ts"); then
+      FAILURES+=("MUST_PASS $sha (release, zero-component diff) — mutation did NOT land — probe invalid")
+      parent=""
+    else
+      (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+    fi
+  fi
+fi
+branch="probe-release-${sha}"
+if [ -z "$parent" ]; then
+  log MUST_PASS "FAIL — $sha — replay setup failed"
+else
+  set +e
+  output="$(run_guard "$parent" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ] && echo "$output" | grep -qF "no component claim to verify"; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — $sha (release-bot, zero-component diff) — guard exited 0, exempted"
+  else
+    FAILURES+=("MUST_PASS $sha (release-bot) — guard exited $status (expected 0, exempted) — output: $output")
+    log MUST_PASS "FAIL — $sha — exit=$status output=$output"
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_PASS — form 7: diff touches ZERO src/components/ files (CI-only fix).
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="e35488703d5c87fcfa25956b29c8fd63fca7e6f1"
+parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
+if [ -z "$parent" ]; then
+  FAILURES+=("MUST_PASS $sha (CI-only, zero-component diff) — could not resolve parent — probe invalid")
+  log MUST_PASS "FAIL — $sha — could not resolve parent"
+else
+  branch="probe-ci-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF ".github/workflows/ci.yml"); then
+    FAILURES+=("MUST_PASS $sha (CI-only) — mutation did NOT land — probe invalid")
+    log MUST_PASS "FAIL — $sha — mutation did not land"
+  else
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(git -C "$REPO_ROOT" log -1 --pretty=%B "$sha")")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "no component claim to verify"; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — $sha (CI-only, zero-component diff) — guard exited 0, exempted"
+    else
+      FAILURES+=("MUST_PASS $sha (CI-only) — guard exited $status (expected 0, exempted) — output: $output")
+      log MUST_PASS "FAIL — $sha — exit=$status output=$output"
+    fi
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_BLOCK — form 8: escape-hatch marker MENTIONED IN PROSE must NOT
+# disable the guard (same anchoring defect this repo has fixed twice before —
+# without this case a prose-scanning guard passes every probe here too).
+# Built on top of the real mismatch material (2d49c9d's own diff), because a
+# marker only means anything on a commit that would otherwise be blocked.
+# ===========================================================================
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
+parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
+if [ -z "$parent" ]; then
+  FAILURES+=("MUST_BLOCK prose-marker — could not resolve parent — probe invalid")
+  log MUST_BLOCK "FAIL — prose-marker — could not resolve parent"
+else
+  branch="probe-prose-marker-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "add-memory-form/MosaicAddMemoryForm.tsx"); then
+    FAILURES+=("MUST_BLOCK prose-marker — mutation did NOT land — probe invalid")
+    log MUST_BLOCK "FAIL — prose-marker — mutation did not land"
+  else
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(printf 'feat(thread-view): MosaicThreadView (#92)\n\nThe escape hatch here would be a written // allow-title-diff-mismatch: <reason> line — merely explaining that in prose must not disable anything.')")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "BLOCKED"; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — marker quoted in PROSE does not disable the guard — still blocked"
+    else
+      FAILURES+=("MUST_BLOCK prose-marker — guard exited $status (expected non-zero) — output: $output")
+      log MUST_BLOCK "FAIL — prose-marker DISABLED the guard — exit=$status output=$output"
+    fi
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ===========================================================================
+# MUST_PASS — the written escape hatch, ANCHORED at start-of-line, genuinely
+# DOES disable the guard on the same real mismatch material.
+# ===========================================================================
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
+parent="$(cd "$CLONE" && git rev-parse "${sha}^" 2>/dev/null || true)"
+if [ -z "$parent" ]; then
+  FAILURES+=("MUST_PASS declared-marker — could not resolve parent — probe invalid")
+  log MUST_PASS "FAIL — declared-marker — could not resolve parent"
+else
+  branch="probe-declared-marker-${sha}"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "add-memory-form/MosaicAddMemoryForm.tsx"); then
+    FAILURES+=("MUST_PASS declared-marker — mutation did NOT land — probe invalid")
+    log MUST_PASS "FAIL — declared-marker — mutation did not land"
+  else
+    (cd "$CLONE" && git add -A && git commit --quiet -m "$(printf 'feat(thread-view): MosaicThreadView (#92)\n\n// allow-title-diff-mismatch: probe MUST_PASS declared exception case')")
+    set +e
+    output="$(run_guard "$parent" 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "SKIPPED"; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — declared // allow-title-diff-mismatch marker — guard exited 0 (SKIPPED)"
+    else
+      FAILURES+=("MUST_PASS declared-marker — guard exited $status or did not report SKIPPED — output: $output")
+      log MUST_PASS "FAIL — declared-marker case — exit=$status output=$output"
+    fi
+  fi
+  cleanup_branch "$branch" "$parent"
+fi
+
+# ---------------------------------------------------------------------------
+# Restoration proof — the INVOKING worktree must be untouched by this probe.
+# ---------------------------------------------------------------------------
+cd "$REPO_ROOT"
+POST_PROBE_DIFF="$(git diff --stat)"
+
+echo ""
+echo "==================== PROBE SUMMARY ===================="
+echo "MUST_BLOCK: $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
+echo "MUST_PASS:  $MUST_PASS_PASS/$MUST_PASS_TOTAL"
+echo "Restoration ($REPO_ROOT diff before vs after probe, must be IDENTICAL):"
+if [ "$PRE_PROBE_DIFF" != "$POST_PROBE_DIFF" ]; then
+  echo "BEFORE:"
+  echo "$PRE_PROBE_DIFF"
+  echo "AFTER:"
+  echo "$POST_PROBE_DIFF"
+  FAILURES+=("Restoration check — $REPO_ROOT's diff changed during probe run (before != after)")
+else
+  echo "unchanged (pre-existing diff, if any, preserved byte-for-byte)."
+fi
+
+if [ "${#FAILURES[@]}" -gt 0 ]; then
+  echo ""
+  echo "FAILURES (${#FAILURES[@]}):"
+  for f in "${FAILURES[@]}"; do echo "  - $f"; done
+  exit 1
+fi
+
+echo ""
+echo "ALL BIPOLAR CASES PASSED — false positives: 0"

@@ -98,6 +98,20 @@ jobs:
       - name: Probe — version resolver refuses loudly (unknown flag, dead registry)
         run: bash scripts/tests/probe-derive-next-version.sh
 
+      # ── 8e. PR title matches diff guard ──────────────────────────────────────
+      #    A merge title is a hand-typed claim about an artifact a machine can
+      #    read (the diff). PR-ONLY, same shape as the release artifacts guard:
+      #    a diff that touches src/components/ must have its HEAD commit
+      #    subject name at least one component the diff really adds/touches.
+      #    Escape hatch: HEAD commit message carries
+      #    `// allow-title-diff-mismatch: <reason>`.
+      - name: PR title matches diff guard
+        if: github.event_name == 'pull_request'
+        run: node scripts/pr-title-matches-diff-guard.mjs
+
+      - name: Probe — PR title matches diff guard bites
+        run: bash scripts/tests/probe-pr-title-matches-diff.sh
+
       # ── 9. Build (tsup ESM+CJS+DTS) ──────────────────────────────────────────
       - name: Build
         run: pnpm build
