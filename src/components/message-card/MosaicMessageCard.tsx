@@ -84,6 +84,14 @@ export interface MosaicMessageCardProps {
   bookmarkLabel: string;
   /** Label for the "copy message" menu item. Required, no default. */
   copyMessageLabel: string;
+  /**
+   * Label for the sender-type badge shown next to an AI sender's name.
+   * Optional and host-owned — no default, no fallback word. When the sender
+   * is an AI (`message.sender.type === "ai"`) and this label is provided,
+   * the badge renders with it; when omitted, no badge renders at all. The
+   * library carries no English/French word of its own for this UI state.
+   */
+  aiSenderLabel?: string;
   className?: string;
 }
 
@@ -264,6 +272,7 @@ export function MosaicMessageCard({
   removeBookmarkLabel,
   bookmarkLabel,
   copyMessageLabel,
+  aiSenderLabel,
   className,
 }: MosaicMessageCardProps) {
   const [bookmarked, setBookmarked] = React.useState(message.bookmarked ?? false);
@@ -370,9 +379,9 @@ export function MosaicMessageCard({
               <span className={cn("font-medium", compact ? "text-sm" : "text-base")}>
                 {message.sender.name}
               </span>
-              {message.sender.type === "ai" && (
+              {message.sender.type === "ai" && aiSenderLabel && (
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                  AI
+                  {aiSenderLabel}
                 </span>
               )}
             </div>

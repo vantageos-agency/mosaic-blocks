@@ -56,6 +56,7 @@ export const UserMessage: Story = {
 export const AiMessage: Story = {
   args: {
     message: aiMessage,
+    aiSenderLabel: "AI",
     onReply: (id) => console.log("reply", id),
     onReaction: (id, type) => console.log("react", id, type),
     ...requiredMessageCardLabels,
@@ -65,6 +66,7 @@ export const AiMessage: Story = {
 export const Compact: Story = {
   args: {
     message: aiMessage,
+    aiSenderLabel: "AI",
     compact: true,
     ...requiredMessageCardLabels,
   },
