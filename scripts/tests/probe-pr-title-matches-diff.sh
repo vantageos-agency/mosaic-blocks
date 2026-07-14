@@ -749,6 +749,150 @@ if [ "$PR_PATH_PASS" -ne "$PR_PATH_TOTAL" ]; then
   FAILURES+=("PR-PATH sweep — $PR_PATH_PASS/$PR_PATH_TOTAL — not all cases passed")
 fi
 
+# ===========================================================================
+# MUST_REFUSE — the third pole. A guard with only PASS/VIOLATION files "I
+# could not measure" into one of the two, and both are wrong (see the
+# guard's own header + .claude/rules/derive-never-type.md). exit 0 here is a
+# silent fail-open; exit 1 here is a red that proves nothing. Only exit 2,
+# naming what is missing, is correct.
+#
+# DERIVED CENSUS (never enumerated from memory — per
+# .claude/rules/guard-formulation-census.md), produced by:
+#
+#   grep -n 'git(\[' scripts/pr-title-matches-diff-guard.mjs
+#
+# which surfaces exactly FIVE `git()` call sites, plus ONE non-git
+# instrument-withholding path (the pull_request/empty-subject branch added
+# alongside this three-state contract):
+#
+#   1. headFullMessage() -> git log -1 --pretty=%B HEAD_REF   (site: escape-hatch marker read)
+#   2. headSubject()     -> git log -1 --pretty=%s HEAD_REF   (site: title fallback)
+#   3. changedFiles()    -> git rev-parse --verify BASE_REF   (site: BASE_REF resolution)
+#   4. changedFiles()    -> git diff --name-only BASE...HEAD  (site: the diff itself)
+#   5. actualComponentClaim() -> git diff BASE...HEAD -- src/index.ts (site: export-surface scan)
+#   6. headSubject()     -> GITHUB_EVENT_NAME=pull_request with PR_TITLE_GUARD_SUBJECT
+#      empty/unset (site: CI withheld the real PR title — the instrument
+#      that closes Defect 2)
+#
+# main()'s own call order makes site 1 fire before site 3/4 can ever be
+# reached with a BAD HEAD_REF (headFullMessage() runs first) — so "HEAD_REF
+# unresolvable" is exercised ONCE, at site 1, which is the site main()
+# actually reaches first; that single mutation proves both site 1 and site 2
+# share one failure mode (same `HEAD_REF`, same `git()` wrapper), not two.
+# This is a DECLARED grouping, not a silent skip: sites 1+2 collapse to one
+# MUST_REFUSE case below, sites 3 and 4 get their own (rev-parse succeeding
+# on a non-commit object still leaves `git diff` unable to produce a
+# range — a real, distinct failure mode from "ref does not resolve at all"),
+# and site 5 is declared, not separately exercised: it is the textually
+# IDENTICAL `git diff BASE...HEAD` invocation already proven to fail the
+# same way at site 4 (same two refs, same triple-dot form) — a second
+# mutation there would prove the same code path twice, not a new one.
+# ===========================================================================
+MUST_REFUSE_PASS=0
+MUST_REFUSE_TOTAL=0
+
+refuse_setup() {
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet --detach "$BASE")
+  cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+}
+
+# --- MUST_REFUSE 1: HEAD_REF does not resolve at all (sites 1+2, declared-grouped). ---
+MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+refuse_setup
+BOGUS_HEAD="0000000000000000000000000000000000dead"
+if (cd "$CLONE" && git cat-file -e "$BOGUS_HEAD" 2>/dev/null); then
+  FAILURES+=("MUST_REFUSE unresolvable-HEAD_REF — bogus SHA unexpectedly resolves — probe invalid, cannot inject this failure")
+  log MUST_REFUSE "FAIL — unresolvable-HEAD_REF — mutation did not land (bogus SHA resolves)"
+else
+  set +e
+  output="$(cd "$CLONE" && PR_TITLE_GUARD_HEAD_REF="$BOGUS_HEAD" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE"; then
+    MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+    log MUST_REFUSE "PASS — unresolvable HEAD_REF — exited 2, REFUSES TO JUDGE, named the missing instrument"
+  else
+    FAILURES+=("MUST_REFUSE unresolvable-HEAD_REF — guard exited $status (expected 2) — output: $output")
+    log MUST_REFUSE "FAIL — unresolvable-HEAD_REF — exit=$status (expected 2) output=$output"
+  fi
+fi
+
+# --- MUST_REFUSE 2: BASE_REF does not resolve at all (site 3, rev-parse --verify itself fails). ---
+MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+refuse_setup
+BOGUS_BASE="0000000000000000000000000000000000beef"
+if (cd "$CLONE" && git cat-file -e "$BOGUS_BASE" 2>/dev/null); then
+  FAILURES+=("MUST_REFUSE unresolvable-BASE_REF — bogus SHA unexpectedly resolves — probe invalid, cannot inject this failure")
+  log MUST_REFUSE "FAIL — unresolvable-BASE_REF — mutation did not land (bogus SHA resolves)"
+else
+  set +e
+  output="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$BOGUS_BASE" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE"; then
+    MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+    log MUST_REFUSE "PASS — unresolvable BASE_REF — exited 2, REFUSES TO JUDGE, named the missing instrument"
+  else
+    FAILURES+=("MUST_REFUSE unresolvable-BASE_REF — guard exited $status (expected 2) — output: $output")
+    log MUST_REFUSE "FAIL — unresolvable-BASE_REF — exit=$status (expected 2) output=$output"
+  fi
+fi
+
+# --- MUST_REFUSE 3: BASE_REF resolves as an OBJECT (rev-parse --verify
+#     succeeds) but is not a commit-ish `git diff` can range against (site 4:
+#     the diff command itself fails despite the ref existing). Uses a REAL
+#     blob SHA from this repo's own history — foreign material, not a
+#     synthetic string. ---
+MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+refuse_setup
+BLOB_SHA="$(cd "$CLONE" && git rev-parse "${BASE}:package.json" 2>/dev/null || true)"
+if [ -z "$BLOB_SHA" ]; then
+  FAILURES+=("MUST_REFUSE non-commit-BASE_REF — could not resolve package.json's own blob SHA — probe invalid")
+  log MUST_REFUSE "FAIL — non-commit-BASE_REF — could not resolve blob SHA"
+elif ! (cd "$CLONE" && git cat-file -t "$BLOB_SHA" 2>/dev/null | grep -qF "blob"); then
+  FAILURES+=("MUST_REFUSE non-commit-BASE_REF — $BLOB_SHA is not a blob — mutation did not land as intended — probe invalid")
+  log MUST_REFUSE "FAIL — non-commit-BASE_REF — resolved object is not a blob"
+else
+  set +e
+  output="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$BLOB_SHA" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE"; then
+    MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+    log MUST_REFUSE "PASS — BASE_REF is a real blob (rev-parse --verify succeeds, diff cannot range against it) — exited 2, REFUSES TO JUDGE"
+  else
+    FAILURES+=("MUST_REFUSE non-commit-BASE_REF — guard exited $status (expected 2) — output: $output")
+    log MUST_REFUSE "FAIL — non-commit-BASE_REF — exit=$status (expected 2) output=$output"
+  fi
+fi
+
+# --- MUST_REFUSE 4: pull_request event, PR_TITLE_GUARD_SUBJECT withheld
+#     (site 6 — the exact shape of Defect 2's root cause: CI's own contract
+#     broken). Uses the real 2d49c9d material so a false PASS here would be
+#     the fail-open this whole contract exists to close. ---
+MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
+base_for_pr="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
+if [ -z "$base_for_pr" ]; then
+  FAILURES+=("MUST_REFUSE withheld-PR-subject — could not resolve parent of $sha — probe invalid")
+  log MUST_REFUSE "FAIL — withheld-PR-subject — could not resolve parent"
+else
+  refuse_setup
+  set +e
+  output="$(cd "$CLONE" && GITHUB_EVENT_NAME="pull_request" PR_TITLE_GUARD_BASE_REF="$base_for_pr" PR_TITLE_GUARD_HEAD_REF="$sha" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE" && echo "$output" | grep -qF "PR_TITLE_GUARD_SUBJECT"; then
+    MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+    log MUST_REFUSE "PASS — pull_request event with PR_TITLE_GUARD_SUBJECT withheld — exited 2, named the missing instrument, never fell back to the synthetic subject"
+  else
+    FAILURES+=("MUST_REFUSE withheld-PR-subject — guard exited $status (expected 2, naming PR_TITLE_GUARD_SUBJECT) — output: $output")
+    log MUST_REFUSE "FAIL — withheld-PR-subject — exit=$status output=$output"
+  fi
+fi
+
+(cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet "$BASE" 2>/dev/null || true)
+
 # Leave the clone on a clean, detached-free state before restoration check
 # (does not touch $REPO_ROOT — only tidies the disposable scratch clone).
 (cd "$CLONE" && git reset --hard --quiet 2>/dev/null || true)
@@ -761,8 +905,12 @@ POST_PROBE_DIFF="$(git diff --stat)"
 
 echo ""
 echo "==================== PROBE SUMMARY ===================="
-echo "MUST_BLOCK: $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
-echo "MUST_PASS:  $MUST_PASS_PASS/$MUST_PASS_TOTAL"
+echo "MUST_BLOCK:  $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
+echo "MUST_PASS:   $MUST_PASS_PASS/$MUST_PASS_TOTAL"
+echo "MUST_REFUSE: $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL"
+if [ "$MUST_REFUSE_PASS" -ne "$MUST_REFUSE_TOTAL" ]; then
+  FAILURES+=("MUST_REFUSE sweep — $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL — not all cases refused correctly")
+fi
 echo "Restoration ($REPO_ROOT diff before vs after probe, must be IDENTICAL):"
 if [ "$PRE_PROBE_DIFF" != "$POST_PROBE_DIFF" ]; then
   echo "BEFORE:"
