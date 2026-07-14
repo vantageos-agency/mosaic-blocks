@@ -1097,6 +1097,23 @@
       ]
     },
     {
+      "name": "mosaic-memory-search",
+      "type": "registry:ui",
+      "title": "MosaicMemorySearch",
+      "description": "MosaicMemorySearch — search bar over a host-supplied knowledge base: a query input, optional filter chips (by type/tag), a clear action, and a result-count indication.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/memory-search/MosaicMemorySearch.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/memory-search/memory-search-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-message-card",
       "type": "registry:ui",
       "title": "MosaicMessageCard",

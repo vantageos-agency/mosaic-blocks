@@ -130,8 +130,20 @@ fi
 # ---------------------------------------------------------------------------
 POST_PROBE_DIFF="$(git diff --stat -- registry.json)"
 if [ "$PRE_PROBE_DIFF" != "$POST_PROBE_DIFF" ]; then
-  log FAIL "restoration: registry.json diff changed across the probe run"
-  FAILURES+=("restoration: registry.json not restored")
+  # Two very different faults land here, and naming the wrong one costs hours:
+  # either the probe failed to put registry.json back, or the COMMITTED
+  # registry.json was never the output of its own deriver, so re-deriving it
+  # legitimately changes the tree. Ask the committed file which one it is
+  # instead of guessing — the first message this probe ever printed blamed
+  # restoration for a drift, and sent two people chasing a rebase that could
+  # not have helped.
+  if git stash list >/dev/null 2>&1 && ! git diff --quiet -- registry.json; then
+    log FAIL "registry.json COMMITTED on this tree is NOT the output of its own deriver — it drifted. Re-running scripts/registry-json-derive.mjs changes it. Fix: run the deriver and commit the result. (This is NOT a restoration failure.)"
+    FAILURES+=("drift: committed registry.json != deriver output")
+  else
+    log FAIL "restoration: registry.json diff changed across the probe run"
+    FAILURES+=("restoration: registry.json not restored")
+  fi
 fi
 
 echo "---"

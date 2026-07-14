@@ -87,10 +87,22 @@ function git(args) {
 }
 
 /**
- * @returns {string} the HEAD commit message (subject + body)
+ * @returns {string} the commit message (subject + body) the marker may live in.
+ *
+ * NOT plain `HEAD`. On `pull_request`, actions/checkout leaves HEAD on the
+ * SYNTHETIC merge commit (`Merge <sha> into <sha>`) — a message no human wrote
+ * and that can therefore never carry `// allow-release-artifacts:`. Reading it
+ * made this guard's own documented escape hatch a door that cannot be opened,
+ * on the only path where anyone needs it: a real release PR was refused while
+ * carrying the marker, because CI never looked at the commit the marker was in.
+ *
+ * So CI passes the PR's real head SHA (RELEASE_GUARD_HEAD_REF). If the ref is
+ * set but unreadable we REFUSE rather than fall back to HEAD — falling back
+ * would silently read the synthetic message again and re-open the same hole.
  */
 function headCommitMessage() {
-  return git(["log", "-1", "--pretty=%B", "HEAD"]);
+  const ref = process.env.RELEASE_GUARD_HEAD_REF?.trim();
+  return git(["log", "-1", "--pretty=%B", ref && ref.length > 0 ? ref : "HEAD"]);
 }
 
 /**
