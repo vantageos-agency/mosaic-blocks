@@ -109,6 +109,24 @@ export interface MosaicAgentComposerProps {
   unnamedAgentLabel: string;
 }
 
+// NOTE: same class of gap that produced the `requiredLabel` split above.
+// The three module-slot sublabels below are rendered unconditionally by the
+// Desktop variant on every render, but MosaicAgentComposerMobile never reads
+// them — its own module-slot component takes no sublabel prop at all. Adding
+// them to the shared `MosaicAgentComposerProps` would force every Mobile-only
+// host to supply strings that component never displays, i.e. the exact
+// lying-prop-contract this codebase hunts. They live here instead, on a
+// Desktop-only extension of the shared type.
+export interface MosaicAgentComposerDesktopProps extends MosaicAgentComposerProps {
+  /**
+   * Required host-owned strings — no default, no fallback. Read
+   * unconditionally by the three module slots on every render.
+   */
+  roleSublabel: string;
+  personaSublabel: string;
+  frameworkSublabel: string;
+}
+
 // ── Inline icons ──────────────────────────────────────────────────────────────
 
 function SparklesIcon() {
@@ -304,7 +322,10 @@ export function MosaicAgentComposerDesktop({
   customInstructionsPreviewLabel,
   selectAllModulesLabel,
   unnamedAgentLabel,
-}: MosaicAgentComposerProps) {
+  roleSublabel,
+  personaSublabel,
+  frameworkSublabel,
+}: MosaicAgentComposerDesktopProps) {
   // `labels` is fully required — every field is host-supplied, no default,
   // no fallback. Aliased to `L` only for call-site brevity below.
   const L = labels;
@@ -357,21 +378,21 @@ export function MosaicAgentComposerDesktop({
         {/* Module slots */}
         <ModuleSlot
           label={L.role}
-          sublabel="Professional expertise and domain knowledge"
+          sublabel={roleSublabel}
           module={selectedRole}
           onSelect={onSelectRole}
           onRemove={onRemoveRole}
         />
         <ModuleSlot
           label={L.persona}
-          sublabel="Communication style and personality traits"
+          sublabel={personaSublabel}
           module={selectedPersona}
           onSelect={onSelectPersona}
           onRemove={onRemovePersona}
         />
         <ModuleSlot
           label={L.framework}
-          sublabel="Thinking approach and decision-making process"
+          sublabel={frameworkSublabel}
           module={selectedFramework}
           onSelect={onSelectFramework}
           onRemove={onRemoveFramework}

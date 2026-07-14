@@ -21,6 +21,9 @@ const requiredComposerLabels = {
   creatingLabel: "Creating…",
   optionalInstructionsHelp: "Optional: Add specific behaviors or constraints for your agent",
   unnamedAgentLabel: "Unnamed Agent",
+  roleSublabel: "Professional expertise and domain knowledge",
+  personaSublabel: "Communication style and personality traits",
+  frameworkSublabel: "Thinking approach and decision-making process",
   labels: {
     role: "Role",
     persona: "Persona",

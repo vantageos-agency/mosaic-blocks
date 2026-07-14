@@ -70,6 +70,11 @@ export const Default: Story = {
               emptyMessage="No members found."
               inviteLabel="Invite"
               searchPlaceholder="Search members…"
+              roleDescriptions={{
+                owner: "Full access including billing and organization deletion",
+                admin: "Full access to organization settings and member management",
+                member: "Standard access to workspaces and content",
+              }}
             />
           </MosaicDeviceProvider>
         ),
@@ -90,9 +95,18 @@ export const RoleBadges: Story = {
   args: { org },
   render: () => (
     <div className="flex items-center gap-2">
-      <MosaicOrgRoleBadge role={ownerRole} />
-      <MosaicOrgRoleBadge role={adminRole} />
-      <MosaicOrgRoleBadge role={memberRole} />
+      <MosaicOrgRoleBadge
+        role={ownerRole}
+        description="Full access including billing and organization deletion"
+      />
+      <MosaicOrgRoleBadge
+        role={adminRole}
+        description="Full access to organization settings and member management"
+      />
+      <MosaicOrgRoleBadge
+        role={memberRole}
+        description="Standard access to workspaces and content"
+      />
     </div>
   ),
 };

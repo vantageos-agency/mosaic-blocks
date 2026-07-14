@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentComposer } from "./MosaicAgentComposer.js";
+import { MosaicAgentComposerDesktop } from "./MosaicAgentComposerDesktop.js";
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
@@ -38,6 +39,9 @@ const baseProps = {
   creatingLabel: "Creating…",
   optionalInstructionsHelp: "Optional: Add specific behaviors or constraints for your agent",
   unnamedAgentLabel: "Unnamed Agent",
+  roleSublabel: "XYZ-ROLE-SUBLABEL",
+  personaSublabel: "XYZ-PERSONA-SUBLABEL",
+  frameworkSublabel: "XYZ-FRAMEWORK-SUBLABEL",
   labels: {
     role: "Role",
     persona: "Persona",
@@ -97,5 +101,19 @@ describe("MosaicAgentComposer", () => {
 
   it("has displayName set", () => {
     expect(MosaicAgentComposer.displayName).toBe("MosaicAgentComposer");
+  });
+
+  it("renders the host-supplied module-slot sublabels, fabricating no word of its own", () => {
+    // Rendered directly against MosaicAgentComposerDesktop (not through the
+    // orchestrator) — jsdom has no viewport, so MosaicDeviceProvider's
+    // useIsMobile() defaults to mobile and the orchestrator would render
+    // MosaicAgentComposerMobile instead, which never reads these props.
+    render(<MosaicAgentComposerDesktop {...baseProps} />);
+    expect(screen.getByText("XYZ-ROLE-SUBLABEL")).toBeTruthy();
+    expect(screen.getByText("XYZ-PERSONA-SUBLABEL")).toBeTruthy();
+    expect(screen.getByText("XYZ-FRAMEWORK-SUBLABEL")).toBeTruthy();
+    expect(screen.queryByText(/professional expertise/i)).toBeNull();
+    expect(screen.queryByText(/communication style/i)).toBeNull();
+    expect(screen.queryByText(/thinking approach/i)).toBeNull();
   });
 });
