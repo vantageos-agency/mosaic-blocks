@@ -4,173 +4,249 @@
   "homepage": "https://vantageos.com/mosaic-blocks",
   "items": [
     {
-      "name": "mosaic-button",
+      "name": "mosaic-accordion",
       "type": "registry:ui",
-      "title": "MosaicButton",
-      "description": "Accessible button atom built on @base-ui/react. Variants: default, secondary, ghost, destructive, outline, link. Sizes: default, sm, lg, icon, icon-sm, icon-lg.",
+      "title": "MosaicAccordion",
+      "description": "MosaicAccordion — @base-ui/react Accordion primitive",
       "dependencies": [
-        "@base-ui/react",
-        "class-variance-authority"
+        "@base-ui/react"
       ],
       "files": [
         {
-          "path": "src/components/button/Button.tsx",
+          "path": "src/components/accordion/MosaicAccordion.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-navbar",
+      "name": "mosaic-activity-feed",
       "type": "registry:ui",
-      "title": "MosaicNavbar",
-      "description": "Scroll-aware fixed navbar: hide-on-scroll-down, blur backdrop, mobile hamburger menu. Props: logo, links[], cta. No hardcoded branding.",
+      "title": "MosaicActivityFeed",
+      "description": "Activity feed card with stagger-reveal rows. Status badges (active/completed/archived), participant avatar stack, message count, timestamp. Props: activities[] {id, type, title, description, timestamp, status, participants?, messages?}, iconMap, viewAllHref, renderLink.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/navbar/MosaicNavbar.tsx",
+          "path": "src/components/activity-feed/MosaicActivityFeed.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/activity-feed/MosaicActivityFeed.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-hero-split",
+      "name": "mosaic-adaptive-grid",
       "type": "registry:ui",
-      "title": "MosaicHeroSplit",
-      "description": "Two-column split hero: copy left, media right. Props: eyebrow, title, subtitle, cta, ctaSecondary, media. Falls back to centered single-column when no media.",
+      "title": "MosaicAdaptiveGrid",
+      "description": "Device-aware CSS grid wrapper. Reads isMobile/isTablet/isDesktop from MosaicDeviceProvider and applies the correct column count. Props: mobileColumns, tabletColumns, desktopColumns, gap. Uses inline CSS for dynamic columns (no JIT issues).",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/hero-split/MosaicHeroSplit.tsx",
+          "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-feature-centered-media",
+      "name": "mosaic-adaptive-modal",
       "type": "registry:ui",
-      "title": "MosaicFeatureCenteredMedia",
-      "description": "Centered feature section: heading + body + optional feature grid + centered media slot. Props: title, body, features[], media.",
+      "title": "MosaicAdaptiveModal",
+      "description": "Unified modal/sheet: Dialog on desktop, bottom-sheet on mobile. Uses native <dialog> element (focus trap, Escape key, backdrop). Single API: isOpen, onClose, title, children, description. No Radix/Vaul dep — fully portable.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/feature-centered-media/MosaicFeatureCenteredMedia.tsx",
+          "path": "src/components/adaptive-modal/MosaicAdaptiveModal.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/adaptive-modal/MosaicAdaptiveModal.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-stats-grid",
+      "name": "mosaic-adaptive-navigation",
       "type": "registry:ui",
-      "title": "MosaicStatsGrid",
-      "description": "Border-grid statistics section. Props: stats[] {label, value}, heading, subtext. Values are plain strings; animate at consumer level.",
+      "title": "MosaicAdaptiveNavigation",
+      "description": "Step navigation: tab strip on desktop, expandable accordion on mobile. Props: items[] {id, title, duration?, isComplete?, children?}, activeItem, onItemChange, expandedItems, onToggleExpanded. Zero debate coupling; generic items API.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/stats-grid/MosaicStatsGrid.tsx",
+          "path": "src/components/adaptive-navigation/MosaicAdaptiveNavigation.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/adaptive-navigation/MosaicAdaptiveNavigation.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-pricing-card",
+      "name": "mosaic-add-memory-form",
       "type": "registry:ui",
-      "title": "MosaicPricingCard",
-      "description": "Single pricing tier card. Props: tier, price, features[], cta, highlighted. Compose multiple in a grid for a full pricing section.",
+      "title": "MosaicAddMemoryForm",
+      "description": "MosaicAddMemoryForm — presentational \"record a new memory\" form",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/pricing-card/MosaicPricingCard.tsx",
+          "path": "src/components/add-memory-form/MosaicAddMemoryForm.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/add-memory-form/add-memory-form-variants.ts",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-logos-grid",
+      "name": "mosaic-agent-builder-modal",
       "type": "registry:ui",
-      "title": "MosaicLogosGrid",
-      "description": "Logo cloud / partner logos grid. Props: logos[] {name, src, width, height}, heading. Grayscale hover effect. Optional stagger-motion variant: pass stagger=true or stagger=80 for CSS keyframe staggered reveal; respects prefers-reduced-motion.",
-      "dependencies": [],
+      "title": "MosaicAgentBuilderModal",
+      "description": "MosaicAgentBuilderModal — modal shell for composing/configuring an agent, confirmed or cancelled by the host.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
       "files": [
         {
-          "path": "src/components/logos-grid/MosaicLogosGrid.tsx",
+          "path": "src/components/agent-builder-modal/MosaicAgentBuilderModal.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-builder-modal/agent-builder-modal-variants.ts",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-feature-3col",
+      "name": "mosaic-agent-card",
       "type": "registry:ui",
-      "title": "MosaicFeature3Col",
-      "description": "3-column feature grid section. Props: heading?, subtext?, features[] {id, title, body, icon?}. Responsive: 1-col mobile, 3-col md+. Icon slot per cell. data-slot API. Distinct from MosaicFeatureCenteredMedia (single centered layout).",
+      "title": "MosaicAgentCard",
+      "description": "Generic agent/resource card with status toggle, accent dot, 3-dot dropdown menu. All actions are callbacks.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/feature-3col/MosaicFeature3Col.tsx",
+          "path": "src/components/agent-card/MosaicAgentCard.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-card/MosaicAgentCard.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-testimonials-grid",
+      "name": "mosaic-agent-chat",
       "type": "registry:ui",
-      "title": "MosaicTestimonialsGrid",
-      "description": "Masonry-style testimonials grid: featured item spans half width, rest stack. Props: testimonials[] {id, quote, author, role, avatar?, logo?}, heading.",
+      "title": "MosaicAgentChat",
+      "description": "MosaicAgentChat — presentational session harness: MVP-8, the last MVP piece, wiring MosaicChatThread + MosaicChatMessage + MosaicChatComposer + MosaicApprovalPrompt into one send/resume/respond harness.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/testimonials-grid/MosaicTestimonialsGrid.tsx",
+          "path": "src/components/agent-chat/MosaicAgentChat.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-chat/agent-chat-variants.ts",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-footer-simple",
+      "name": "mosaic-agent-composer",
       "type": "registry:ui",
-      "title": "MosaicFooterSimple",
-      "description": "Simple multi-column footer. Props: columns[] {id, heading, links[]}, legal, logo?, social[] {label, href, iconSrc?}.",
+      "title": "MosaicAgentComposer",
+      "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type — no domain coupling.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/footer-simple/MosaicFooterSimple.tsx",
+          "path": "src/components/agent-composer/MosaicAgentComposer.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-composer/MosaicAgentComposer.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-composer/MosaicAgentComposerDesktop.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-composer/MosaicAgentComposerMobile.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-counter",
+      "name": "mosaic-agent-editor",
       "type": "registry:ui",
-      "title": "MosaicCounter",
-      "description": "Animated metric count-up. Counts from 0 to value on mount using requestAnimationFrame (no motion dep). Props: value, duration?, format?. Respects prefers-reduced-motion.",
+      "title": "MosaicAgentEditor",
+      "description": "MosaicAgentEditor — agent config form (name / role / instructions)",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/counter/MosaicCounter.tsx",
+          "path": "src/components/agent-editor/MosaicAgentEditor.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-editor/agent-editor-variants.ts",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-theme-toggle",
+      "name": "mosaic-agent-list",
       "type": "registry:ui",
-      "title": "MosaicThemeToggle",
-      "description": "Light/dark/system theme toggle. Flips data-theme on document.documentElement. Props: themes?, onChange?, label?. Theme-reactive via OKLCH CSS vars.",
+      "title": "MosaicAgentList",
+      "description": "Responsive agent list (responsive-pair). Desktop: filter sidebar + grid. Mobile: stacked + filter sheet.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/theme-toggle/MosaicThemeToggle.tsx",
+          "path": "src/components/agent-list/MosaicAgentList.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-list/MosaicAgentList.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-blurred-orb",
+      "name": "mosaic-agent-preview",
       "type": "registry:ui",
-      "title": "MosaicBlurredOrb",
-      "description": "Decorative blurred gradient orb background. Pure CSS (no extra dep). Props: colors?, size?, position?, blur?, opacity?. aria-hidden. No hardcoded branding.",
+      "title": "MosaicAgentPreview",
+      "description": "MosaicAgentPreview — presentational, controlled preview of an agent configuration before creation is confirmed.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/blurred-orb/MosaicBlurredOrb.tsx",
+          "path": "src/components/agent-preview/MosaicAgentPreview.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/agent-preview/agent-preview-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-alert-dialog",
+      "type": "registry:ui",
+      "title": "MosaicAlertDialog",
+      "description": "MosaicAlertDialog — confirm-before-irreversible-action dialog (compound API)",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/alert-dialog/MosaicAlertDialog.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/alert-dialog/alert-dialog-variants.ts",
           "type": "registry:ui"
         }
       ]
@@ -189,238 +265,18 @@
       ]
     },
     {
-      "name": "mosaic-integrations-badge",
+      "name": "mosaic-api-key-panel",
       "type": "registry:ui",
-      "title": "MosaicIntegrationsBadge",
-      "description": "Integration badge/pill with logo slot + label. Renders as <a> when href provided. Props: label, logo?, href?, target?. OKLCH theme-reactive. No hardcoded branding.",
+      "title": "MosaicApiKeyPanel",
+      "description": "MosaicApiKeyPanel — presentational \"bring your own key\" (BYOK) panel.",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/integrations-badge/MosaicIntegrationsBadge.tsx",
+          "path": "src/components/api-key-panel/MosaicApiKeyPanel.tsx",
           "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-falling-pattern",
-      "type": "registry:ui",
-      "title": "MosaicFallingPattern",
-      "description": "Animated dot-grid background pattern (SVG + CSS falling dot animation). Props: density?, color?, animationDuration?. aria-hidden. No extra deps. Respects prefers-reduced-motion.",
-      "dependencies": [],
-      "files": [
+        },
         {
-          "path": "src/components/falling-pattern/MosaicFallingPattern.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-card",
-      "type": "registry:ui",
-      "title": "MosaicCard",
-      "description": "Composable card surface: Card + CardHeader + CardTitle + CardDescription + CardContent + CardFooter. Style-only, data-slot per part. OKLCH theme-reactive.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/card/MosaicCard.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-badge",
-      "type": "registry:ui",
-      "title": "MosaicBadge",
-      "description": "Inline status badge. cva variants: default, secondary, destructive, outline. Style-only span, data-slot=\"badge\".",
-      "dependencies": [
-        "class-variance-authority"
-      ],
-      "files": [
-        {
-          "path": "src/components/badge/MosaicBadge.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-avatar",
-      "type": "registry:ui",
-      "title": "MosaicAvatar",
-      "description": "Avatar with image + fallback, built on @base-ui/react/avatar. Props: src, alt, fallback. data-slot=\"avatar\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/avatar/MosaicAvatar.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-input",
-      "type": "registry:ui",
-      "title": "MosaicInput",
-      "description": "Text input built on @base-ui/react/input. Forwards ref to native input. data-slot=\"input\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/input/MosaicInput.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-input-group",
-      "type": "registry:ui",
-      "title": "MosaicInputGroup",
-      "description": "Composition wrapper laying out prefix/suffix addons around an input. data-slot=\"input-group\".",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/input-group/MosaicInputGroup.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-field",
-      "type": "registry:ui",
-      "title": "MosaicField",
-      "description": "Accessible form field built on @base-ui/react/field: Field + Label + Control + Description + Error with wired a11y associations. data-slot=\"field\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/field/MosaicField.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-switch",
-      "type": "registry:ui",
-      "title": "MosaicSwitch",
-      "description": "Toggle switch built on @base-ui/react/switch. Controlled + uncontrolled, role=switch, keyboard accessible. data-slot=\"switch\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/switch/MosaicSwitch.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-select",
-      "type": "registry:ui",
-      "title": "MosaicSelect",
-      "description": "Listbox select built on @base-ui/react/select. Props: items[], value, onValueChange, placeholder. Keyboard + focus management. data-slot=\"select\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/select/MosaicSelect.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-combobox",
-      "type": "registry:ui",
-      "title": "MosaicCombobox",
-      "description": "Filterable combobox built on @base-ui/react/combobox with useFilter. Props: items[], value, onValueChange, placeholder. data-slot=\"combobox\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/combobox/MosaicCombobox.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-dropdown-menu",
-      "type": "registry:ui",
-      "title": "MosaicDropdownMenu",
-      "description": "Dropdown menu built on @base-ui/react/menu: Trigger + items + separators. Keyboard nav, focus-visible. data-slot=\"dropdown-menu\".",
-      "dependencies": [
-        "@base-ui/react"
-      ],
-      "files": [
-        {
-          "path": "src/components/dropdown-menu/MosaicDropdownMenu.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-device-provider",
-      "type": "registry:ui",
-      "title": "MosaicDeviceProvider",
-      "description": "Responsive device context provider. Exposes isMobile/isTablet/isDesktop, sm/md/lg/xl breakpoint flags, orientation, viewport size. Hooks: useDevice, useBreakpoint, useIsMobile, useIsTablet, useIsDesktop, useViewport, useOrientation. SSR-safe. Required by all adaptive components.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/device-provider/MosaicDeviceProvider.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-adaptive-grid",
-      "type": "registry:ui",
-      "title": "MosaicAdaptiveGrid",
-      "description": "Device-aware CSS grid wrapper. Reads isMobile/isTablet/isDesktop from MosaicDeviceProvider and applies the correct column count. Props: mobileColumns, tabletColumns, desktopColumns, gap. Uses inline CSS for dynamic columns (no JIT issues).",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-adaptive-modal",
-      "type": "registry:ui",
-      "title": "MosaicAdaptiveModal",
-      "description": "Unified modal/sheet: Dialog on desktop, bottom-sheet on mobile. Uses native <dialog> element (focus trap, Escape key, backdrop). Single API: isOpen, onClose, title, children, description. No Radix/Vaul dep \u2014 fully portable.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/adaptive-modal/MosaicAdaptiveModal.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-adaptive-navigation",
-      "type": "registry:ui",
-      "title": "MosaicAdaptiveNavigation",
-      "description": "Step navigation: tab strip on desktop, expandable accordion on mobile. Props: items[] {id, title, duration?, isComplete?, children?}, activeItem, onItemChange, expandedItems, onToggleExpanded. Zero debate coupling; generic items API.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/adaptive-navigation/MosaicAdaptiveNavigation.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-dashboard-layout",
-      "type": "registry:ui",
-      "title": "MosaicDashboardLayout",
-      "description": "Full-height app shell: sticky header (title, subtitle, breadcrumbs, actions slot), persistent sidebar on desktop, hamburger + AdaptiveModal drawer on mobile. Props: title, subtitle, breadcrumbs[], actions, sidebarProps, renderLink. Zero hardcoded branding.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/dashboard-layout/MosaicDashboardLayout.tsx",
+          "path": "src/components/api-key-panel/api-key-panel-variants.ts",
           "type": "registry:ui"
         }
       ]
@@ -433,331 +289,58 @@
       "dependencies": [],
       "files": [
         {
+          "path": "src/components/app-sidebar/MosaicAppSidebar.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
           "path": "src/components/app-sidebar/MosaicAppSidebar.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-quick-action-card",
+      "name": "mosaic-approval-prompt",
       "type": "registry:ui",
-      "title": "MosaicQuickActionCard",
-      "description": "Grid of action cards with 6 accent color presets (yellow, blue, green, purple, orange, cyan). CSS stagger reveal on mount. Props: actions[] {id, title, description, icon, href, accent?}, heading, columns, renderLink. No hardcoded routes.",
+      "title": "MosaicApprovalPrompt",
+      "description": "MosaicApprovalPrompt — presentational \"reprendre la main\" tool-call approval",
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/quick-action-card/MosaicQuickActionCard.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-activity-feed",
-      "type": "registry:ui",
-      "title": "MosaicActivityFeed",
-      "description": "Activity feed card with stagger-reveal rows. Status badges (active/completed/archived), participant avatar stack, message count, timestamp. Props: activities[] {id, type, title, description, timestamp, status, participants?, messages?}, iconMap, viewAllHref, renderLink.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/activity-feed/MosaicActivityFeed.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-agent-composer",
-      "type": "registry:ui",
-      "title": "MosaicAgentComposer",
-      "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type \u2014 no domain coupling.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/agent-composer/MosaicAgentComposer.tsx",
+          "path": "src/components/approval-prompt/MosaicApprovalPrompt.tsx",
           "type": "registry:ui"
         },
         {
-          "path": "src/components/agent-composer/MosaicAgentComposerDesktop.tsx",
-          "type": "registry:ui"
-        },
-        {
-          "path": "src/components/agent-composer/MosaicAgentComposerMobile.tsx",
+          "path": "src/components/approval-prompt/approval-prompt-variants.ts",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-module-card",
+      "name": "mosaic-clerk-org-switcher",
       "type": "registry:ui",
-      "title": "MosaicModuleCard",
-      "description": "Selected-module display card for composer slot. Shows name, description, optional details, emoji icon, tags, edit/remove actions. Props: type, module {name, description, details?, icon?, tags?}, onEdit, onRemove, isSelected, isCustom. Generic \u2014 no debate domain types.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/module-card/MosaicModuleCard.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-theme-provider",
-      "type": "registry:ui",
-      "title": "MosaicThemeProvider",
-      "description": "Thin next-themes ThemeProvider wrapper. Generic, zero branding. All ThemeProviderProps forwarded.",
+      "title": "MosaicClerkOrgSwitcher",
+      "description": "Clerk-backed org switcher (live org data). Wraps <OrganizationSwitcher> with OKLCH appearance. DISTINCT from MosaicOrgSwitcher (presentational, orgs via props).",
       "dependencies": [
-        "next-themes"
+        "@clerk/nextjs"
       ],
       "files": [
         {
-          "path": "src/components/theme-provider/MosaicThemeProvider.tsx",
+          "path": "src/components/auth/clerk-org-switcher/MosaicClerkOrgSwitcher.tsx",
           "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-delete-confirmation-dialog",
+      "name": "mosaic-org-profile-page",
       "type": "registry:ui",
-      "title": "MosaicDeleteConfirmationDialog",
-      "description": "Generic destructive-action confirm dialog. Built on @base-ui/react AlertDialog. Labels and item info are props.",
+      "title": "MosaicOrgProfilePage",
+      "description": "Clerk <OrganizationProfile> for team management with OKLCH appearance. hash/path/virtual routing modes. Clerk injected as peer prop.",
       "dependencies": [
-        "@base-ui/react"
+        "@clerk/nextjs"
       ],
       "files": [
         {
-          "path": "src/components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-preferences-panel",
-      "type": "registry:ui",
-      "title": "MosaicPreferencesPanel",
-      "description": "Generic user preferences form. Grouped sections with select and toggle fields. Fully controlled via props.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/preferences-panel/MosaicPreferencesPanel.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-profile-panel",
-      "type": "registry:ui",
-      "title": "MosaicProfilePanel",
-      "description": "Generic user profile form. Avatar upload slot, field list, security section. Fully controlled via props.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/profile-panel/MosaicProfilePanel.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-main-nav",
-      "type": "registry:ui",
-      "title": "MosaicMainNav",
-      "description": "Generic responsive top-nav. Desktop: inline link strip. Mobile: hamburger + drawer. Items are props.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/main-nav/MosaicMainNav.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-agent-card",
-      "type": "registry:ui",
-      "title": "MosaicAgentCard",
-      "description": "Generic agent/resource card with status toggle, accent dot, 3-dot dropdown menu. All actions are callbacks.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/agent-card/MosaicAgentCard.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-quick-agent-selector",
-      "type": "registry:ui",
-      "title": "MosaicQuickAgentSelector",
-      "description": "Compact agent pill picker with desktop dropdown / mobile drawer. Selected agents shown as removable pills.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/quick-agent-selector/MosaicQuickAgentSelector.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-selector-modal",
-      "type": "registry:ui",
-      "title": "MosaicSelectorModal",
-      "description": "Generic searchable item picker modal. Search bar + category tabs + card grid. Confirm/cancel actions.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/selector-modal/MosaicSelectorModal.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-message-card",
-      "type": "registry:ui",
-      "title": "MosaicMessageCard",
-      "description": "Generic message/chat card. Sender avatar, like/dislike, bookmark, copy, reply. Compact mode.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/message-card/MosaicMessageCard.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-message-list",
-      "type": "registry:ui",
-      "title": "MosaicMessageList",
-      "description": "Responsive message list (responsive-pair). Desktop: sticky header + search. Mobile: compact list.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/message-list/MosaicMessageList.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-filter-sidebar",
-      "type": "registry:ui",
-      "title": "MosaicFilterSidebar",
-      "description": "Generic collapsible filter sidebar. Filter tabs + category list with counts. Reusable across agents/marketplace/templates.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/filter-sidebar/MosaicFilterSidebar.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-agent-list",
-      "type": "registry:ui",
-      "title": "MosaicAgentList",
-      "description": "Responsive agent list (responsive-pair). Desktop: filter sidebar + grid. Mobile: stacked + filter sheet.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/agent-list/MosaicAgentList.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-marketplace-list",
-      "type": "registry:ui",
-      "title": "MosaicMarketplaceList",
-      "description": "Responsive marketplace grid/list (responsive-pair). Install/uninstall actions, rating, downloads, price.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/marketplace-list/MosaicMarketplaceList.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-template-gallery",
-      "type": "registry:ui",
-      "title": "MosaicTemplateGallery",
-      "description": "Responsive template browser (responsive-pair). Includes MosaicTemplateCard, MosaicTemplatePreview, MosaicQuickStartPanel, MosaicAgentTeamPreview.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/template-gallery/MosaicTemplateGallery.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-module-library",
-      "type": "registry:ui",
-      "title": "MosaicModuleLibrary",
-      "description": "Generic module/library manager (responsive-pair). Includes MosaicModuleForm. Tabs, search, CRUD callbacks.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/module-library/MosaicModuleLibrary.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-org-panel",
-      "type": "registry:ui",
-      "title": "MosaicOrgPanel",
-      "description": "Generic org management shell. Includes MosaicOrgRoleBadge, MosaicMultiOrgIndicator, MosaicCreateOrgDialog, MosaicInviteMemberDialog, MosaicMemberList. Pure presentational \u2014 no Clerk/Convex.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/org-panel/MosaicOrgPanel.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-dashboard-content",
-      "type": "registry:ui",
-      "title": "MosaicDashboardContent",
-      "description": "Generic dashboard content area with view switcher. Tab-based view rendering. CSS fade-in transition.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/dashboard-content/MosaicDashboardContent.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-dashboard-header",
-      "type": "registry:ui",
-      "title": "MosaicDashboardHeader",
-      "description": "Generic sticky dashboard header. Title/subtitle, search bar (desktop), notification bell, right-side actions slot.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/dashboard-header/MosaicDashboardHeader.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-org-switcher",
-      "type": "registry:ui",
-      "title": "MosaicOrgSwitcher",
-      "description": "Presentational org picker dropdown. Current org + avatar in trigger. Pure props \u2014 no Clerk. Auth wiring is T1.5.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/org-switcher/MosaicOrgSwitcher.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-quick-actions-menu",
-      "type": "registry:ui",
-      "title": "MosaicQuickActionsMenu",
-      "description": "Generic + button dropdown for quick actions. Items with icon + label + separator. Custom link renderer prop.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "src/components/quick-actions-menu/MosaicQuickActionsMenu.tsx",
+          "path": "src/components/auth/org-profile-page/MosaicOrgProfilePage.tsx",
           "type": "registry:ui"
         }
       ]
@@ -793,21 +376,6 @@
       ]
     },
     {
-      "name": "mosaic-clerk-org-switcher",
-      "type": "registry:ui",
-      "title": "MosaicClerkOrgSwitcher",
-      "description": "Clerk-backed org switcher (live org data). Wraps <OrganizationSwitcher> with OKLCH appearance. DISTINCT from MosaicOrgSwitcher (presentational, orgs via props).",
-      "dependencies": [
-        "@clerk/nextjs"
-      ],
-      "files": [
-        {
-          "path": "src/components/auth/clerk-org-switcher/MosaicClerkOrgSwitcher.tsx",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
       "name": "mosaic-user-button",
       "type": "registry:ui",
       "title": "MosaicUserButton",
@@ -823,16 +391,794 @@
       ]
     },
     {
-      "name": "mosaic-org-profile-page",
+      "name": "mosaic-avatar",
       "type": "registry:ui",
-      "title": "MosaicOrgProfilePage",
-      "description": "Clerk <OrganizationProfile> for team management with OKLCH appearance. hash/path/virtual routing modes. Clerk injected as peer prop.",
+      "title": "MosaicAvatar",
+      "description": "Avatar with image + fallback, built on @base-ui/react/avatar. Props: src, alt, fallback. data-slot=\"avatar\".",
       "dependencies": [
-        "@clerk/nextjs"
+        "@base-ui/react"
       ],
       "files": [
         {
-          "path": "src/components/auth/org-profile-page/MosaicOrgProfilePage.tsx",
+          "path": "src/components/avatar/MosaicAvatar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-badge",
+      "type": "registry:ui",
+      "title": "MosaicBadge",
+      "description": "Inline status badge. cva variants: default, secondary, destructive, outline. Style-only span, data-slot=\"badge\".",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/badge/MosaicBadge.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/badge/badge-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-blurred-orb",
+      "type": "registry:ui",
+      "title": "MosaicBlurredOrb",
+      "description": "Decorative blurred gradient orb background. Pure CSS (no extra dep). Props: colors?, size?, position?, blur?, opacity?. aria-hidden. No hardcoded branding.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/blurred-orb/MosaicBlurredOrb.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-button",
+      "type": "registry:ui",
+      "title": "MosaicButton",
+      "description": "Accessible button atom built on @base-ui/react. Variants: default, secondary, ghost, destructive, outline, link. Sizes: default, sm, lg, icon, icon-sm, icon-lg.",
+      "dependencies": [
+        "@base-ui/react",
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/button/Button.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/button/button-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-card",
+      "type": "registry:ui",
+      "title": "MosaicCard",
+      "description": "Composable card surface: Card + CardHeader + CardTitle + CardDescription + CardContent + CardFooter. Style-only, data-slot per part. OKLCH theme-reactive.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/card/MosaicCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-chat-composer",
+      "type": "registry:ui",
+      "title": "MosaicChatComposer",
+      "description": "MosaicChatComposer — presentational, controlled chat input + send/stop button",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/chat-composer/MosaicChatComposer.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/chat-composer/chat-composer-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-chat-message",
+      "type": "registry:ui",
+      "title": "MosaicChatMessage",
+      "description": "MosaicChatMessage — one chat message: role + ordered parts (text / reasoning / tool call).",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/chat-message/MosaicChatMessage.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/chat-message/chat-message-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-chat-sidebar",
+      "type": "registry:ui",
+      "title": "MosaicChatSidebar",
+      "description": "MosaicChatSidebar — presentational, disposition-only column of conversation threads.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/chat-sidebar/MosaicChatSidebar.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/chat-sidebar/chat-sidebar-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-chat-thread",
+      "type": "registry:ui",
+      "title": "MosaicChatThread",
+      "description": "MosaicChatThread — presentational, auto-scrolling chat message stream",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/chat-thread/MosaicChatThread.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/chat-thread/chat-thread-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-checkbox",
+      "type": "registry:ui",
+      "title": "MosaicCheckbox",
+      "description": "MosaicCheckbox — @base-ui/react Checkbox primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/checkbox/MosaicCheckbox.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-collapsible",
+      "type": "registry:ui",
+      "title": "MosaicCollapsible",
+      "description": "MosaicCollapsible — @base-ui/react Collapsible primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/collapsible/MosaicCollapsible.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-combobox",
+      "type": "registry:ui",
+      "title": "MosaicCombobox",
+      "description": "Filterable combobox built on @base-ui/react/combobox with useFilter. Props: items[], value, onValueChange, placeholder. data-slot=\"combobox\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/combobox/MosaicCombobox.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-counter",
+      "type": "registry:ui",
+      "title": "MosaicCounter",
+      "description": "Animated metric count-up. Counts from 0 to value on mount using requestAnimationFrame (no motion dep). Props: value, duration?, format?. Respects prefers-reduced-motion.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/counter/MosaicCounter.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-dashboard-content",
+      "type": "registry:ui",
+      "title": "MosaicDashboardContent",
+      "description": "Generic dashboard content area with view switcher. Tab-based view rendering. CSS fade-in transition.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/dashboard-content/MosaicDashboardContent.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/dashboard-content/MosaicDashboardContent.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-dashboard-header",
+      "type": "registry:ui",
+      "title": "MosaicDashboardHeader",
+      "description": "Generic sticky dashboard header. Title/subtitle, search bar (desktop), notification bell, right-side actions slot.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/dashboard-header/MosaicDashboardHeader.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/dashboard-header/MosaicDashboardHeader.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-dashboard-layout",
+      "type": "registry:ui",
+      "title": "MosaicDashboardLayout",
+      "description": "Full-height app shell: sticky header (title, subtitle, breadcrumbs, actions slot), persistent sidebar on desktop, hamburger + AdaptiveModal drawer on mobile. Props: title, subtitle, breadcrumbs[], actions, sidebarProps, renderLink. Zero hardcoded branding.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/dashboard-layout/MosaicDashboardLayout.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/dashboard-layout/MosaicDashboardLayout.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-data-table",
+      "type": "registry:ui",
+      "title": "MosaicDataTable",
+      "description": "MosaicDataTable — generic sortable data table",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/data-table/MosaicDataTable.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-delete-confirmation-dialog",
+      "type": "registry:ui",
+      "title": "MosaicDeleteConfirmationDialog",
+      "description": "Generic destructive-action confirm dialog. Built on @base-ui/react AlertDialog. Labels and item info are props.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-device-provider",
+      "type": "registry:ui",
+      "title": "MosaicDeviceProvider",
+      "description": "Responsive device context provider. Exposes isMobile/isTablet/isDesktop, sm/md/lg/xl breakpoint flags, orientation, viewport size. Hooks: useDevice, useBreakpoint, useIsMobile, useIsTablet, useIsDesktop, useViewport, useOrientation. SSR-safe. Required by all adaptive components.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/device-provider/MosaicDeviceProvider.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/device-provider/MosaicDeviceProvider.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-document-upload",
+      "type": "registry:ui",
+      "title": "MosaicDocumentUpload",
+      "description": "MosaicDocumentUpload — presentational document drop-zone + file status list",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/document-upload/MosaicDocumentUpload.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-upload/document-upload-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-drawer",
+      "type": "registry:ui",
+      "title": "MosaicDrawer",
+      "description": "MosaicDrawer — agent detail viewed as a side panel (SW-xx)",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/drawer/MosaicDrawer.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/drawer/drawer-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-dropdown-menu",
+      "type": "registry:ui",
+      "title": "MosaicDropdownMenu",
+      "description": "Dropdown menu built on @base-ui/react/menu: Trigger + items + separators. Keyboard nav, focus-visible. data-slot=\"dropdown-menu\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/dropdown-menu/MosaicDropdownMenu.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-edit-memory-dialog",
+      "type": "registry:ui",
+      "title": "MosaicEditMemoryDialog",
+      "description": "MosaicEditMemoryDialog — dialog to correct a stale knowledge entry (a \"memory\"): edit its content, type and tags, then save or cancel.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/edit-memory-dialog/MosaicEditMemoryDialog.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/edit-memory-dialog/edit-memory-dialog-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-empty-state",
+      "type": "registry:ui",
+      "title": "MosaicEmptyState",
+      "description": "MosaicEmptyState — centered vertical stack for empty/zero-data states",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/empty-state/MosaicEmptyState.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-falling-pattern",
+      "type": "registry:ui",
+      "title": "MosaicFallingPattern",
+      "description": "Animated dot-grid background pattern (SVG + CSS falling dot animation). Props: density?, color?, animationDuration?. aria-hidden. No extra deps. Respects prefers-reduced-motion.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/falling-pattern/MosaicFallingPattern.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-feature-3col",
+      "type": "registry:ui",
+      "title": "MosaicFeature3Col",
+      "description": "3-column feature grid section. Props: heading?, subtext?, features[] {id, title, body, icon?}. Responsive: 1-col mobile, 3-col md+. Icon slot per cell. data-slot API. Distinct from MosaicFeatureCenteredMedia (single centered layout).",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/feature-3col/MosaicFeature3Col.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-feature-centered-media",
+      "type": "registry:ui",
+      "title": "MosaicFeatureCenteredMedia",
+      "description": "Centered feature section: heading + body + optional feature grid + centered media slot. Props: title, body, features[], media.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/feature-centered-media/MosaicFeatureCenteredMedia.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-field",
+      "type": "registry:ui",
+      "title": "MosaicField",
+      "description": "Accessible form field built on @base-ui/react/field: Field + Label + Control + Description + Error with wired a11y associations. data-slot=\"field\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/field/MosaicField.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-filter-bar",
+      "type": "registry:ui",
+      "title": "MosaicFilterBar",
+      "description": "MosaicFilterBar — responsive horizontal control bar for filter rows",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/filter-bar/MosaicFilterBar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-filter-sidebar",
+      "type": "registry:ui",
+      "title": "MosaicFilterSidebar",
+      "description": "Generic collapsible filter sidebar. Filter tabs + category list with counts. Reusable across agents/marketplace/templates.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/filter-sidebar/MosaicFilterSidebar.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/filter-sidebar/MosaicFilterSidebar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-footer-simple",
+      "type": "registry:ui",
+      "title": "MosaicFooterSimple",
+      "description": "Simple multi-column footer. Props: columns[] {id, heading, links[]}, legal, logo?, social[] {label, href, iconSrc?}.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/footer-simple/MosaicFooterSimple.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-hero-split",
+      "type": "registry:ui",
+      "title": "MosaicHeroSplit",
+      "description": "Two-column split hero: copy left, media right. Props: eyebrow, title, subtitle, cta, ctaSecondary, media. Falls back to centered single-column when no media.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/hero-split/MosaicHeroSplit.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-input",
+      "type": "registry:ui",
+      "title": "MosaicInput",
+      "description": "Text input built on @base-ui/react/input. Forwards ref to native input. data-slot=\"input\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/input/MosaicInput.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-input-group",
+      "type": "registry:ui",
+      "title": "MosaicInputGroup",
+      "description": "Composition wrapper laying out prefix/suffix addons around an input. data-slot=\"input-group\".",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/input-group/MosaicInputGroup.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-integrations-badge",
+      "type": "registry:ui",
+      "title": "MosaicIntegrationsBadge",
+      "description": "Integration badge/pill with logo slot + label. Renders as <a> when href provided. Props: label, logo?, href?, target?. OKLCH theme-reactive. No hardcoded branding.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/integrations-badge/MosaicIntegrationsBadge.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-kanban-board",
+      "type": "registry:ui",
+      "title": "MosaicKanbanBoard",
+      "description": "MosaicKanbanBoard — horizontal scrollable kanban board container.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/kanban/MosaicKanbanBoard.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/kanban/MosaicKanbanColumn.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-logos-grid",
+      "type": "registry:ui",
+      "title": "MosaicLogosGrid",
+      "description": "Logo cloud / partner logos grid. Props: logos[] {name, src, width, height}, heading. Grayscale hover effect. Optional stagger-motion variant: pass stagger=true or stagger=80 for CSS keyframe staggered reveal; respects prefers-reduced-motion.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/logos-grid/MosaicLogosGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-main-nav",
+      "type": "registry:ui",
+      "title": "MosaicMainNav",
+      "description": "Generic responsive top-nav. Desktop: inline link strip. Mobile: hamburger + drawer. Items are props.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/main-nav/MosaicMainNav.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/main-nav/MosaicMainNav.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-markdown",
+      "type": "registry:ui",
+      "title": "MosaicMarkdown",
+      "description": "MosaicMarkdown — presentational, dependency-free markdown renderer",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/markdown/MosaicMarkdown.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/markdown/markdown-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-marketplace-card",
+      "type": "registry:ui",
+      "title": "MosaicMarketplaceCard",
+      "description": "MosaicMarketplaceCard — standalone agent-type gallery tile (M1)",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/marketplace-card/MosaicMarketplaceCard.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/marketplace-card/marketplace-card-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-marketplace-list",
+      "type": "registry:ui",
+      "title": "MosaicMarketplaceList",
+      "description": "Responsive marketplace grid/list (responsive-pair). Install/uninstall actions, rating, downloads, price.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/marketplace-list/MosaicMarketplaceList.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/marketplace-list/MosaicMarketplaceList.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-memory-card",
+      "type": "registry:ui",
+      "title": "MosaicMemoryCard",
+      "description": "MosaicMemoryCard — memory item card (detailed / compact variants)",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/memory-card/MosaicMemoryCard.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/memory-card/memory-card-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-memory-dashboard",
+      "type": "registry:ui",
+      "title": "MosaicMemoryDashboard",
+      "description": "MosaicMemoryDashboard — landing surface of a knowledge base: a header with a title and a primary \"add\" action, a row of host-supplied summary statistics, an optional slot for a search bar, a host-controlled view-mode toggle (tiles / rows), and a slot for results.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/memory-dashboard/MosaicMemoryDashboard.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/memory-dashboard/memory-dashboard-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-memory-grid",
+      "type": "registry:ui",
+      "title": "MosaicMemoryGrid",
+      "description": "MosaicMemoryGrid — presentational, tile-disposition-only grid of host items",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/memory-grid/MosaicMemoryGrid.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/memory-grid/memory-grid-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-memory-list",
+      "type": "registry:ui",
+      "title": "MosaicMemoryList",
+      "description": "MosaicMemoryList — presentational, row-disposition-only list of host items",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/memory-list/MosaicMemoryList.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/memory-list/memory-list-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-message-card",
+      "type": "registry:ui",
+      "title": "MosaicMessageCard",
+      "description": "Generic message/chat card. Sender avatar, like/dislike, bookmark, copy, reply. Compact mode.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/message-card/MosaicMessageCard.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/message-card/MosaicMessageCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-message-list",
+      "type": "registry:ui",
+      "title": "MosaicMessageList",
+      "description": "Responsive message list (responsive-pair). Desktop: sticky header + search. Mobile: compact list.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/message-list/MosaicMessageList.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/message-list/MosaicMessageList.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-model-selector",
+      "type": "registry:ui",
+      "title": "MosaicModelSelector",
+      "description": "MosaicModelSelector — @base-ui/react Combobox primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/model-selector/MosaicModelSelector.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/model-selector/model-selector-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-module-card",
+      "type": "registry:ui",
+      "title": "MosaicModuleCard",
+      "description": "Selected-module display card for composer slot. Shows name, description, optional details, emoji icon, tags, edit/remove actions. Props: type, module {name, description, details?, icon?, tags?}, onEdit, onRemove, isSelected, isCustom. Generic — no debate domain types.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/module-card/MosaicModuleCard.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/module-card/MosaicModuleCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-module-library",
+      "type": "registry:ui",
+      "title": "MosaicModuleLibrary",
+      "description": "Generic module/library manager (responsive-pair). Includes MosaicModuleForm. Tabs, search, CRUD callbacks.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/module-library/MosaicModuleLibrary.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/module-library/MosaicModuleLibrary.tsx",
           "type": "registry:ui"
         }
       ]
@@ -877,29 +1223,53 @@
       "files": [
         {
           "path": "src/components/multi-tenant/webhook-handler/MosaicClerkWebhookHandler.ts",
-          "type": "registry:lib"
+          "type": "registry:ui"
         }
       ]
     },
     {
-      "name": "mosaic-toast",
+      "name": "mosaic-navbar",
       "type": "registry:ui",
-      "title": "MosaicToast",
-      "description": "Presentational ephemeral notification (success/error/info/warning), optional auto-dismiss via durationMs, host-controlled action node. Paired with MosaicToastProvider for stack positioning (top-right/top-center/bottom-right/bottom-center). No toast queue/runtime \u2014 the host owns the visible stack.",
-      "dependencies": [
-        "class-variance-authority"
-      ],
+      "title": "MosaicNavbar",
+      "description": "Scroll-aware fixed navbar: hide-on-scroll-down, blur backdrop, mobile hamburger menu. Props: logo, links[], cta. No hardcoded branding.",
+      "dependencies": [],
       "files": [
         {
-          "path": "src/components/toast/MosaicToast.tsx",
+          "path": "src/components/navbar/MosaicNavbar.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-org-panel",
+      "type": "registry:ui",
+      "title": "MosaicOrgPanel",
+      "description": "Generic org management shell. Includes MosaicOrgRoleBadge, MosaicMultiOrgIndicator, MosaicCreateOrgDialog, MosaicInviteMemberDialog, MosaicMemberList. Pure presentational — no Clerk/Convex.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/org-panel/MosaicOrgPanel.stories.tsx",
           "type": "registry:ui"
         },
         {
-          "path": "src/components/toast/MosaicToastProvider.tsx",
+          "path": "src/components/org-panel/MosaicOrgPanel.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-org-switcher",
+      "type": "registry:ui",
+      "title": "MosaicOrgSwitcher",
+      "description": "Presentational org picker dropdown. Current org + avatar in trigger. Pure props — no Clerk. Auth wiring is T1.5.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/org-switcher/MosaicOrgSwitcher.stories.tsx",
           "type": "registry:ui"
         },
         {
-          "path": "src/components/toast/toast-variants.ts",
+          "path": "src/components/org-switcher/MosaicOrgSwitcher.tsx",
           "type": "registry:ui"
         }
       ]
@@ -924,6 +1294,153 @@
       ]
     },
     {
+      "name": "mosaic-popover",
+      "type": "registry:ui",
+      "title": "MosaicPopover",
+      "description": "MosaicPopover — @base-ui/react Popover primitive, anchored to any host element",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/popover/MosaicPopover.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/popover/popover-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-preferences-panel",
+      "type": "registry:ui",
+      "title": "MosaicPreferencesPanel",
+      "description": "Generic user preferences form. Grouped sections with select and toggle fields. Fully controlled via props.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/preferences-panel/MosaicPreferencesPanel.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/preferences-panel/MosaicPreferencesPanel.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-pricing-card",
+      "type": "registry:ui",
+      "title": "MosaicPricingCard",
+      "description": "Single pricing tier card. Props: tier, price, features[], cta, highlighted. Compose multiple in a grid for a full pricing section.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/pricing-card/MosaicPricingCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-profile-panel",
+      "type": "registry:ui",
+      "title": "MosaicProfilePanel",
+      "description": "Generic user profile form. Avatar upload slot, field list, security section. Fully controlled via props.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/profile-panel/MosaicProfilePanel.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/profile-panel/MosaicProfilePanel.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-progress",
+      "type": "registry:ui",
+      "title": "MosaicProgress",
+      "description": "MosaicProgress — @base-ui/react Progress primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/progress/MosaicProgress.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-quick-action-card",
+      "type": "registry:ui",
+      "title": "MosaicQuickActionCard",
+      "description": "Grid of action cards with 6 accent color presets (yellow, blue, green, purple, orange, cyan). CSS stagger reveal on mount. Props: actions[] {id, title, description, icon, href, accent?}, heading, columns, renderLink. No hardcoded routes.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/quick-action-card/MosaicQuickActionCard.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/quick-action-card/MosaicQuickActionCard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-quick-actions-menu",
+      "type": "registry:ui",
+      "title": "MosaicQuickActionsMenu",
+      "description": "Generic + button dropdown for quick actions. Items with icon + label + separator. Custom link renderer prop.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/quick-actions-menu/MosaicQuickActionsMenu.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/quick-actions-menu/MosaicQuickActionsMenu.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-quick-agent-selector",
+      "type": "registry:ui",
+      "title": "MosaicQuickAgentSelector",
+      "description": "Compact agent pill picker with desktop dropdown / mobile drawer. Selected agents shown as removable pills.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/quick-agent-selector/MosaicQuickAgentSelector.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/quick-agent-selector/MosaicQuickAgentSelector.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-radio-group",
+      "type": "registry:ui",
+      "title": "MosaicRadioGroup",
+      "description": "MosaicRadioGroup — @base-ui/react RadioGroup + Radio primitives",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/radio-group/MosaicRadioGroup.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-resizable-split-pane",
       "type": "registry:ui",
       "title": "MosaicResizableSplitPane",
@@ -938,6 +1455,415 @@
         },
         {
           "path": "src/components/resizable-split-pane/split-pane-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-save-template-modal",
+      "type": "registry:ui",
+      "title": "MosaicSaveTemplateModal",
+      "description": "MosaicSaveTemplateModal — presentational \"save as template\" form modal",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/save-template-modal/MosaicSaveTemplateModal.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/save-template-modal/save-template-modal-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-scroll-area",
+      "type": "registry:ui",
+      "title": "MosaicScrollArea",
+      "description": "MosaicScrollArea — @base-ui/react ScrollArea primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/scroll-area/MosaicScrollArea.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-select",
+      "type": "registry:ui",
+      "title": "MosaicSelect",
+      "description": "Listbox select built on @base-ui/react/select. Props: items[], value, onValueChange, placeholder. Keyboard + focus management. data-slot=\"select\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/select/MosaicSelect.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-selector-modal",
+      "type": "registry:ui",
+      "title": "MosaicSelectorModal",
+      "description": "Generic searchable item picker modal. Search bar + category tabs + card grid. Confirm/cancel actions.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/selector-modal/MosaicSelectorModal.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/selector-modal/MosaicSelectorModal.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-separator",
+      "type": "registry:ui",
+      "title": "MosaicSeparator",
+      "description": "MosaicSeparator — @base-ui/react Separator primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/separator/MosaicSeparator.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-skeleton",
+      "type": "registry:ui",
+      "title": "MosaicSkeleton",
+      "description": "MosaicSkeleton — loading skeleton primitive for @vantageos/mosaic-blocks.",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/skeleton/MosaicSkeleton.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/skeleton/skeleton-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-slider",
+      "type": "registry:ui",
+      "title": "MosaicSlider",
+      "description": "MosaicSlider — @base-ui/react Slider primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/slider/MosaicSlider.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-stats-grid",
+      "type": "registry:ui",
+      "title": "MosaicStatsGrid",
+      "description": "Border-grid statistics section. Props: stats[] {label, value}, heading, subtext. Values are plain strings; animate at consumer level.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/stats-grid/MosaicStatsGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-step-pipeline",
+      "type": "registry:ui",
+      "title": "MosaicStepPipeline",
+      "description": "MosaicStepPipeline — ordered stage progress pipeline",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/step-pipeline/MosaicStepPipeline.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/step-pipeline/step-pipeline-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-switch",
+      "type": "registry:ui",
+      "title": "MosaicSwitch",
+      "description": "Toggle switch built on @base-ui/react/switch. Controlled + uncontrolled, role=switch, keyboard accessible. data-slot=\"switch\".",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/switch/MosaicSwitch.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-tabs",
+      "type": "registry:ui",
+      "title": "MosaicTabs",
+      "description": "MosaicTabs — @base-ui/react Tabs primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/tabs/MosaicTabs.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-tag-input",
+      "type": "registry:ui",
+      "title": "MosaicTagInput",
+      "description": "MosaicTagInput — presentational tag/chip input with optional autocomplete.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/tag-input/MosaicTagInput.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/tag-input/tag-input-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-template-agent-card",
+      "type": "registry:ui",
+      "title": "MosaicTemplateAgentCard",
+      "description": "MosaicTemplateAgentCard — agent-type template preview card",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/template-agent-card/MosaicTemplateAgentCard.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/template-agent-card/template-agent-card-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-template-category-chips",
+      "type": "registry:ui",
+      "title": "MosaicTemplateCategoryChips",
+      "description": "MosaicTemplateCategoryChips — presentational horizontal chip row filtering agent-templates by category.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/template-category-chips/MosaicTemplateCategoryChips.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/template-category-chips/template-category-chips-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-template-gallery",
+      "type": "registry:ui",
+      "title": "MosaicTemplateGallery",
+      "description": "Responsive template browser (responsive-pair). Includes MosaicTemplateCard, MosaicTemplatePreview, MosaicQuickStartPanel, MosaicAgentTeamPreview.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/template-gallery/MosaicTemplateGallery.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/template-gallery/MosaicTemplateGallery.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-template-list",
+      "type": "registry:ui",
+      "title": "MosaicTemplateList",
+      "description": "MosaicTemplateList — presentational, disposition-only list of host items",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/template-list/MosaicTemplateList.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/template-list/template-list-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-template-management-panel",
+      "type": "registry:ui",
+      "title": "MosaicTemplateManagementPanel",
+      "description": "MosaicTemplateManagementPanel — manage a host-supplied list of saved agent templates: rename, duplicate, delete.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/template-management-panel/MosaicTemplateManagementPanel.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/template-management-panel/template-management-panel-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-testimonials-grid",
+      "type": "registry:ui",
+      "title": "MosaicTestimonialsGrid",
+      "description": "Masonry-style testimonials grid: featured item spans half width, rest stack. Props: testimonials[] {id, quote, author, role, avatar?, logo?}, heading.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/testimonials-grid/MosaicTestimonialsGrid.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-textarea",
+      "type": "registry:ui",
+      "title": "MosaicTextarea",
+      "description": "MosaicTextarea — native <textarea> styled atom",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/textarea/MosaicTextarea.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-theme-provider",
+      "type": "registry:ui",
+      "title": "MosaicThemeProvider",
+      "description": "Thin next-themes ThemeProvider wrapper. Generic, zero branding. All ThemeProviderProps forwarded.",
+      "dependencies": [
+        "next-themes"
+      ],
+      "files": [
+        {
+          "path": "src/components/theme-provider/MosaicThemeProvider.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/theme-provider/MosaicThemeProvider.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-theme-toggle",
+      "type": "registry:ui",
+      "title": "MosaicThemeToggle",
+      "description": "Light/dark/system theme toggle. Flips data-theme on document.documentElement. Props: themes?, onChange?, label?. Theme-reactive via OKLCH CSS vars.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/theme-toggle/MosaicThemeToggle.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-toast",
+      "type": "registry:ui",
+      "title": "MosaicToast",
+      "description": "Presentational ephemeral notification (success/error/info/warning), optional auto-dismiss via durationMs, host-controlled action node. Paired with MosaicToastProvider for stack positioning (top-right/top-center/bottom-right/bottom-center). No toast queue/runtime — the host owns the visible stack.",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/toast/MosaicToast.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/toast/MosaicToastProvider.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/toast/toast-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-tool-toggle-list",
+      "type": "registry:ui",
+      "title": "MosaicToolToggleList",
+      "description": "MosaicToolToggleList — presentational per-tool enable switch + approval level selector, grouped into host-supplied sections.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/tool-toggle-list/MosaicToolToggleList.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/tool-toggle-list/tool-toggle-list-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-tooltip",
+      "type": "registry:ui",
+      "title": "MosaicTooltip",
+      "description": "MosaicTooltip — @base-ui/react Tooltip primitive",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/components/tooltip/MosaicTooltip.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-url-scraper",
+      "type": "registry:ui",
+      "title": "MosaicUrlScraper",
+      "description": "MosaicUrlScraper — presentational URL-input + scraped-content preview",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/url-scraper/MosaicUrlScraper.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/url-scraper/url-scraper-variants.ts",
           "type": "registry:ui"
         }
       ]

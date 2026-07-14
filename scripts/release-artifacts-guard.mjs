@@ -60,6 +60,12 @@ const MARKER_RE = /^\s*\/\/\s*allow-release-artifacts:\s*(\S.+)$/m;
 
 const GUARDED_COUNT_FILES = ["README.md", "docs/components-catalog.md"];
 const GUARDED_VERSION_FILES = ["package.json", "src/version.ts"];
+// `registry.json`'s item list is DERIVED from src/index.ts by
+// `scripts/registry-json-derive.mjs` (mirrors the docs-counts split above —
+// see that script's header for the full "why"). A component PR must never
+// hand-edit it: the post-merge `derive-release-artifacts` job on main is the
+// only legitimate writer.
+const GUARDED_WHOLE_FILES = ["registry.json"];
 
 /**
  * Run a git command, exit-code-checked. NEVER swallow a non-zero exit —
@@ -177,6 +183,16 @@ function main() {
   const violations = [];
 
   for (const path of changed) {
+    if (GUARDED_WHOLE_FILES.includes(path)) {
+      violations.push({
+        file: path,
+        line: 0,
+        reason:
+          "hand-edits registry.json — its item list is DERIVED from src/index.ts by scripts/registry-json-derive.mjs, never hand-typed",
+        snippet: "(whole-file guard: any diff to this path is refused, not just specific lines)",
+      });
+    }
+
     if (GUARDED_VERSION_FILES.includes(path)) {
       const diffText = diffFor(path);
       const additions = addedLines(diffText);
