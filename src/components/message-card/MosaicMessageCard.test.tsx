@@ -89,6 +89,48 @@ describe("MosaicMessageCard", () => {
     expect(likeBtn).toBeTruthy();
   });
 
+  it("renders the host-supplied aiSenderLabel badge for an ai sender", () => {
+    const aiMessage = {
+      ...message,
+      sender: { id: "ai-1", name: "Bot", type: "ai" as const },
+    };
+    render(
+      <MosaicMessageCard
+        message={aiMessage}
+        aiSenderLabel="Assistant IA"
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
+      />,
+    );
+    expect(screen.getByText("Assistant IA")).toBeTruthy();
+  });
+
+  it("renders no badge word of its own when aiSenderLabel is omitted for an ai sender", () => {
+    const aiMessage = {
+      ...message,
+      sender: { id: "ai-1", name: "Bot", type: "ai" as const },
+    };
+    const { container } = render(
+      <MosaicMessageCard
+        message={aiMessage}
+        replyLabel="Reply"
+        moreOptionsAriaLabel="More options"
+        removeBookmarkAriaLabel="Remove bookmark"
+        bookmarkAriaLabel="Bookmark message"
+        removeBookmarkLabel="Remove bookmark"
+        bookmarkLabel="Bookmark"
+        copyMessageLabel="Copy message"
+      />,
+    );
+    // The library must not fabricate any label of its own (e.g. "AI").
+    expect(container.textContent).not.toContain("AI");
+  });
+
   it("accepts custom className", () => {
     const { container } = render(
       <MosaicMessageCard
