@@ -64,10 +64,18 @@ jobs:
       #    PR-ONLY. A component PR's diff must carry NEITHER the version
       #    (package.json/src/version.ts) NOR a README/catalog count claim —
       #    both are DERIVED on main, once, after this PR merges (see the
-      #    derive-release-artifacts job below). Escape hatch: HEAD commit
-      #    message carries `// allow-release-artifacts: <reason>`.
+      #    derive-release-artifacts job below). Escape hatch: the PR's head
+      #    commit message carries `// allow-release-artifacts: <reason>`.
+      #
+      #    RELEASE_GUARD_HEAD_REF is not decoration. On pull_request, checkout
+      #    leaves HEAD on the synthetic `Merge <sha> into <sha>` commit — a
+      #    message nobody wrote, which can never carry the marker. The guard
+      #    used to read it, which made its own escape hatch unopenable on the
+      #    one path that needs it. It must read the commit the author wrote.
       - name: Release artifacts guard
         if: github.event_name == 'pull_request'
+        env:
+          RELEASE_GUARD_HEAD_REF: ${{ github.event.pull_request.head.sha }}
         run: node scripts/release-artifacts-guard.mjs
 
       # ── 8c. NO docs-counts check here. Deliberate, and worth reading. ───────
