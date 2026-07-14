@@ -438,6 +438,114 @@ else
   cleanup_branch "$branch" "$parent"
 fi
 
+# ===========================================================================
+# PUSH-TO-MAIN PATH — reproduces CI's exact invocation on that path:
+#   PR_TITLE_GUARD_BASE_REF=HEAD^  with HEAD = the real merge commit itself.
+# No replay/apply here: these are REAL commits already reachable in the
+# clone's fetched history, checked out DETACHED at their own real SHA, which
+# is the closest possible reproduction of what push:main hands the guard —
+# HEAD really is the merge commit, HEAD^ really is its first parent.
+# ===========================================================================
+run_guard_push_path() {
+  local sha="$1"
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet --detach "$sha")
+  cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  (cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="HEAD^" node scripts/pr-title-matches-diff-guard.mjs)
+}
+
+# --- MUST_BLOCK: the three real merge commits, on the push-to-main path. ---
+PUSH_BLOCK_CASES=(
+  "2d49c9d2caa8b77aecccac6af21282234cfa5962:src/components/add-memory-form/MosaicAddMemoryForm.tsx"
+  "183c6dfe19bd398851fa4b5b9efd195d72e6da0d:src/components/edit-memory-dialog/MosaicEditMemoryDialog.tsx"
+  "ee4877da9fe7ffc3c7f3a2344f74ecd321008b1c:src/components/memory-dashboard/MosaicMemoryDashboard.tsx"
+)
+for case in "${PUSH_BLOCK_CASES[@]}"; do
+  IFS=':' read -r sha file <<< "$case"
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  if ! (cd "$CLONE" && git cat-file -e "${sha}:${file}" 2>/dev/null); then
+    FAILURES+=("PUSH-PATH MUST_BLOCK $sha — mutation did NOT land (${file} absent at ${sha}) — probe invalid")
+    log MUST_BLOCK "FAIL — push-path $sha — real file absent, checkout landing not proven"
+    continue
+  fi
+  set +e
+  output="$(run_guard_push_path "$sha" 2>&1)"
+  status=$?
+  set -e
+  claimed_component="$(git -C "$REPO_ROOT" log -1 --pretty=%s "$sha")"
+  if [ "$status" -ne 0 ] && echo "$output" | grep -qF "BLOCKED" && echo "$output" | grep -qF "$(basename "$(dirname "$file")")"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — push-path $sha (real merge-commit subject \"$claimed_component\") — exited $status, named claimed+actual component"
+  else
+    FAILURES+=("PUSH-PATH MUST_BLOCK $sha — guard exited $status (expected non-zero+BLOCKED naming ${file}) — output: $output")
+    log MUST_BLOCK "FAIL — push-path $sha — exit=$status output=$output"
+  fi
+done
+
+# --- MUST_PASS: the true-titled sibling merge commit, on the push-to-main path. ---
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="52cdb32a5a16b2db4651fd4b1f9adbc283b5af92"
+file="src/components/memory-grid/MosaicMemoryGrid.tsx"
+if ! (cd "$CLONE" && git cat-file -e "${sha}:${file}" 2>/dev/null); then
+  FAILURES+=("PUSH-PATH MUST_PASS $sha (true subject) — mutation did NOT land — probe invalid")
+  log MUST_PASS "FAIL — push-path $sha — real file absent, checkout landing not proven"
+else
+  set +e
+  output="$(run_guard_push_path "$sha" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — push-path $sha (true merge-commit subject) — exited 0"
+  else
+    FAILURES+=("PUSH-PATH MUST_PASS $sha (true subject) — guard exited $status (expected 0) — output: $output")
+    log MUST_PASS "FAIL — push-path $sha — exit=$status output=$output"
+  fi
+fi
+
+# --- MUST_PASS: a real chore(release) bot merge commit, push-to-main path. ---
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="074de96c14f515024f002f75bbc3020e5ba32b72"
+if ! (cd "$CLONE" && git cat-file -e "${sha}" 2>/dev/null); then
+  FAILURES+=("PUSH-PATH MUST_PASS $sha (release bot) — commit unreachable in clone — probe invalid")
+  log MUST_PASS "FAIL — push-path $sha — commit unreachable"
+else
+  set +e
+  output="$(run_guard_push_path "$sha" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ] && echo "$output" | grep -qF "no component claim to verify"; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — push-path $sha (release-bot merge commit) — exited 0, exempted"
+  else
+    FAILURES+=("PUSH-PATH MUST_PASS $sha (release bot) — guard exited $status (expected 0, exempted) — output: $output")
+    log MUST_PASS "FAIL — push-path $sha — exit=$status output=$output"
+  fi
+fi
+
+# --- MUST_PASS: a real scripts-only merge commit, push-to-main path. ---
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+sha="e35488703d5c87fcfa25956b29c8fd63fca7e6f1"
+if ! (cd "$CLONE" && git cat-file -e "${sha}" 2>/dev/null); then
+  FAILURES+=("PUSH-PATH MUST_PASS $sha (scripts/CI-only) — commit unreachable in clone — probe invalid")
+  log MUST_PASS "FAIL — push-path $sha — commit unreachable"
+else
+  set +e
+  output="$(run_guard_push_path "$sha" 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ] && echo "$output" | grep -qF "no component claim to verify"; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — push-path $sha (scripts/CI-only merge commit) — exited 0, exempted"
+  else
+    FAILURES+=("PUSH-PATH MUST_PASS $sha (scripts/CI-only) — guard exited $status (expected 0, exempted) — output: $output")
+    log MUST_PASS "FAIL — push-path $sha — exit=$status output=$output"
+  fi
+fi
+
+# Leave the clone on a clean, detached-free state before restoration check
+# (does not touch $REPO_ROOT — only tidies the disposable scratch clone).
+(cd "$CLONE" && git reset --hard --quiet 2>/dev/null || true)
+
 # ---------------------------------------------------------------------------
 # Restoration proof — the INVOKING worktree must be untouched by this probe.
 # ---------------------------------------------------------------------------

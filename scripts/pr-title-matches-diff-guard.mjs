@@ -83,7 +83,25 @@
  *
  * Usage: node scripts/pr-title-matches-diff-guard.mjs
  *   Compares BASE_REF...HEAD (default origin/main; override via
- *   PR_TITLE_GUARD_BASE_REF for the probe).
+ *   PR_TITLE_GUARD_BASE_REF for the probe, or for the push-to-main CI run —
+ *   see below).
+ *
+ * TWO CALL SITES, ONE ARTIFACT EACH (per guard-formulation-census.md — the
+ * domain of "who carries the title" has TWO members, and a guard covering
+ * only the one that never lies is worse than no guard):
+ *
+ *   1. pull_request event: BASE_REF defaults to origin/main, HEAD is the PR's
+ *      tip commit, and the subject checked is that commit's own subject —
+ *      the PR TITLE, which GitHub keeps honest at review time.
+ *   2. push:main event (this repo's squash-merge convention): CI sets
+ *      PR_TITLE_GUARD_BASE_REF=HEAD^ so HEAD is the just-pushed MERGE commit
+ *      and the base is its own first parent — the subject checked is the
+ *      SQUASH-MERGE COMMIT SUBJECT, hand-typed by a human in GitHub's merge
+ *      box at merge time, independent of whatever the PR title said. This is
+ *      the artifact the real incident actually lived in: three merge commits
+ *      on main named a component their own diff never touched, while every
+ *      PR title upstream of them was correct — a PR-only guard exits 0 on
+ *      all three and never sees the artifact that lied.
  */
 
 import { execFileSync } from "node:child_process";
