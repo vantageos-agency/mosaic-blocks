@@ -1017,3 +1017,14 @@ export {
   editSessionDialogFieldVariants,
   editSessionDialogFooterVariants,
 } from "./components/edit-session-dialog/edit-session-dialog-variants.js";
+
+// ── MosaicSaveChatAsMemoryForm — the chat → memory bridge ───────────────────
+export { MosaicSaveChatAsMemoryForm } from "./components/save-chat-as-memory-form/MosaicSaveChatAsMemoryForm.js";
+export type { MosaicSaveChatAsMemoryFormProps } from "./components/save-chat-as-memory-form/MosaicSaveChatAsMemoryForm.js";
+export {
+  saveChatAsMemoryFormButtonVariants,
+  saveChatAsMemoryFormErrorVariants,
+  saveChatAsMemoryFormFieldVariants,
+  saveChatAsMemoryFormFooterVariants,
+  saveChatAsMemoryFormRootVariants,
+} from "./components/save-chat-as-memory-form/save-chat-as-memory-form-variants.js";
