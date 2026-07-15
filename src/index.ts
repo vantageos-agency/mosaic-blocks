@@ -936,3 +936,12 @@ export type {
   MosaicMemorySearchProps,
 } from "./components/memory-search/MosaicMemorySearch.js";
 export { memorySearchFilterChipVariants } from "./components/memory-search/memory-search-variants.js";
+
+// ── M1: MosaicMentionInput — trigger-anchored mentionable-entries input ────
+export { MosaicMentionInput } from "./components/mention-input/MosaicMentionInput.js";
+export type { MosaicMentionInputProps } from "./components/mention-input/MosaicMentionInput.js";
+export {
+  mentionInputFieldVariants,
+  mentionListItemVariants,
+  mentionListVariants,
+} from "./components/mention-input/mention-input-variants.js";
