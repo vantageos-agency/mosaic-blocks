@@ -984,3 +984,25 @@ export {
 // ── MosaicMessageSearch — host-driven in-thread message search bar ─────────
 export { MosaicMessageSearch } from "./components/message-search/MosaicMessageSearch.js";
 export type { MosaicMessageSearchProps } from "./components/message-search/MosaicMessageSearch.js";
+
+// ── MosaicSessionCard — a single work-in-progress session at a glance ──────
+export { MosaicSessionCard } from "./components/session-card/MosaicSessionCard.js";
+export type {
+  MosaicSessionCardInteractionProps,
+  MosaicSessionCardProps,
+  MosaicSessionCardVariantProps,
+  MosaicSessionData,
+  MosaicSessionStatus,
+} from "./components/session-card/MosaicSessionCard.js";
+export { sessionCardVariants } from "./components/session-card/session-card-variants.js";
+
+// ── MosaicSessionList — the workstation's in-progress sessions (4 merged layouts) ──
+export { MosaicSessionList } from "./components/session-list/MosaicSessionList.js";
+export type {
+  MosaicSessionListLayout,
+  MosaicSessionListProps,
+} from "./components/session-list/MosaicSessionList.js";
+export {
+  sessionListItemVariants,
+  sessionListVariants,
+} from "./components/session-list/session-list-variants.js";
