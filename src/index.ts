@@ -937,6 +937,16 @@ export type {
 } from "./components/memory-search/MosaicMemorySearch.js";
 export { memorySearchFilterChipVariants } from "./components/memory-search/memory-search-variants.js";
 
+// ── MosaicReplyInput — presentational, controlled reply input scoped to one thread ──
+export { MosaicReplyInput } from "./components/reply-input/MosaicReplyInput.js";
+export type { MosaicReplyInputProps } from "./components/reply-input/MosaicReplyInput.js";
+export {
+  replyInputActionButtonVariants,
+  replyInputContextVariants,
+  replyInputRootVariants,
+  replyInputTextareaVariants,
+} from "./components/reply-input/reply-input-variants.js";
+
 // ── M1: MosaicMentionInput — trigger-anchored mentionable-entries input ────
 export { MosaicMentionInput } from "./components/mention-input/MosaicMentionInput.js";
 export type { MosaicMentionInputProps } from "./components/mention-input/MosaicMentionInput.js";
