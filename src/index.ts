@@ -947,6 +947,31 @@ export {
   replyInputTextareaVariants,
 } from "./components/reply-input/reply-input-variants.js";
 
+// ── MosaicThreadView — one client request, several agents replying beneath it ──
+export { MosaicThreadView } from "./components/thread-view/MosaicThreadView.js";
+export type {
+  MosaicThreadViewMessage,
+  MosaicThreadViewProps,
+} from "./components/thread-view/MosaicThreadView.js";
+export {
+  threadViewEmptyVariants,
+  threadViewReplyVariants,
+  threadViewRepliesVariants,
+  threadViewRootMessageVariants,
+  threadViewRootVariants,
+} from "./components/thread-view/thread-view-variants.js";
+
+// ── MosaicThreadIndicator — signals a thread has UNREAD replies ────────────
+export { MosaicThreadIndicator } from "./components/thread-indicator/MosaicThreadIndicator.js";
+export type {
+  MosaicThreadIndicatorProps,
+  MosaicThreadIndicatorReplyStatus,
+} from "./components/thread-indicator/MosaicThreadIndicator.js";
+export {
+  threadIndicatorCountVariants,
+  threadIndicatorRootVariants,
+} from "./components/thread-indicator/thread-indicator-variants.js";
+
 // ── M1: MosaicMentionInput — trigger-anchored mentionable-entries input ────
 export { MosaicMentionInput } from "./components/mention-input/MosaicMentionInput.js";
 export type { MosaicMentionInputProps } from "./components/mention-input/MosaicMentionInput.js";
