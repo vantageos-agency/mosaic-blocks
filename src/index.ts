@@ -1006,3 +1006,14 @@ export {
   sessionListItemVariants,
   sessionListVariants,
 } from "./components/session-list/session-list-variants.js";
+
+// ── MosaicEditSessionDialog — rename / reclassify a work-in-progress session ──
+export { MosaicEditSessionDialog } from "./components/edit-session-dialog/MosaicEditSessionDialog.js";
+export type { MosaicEditSessionDialogProps } from "./components/edit-session-dialog/MosaicEditSessionDialog.js";
+export {
+  editSessionDialogBodyVariants,
+  editSessionDialogButtonVariants,
+  editSessionDialogErrorVariants,
+  editSessionDialogFieldVariants,
+  editSessionDialogFooterVariants,
+} from "./components/edit-session-dialog/edit-session-dialog-variants.js";
