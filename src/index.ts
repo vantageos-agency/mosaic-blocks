@@ -980,3 +980,7 @@ export {
   mentionListItemVariants,
   mentionListVariants,
 } from "./components/mention-input/mention-input-variants.js";
+
+// ── MosaicMessageSearch — host-driven in-thread message search bar ─────────
+export { MosaicMessageSearch } from "./components/message-search/MosaicMessageSearch.js";
+export type { MosaicMessageSearchProps } from "./components/message-search/MosaicMessageSearch.js";
