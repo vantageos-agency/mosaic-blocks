@@ -767,6 +767,23 @@
       ]
     },
     {
+      "name": "mosaic-edit-session-dialog",
+      "type": "registry:ui",
+      "title": "MosaicEditSessionDialog",
+      "description": "MosaicEditSessionDialog — presentational \"rename / reclassify a work-in-progress session\" form modal",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/edit-session-dialog/MosaicEditSessionDialog.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/edit-session-dialog/edit-session-dialog-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-empty-state",
       "type": "registry:ui",
       "title": "MosaicEmptyState",
@@ -1114,6 +1131,23 @@
       ]
     },
     {
+      "name": "mosaic-mention-input",
+      "type": "registry:ui",
+      "title": "MosaicMentionInput",
+      "description": "MosaicMentionInput — text input that opens an anchored, host-owned list of mentionable entries when the host-chosen trigger character is typed.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/mention-input/MosaicMentionInput.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/mention-input/mention-input-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-message-card",
       "type": "registry:ui",
       "title": "MosaicMessageCard",
@@ -1143,6 +1177,19 @@
         },
         {
           "path": "src/components/message-list/MosaicMessageList.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-message-search",
+      "type": "registry:ui",
+      "title": "MosaicMessageSearch",
+      "description": "MosaicMessageSearch — search bar over the messages of a single, already-open conversation: a query input and a clear action, with the matching results rendered entirely by the host.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/message-search/MosaicMessageSearch.tsx",
           "type": "registry:ui"
         }
       ]
@@ -1458,6 +1505,23 @@
       ]
     },
     {
+      "name": "mosaic-reply-input",
+      "type": "registry:ui",
+      "title": "MosaicReplyInput",
+      "description": "MosaicReplyInput — presentational, controlled reply input scoped to one thread",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/reply-input/MosaicReplyInput.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/reply-input/reply-input-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-resizable-split-pane",
       "type": "registry:ui",
       "title": "MosaicResizableSplitPane",
@@ -1472,6 +1536,23 @@
         },
         {
           "path": "src/components/resizable-split-pane/split-pane-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-save-chat-as-memory-form",
+      "type": "registry:ui",
+      "title": "MosaicSaveChatAsMemoryForm",
+      "description": "MosaicSaveChatAsMemoryForm — presentational \"turn this thread into agency knowledge\" form: the chat → memory bridge.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/save-chat-as-memory-form/MosaicSaveChatAsMemoryForm.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/save-chat-as-memory-form/save-chat-as-memory-form-variants.ts",
           "type": "registry:ui"
         }
       ]
@@ -1551,6 +1632,40 @@
       "files": [
         {
           "path": "src/components/separator/MosaicSeparator.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-session-card",
+      "type": "registry:ui",
+      "title": "MosaicSessionCard",
+      "description": "MosaicSessionCard — a single work-in-progress session at a glance (default / compact variants)",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/session-card/MosaicSessionCard.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/session-card/session-card-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-session-list",
+      "type": "registry:ui",
+      "title": "MosaicSessionList",
+      "description": "MosaicSessionList — presentational, layout-disposition-only list of the workstation's in-progress sessions",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/session-list/MosaicSessionList.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/session-list/session-list-variants.ts",
           "type": "registry:ui"
         }
       ]
@@ -1807,6 +1922,40 @@
       "files": [
         {
           "path": "src/components/theme-toggle/MosaicThemeToggle.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-thread-indicator",
+      "type": "registry:ui",
+      "title": "MosaicThreadIndicator",
+      "description": "MosaicThreadIndicator — signals a thread has UNREAD replies",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/thread-indicator/MosaicThreadIndicator.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/thread-indicator/thread-indicator-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-thread-view",
+      "type": "registry:ui",
+      "title": "MosaicThreadView",
+      "description": "MosaicThreadView — one client request, several agents replying beneath it",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/thread-view/MosaicThreadView.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/thread-view/thread-view-variants.ts",
           "type": "registry:ui"
         }
       ]
