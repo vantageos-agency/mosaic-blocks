@@ -239,7 +239,7 @@ function checkDescriptionPushy(skillPath, fields, violations) {
   if (!/even if they don't say .+ explicitly/i.test(description)) {
     violations.push({
       file: `${skillPath}/SKILL.md`,
-      rule: 'skill-standard-v2.md § Description writing rules — trigger clause',
+      rule: "skill-standard-v2.md § Description writing rules — trigger clause",
       detail: 'description must end with an "even if they don\'t say X explicitly" clause',
     });
   }
@@ -287,8 +287,7 @@ function checkNoSellableHeading(skillPath, fullRaw, violations) {
  */
 function checkRelativeLinksResolve(skillPath, absSkillDir, fullRaw, violations) {
   const linkRe = /\]\((\.{0,2}\/?[^):\s]+\.md(?:#[^)]*)?)\)/g;
-  let m;
-  while ((m = linkRe.exec(fullRaw)) !== null) {
+  for (const m of fullRaw.matchAll(linkRe)) {
     const target = m[1].split("#")[0];
     if (/^https?:\/\//.test(target)) continue;
     const resolved = join(absSkillDir, target);
@@ -322,7 +321,9 @@ function checkEvals(skillPath, skillName, absSkillDir, violations) {
   try {
     parsed = JSON.parse(readFileSync(evalsPath, "utf8"));
   } catch (err) {
-    throw new GuardUnreadable(`${skillPath}/evals/evals.json: does not parse as JSON — ${err.message}`);
+    throw new GuardUnreadable(
+      `${skillPath}/evals/evals.json: does not parse as JSON — ${err.message}`,
+    );
   }
   if (parsed.skill_name !== skillName) {
     violations.push({
@@ -378,7 +379,9 @@ function validateSkillDir(skillName, violations) {
   const skillPath = `${SKILLS_DIR}/${skillName}`;
   const absSkillDir = join(ROOT, skillPath);
   if (!existsSync(absSkillDir)) {
-    throw new GuardUnreadable(`${skillPath}: directory referenced by the diff does not exist on disk`);
+    throw new GuardUnreadable(
+      `${skillPath}: directory referenced by the diff does not exist on disk`,
+    );
   }
   const skillMdPath = join(absSkillDir, "SKILL.md");
   if (!existsSync(skillMdPath)) {
@@ -424,7 +427,9 @@ function main() {
   const skillDirs = touchedSkillDirs(changed);
 
   if (skillDirs.length === 0) {
-    console.log("skills-standard-guard: OK — this diff touches no skills/<name>/ directory. Nothing to check.");
+    console.log(
+      "skills-standard-guard: OK — this diff touches no skills/<name>/ directory. Nothing to check.",
+    );
     process.exitCode = 0;
     return;
   }
@@ -437,8 +442,7 @@ function main() {
   if (violations.length > 0) {
     const details = violations.map((v) => `  - ${v.file} — [${v.rule}] ${v.detail}`).join("\n");
     console.error(
-      `skills-standard-guard: BLOCKED (exit 1) — ${skillDirs.length} touched skill dir(s) (${skillDirs.join(", ")}), ${violations.length} violation(s):\n${details}\n\n` +
-        "Fix the listed files, or if this genuinely is an exception, add `// allow-skills-standard: <reason>` to the HEAD commit message.",
+      `skills-standard-guard: BLOCKED (exit 1) — ${skillDirs.length} touched skill dir(s) (${skillDirs.join(", ")}), ${violations.length} violation(s):\n${details}\n\nFix the listed files, or if this genuinely is an exception, add \`// allow-skills-standard: <reason>\` to the HEAD commit message.`,
     );
     process.exitCode = 1;
     return;
@@ -457,7 +461,9 @@ try {
     console.error(`skills-standard-guard: REFUSING TO JUDGE (exit 2) — ${err.message}`);
     process.exitCode = 2;
   } else {
-    console.error(`skills-standard-guard: REFUSING TO JUDGE (exit 2) — unexpected error: ${err.stack || err.message}`);
+    console.error(
+      `skills-standard-guard: REFUSING TO JUDGE (exit 2) — unexpected error: ${err.stack || err.message}`,
+    );
     process.exitCode = 2;
   }
 }
