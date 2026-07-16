@@ -259,14 +259,40 @@ if [ "$LANDING_OK" = true ]; then
         log MUST_BLOCK "FAIL — $label — exit=$status"
       fi
     done
-    # Extra rigor: the offender COUNT must have grown by exactly 4 (one per
-    # injected form) vs the baseline — not just "some" new entries, which
+    # Extra rigor: the offender COUNT must have grown by exactly one line per
+    # injected form that is genuinely NEW — not just "some" new entries, which
     # could mask a form silently failing to be counted at all.
+    #
+    # The delta is DERIVED, never typed. A hardcoded "+ 4" silently assumed
+    # every injected value was absent from BASELINE; the moment one of them is
+    # a baselined value (`Remove ` is, today), that injection GROWS an existing
+    # row instead of opening a new one, the true delta is 3, and the probe
+    # failed while the guard behaved perfectly. Ask BASELINE which of the
+    # injected values it already declares.
     if [ -n "$BASELINE_COUNT" ]; then
       form_count="$(echo "$output" | grep -c '^  - ' || true)"
-      expected=$((BASELINE_COUNT + 4))
+      new_forms=0
+      for case_desc in "${FORM_CHECKS[@]}"; do
+        IFS='|' read -r _label snippet_pattern <<< "$case_desc"
+        if ! PROBE_SNIPPET="$snippet_pattern" python3 - "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" <<'BASELINEQ'
+import os
+import re
+import sys
+with open(sys.argv[1]) as f:
+    text = f.read()
+rows = [m[0] for m in re.findall(r'value:\s*"((?:[^"\\]|\\.)*)"\s*,\s*\n\s*maxCount:\s*(\d+)\s*,', text)]
+if not rows:
+    raise SystemExit("probe: BASELINE declares NO rows — cannot derive the expected offender delta. Refusing.")
+sys.exit(0 if os.environ["PROBE_SNIPPET"] in rows else 1)
+BASELINEQ
+        then
+          new_forms=$((new_forms + 1))
+        fi
+      done
+      echo "[INFO] derived expected offender delta: $new_forms of ${#FORM_CHECKS[@]} injected forms are absent from BASELINE (the rest GROW an existing row)"
+      expected=$((BASELINE_COUNT + new_forms))
       if [ "$form_count" -ne "$expected" ]; then
-        FAILURES+=("MUST_BLOCK forms — offender count is $form_count, expected exactly $expected (baseline $BASELINE_COUNT + 4 injected forms)")
+        FAILURES+=("MUST_BLOCK forms — offender count is $form_count, expected exactly $expected (baseline $BASELINE_COUNT + $new_forms injected forms absent from BASELINE)")
       fi
     fi
   fi
@@ -344,17 +370,39 @@ fi
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
 git -C "$CLONE" checkout --quiet -b probe-block-grown "$BASE"
-python3 - "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" <<'PYEOF'
+# The value to GROW is DERIVED from the guard's own BASELINE, never typed.
+# Hardcoding "Select " here was a latent trap: the moment a fix PR deletes
+# that row, this same injection stops being "growth of an existing row" and
+# becomes a brand-new offender — the case would grep for GREW and fail on a
+# guard that behaved perfectly. If BASELINE declares nothing, REFUSE loudly.
+GROWN_VALUE="$(python3 - "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" <<'PYEOF'
+import re
+import sys
+with open(sys.argv[1]) as f:
+    text = f.read()
+rows = re.findall(r'value:\s*"((?:[^"\\]|\\.)*)"\s*,\s*\n\s*maxCount:\s*(\d+)\s*,', text)
+if not rows:
+    raise SystemExit("probe: BASELINE declares NO rows — cannot derive a ratchet-grown subject. Refusing to report a pass for a case that never ran.")
+sys.stdout.write(rows[0][0])
+PYEOF
+)"
+echo "[INFO] derived ratchet-grown subject: BASELINE value \"$GROWN_VALUE\" (one more occurrence must read as GREW)"
+GROWN_VALUE="$GROWN_VALUE" python3 - "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" <<'PYEOF'
+import os
 import sys
 path = sys.argv[1]
+value = os.environ["GROWN_VALUE"]
 with open(path) as f:
     text = f.read()
 needle = '    <Checkbox.Root\n      ref={ref}\n      data-slot="checkbox"\n'
+# Emit the derived value as a plain JSX string attribute so the literal lands
+# in the bundle verbatim, whatever characters it contains.
+injected = '      title={"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"}\n'
 replacement = (
     '    <Checkbox.Root\n'
     '      ref={ref}\n'
     '      data-slot="checkbox"\n'
-    '      title={`Select ${"item"}`}\n'
+    + injected
 )
 if needle not in text:
     raise SystemExit(f"probe: injection anchor not found in {path}")
@@ -362,10 +410,10 @@ text = text.replace(needle, replacement, 1)
 with open(path, "w") as f:
     f.write(text)
 PYEOF
-if ! grep -qF 'title={`Select ${"item"}`}' "$CLONE/src/components/checkbox/MosaicCheckbox.tsx"; then
+if ! grep -qF "title={\"$GROWN_VALUE\"}" "$CLONE/src/components/checkbox/MosaicCheckbox.tsx"; then
   FAILURES+=("MUST_BLOCK ratchet-grown — mutation did NOT land — probe invalid")
 else
-  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: 9th occurrence of baseline value 'Select ' — must grow-block")
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: one more occurrence of a derived baseline value — must grow-block")
   log INFO "building ratchet-grown tree (this takes ~15-25s)..."
   if ! build_clone; then
     FAILURES+=("MUST_BLOCK ratchet-grown build — pnpm build failed")
@@ -374,9 +422,9 @@ else
     output="$(run_guard 2>&1)"
     status=$?
     set -e
-    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "GREW" && echo "$output" | grep -qF '"Select "'; then
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "GREW" && echo "$output" | grep -qF "\"$GROWN_VALUE\""; then
       MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-      log MUST_BLOCK "PASS — ratchet-grown — 9th 'Select ' occurrence blocked as BASELINE growth"
+      log MUST_BLOCK "PASS — ratchet-grown — extra '$GROWN_VALUE' occurrence blocked as BASELINE growth"
     else
       FAILURES+=("MUST_BLOCK ratchet-grown — guard exited $status (expected non-zero) or did not name the grown BASELINE entry — output: $output")
       log MUST_BLOCK "FAIL — ratchet-grown — exit=$status"
@@ -615,21 +663,35 @@ if [ -z "$BASELINE_COUNT" ]; then
 else
   MUTATED_GUARD="$SCRATCH/guard-loose-budget.mjs"
   cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$MUTATED_GUARD"
-  python3 - "$MUTATED_GUARD" <<'PYEOF'
+  # The row to widen is DERIVED from the guard's own BASELINE, never typed.
+  # A hardcoded literal here ("Select ", maxCount: 8) is exactly what broke
+  # this case once: a fix PR legitimately deleted that row and the probe died
+  # at setup. The subject is whatever row BASELINE declares TODAY; if BASELINE
+  # declares nothing, this REFUSES loudly instead of passing a case that never ran.
+  LOOSE_SUBJECT="$(python3 - "$MUTATED_GUARD" <<'PYEOF'
 import re
 import sys
 path = sys.argv[1]
 with open(path) as f:
     text = f.read()
-# The real, currently-shipped row: value "Select ", maxCount: 8. Widen ONLY
-# the number, exactly as the reviewer did.
-pattern = re.compile(r'(value:\s*"Select "\s*,\s*\n\s*maxCount:\s*)8(\s*,)')
-new_text, count = pattern.subn(r"\g<1>99\g<2>", text, count=1)
-if count != 1:
-    raise SystemExit('probe: could not find `value: "Select ", maxCount: 8` to widen — probe invalid')
+rows = re.findall(r'value:\s*"((?:[^"\\]|\\.)*)"\s*,\s*\n\s*maxCount:\s*(\d+)\s*,', text)
+if not rows:
+    raise SystemExit("probe: BASELINE declares NO rows — cannot derive a loose-budget subject. Refusing to report a pass for a case that never ran.")
+value, count = rows[0]
+pattern = re.compile(
+    r'(value:\s*"' + re.escape(value) + r'"\s*,\s*\n\s*maxCount:\s*)' + count + r'(\s*,)'
+)
+new_text, n = pattern.subn(r"\g<1>99\g<2>", text, count=1)
+if n != 1:
+    raise SystemExit("probe: derived row %r/%s could not be widened — probe invalid" % (value, count))
 with open(path, "w") as f:
     f.write(new_text)
+sys.stdout.write("%s\t%s" % (value, count))
 PYEOF
+  )"
+  LOOSE_VALUE="${LOOSE_SUBJECT%%$'\t'*}"
+  LOOSE_COUNT="${LOOSE_SUBJECT##*$'\t'}"
+  echo "[INFO] derived loose-budget subject: BASELINE row \"$LOOSE_VALUE\" declared maxCount=$LOOSE_COUNT -> widened to 99"
   if ! grep -qF "maxCount: 99" "$MUTATED_GUARD"; then
     FAILURES+=("MUST_BLOCK loose-budget — mutation did NOT land in the guard copy — probe invalid")
     log MUST_BLOCK "FAIL — loose-budget — mutation did not land"
@@ -639,13 +701,13 @@ PYEOF
     status=$?
     set -e
     if [ "$status" -ne 0 ] &&
-       echo "$output" | grep -qF '"Select "' &&
+       echo "$output" | grep -qF "\"$LOOSE_VALUE\"" &&
        echo "$output" | grep -qF "maxCount=99" &&
-       echo "$output" | grep -Eq "actually has only 8 occurrence"; then
+       echo "$output" | grep -Eq "actually has only [0-9]+ occurrence"; then
       MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-      log MUST_BLOCK "PASS — loose-budget — maxCount widened 8->99 with zero bundle change blocked, naming declared vs actual"
+      log MUST_BLOCK "PASS — loose-budget — maxCount widened $LOOSE_COUNT->99 with zero bundle change blocked, naming declared=99 vs the actual count derived from the artifact"
     else
-      FAILURES+=("MUST_BLOCK loose-budget — guard exited $status (expected non-zero) or did not name declared=99 vs actual=8 — output: $output")
+      FAILURES+=("MUST_BLOCK loose-budget — guard exited $status (expected non-zero) or did not name declared=99 vs the actual count it derived — output: $output")
       log MUST_BLOCK "FAIL — loose-budget — exit=$status"
     fi
   fi
