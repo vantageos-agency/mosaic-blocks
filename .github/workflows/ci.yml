@@ -204,6 +204,20 @@ jobs:
       - name: Probe — PR title matches diff guard bites
         run: bash scripts/tests/probe-pr-title-matches-diff.sh
 
+      # ── 8f. Theme tokens declared guard ──────────────────────────────────────
+      #    A Tailwind color utility consumed anywhere in src/** must resolve
+      #    to a `--color-*` variable this library actually declares in
+      #    src/styles.css — and every declared custom token must be consumed
+      #    somewhere. Source-level, runs on src/** directly (no build step
+      #    needed). Three-state exit (0 pass / 1 violation / 2 refuses to
+      #    judge — could not read its own inputs), same shape as the PR-title
+      #    guard above.
+      - name: Theme tokens declared guard
+        run: node scripts/theme-tokens-declared-guard.mjs
+
+      - name: Probe — theme tokens declared guard bites
+        run: bash scripts/tests/probe-theme-tokens-declared-guard.sh
+
       # ── 9. Build (tsup ESM+CJS+DTS) ──────────────────────────────────────────
       - name: Build
         run: pnpm build
