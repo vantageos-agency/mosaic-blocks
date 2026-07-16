@@ -1,0 +1,40 @@
+{
+  "skill_name": "mobile-first",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a settings panel to the app — it has a form with 6 fields and should work on phones and desktop.",
+      "expected_output": "A settings panel using an adaptive modal pattern: bottom drawer on mobile, centered modal on desktop, with form inputs at least 48px tall and mobile-first responsive classes.",
+      "files": [],
+      "expectations": [
+        "Chooses the adaptive component system (modal/drawer), not a fixed dialog, citing the form-input decision tree",
+        "Form inputs specify min height 48px; buttons at least 44x44px",
+        "Responsive classes are mobile-first order (base class first, md:/lg: enhancements after)",
+        "Device state read from the shared device context, not a local window.matchMedia call"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This dashboard looks broken on my phone at 375px but fine on my laptop — review the layout code.",
+      "expected_output": "A review that identifies desktop-first class order and/or missing mobile base styles, and validates against the 320/375/768/1024/1440 test matrix and touch-target floors.",
+      "files": [],
+      "expectations": [
+        "Flags desktop-first class order (e.g. w-1/3 md:w-full) as the defect class",
+        "Checks touch targets against the 44/48/80px floors and 8px gaps",
+        "Requires re-testing at 320px as the base layer, not just 375px",
+        "Checks both orientations, not only portrait"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Mobile users don't need the analytics charts — just hide the whole dashboard behind a 'desktop only' message on phones.",
+      "expected_output": "A refusal to hide core functionality on mobile: conditional rendering is reserved for device-exclusive extras; the dashboard must remain usable at 320px, with charts adapted (e.g. simplified or stacked) rather than removed.",
+      "files": [],
+      "expectations": [
+        "Refuses to gate core functionality behind a desktop-only wall",
+        "Cites the rule that conditional rendering is for device-exclusive features only",
+        "Proposes an adaptive or simplified mobile presentation instead of removal"
+      ]
+    }
+  ]
+}
