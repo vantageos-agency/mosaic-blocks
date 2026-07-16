@@ -223,6 +223,16 @@ jobs:
       - name: Probe — no hardcoded words guard bites
         run: bash scripts/tests/probe-no-hardcoded-words-guard.sh
 
+      # ── Real-browser e2e (native <dialog>) ───────────────────────────────────
+      # Without these two steps the suite added by this PR would exist and never
+      # RUN: vitest excludes e2e/** and nothing else invoked it. A test nobody
+      # executes is not a test — Verification != Activation.
+      - name: Install Playwright chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Real-browser e2e — native <dialog> behaviour
+        run: pnpm test:browser
+
       # ── 10. Sandbox install + build (Next.js — Rule #19) ─────────────────────
       #    The sandbox is a standalone pnpm project (not a workspace member).
       #    Install its deps first (including the freshly built local lib via file:..).

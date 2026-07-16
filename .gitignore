@@ -7,3 +7,7 @@ coverage/
 sandbox/node_modules/
 sandbox/.next/
 storybook-static
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
