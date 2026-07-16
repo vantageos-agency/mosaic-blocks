@@ -19,10 +19,18 @@ VantageCRM, etc.) MUST build its UI from `@vantageos/mosaic-blocks` exports.
 
 The exact, current list of exported components is not fixed in this
 document — it changes as the package grows, and a number written here would
-be wrong within days. Derive it from the artifact, every time:
+be wrong within days. Derive it from the **built bundle**, never from a
+regex over the source file: a regex only knows the export forms its author
+thought of (e.g. single-line `export { Mosaic... }`), and this codebase also
+uses multi-line `export { \n  MosaicX,\n  MosaicY,\n} from "..."` blocks that
+a naive grep silently misses — it would fail open, hiding real components
+and causing the exact duplication this rule exists to prevent. The bundle
+is the one artifact that reflects every export form, because it's what the
+bundler itself resolved:
 
 ```bash
-grep -o "^export { Mosaic[A-Za-z0-9]*" src/index.ts | sed 's/^export { //' | sort -u
+pnpm build   # required first — the command below reads dist/, not src/
+node -e 'console.log(Object.keys(require("./dist/index.cjs")).filter(k=>/^Mosaic/.test(k)).sort().join("\n"))'
 ```
 
 Run this in the `mosaic-blocks` repo root before adding any new component.
