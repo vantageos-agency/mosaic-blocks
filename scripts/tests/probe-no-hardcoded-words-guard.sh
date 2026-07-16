@@ -434,205 +434,181 @@ fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-grown)
 
 # ---------------------------------------------------------------------------
-# DERIVE RATCHET SUBJECT (for MUST_BLOCK #7 and #8 below) — per
-# .claude/rules/derive-never-type.md and .claude/rules/guard-formulation-census.md:
-# the SUBJECT of these two ratchet cases must never be a hand-typed literal.
-# This probe previously hardcoded `placeholder="acme-inc"` as its anchor —
-# PR #100 (commit 30e0279) turned that exact placeholder into a host-supplied
-# prop (`slugPlaceholder`), so the literal legitimately no longer exists in
-# MosaicOrgPanel.tsx, and the probe's own anchor grep started failing loudly
-# (correctly — a probe that cannot find its material must not report a pass).
-# The fix: DERIVE the subject at run time from the artifact instead of typing
-# one. Read every `value: "..."` row straight out of BASELINE in THIS
-# branch's own guard.mjs (the `^    value: "..."` 4-space-indent shape is
-# unique to BASELINE rows in this file — verified: no other property in this
-# script is indented and named that way), and pick the first row whose
-# literal occurs EXACTLY ONCE in the clone's `src/**/*.tsx`, excluding
-# `*.test.tsx` (test fixtures are host-supplied strings for test purposes,
-# not library strings this guard is scoped to). That single occurrence is
-# what "genuinely fixing the last remaining offender" means for rule 3
-# (stale) and rule 1 (new offender on re-injection) below. If NO such row
-# exists, this probe FAILS LOUDLY, naming every BASELINE value it checked —
-# never a silent skip of #7/#8 (per guard-formulation-census.md: "toute
-# échappatoire muette est interdite").
+# RATCHET SUBJECT (MUST_BLOCK #7 and #8) — the probe SEEDS its own subject.
+#
+# History, so nobody re-derives this the hard way. This section has now been
+# wrong twice, in the same direction both times:
+#
+#   1. It hardcoded `placeholder="acme-inc"`. PR #100 turned that literal into
+#      a host prop, the anchor vanished, and the probe died at setup.
+#   2. It then DERIVED a subject from BASELINE by grepping the sources for the
+#      DOUBLE-QUOTED form of the value. That is a mono-formulation matcher: a
+#      user-facing string lives in source as `"x"`, `'x'`, a template literal
+#      `` `x${...}` ``, or bare JSX text. Grepping one form found two hits that
+#      DO NOT SHIP (a *.stories.tsx fixture and a line inside a JSDoc comment)
+#      and MISSED the real producer, which is a template literal
+#      (`aria-label={`Notifications${...}`}`). Blanking non-shipping text cannot
+#      move the bundle, so rule 3 never fired and the case failed — loudly, but
+#      for a reason that had nothing to do with the guard.
+#
+# The lesson is not "grep harder". The set of source FORMS a string can take is
+# not enumerable from memory — which is exactly what
+# .claude/rules/guard-formulation-census.md forbids relying on. So the probe
+# stops hunting for material it does not control and SEEDS it instead:
+# a unique value, in a file this probe authors, in a form it chose. The subject
+# is CONTENT (a fixture the probe owns), never STATE read from the artifact —
+# and every step below is asserted against the BUILT BUNDLE, never the source.
+#
+# Foreign-material bite proof is NOT this section's job: MUST_BLOCK #1-#4 inject
+# into components the probe did not choose, and Eta's review independently bit
+# three more sites (including an invented fifth prop name). This section proves
+# the RATCHET RULES (3 then 1), which need a subject whose bundle count the
+# probe can drive to exactly 0 and back.
 # ---------------------------------------------------------------------------
-mapfile -t BASELINE_VALUES < <(grep -oP '^    value: "\K(?:[^"\\]|\\.)*(?=",$)' "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs")
-if [ "${#BASELINE_VALUES[@]}" -eq 0 ]; then
-  echo "probe: BASELINE in $REPO_ROOT/scripts/no-hardcoded-words-guard.mjs is empty or unparsable — cannot derive a ratchet-stale/reviewer-reinject subject for MUST_BLOCK #7/#8. Refusing to fabricate one." >&2
-  exit 1
-fi
-
-RATCHET_VALUE=""
-RATCHET_FILE=""
-RATCHET_LINE=""
-for candidate in "${BASELINE_VALUES[@]}"; do
-  hits="$(grep -rn --include='*.tsx' -F "\"$candidate\"" "$CLONE/src" 2>/dev/null | grep -v '\.test\.tsx' || true)"
-  count=0
-  [ -n "$hits" ] && count="$(echo "$hits" | grep -c .)"
-  if [ "$count" -eq 1 ]; then
-    RATCHET_VALUE="$candidate"
-    RATCHET_FILE="$(echo "$hits" | cut -d: -f1)"
-    RATCHET_LINE="$(echo "$hits" | cut -d: -f2)"
-    break
-  fi
-done
-
-if [ -z "$RATCHET_VALUE" ]; then
-  echo "probe: no BASELINE row's value occurs EXACTLY ONCE in the clone's src/**/*.tsx (excluding *.test.tsx). BASELINE rows checked: ${BASELINE_VALUES[*]@Q}" >&2
-  echo "probe: refusing to run MUST_BLOCK #7/#8 with a fabricated anchor — a probe that cannot find its own material proves nothing." >&2
-  exit 1
-fi
-log INFO "derived ratchet subject for MUST_BLOCK #7/#8: BASELINE value \"$RATCHET_VALUE\" — single occurrence at $RATCHET_FILE:$RATCHET_LINE"
-
-# The re-injection target (MUST_BLOCK #8) must be a DIFFERENT file than the
-# one holding the derived subject's only occurrence — fail loudly rather than
-# silently reusing the same file, which would prove nothing about a NEW site.
+RATCHET_VALUE="Probeseededratchetsubject"
+RATCHET_SEED_DIR="$CLONE/src/components/probe-ratchet-seed"
+RATCHET_SEED_FILE="$RATCHET_SEED_DIR/MosaicProbeRatchetSeed.tsx"
 RATCHET_REINJECT_TARGET="$CLONE/src/components/checkbox/MosaicCheckbox.tsx"
-if [ "$RATCHET_FILE" = "$RATCHET_REINJECT_TARGET" ]; then
-  echo "probe: derived ratchet subject \"$RATCHET_VALUE\" lives in the same file ($RATCHET_FILE) this probe reuses as its re-injection target — cannot exercise a NEW-site re-injection. Refusing to run MUST_BLOCK #7/#8." >&2
+
+# The seeded value must not already exist anywhere — otherwise "count reaches 0"
+# would be a lie told by someone else's code.
+if grep -rqF "$RATCHET_VALUE" "$CLONE/src" 2>/dev/null; then
+  echo "probe: seeded ratchet subject \"$RATCHET_VALUE\" ALREADY exists in the clone's sources — it would not be a subject this probe controls. Refusing to run MUST_BLOCK #7/#8." >&2
   exit 1
 fi
 
+seed_ratchet_component() {
+  # $1 = tree root to write into
+  mkdir -p "$1/src/components/probe-ratchet-seed"
+  cat > "$1/src/components/probe-ratchet-seed/MosaicProbeRatchetSeed.tsx" <<SEEDEOF
+import * as React from "react";
+
+export const MosaicProbeRatchetSeed = React.forwardRef<HTMLSpanElement>((_props, ref) => (
+  <span ref={ref}>$RATCHET_VALUE</span>
+));
+MosaicProbeRatchetSeed.displayName = "MosaicProbeRatchetSeed";
+SEEDEOF
+  printf '\nexport { MosaicProbeRatchetSeed } from "./components/probe-ratchet-seed/MosaicProbeRatchetSeed";\n' >> "$1/src/index.ts"
+}
+
+add_baseline_row() {
+  # $1 = guard file to edit, $2 = value, $3 = maxCount
+  PROBE_ROW_VALUE="$2" PROBE_ROW_MAX="$3" python3 - "$1" <<'ROWEOF'
+import os
+import re
+import sys
+path = sys.argv[1]
+value = os.environ["PROBE_ROW_VALUE"]
+maxc = os.environ["PROBE_ROW_MAX"]
+with open(path) as f:
+    text = f.read()
+row = (
+    '  {\n'
+    '    value: "%s",\n'
+    '    maxCount: %s,\n'
+    '    note: "probe-seeded ratchet subject — restored before merge.",\n'
+    '  },\n' % (value, maxc)
+)
+new_text, n = re.subn(r'^const BASELINE = \[\n', 'const BASELINE = [\n' + row, text, count=1, flags=re.M)
+if n != 1:
+    raise SystemExit("probe: could not find `const BASELINE = [` to seed a row into — probe invalid")
+with open(path, "w") as f:
+    f.write(new_text)
+ROWEOF
+}
+
 # ---------------------------------------------------------------------------
-# MUST_BLOCK #7 (RATCHET — stale baseline entry) — fixing the ONLY
-# occurrence of the derived BASELINE value without deleting its BASELINE row
-# must BLOCK, naming the row to delete. This is what forces every fix PR to
-# shrink the list instead of leaving a permanent silent exemption behind.
+# MUST_BLOCK #7 (RATCHET — stale baseline entry) — a BASELINE row whose value
+# no longer occurs in the bundle AT ALL must BLOCK, naming the row to delete.
+# This is what forces every fix PR to shrink the list instead of leaving a
+# permanent, silent exemption behind.
+#
+# Sequence: seed the component AND its BASELINE row -> the row is honest.
+# Then DELETE the component (a genuine fix) while LEAVING the row -> the row is
+# now stale, and rule 3 must fire and name it.
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
 git -C "$CLONE" checkout --quiet -b probe-block-stale "$BASE"
-python3 - "$RATCHET_FILE" "$RATCHET_LINE" "$RATCHET_VALUE" <<'PYEOF'
-import sys
-path, lineno, value = sys.argv[1], int(sys.argv[2]), sys.argv[3]
-with open(path) as f:
-    lines = f.readlines()
-idx = lineno - 1
-target = f'"{value}"'
-if target not in lines[idx]:
-    raise SystemExit(
-        f"probe: derived line {lineno} of {path} does not contain expected literal {target!r}: {lines[idx]!r}"
-    )
-lines[idx] = lines[idx].replace(target, '""', 1)  # genuine fix: blank the hardcoded literal
-with open(path, "w") as f:
-    f.writelines(lines)
-PYEOF
-if grep -qF "\"$RATCHET_VALUE\"" "$RATCHET_FILE"; then
-  FAILURES+=("MUST_BLOCK ratchet-stale — mutation did NOT land — probe invalid")
+mkdir -p "$CLONE/scripts"
+cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$RATCHET_VALUE" 1
+# The component is deliberately NOT created: the row declares a value the
+# bundle does not carry, which is precisely the "fixed but undeleted" state.
+if ! grep -qF "value: \"$RATCHET_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
+  FAILURES+=("MUST_BLOCK ratchet-stale — seeded BASELINE row did NOT land — probe invalid")
+  log MUST_BLOCK "FAIL — ratchet-stale — seed did not land"
 else
-  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: fix the ONLY '$RATCHET_VALUE' occurrence, BASELINE row left undeleted on purpose")
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: BASELINE row for a value the bundle does not carry — must stale-block")
   log INFO "building ratchet-stale tree (this takes ~15-25s)..."
   if ! build_clone; then
     FAILURES+=("MUST_BLOCK ratchet-stale build — pnpm build failed")
   else
-    set +e
-    output="$(run_guard 2>&1)"
-    status=$?
-    set -e
-    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "STALE" && echo "$output" | grep -qF "\"$RATCHET_VALUE\""; then
-      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-      log MUST_BLOCK "PASS — ratchet-stale — fixed-but-undeleted BASELINE row for '$RATCHET_VALUE' blocked"
+    # Assert the PREMISE on the ARTIFACT before reading any verdict: the value
+    # must genuinely be absent from the built bundle.
+    if grep -qF "$RATCHET_VALUE" "$CLONE/dist/index.cjs"; then
+      FAILURES+=("MUST_BLOCK ratchet-stale — seeded value IS present in the bundle; the row is not stale — probe invalid")
+      log MUST_BLOCK "FAIL — ratchet-stale — premise not met"
     else
-      FAILURES+=("MUST_BLOCK ratchet-stale — guard exited $status (expected non-zero) or did not name the stale BASELINE entry — output: $output")
-      log MUST_BLOCK "FAIL — ratchet-stale — exit=$status"
+      set +e
+      output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -ne 0 ] && echo "$output" | grep -qF "STALE" && echo "$output" | grep -qF "\"$RATCHET_VALUE\""; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — ratchet-stale — BASELINE row for absent value '$RATCHET_VALUE' blocked, guard named the row to delete"
+      else
+        FAILURES+=("MUST_BLOCK ratchet-stale — guard exited $status (expected non-zero) or did not name the stale BASELINE entry — output: $output")
+        log MUST_BLOCK "FAIL — ratchet-stale — exit=$status"
+      fi
     fi
   fi
 fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-stale)
 
 # ---------------------------------------------------------------------------
-# MUST_BLOCK #8 (RATCHET — the reviewer's EXACT probe) — once the derived
-# ratchet subject is genuinely fixed AND its BASELINE row correctly deleted
-# (the two steps together, as a real fix PR would do), re-injecting the SAME
-# literal ELSEWHERE must go RED again — as a brand-new offender, not a
-# special case. This is the concrete proof that the ratchet cannot be
-# permanently disarmed by a single string once leaving the baseline: it
-# falls straight back under rule 1 (new offender), by construction.
+# MUST_BLOCK #8 (RATCHET — the reviewer's EXACT probe) — once a value is
+# genuinely fixed AND its BASELINE row correctly deleted (the two steps
+# together, as a real fix PR does), re-introducing that same literal must go
+# RED again as a BRAND-NEW offender under rule 1 — by construction, not by a
+# special case. This is the proof the ratchet cannot be permanently disarmed
+# by a string once it leaves the baseline.
+#
+# Sequence: BASELINE has no row for the value (nothing to delete — that is the
+# post-fix state), and the value is introduced into a file that did not carry
+# it. Rule 1 must fire and name it as NEW.
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
 git -C "$CLONE" checkout --quiet -b probe-block-reviewer-reinject "$BASE"
-# Step 1: genuinely fix the only existing occurrence of the derived subject.
-python3 - "$RATCHET_FILE" "$RATCHET_LINE" "$RATCHET_VALUE" <<'PYEOF'
-import sys
-path, lineno, value = sys.argv[1], int(sys.argv[2]), sys.argv[3]
-with open(path) as f:
-    lines = f.readlines()
-idx = lineno - 1
-target = f'"{value}"'
-if target not in lines[idx]:
-    raise SystemExit(
-        f"probe: derived line {lineno} of {path} does not contain expected literal {target!r}: {lines[idx]!r}"
-    )
-lines[idx] = lines[idx].replace(target, '""', 1)  # genuine fix
-with open(path, "w") as f:
-    f.writelines(lines)
-PYEOF
-# Step 2: delete the now-stale BASELINE row (what the real fix PR is required
-# to do — see MUST_BLOCK #7 above). The guard script itself is THIS branch's
-# own tool under test, not "foreign material" the CLONE's own $BASE tree
-# necessarily carries (this PR is what introduces the guard at all) — copy it
-# in first, exactly like run_guard() does, before editing it.
-mkdir -p "$CLONE/scripts"
-cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
-python3 - "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$RATCHET_VALUE" <<'PYEOF'
-import re
-import sys
-path, value = sys.argv[1], sys.argv[2]
-with open(path) as f:
-    text = f.read()
-pattern = re.compile(
-    r"\s*\{\s*\n\s*value: \"" + re.escape(value) + r"\",.*?\n\s*\},\n",
-    re.DOTALL,
-)
-new_text, count = pattern.subn("\n", text, count=1)
-if count != 1:
-    raise SystemExit(f"probe: could not find the {value!r} BASELINE row to delete")
-with open(path, "w") as f:
-    f.write(new_text)
-PYEOF
-# Step 3: re-inject the exact same offender into a DIFFERENT, currently-clean
-# file (derived above as RATCHET_REINJECT_TARGET, guaranteed != RATCHET_FILE)
-# — the reviewer's precise scenario.
-python3 - "$RATCHET_REINJECT_TARGET" "$RATCHET_VALUE" <<'PYEOF'
-import sys
-path, value = sys.argv[1], sys.argv[2]
-with open(path) as f:
-    text = f.read()
-needle = '    <Checkbox.Root\n      ref={ref}\n      data-slot="checkbox"\n'
-replacement = (
-    '    <Checkbox.Root\n'
-    '      ref={ref}\n'
-    '      data-slot="checkbox"\n'
-    f'      title="{value}"\n'
-)
-if needle not in text:
-    raise SystemExit(f"probe: injection anchor not found in {path}")
-text = text.replace(needle, replacement, 1)
-with open(path, "w") as f:
-    f.write(text)
-PYEOF
-if ! grep -qF "title=\"$RATCHET_VALUE\"" "$RATCHET_REINJECT_TARGET" || \
-   grep -qF "value: \"$RATCHET_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs" || \
-   grep -qF "\"$RATCHET_VALUE\"" "$RATCHET_FILE"; then
-  FAILURES+=("MUST_BLOCK reviewer-reinject — one of the three mutation steps did NOT land as expected — probe invalid")
+seed_ratchet_component "$CLONE"
+if ! grep -qF "$RATCHET_VALUE" "$RATCHET_SEED_FILE"; then
+  FAILURES+=("MUST_BLOCK reviewer-reinject — seeded component did NOT land — probe invalid")
+  log MUST_BLOCK "FAIL — reviewer-reinject — seed did not land"
 else
-  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: reviewer's exact scenario — fix+delete-row then re-inject '$RATCHET_VALUE' elsewhere")
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: reviewer's exact scenario — re-introduce '$RATCHET_VALUE' with NO baseline row")
   log INFO "building reviewer-reinject tree (this takes ~15-25s)..."
   if ! build_clone; then
     FAILURES+=("MUST_BLOCK reviewer-reinject build — pnpm build failed")
   else
-    set +e
-    # run_guard() re-installs THIS branch's guard.mjs on every call — but this
-    # case's whole point is testing the CLONE's own (row-deleted) guard.mjs,
-    # so it is invoked directly here instead of via run_guard().
-    output="$(cd "$CLONE" && node scripts/no-hardcoded-words-guard.mjs 2>&1)"
-    status=$?
-    set -e
-    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "NEW offender" && echo "$output" | grep -qF "\"$RATCHET_VALUE\""; then
-      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-      log MUST_BLOCK "PASS — reviewer's exact probe — re-injected '$RATCHET_VALUE' goes RED as a brand-new offender"
+    # Assert the PREMISE on the ARTIFACT: the value must actually have reached
+    # the bundle, and BASELINE must NOT declare it.
+    if ! grep -qF "$RATCHET_VALUE" "$CLONE/dist/index.cjs"; then
+      FAILURES+=("MUST_BLOCK reviewer-reinject — re-introduced value never reached the bundle — probe invalid")
+      log MUST_BLOCK "FAIL — reviewer-reinject — mutation did not reach the artifact"
+    elif grep -qF "value: \"$RATCHET_VALUE\"" "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs"; then
+      FAILURES+=("MUST_BLOCK reviewer-reinject — BASELINE unexpectedly declares the seeded value — probe invalid")
+      log MUST_BLOCK "FAIL — reviewer-reinject — baseline pollution"
     else
-      FAILURES+=("MUST_BLOCK reviewer-reinject — guard exited $status (expected non-zero) or did not name '$RATCHET_VALUE' as a new offender — output: $output")
-      log MUST_BLOCK "FAIL — reviewer-reinject — exit=$status"
+      set +e
+      output="$(run_guard 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -ne 0 ] && echo "$output" | grep -qF "$RATCHET_VALUE"; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — reviewer's exact probe — re-introduced '$RATCHET_VALUE' goes RED as a brand-new offender"
+      else
+        FAILURES+=("MUST_BLOCK reviewer-reinject — guard exited $status (expected non-zero) or did not name the re-introduced offender — output: $output")
+        log MUST_BLOCK "FAIL — reviewer-reinject — exit=$status"
+      fi
     fi
   fi
 fi
