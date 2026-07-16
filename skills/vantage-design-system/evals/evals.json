@@ -1,0 +1,41 @@
+{
+  "skill_name": "vantage-design-system",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a notification card to the EveVantage dashboard with a dark background and light text.",
+      "expected_output": "A card built from an existing @vantageos/mosaic-blocks component (derived from the built bundle, not rewritten), styled exclusively with semantic tokens (bg-card, text-card-foreground), Tailwind scale spacing, and both dark and light variants.",
+      "files": [],
+      "expectations": [
+        "Derives the existing component list from dist via the pnpm build + node one-liner before creating anything new",
+        "Uses semantic tokens (bg-card/text-card-foreground/border-border), never raw palette classes with dark: variants",
+        "No arbitrary values (p-[16px]-style) — Tailwind scale only",
+        "Ships both dark and light rendering, neither deferred"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this diff: <div className=\"flex\"><Item className=\"mr-4 p-[12px] bg-white dark:bg-gray-900\" /><Item className={`w-full ${active ? 'ring-2' : ''}`} /></div>",
+      "expected_output": "A review rejecting the diff citing the styling rules by number: margin-between-siblings instead of gap (rule 3), arbitrary p-[12px] (rule 2), raw palette + dark: variant instead of semantic tokens (rule 1), template-string class concatenation instead of cn() (rule 5).",
+      "files": [],
+      "expectations": [
+        "Flags mr-4 on a child and prescribes gap-4 on the flex parent",
+        "Flags p-[12px] and prescribes the Tailwind scale equivalent",
+        "Flags bg-white dark:bg-gray-900 and prescribes a semantic token",
+        "Flags the template string and prescribes cn()"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The e2e suite is green on my new settings screen — mark the UI task done.",
+      "expected_output": "A refusal to claim 'done' on green tests alone: requires the change live on PROD, an actual screenshot of the rendered PROD page (dark + light), and empty/loading/error states treated (no blank page) before completion.",
+      "files": [],
+      "expectations": [
+        "Refuses to equate green tests with visual delivery",
+        "Requires a PROD screenshot as evidence, not a local render",
+        "Checks empty/loading/error states exist (MosaicEmptyState for empty)",
+        "States tests-green and visually-delivered as separate claims"
+      ]
+    }
+  ]
+}

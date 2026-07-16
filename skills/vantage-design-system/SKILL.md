@@ -1,5 +1,6 @@
 ---
 name: vantage-design-system
+version: 1.1.0
 description: VantageOS design system conventions for building or reviewing UI in EveVantage and fleet apps. Use when adding a new UI component, scaffolding a new app shell, choosing color tokens, wiring the EN/FR switcher or dark/light toggle, or before claiming a UI change is "done". Triggers on "new component", "new page", "new app", "design tokens", "dark mode", "light mode", "language switcher", "i18n toggle", "screenshot", "visual proof", "blank page", "empty state".
 ---
 
@@ -59,7 +60,39 @@ not reinvent sidebar navigation, the theme toggle, or the locale switcher.
 - Every new screen ships an EN/FR switcher by default (see the reference
   shell in point 2). Bilingual is the starting state, not a follow-up task.
 
-## 4. "Done" requires a visual proof on PROD — not just green tests
+## 4. The six styling rules — every JSX line, no exceptions
+
+Distilled from a production-tested internal reference design system. A PR
+that violates any of these on a touched line is non-conformant, whatever
+the tests say.
+
+1. **Always semantic tokens.** `bg-card text-card-foreground border-border`
+   — never raw palette classes with dark variants bolted on
+   (`bg-white dark:bg-gray-900`). If a semantic token is missing, add the
+   token; do not inline a color.
+2. **Tailwind scale over arbitrary values.** `p-4 gap-6 rounded-lg` — never
+   `p-[16px] gap-[24px] rounded-[12px]`. An arbitrary value is a fork of
+   the spacing scale.
+3. **Gap over margin for spacing between siblings.** `flex gap-4` on the
+   parent — never `mr-4`/`mb-4` chained on children. Margins couple
+   siblings to their position; gap belongs to the layout.
+4. **Mobile-first class order.** Base class first, breakpoints as
+   enhancements: `w-full md:w-1/2 lg:w-1/3` — never desktop-first
+   (`w-1/3 md:w-full`). The base layer is the phone.
+5. **Compose class names with `cn()`.** `cn("w-full", isLoading &&
+   "opacity-50", className)` — never template-string concatenation, which
+   silently produces `"undefined"` fragments and breaks Tailwind merging.
+6. **Variants over one-off class soups.** `<Button variant="outline"
+   size="sm">` — never re-describing an existing variant inline
+   (`className="border bg-transparent h-8 px-3"`). If the variant doesn't
+   exist, add it to the component (CVA), don't fork it at the call site.
+
+Review shortcut: `grep -nE '\[(1?[0-9])?[0-9]px\]|dark:bg-|dark:text-' <files>`
+flags candidates for rules 1–2; read each hit in context before rejecting —
+a legitimate arbitrary value is possible but must be argued in the PR, in
+writing.
+
+## 5. "Done" requires a visual proof on PROD — not just green tests
 
 A passing e2e/functional test proves the DOM contains the right elements.
 It proves nothing about how the screen actually renders — spacing,
@@ -77,7 +110,7 @@ Before claiming a UI change is delivered:
 the test suite is green — a narrower and different claim. State them
 separately; never let one stand in for the other.
 
-## 5. No blank page
+## 6. No blank page
 
 A screen that renders with no content, no empty-state messaging, and no
 clear next action is a defect, not an acceptable interim state — the same
