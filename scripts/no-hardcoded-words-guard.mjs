@@ -302,34 +302,9 @@ const BASELINE = [
     note: "Tag/badge/integrations `Remove <thing>` action labels — same follow-up PR as `Select `.",
   },
   {
-    value: "Member",
-    maxCount: 2,
-    note: "MosaicOrgPanel role badge/label — fixed by PR #101 (org-panel i18n props).",
-  },
-  {
-    value: "Admin",
-    maxCount: 2,
-    note: "MosaicOrgPanel role badge/label — fixed by PR #101 (org-panel i18n props).",
-  },
-  {
-    value: "Owner",
-    maxCount: 1,
-    note: "MosaicOrgPanel role badge/label — fixed by PR #101.",
-  },
-  {
     value: "Notifications",
     maxCount: 1,
     note: "MosaicChatSidebar section heading — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-  {
-    value: "Make ",
-    maxCount: 1,
-    note: "MosaicOrgPanel member-role action label (`Make admin`, etc.) — fixed by PR #101.",
-  },
-  {
-    value: "Joined ",
-    maxCount: 1,
-    note: "MosaicOrgPanel member-list metadata label — fixed by PR #101.",
   },
   {
     value: "Agents (",

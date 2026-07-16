@@ -73,29 +73,39 @@ describe("MosaicOrgRoleBadge", () => {
     // HTML/ARIA role — read via a variable so static analyzers don't misparse the
     // literal as an aria-role attribute value.
     const roleValue: MosaicOrgRole = "admin";
-    render(<MosaicOrgRoleBadge role={roleValue} description="Peut gérer l'organisation" />);
-    expect(screen.getByText(/admin/i)).toBeTruthy();
+    render(
+      <MosaicOrgRoleBadge
+        role={roleValue}
+        label="Administrateur"
+        description="Peut gérer l'organisation"
+      />,
+    );
+    expect(screen.getByText("Administrateur")).toBeTruthy();
     expect(screen.getByTitle("Peut gérer l'organisation")).toBeTruthy();
   });
 
   it("renders member badge with host-supplied description", () => {
     const roleValue: MosaicOrgRole = "member";
-    render(<MosaicOrgRoleBadge role={roleValue} description="Accès standard" />);
-    expect(screen.getByText(/member/i)).toBeTruthy();
+    render(<MosaicOrgRoleBadge role={roleValue} label="Membre" description="Accès standard" />);
+    expect(screen.getByText("Membre")).toBeTruthy();
     expect(screen.getByTitle("Accès standard")).toBeTruthy();
   });
 
   it("renders owner badge with host-supplied description", () => {
     const roleValue: MosaicOrgRole = "owner";
-    render(<MosaicOrgRoleBadge role={roleValue} description="Accès complet" />);
-    expect(screen.getByText(/owner/i)).toBeTruthy();
+    render(
+      <MosaicOrgRoleBadge role={roleValue} label="Propriétaire" description="Accès complet" />,
+    );
+    expect(screen.getByText("Propriétaire")).toBeTruthy();
     expect(screen.getByTitle("Accès complet")).toBeTruthy();
   });
 
-  it("fabricates no description word — the title is exactly the host string, nothing appended", () => {
+  it("fabricates no label/description word — both are exactly the host strings, nothing appended", () => {
     const roleValue: MosaicOrgRole = "owner";
-    render(<MosaicOrgRoleBadge role={roleValue} description="XYZ-HOST-STRING" />);
-    const badge = screen.getByText(/owner/i);
+    render(
+      <MosaicOrgRoleBadge role={roleValue} label="XYZ-HOST-LABEL" description="XYZ-HOST-STRING" />,
+    );
+    const badge = screen.getByText("XYZ-HOST-LABEL");
     expect(badge.getAttribute("title")).toBe("XYZ-HOST-STRING");
   });
 });
@@ -234,6 +244,10 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
           title="Invite Member"
           closeAriaLabel="Close dialog"
           emailFieldLabel="Email address *"
@@ -256,6 +270,10 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
           title="Invite Member"
           closeAriaLabel="Close dialog"
           emailFieldLabel="Email address *"
@@ -281,6 +299,10 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
           title="Invite Member"
           closeAriaLabel="Close dialog"
           emailFieldLabel="Email address *"
@@ -307,6 +329,10 @@ describe("MosaicMemberList", () => {
           members={members}
           onRemoveMember={() => {}}
           onChangeRole={() => {}}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
           youLabel="You"
           memberActionsAriaLabel="Member actions"
           removeMemberLabel="Remove member"
@@ -318,6 +344,13 @@ describe("MosaicMemberList", () => {
             admin: "Admin access",
             member: "Member access",
           }}
+          roleLabels={{
+            owner: "Owner",
+            admin: "Admin",
+            member: "Member",
+          }}
+          joinedLabel={(date) => `Joined ${date}`}
+          makeRoleLabel={(roleLabel) => `Make ${roleLabel}`}
         />
       </Wrapper>,
     );
