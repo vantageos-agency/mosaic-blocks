@@ -37,7 +37,10 @@ export type { MosaicComposerModule, MosaicComposerModel } from "./MosaicAgentCom
  * extended to the three Desktop-only module-slot sublabels.
  */
 export type MosaicAgentComposerOrchestratorProps = MosaicAgentComposerMobileProps &
-  Pick<MosaicAgentComposerDesktopProps, "roleSublabel" | "personaSublabel" | "frameworkSublabel">;
+  Pick<
+    MosaicAgentComposerDesktopProps,
+    "roleSublabel" | "personaSublabel" | "frameworkSublabel" | "previewRequires"
+  >;
 
 /**
  * MosaicAgentComposer — device-adaptive composer that renders the Desktop

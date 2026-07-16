@@ -24,6 +24,10 @@ const requiredComposerLabels = {
   roleSublabel: "Professional expertise and domain knowledge",
   personaSublabel: "Communication style and personality traits",
   frameworkSublabel: "Thinking approach and decision-making process",
+  editModuleAriaLabel: (label: string) => `Edit ${label}`,
+  removeModuleAriaLabel: (label: string) => `Remove ${label}`,
+  selectModuleAriaLabel: (label: string) => `Select ${label}`,
+  changeModuleLabel: (label: string) => `Change ${label}`,
   labels: {
     role: "Role",
     persona: "Persona",

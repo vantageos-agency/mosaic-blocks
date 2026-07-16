@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentComposer } from "./MosaicAgentComposer.js";
 import { MosaicAgentComposerDesktop } from "./MosaicAgentComposerDesktop.js";
+import { MosaicAgentComposerMobile } from "./MosaicAgentComposerMobile.js";
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MosaicDeviceProvider>{children}</MosaicDeviceProvider>;
@@ -42,6 +43,10 @@ const baseProps = {
   roleSublabel: "XYZ-ROLE-SUBLABEL",
   personaSublabel: "XYZ-PERSONA-SUBLABEL",
   frameworkSublabel: "XYZ-FRAMEWORK-SUBLABEL",
+  editModuleAriaLabel: (label: string) => `XYZ-EDIT-${label}`,
+  removeModuleAriaLabel: (label: string) => `XYZ-REMOVE-${label}`,
+  selectModuleAriaLabel: (label: string) => `XYZ-SELECT-${label}`,
+  changeModuleLabel: (label: string) => `XYZ-CHANGE-${label}`,
   labels: {
     role: "Role",
     persona: "Persona",
@@ -115,5 +120,104 @@ describe("MosaicAgentComposer", () => {
     expect(screen.queryByText(/professional expertise/i)).toBeNull();
     expect(screen.queryByText(/communication style/i)).toBeNull();
     expect(screen.queryByText(/thinking approach/i)).toBeNull();
+  });
+
+  it("Desktop: empty module slot uses host-supplied selectModuleAriaLabel, fabricating no 'Select' word", () => {
+    render(<MosaicAgentComposerDesktop {...baseProps} />);
+    // Role slot is empty in baseProps -> renders the "select" button
+    const button = screen.getByLabelText("XYZ-SELECT-Role");
+    expect(button).toBeTruthy();
+    expect(button.textContent).not.toMatch(/select role/i);
+    expect(screen.queryByLabelText(/^select role$/i)).toBeNull();
+  });
+
+  it("Desktop: filled module slot uses host-supplied edit/remove aria-labels, fabricating no English word", () => {
+    render(
+      <MosaicAgentComposerDesktop
+        {...baseProps}
+        selectedRole={{ name: "Test Role" }}
+        selectedPersona={{ name: "Test Persona" }}
+        selectedFramework={{ name: "Test Framework" }}
+      />,
+    );
+    expect(screen.getByLabelText("XYZ-EDIT-Role")).toBeTruthy();
+    expect(screen.getByLabelText("XYZ-REMOVE-Role")).toBeTruthy();
+    expect(screen.queryByLabelText(/^edit /i)).toBeNull();
+    expect(screen.queryByLabelText(/^remove /i)).toBeNull();
+  });
+
+  it("Desktop: model slot uses host-supplied selectModuleAriaLabel + changeModuleLabel, fabricating no English word", () => {
+    const { rerender } = render(<MosaicAgentComposerDesktop {...baseProps} />);
+    expect(screen.getByLabelText("XYZ-SELECT-Model")).toBeTruthy();
+    rerender(<MosaicAgentComposerDesktop {...baseProps} selectedModel={{ name: "Test Model" }} />);
+    expect(screen.getByText("XYZ-CHANGE-Model")).toBeTruthy();
+    expect(screen.queryByText(/^change /i)).toBeNull();
+  });
+
+  it("Desktop: previewRequires defaults to all four modules (unchanged behavior)", () => {
+    render(
+      <MosaicAgentComposerDesktop
+        {...baseProps}
+        selectedRole={{ name: "Test Role" }}
+        selectedPersona={{ name: "Test Persona" }}
+        selectedFramework={{ name: "Test Framework" }}
+        // selectedModel intentionally omitted
+      />,
+    );
+    expect(screen.getByText(baseProps.selectAllModulesLabel)).toBeTruthy();
+    expect(screen.queryByText(baseProps.previewConfigLabel)).toBeNull();
+  });
+
+  it("Desktop: previewRequires narrows the gate when host opts in", () => {
+    render(
+      <MosaicAgentComposerDesktop
+        {...baseProps}
+        previewRequires={["role"]}
+        selectedRole={{ name: "Test Role" }}
+        // persona/framework/model intentionally omitted
+      />,
+    );
+    expect(screen.getByText(baseProps.previewConfigLabel)).toBeTruthy();
+    expect(screen.queryByText(baseProps.selectAllModulesLabel)).toBeNull();
+  });
+
+  it("Mobile: empty module slot uses host-supplied selectModuleAriaLabel, fabricating no 'Select' word", () => {
+    render(
+      <Wrapper>
+        <MosaicAgentComposerMobile {...baseProps} />
+      </Wrapper>,
+    );
+    const button = screen.getByLabelText("XYZ-SELECT-Role");
+    expect(button).toBeTruthy();
+    expect(button.textContent).not.toMatch(/select role/i);
+    expect(screen.queryByLabelText(/^select role$/i)).toBeNull();
+  });
+
+  it("Mobile: filled module slot uses host-supplied edit/remove aria-labels, fabricating no English word", () => {
+    render(
+      <Wrapper>
+        <MosaicAgentComposerMobile {...baseProps} selectedRole={{ name: "Test Role" }} />
+      </Wrapper>,
+    );
+    expect(screen.getByLabelText("XYZ-EDIT-Role")).toBeTruthy();
+    expect(screen.getByLabelText("XYZ-REMOVE-Role")).toBeTruthy();
+    expect(screen.queryByLabelText(/^edit /i)).toBeNull();
+    expect(screen.queryByLabelText(/^remove /i)).toBeNull();
+  });
+
+  it("Mobile: model slot uses host-supplied selectModuleAriaLabel + changeModuleLabel, fabricating no English word", () => {
+    const { rerender } = render(
+      <Wrapper>
+        <MosaicAgentComposerMobile {...baseProps} />
+      </Wrapper>,
+    );
+    expect(screen.getByLabelText("XYZ-SELECT-Model")).toBeTruthy();
+    rerender(
+      <Wrapper>
+        <MosaicAgentComposerMobile {...baseProps} selectedModel={{ name: "Test Model" }} />
+      </Wrapper>,
+    );
+    expect(screen.getByText("XYZ-CHANGE-Model")).toBeTruthy();
+    expect(screen.queryByText(/^change /i)).toBeNull();
   });
 });

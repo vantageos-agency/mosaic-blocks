@@ -55,6 +55,12 @@ export interface MosaicAgentComposerMobileProps extends MosaicAgentComposerProps
   optionalInstructionsHelp: string;
 }
 
+// NOTE: `editModuleAriaLabel` / `removeModuleAriaLabel` / `selectModuleAriaLabel`
+// / `changeModuleLabel` live on the SHARED `MosaicAgentComposerProps`
+// (declared in MosaicAgentComposerDesktop.ts) because both variants render
+// module slots and read all four. `previewRequires` is Desktop-only — Mobile
+// has no live-preview panel — so it stays out of this file entirely.
+
 // ── Re-export shared types for convenience ────────────────────────────────────
 export type { MosaicComposerModule, MosaicComposerModel };
 
@@ -146,6 +152,9 @@ interface MobileModuleSlotProps {
   onRemove: () => void;
   isLoading: boolean;
   requiredLabel: string;
+  editAriaLabel: string;
+  removeAriaLabel: string;
+  selectAriaLabel: string;
 }
 
 function MobileModuleSlot({
@@ -156,6 +165,9 @@ function MobileModuleSlot({
   onRemove,
   isLoading,
   requiredLabel,
+  editAriaLabel,
+  removeAriaLabel,
+  selectAriaLabel,
 }: MobileModuleSlotProps) {
   return (
     <div className="rounded-xl border border-border bg-card">
@@ -188,7 +200,7 @@ function MobileModuleSlot({
                 type="button"
                 onClick={onSelect}
                 disabled={isLoading}
-                aria-label={`Edit ${label}`}
+                aria-label={editAriaLabel}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
                 <svg
@@ -210,7 +222,7 @@ function MobileModuleSlot({
                 type="button"
                 onClick={onRemove}
                 disabled={isLoading}
-                aria-label={`Remove ${label}`}
+                aria-label={removeAriaLabel}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
                 <svg
@@ -235,11 +247,11 @@ function MobileModuleSlot({
             type="button"
             onClick={onSelect}
             disabled={isLoading}
-            aria-label={`Select ${label}`}
+            aria-label={selectAriaLabel}
             className="flex w-full min-h-[64px] items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           >
             <PlusIcon />
-            Select {label}
+            {selectAriaLabel}
           </button>
         )}
       </div>
@@ -285,6 +297,10 @@ export function MosaicAgentComposerMobile({
   savingLabel,
   creatingLabel,
   optionalInstructionsHelp,
+  editModuleAriaLabel,
+  removeModuleAriaLabel,
+  selectModuleAriaLabel,
+  changeModuleLabel,
 }: MosaicAgentComposerMobileProps) {
   // `labels` is fully required — every field is host-supplied, no default,
   // no fallback. Aliased to `L` only for call-site brevity below.
@@ -355,6 +371,9 @@ export function MosaicAgentComposerMobile({
           onRemove={onRemoveRole}
           isLoading={isLoading}
           requiredLabel={requiredLabel}
+          editAriaLabel={editModuleAriaLabel(L.role)}
+          removeAriaLabel={removeModuleAriaLabel(L.role)}
+          selectAriaLabel={selectModuleAriaLabel(L.role)}
         />
         <MobileModuleSlot
           step={2}
@@ -364,6 +383,9 @@ export function MosaicAgentComposerMobile({
           onRemove={onRemovePersona}
           isLoading={isLoading}
           requiredLabel={requiredLabel}
+          editAriaLabel={editModuleAriaLabel(L.persona)}
+          removeAriaLabel={removeModuleAriaLabel(L.persona)}
+          selectAriaLabel={selectModuleAriaLabel(L.persona)}
         />
         <MobileModuleSlot
           step={3}
@@ -373,6 +395,9 @@ export function MosaicAgentComposerMobile({
           onRemove={onRemoveFramework}
           isLoading={isLoading}
           requiredLabel={requiredLabel}
+          editAriaLabel={editModuleAriaLabel(L.framework)}
+          removeAriaLabel={removeModuleAriaLabel(L.framework)}
+          selectAriaLabel={selectModuleAriaLabel(L.framework)}
         />
 
         {/* Model slot */}
@@ -417,7 +442,7 @@ export function MosaicAgentComposerMobile({
                   disabled={isLoading}
                   className="flex w-full min-h-[44px] items-center justify-center rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
-                  Change {L.model}
+                  {changeModuleLabel(L.model)}
                 </button>
               </div>
             ) : (
@@ -425,11 +450,11 @@ export function MosaicAgentComposerMobile({
                 type="button"
                 onClick={onSelectModel}
                 disabled={isLoading}
-                aria-label={`Select ${L.model}`}
+                aria-label={selectModuleAriaLabel(L.model)}
                 className="flex w-full min-h-[64px] items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
                 <PlusIcon />
-                Select {L.model}
+                {selectModuleAriaLabel(L.model)}
               </button>
             )}
           </div>
