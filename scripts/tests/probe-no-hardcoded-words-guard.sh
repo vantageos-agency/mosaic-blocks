@@ -421,7 +421,15 @@ row = (
     '    note: "probe-seeded ratchet subject — restored before merge.",\n'
     '  },\n' % (value, maxc)
 )
-new_text, n = re.subn(r'^const BASELINE = \[\n', 'const BASELINE = [\n' + row, text, count=1, flags=re.M)
+# Match BOTH shapes of the array opening: `const BASELINE = [` followed by a
+# newline (populated) AND the collapsed empty form `const BASELINE = [];` that
+# the formatter produces once the last row is removed. Knowing only the
+# multi-line form is the same mono-formulation defect this probe exists to
+# catch — and it bit here the moment BASELINE reached empty and biome
+# reformatted it to `[]`.
+new_text, n = re.subn(r'^const BASELINE = \[\];', 'const BASELINE = [\n' + row + '];', text, count=1, flags=re.M)
+if n != 1:
+    new_text, n = re.subn(r'^const BASELINE = \[\n', 'const BASELINE = [\n' + row, text, count=1, flags=re.M)
 if n != 1:
     raise SystemExit("probe: could not find `const BASELINE = [` to seed a row into — probe invalid")
 with open(path, "w") as f:
@@ -590,7 +598,15 @@ row = (
     '    note: "probe-seeded ratchet subject — restored before merge.",\n'
     '  },\n' % (value, maxc)
 )
-new_text, n = re.subn(r'^const BASELINE = \[\n', 'const BASELINE = [\n' + row, text, count=1, flags=re.M)
+# Match BOTH shapes of the array opening: `const BASELINE = [` followed by a
+# newline (populated) AND the collapsed empty form `const BASELINE = [];` that
+# the formatter produces once the last row is removed. Knowing only the
+# multi-line form is the same mono-formulation defect this probe exists to
+# catch — and it bit here the moment BASELINE reached empty and biome
+# reformatted it to `[]`.
+new_text, n = re.subn(r'^const BASELINE = \[\];', 'const BASELINE = [\n' + row + '];', text, count=1, flags=re.M)
+if n != 1:
+    new_text, n = re.subn(r'^const BASELINE = \[\n', 'const BASELINE = [\n' + row, text, count=1, flags=re.M)
 if n != 1:
     raise SystemExit("probe: could not find `const BASELINE = [` to seed a row into — probe invalid")
 with open(path, "w") as f:

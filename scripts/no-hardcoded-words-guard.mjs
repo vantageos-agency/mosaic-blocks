@@ -295,8 +295,7 @@ const ESCAPE_MARKER_RE = /^\s*\/\/\s*allow-hardcoded-word:\s*(\S.+)$/;
 //
 // This baseline may only ever SHRINK (rule 2) — see PR #99/#100/#101 and
 // follow-ups for the fixes in flight.
-const BASELINE = [
-];
+const BASELINE = [];
 
 /**
  * @param {string} str
