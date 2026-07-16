@@ -61,3 +61,20 @@ export const Collapsed: Story = {
     ...requiredSidebarLabels,
   },
 };
+
+const bottomNavItems = [{ id: "nav-settings", href: "/settings", label: "Settings" }];
+
+export const WithBottomAnchoredSettingsAndChevron: Story = {
+  name: "Bottom-anchored nav + bottom chevron",
+  args: {
+    isCollapsed: false,
+    onToggleCollapse: () => console.log("collapse"),
+    navItems,
+    activePath: "/agents",
+    onNavigate: (href) => console.log("navigate", href),
+    bottomNavItems,
+    bottomNavAriaLabel: "Secondary navigation",
+    chevronPosition: "bottom",
+    ...requiredSidebarLabels,
+  },
+};
