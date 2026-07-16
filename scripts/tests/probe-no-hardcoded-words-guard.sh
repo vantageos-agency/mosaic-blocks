@@ -307,50 +307,71 @@ fi
 # its own line, immediately before the offending statement) must NOT
 # disable the guard. Same class of self-disabling bug the release-artifacts
 # probe exists to close (see its own header comment).
+#
+# SEEDED, not anchored on existing source: this case used to anchor on
+# MosaicOrgPanel.tsx's `member: { label: "Member", ... }` role-config object
+# literal. PR #101 turned that literal into a host-supplied prop and deleted
+# the object entirely — the anchor vanished from `main`, and the probe died
+# at setup ("injection anchor not found") even though the case had nothing
+# to do with PR #101. A probe anchored on code a fix PR may legitimately
+# delete is a landmine timed to detonate at merge. Per
+# .claude/rules/guard-formulation-census.md this probe now SEEDS its own
+# fixture — content it owns — instead of hunting for material it does not
+# control.
+#
+# NOTE ON POSITION (still true, now proven against a fixture this probe
+# authors): a `//` comment placed immediately before a `return (` or a JSX
+# attribute/child is STRIPPED ENTIRELY by esbuild's JSX transform and never
+# reaches the bundle at all — testing the marker there would be VACUOUS (the
+# guard "blocks" only because the comment never existed to test anchoring
+# against). A `//` comment interleaved between OBJECT-LITERAL PROPERTIES,
+# however, DOES survive unminified esbuild output — that is the shape seeded
+# here and in MUST_PASS #7 below, so the anchoring behaviour is actually
+# exercised.
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+PROSE_MARKER_VALUE="Probeshortlabel"
+if grep -rqF "$PROSE_MARKER_VALUE" "$CLONE/src" 2>/dev/null; then
+  echo "probe: seeded value \"$PROSE_MARKER_VALUE\" ALREADY exists in the clone's sources — it would not be a subject this probe controls. Refusing to run MUST_BLOCK #5." >&2
+  exit 1
+fi
 git -C "$CLONE" checkout --quiet -b probe-block-prose "$BASE"
-# NOTE ON POSITION: a `//` comment placed immediately before a `return (` or
-# a JSX attribute/child is STRIPPED ENTIRELY by esbuild's JSX transform and
-# never reaches the bundle at all (confirmed empirically while building this
-# probe) — testing the marker there would be VACUOUS (the guard "blocks"
-# only because the comment never existed to test anchoring against). A `//`
-# comment interleaved between OBJECT-LITERAL PROPERTIES, however, DOES
-# survive unminified esbuild output (confirmed against this exact file's
-# real `roleConfig` object) — that is the shape used here and in MUST_PASS
-# #7 below, so the anchoring behaviour is actually exercised.
-python3 - "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx" <<'PYEOF'
-import sys
-path = sys.argv[1]
-with open(path) as f:
-    text = f.read()
-needle = '    member: {\n      label: "Member",\n'
-replacement = (
-    '    member: {\n'
-    '      // This mentions allow-hardcoded-word in PROSE only — it does not\n'
-    '      // DECLARE the marker (no colon-delimited reason on its own anchored\n'
-    '      // line), so it must not disable the guard for the literal below.\n'
-    '      label: "Probeshortlabel",\n'
-)
-if needle not in text:
-    raise SystemExit(f"probe: injection anchor not found in {path}")
-text = text.replace(needle, replacement, 1)
-with open(path, "w") as f:
-    f.write(text)
-PYEOF
-if ! grep -qF "This mentions allow-hardcoded-word in PROSE only" "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx"; then
-  FAILURES+=("MUST_BLOCK prose-marker — mutation did NOT land — probe invalid")
+mkdir -p "$CLONE/src/components/probe-prose-marker-seed"
+cat > "$CLONE/src/components/probe-prose-marker-seed/MosaicProbeProseMarkerSeed.tsx" <<'SEEDEOF'
+import * as React from "react";
+
+// Object literal mirroring a real per-role config shape (label + description
+// per key) — the comment BETWEEN properties below is the thing under test.
+const probeProseMarkerSeedConfig = {
+  member: {
+    // This mentions allow-hardcoded-word in PROSE only — it does not
+    // DECLARE the marker (no colon-delimited reason on its own anchored
+    // line), so it must not disable the guard for the literal below.
+    label: "Probeshortlabel",
+  },
+};
+
+export const MosaicProbeProseMarkerSeed = React.forwardRef<HTMLSpanElement>((_props, ref) => (
+  <span ref={ref}>{probeProseMarkerSeedConfig.member.label}</span>
+));
+MosaicProbeProseMarkerSeed.displayName = "MosaicProbeProseMarkerSeed";
+SEEDEOF
+printf '\nexport { MosaicProbeProseMarkerSeed } from "./components/probe-prose-marker-seed/MosaicProbeProseMarkerSeed";\n' >> "$CLONE/src/index.ts"
+if ! grep -qF "This mentions allow-hardcoded-word in PROSE only" "$CLONE/src/components/probe-prose-marker-seed/MosaicProbeProseMarkerSeed.tsx"; then
+  FAILURES+=("MUST_BLOCK prose-marker — seeded fixture did NOT land — probe invalid")
 else
   (cd "$CLONE" && git add -A && git commit --quiet -m "probe: prose merely mentions allow-hardcoded-word, does not declare it")
   log INFO "building prose-marker tree (this takes ~15-25s)..."
   if ! build_clone; then
     FAILURES+=("MUST_BLOCK prose-marker build — pnpm build failed")
+  elif ! grep -qF "$PROSE_MARKER_VALUE" "$CLONE/dist/index.cjs"; then
+    FAILURES+=("MUST_BLOCK prose-marker — seeded value never reached the bundle — probe invalid")
   else
     set +e
     output="$(run_guard 2>&1)"
     status=$?
     set -e
-    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "Probeshortlabel"; then
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "$PROSE_MARKER_VALUE"; then
       MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
       log MUST_BLOCK "PASS — marker mentioned only in PROSE does not disable the guard — still blocked"
     else
@@ -361,43 +382,80 @@ else
 fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-prose)
 
-# ---------------------------------------------------------------------------
-# MUST_BLOCK #6 (RATCHET — baseline entry GROWS) — a 9th occurrence of the
-# BASELINE value "Select " (maxCount=8 today) must BLOCK, naming the growth.
-# This is the ratchet's pawl: a baseline value existing today must never be
-# allowed to spread to a NEW site, even though it is not itself a "new"
-# string.
-# ---------------------------------------------------------------------------
-MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
-git -C "$CLONE" checkout --quiet -b probe-block-grown "$BASE"
-# The value to GROW is DERIVED from the guard's own BASELINE, never typed.
-# Hardcoding "Select " here was a latent trap: the moment a fix PR deletes
-# that row, this same injection stops being "growth of an existing row" and
-# becomes a brand-new offender — the case would grep for GREW and fail on a
-# guard that behaved perfectly. If BASELINE declares nothing, REFUSE loudly.
-GROWN_VALUE="$(python3 - "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" <<'PYEOF'
+# add_baseline_row is shared by MUST_BLOCK #6/#7/#8 below (all three seed
+# their own row rather than reading the real, possibly-empty BASELINE) —
+# defined once here so #6 can use it; redefined identically ahead of #7/#8
+# for readability at their point of use (harmless — same body).
+add_baseline_row() {
+  # $1 = guard file to edit, $2 = value, $3 = maxCount
+  PROBE_ROW_VALUE="$2" PROBE_ROW_MAX="$3" python3 - "$1" <<'ROWEOF'
+import os
 import re
 import sys
-with open(sys.argv[1]) as f:
+path = sys.argv[1]
+value = os.environ["PROBE_ROW_VALUE"]
+maxc = os.environ["PROBE_ROW_MAX"]
+with open(path) as f:
     text = f.read()
-rows = re.findall(r'value:\s*"((?:[^"\\]|\\.)*)"\s*,\s*\n\s*maxCount:\s*(\d+)\s*,', text)
-if not rows:
-    raise SystemExit("probe: BASELINE declares NO rows — cannot derive a ratchet-grown subject. Refusing to report a pass for a case that never ran.")
-sys.stdout.write(rows[0][0])
-PYEOF
-)"
-echo "[INFO] derived ratchet-grown subject: BASELINE value \"$GROWN_VALUE\" (one more occurrence must read as GREW)"
-GROWN_VALUE="$GROWN_VALUE" python3 - "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" <<'PYEOF'
-import os
+row = (
+    '  {\n'
+    '    value: "%s",\n'
+    '    maxCount: %s,\n'
+    '    note: "probe-seeded ratchet subject — restored before merge.",\n'
+    '  },\n' % (value, maxc)
+)
+new_text, n = re.subn(r'^const BASELINE = \[\n', 'const BASELINE = [\n' + row, text, count=1, flags=re.M)
+if n != 1:
+    raise SystemExit("probe: could not find `const BASELINE = [` to seed a row into — probe invalid")
+with open(path, "w") as f:
+    f.write(new_text)
+ROWEOF
+}
+
+# ---------------------------------------------------------------------------
+# MUST_BLOCK #6 (RATCHET — baseline entry GROWS) — an extra occurrence of a
+# BASELINE-declared value, beyond its declared maxCount, must BLOCK, naming
+# the growth. This is the ratchet's pawl: a baseline value existing today
+# must never be allowed to spread to a NEW site, even though it is not
+# itself a "new" string.
+#
+# SEEDED, not derived from the real BASELINE: this case used to derive its
+# subject by reading the first row out of the guard's live BASELINE array.
+# That works only while BASELINE is non-empty — the moment the ratchet
+# reaches its intended terminal state (BASELINE == [], "this guard is now
+# absolute"), there is no row left to grow, and the case can never run
+# again. A test whose ability to execute depends on the fix-in-progress
+# NEVER finishing is backwards. So, like #7/#8 below, this case now seeds
+# its own row AND its own matching occurrence: content this probe owns,
+# never ambient state read off the artifact under test.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+GROWN_SEED_VALUE="Probeseededgrowthsubject"
+if grep -rqF "$GROWN_SEED_VALUE" "$CLONE/src" 2>/dev/null; then
+  echo "probe: seeded value \"$GROWN_SEED_VALUE\" ALREADY exists in the clone's sources — it would not be a subject this probe controls. Refusing to run MUST_BLOCK #6." >&2
+  exit 1
+fi
+git -C "$CLONE" checkout --quiet -b probe-block-grown "$BASE"
+mkdir -p "$CLONE/src/components/probe-growth-seed"
+cat > "$CLONE/src/components/probe-growth-seed/MosaicProbeGrowthSeed.tsx" <<SEEDEOF
+import * as React from "react";
+
+export const MosaicProbeGrowthSeed = React.forwardRef<HTMLSpanElement>((_props, ref) => (
+  <span ref={ref}>$GROWN_SEED_VALUE</span>
+));
+MosaicProbeGrowthSeed.displayName = "MosaicProbeGrowthSeed";
+SEEDEOF
+printf '\nexport { MosaicProbeGrowthSeed } from "./components/probe-growth-seed/MosaicProbeGrowthSeed";\n' >> "$CLONE/src/index.ts"
+# A second, independent site emits the SAME value — this is the site the
+# guard's declared maxCount=1 row (seeded below) does NOT account for, i.e.
+# the growth.
+python3 - "$CLONE/src/components/checkbox/MosaicCheckbox.tsx" <<PYEOF
 import sys
 path = sys.argv[1]
-value = os.environ["GROWN_VALUE"]
 with open(path) as f:
     text = f.read()
 needle = '    <Checkbox.Root\n      ref={ref}\n      data-slot="checkbox"\n'
-# Emit the derived value as a plain JSX string attribute so the literal lands
-# in the bundle verbatim, whatever characters it contains.
-injected = '      title={"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"}\n'
+injected = '      title={"$GROWN_SEED_VALUE"}\n'
 replacement = (
     '    <Checkbox.Root\n'
     '      ref={ref}\n'
@@ -410,24 +468,30 @@ text = text.replace(needle, replacement, 1)
 with open(path, "w") as f:
     f.write(text)
 PYEOF
-if ! grep -qF "title={\"$GROWN_VALUE\"}" "$CLONE/src/components/checkbox/MosaicCheckbox.tsx"; then
-  FAILURES+=("MUST_BLOCK ratchet-grown — mutation did NOT land — probe invalid")
+if ! grep -qF "title={\"$GROWN_SEED_VALUE\"}" "$CLONE/src/components/checkbox/MosaicCheckbox.tsx"; then
+  FAILURES+=("MUST_BLOCK ratchet-grown — 2nd-site mutation did NOT land — probe invalid")
 else
-  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: one more occurrence of a derived baseline value — must grow-block")
-  log INFO "building ratchet-grown tree (this takes ~15-25s)..."
-  if ! build_clone; then
-    FAILURES+=("MUST_BLOCK ratchet-grown build — pnpm build failed")
+  cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+  add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$GROWN_SEED_VALUE" 1
+  if ! grep -qF "value: \"$GROWN_SEED_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
+    FAILURES+=("MUST_BLOCK ratchet-grown — seeded BASELINE row did NOT land — probe invalid")
   else
-    set +e
-    output="$(run_guard 2>&1)"
-    status=$?
-    set -e
-    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "GREW" && echo "$output" | grep -qF "\"$GROWN_VALUE\""; then
-      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-      log MUST_BLOCK "PASS — ratchet-grown — extra '$GROWN_VALUE' occurrence blocked as BASELINE growth"
+    (cd "$CLONE" && git add -A && git commit --quiet -m "probe: seeded BASELINE row (maxCount=1) plus a 2nd site of the same value — must grow-block")
+    log INFO "building ratchet-grown tree (this takes ~15-25s)..."
+    if ! build_clone; then
+      FAILURES+=("MUST_BLOCK ratchet-grown build — pnpm build failed")
     else
-      FAILURES+=("MUST_BLOCK ratchet-grown — guard exited $status (expected non-zero) or did not name the grown BASELINE entry — output: $output")
-      log MUST_BLOCK "FAIL — ratchet-grown — exit=$status"
+      set +e
+      output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -ne 0 ] && echo "$output" | grep -qF "GREW" && echo "$output" | grep -qF "\"$GROWN_SEED_VALUE\""; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — ratchet-grown — extra '$GROWN_SEED_VALUE' occurrence blocked as BASELINE growth"
+      else
+        FAILURES+=("MUST_BLOCK ratchet-grown — guard exited $status (expected non-zero) or did not name the grown BASELINE entry — output: $output")
+        log MUST_BLOCK "FAIL — ratchet-grown — exit=$status"
+      fi
     fi
   fi
 fi
@@ -616,9 +680,9 @@ fi
 
 # ---------------------------------------------------------------------------
 # MUST_BLOCK #9 (RATCHET — the ACTUAL hole a reviewer proved by mutation) —
-# widen a REAL baseline row's declared `maxCount` ABOVE its actual bundle
-# count, WITHOUT touching a single component file. The bundle never moves;
-# only the number written in BASELINE does. A guard that only checks
+# widen a baseline row's declared `maxCount` ABOVE its actual bundle count,
+# WITHOUT touching a single component file. The bundle never moves; only
+# the number written in BASELINE does. A guard that only checks
 # "current > maxCount" sees nothing wrong here — the current count is still
 # below the (now-inflated) ceiling — and that silence IS the hole: it turns
 # the ratchet into a plain exclusion list an author can loosen by hand
@@ -626,68 +690,87 @@ fi
 # DERIVED actual count against the declared one in BOTH directions, so this
 # MUST go RED, naming declared vs actual.
 #
-# No component mutation, so the ALREADY-BUILT clean-baseline dist (from the
-# very first build above) is reused directly — this case's whole point is
-# that the ARTIFACT is unchanged and only the guard's own BASELINE number
-# moves. run_guard() is not used here (it re-installs the real, unmutated
-# guard.mjs on every call) — the mutated copy is invoked directly instead.
+# SEEDED, not derived from the real BASELINE: this case used to read the
+# first row out of the guard's live BASELINE array, exactly the same
+# now-empty-BASELINE trap #6 hit above. It now seeds its own component (a
+# fixed, known occurrence count) AND its own accurate row into a scratch
+# clone, builds ONCE, then widens the row's maxCount on that same,
+# already-built dist — the ARTIFACT is unchanged and only the guard's own
+# BASELINE number moves, which is this case's whole point.
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
-if [ -z "$BASELINE_COUNT" ]; then
-  FAILURES+=("MUST_BLOCK loose-budget — no clean baseline dist available (baseline build failed earlier) — cannot run this case")
-  log MUST_BLOCK "FAIL — loose-budget — no baseline dist to reuse"
+LOOSE_VALUE="Probeseededloosebudgetsubject"
+LOOSE_COUNT=2
+if grep -rqF "$LOOSE_VALUE" "$CLONE/src" 2>/dev/null; then
+  echo "probe: seeded value \"$LOOSE_VALUE\" ALREADY exists in the clone's sources — it would not be a subject this probe controls. Refusing to run MUST_BLOCK #9." >&2
+  exit 1
+fi
+git -C "$CLONE" checkout --quiet -b probe-block-loose "$BASE"
+mkdir -p "$CLONE/src/components/probe-loose-budget-seed"
+cat > "$CLONE/src/components/probe-loose-budget-seed/MosaicProbeLooseBudgetSeed.tsx" <<SEEDEOF
+import * as React from "react";
+
+export const MosaicProbeLooseBudgetSeed = React.forwardRef<HTMLSpanElement>((_props, ref) => (
+  <span ref={ref}>
+    <span>$LOOSE_VALUE</span>
+    <span title="$LOOSE_VALUE">occurrence two</span>
+  </span>
+));
+MosaicProbeLooseBudgetSeed.displayName = "MosaicProbeLooseBudgetSeed";
+SEEDEOF
+printf '\nexport { MosaicProbeLooseBudgetSeed } from "./components/probe-loose-budget-seed/MosaicProbeLooseBudgetSeed";\n' >> "$CLONE/src/index.ts"
+cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$LOOSE_VALUE" "$LOOSE_COUNT"
+if ! grep -qF "value: \"$LOOSE_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
+  FAILURES+=("MUST_BLOCK loose-budget — seeded BASELINE row did NOT land — probe invalid")
+  log MUST_BLOCK "FAIL — loose-budget — seed did not land"
 else
-  MUTATED_GUARD="$SCRATCH/guard-loose-budget.mjs"
-  cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$MUTATED_GUARD"
-  # The row to widen is DERIVED from the guard's own BASELINE, never typed.
-  # A hardcoded literal here ("Select ", maxCount: 8) is exactly what broke
-  # this case once: a fix PR legitimately deleted that row and the probe died
-  # at setup. The subject is whatever row BASELINE declares TODAY; if BASELINE
-  # declares nothing, this REFUSES loudly instead of passing a case that never ran.
-  LOOSE_SUBJECT="$(python3 - "$MUTATED_GUARD" <<'PYEOF'
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: seeded component with 2 occurrences + accurate BASELINE row (maxCount=2)")
+  log INFO "building loose-budget tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK loose-budget build — pnpm build failed")
+  elif [ "$(grep -oF "$LOOSE_VALUE" "$CLONE/dist/index.cjs" | wc -l)" -lt 2 ]; then
+    FAILURES+=("MUST_BLOCK loose-budget — seeded value did not reach the bundle at least twice — premise not met, probe invalid")
+  else
+    MUTATED_GUARD="$SCRATCH/guard-loose-budget.mjs"
+    cp "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$MUTATED_GUARD"
+    python3 - "$MUTATED_GUARD" "$LOOSE_VALUE" "$LOOSE_COUNT" <<'PYEOF'
 import re
 import sys
-path = sys.argv[1]
+path, value, count = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(path) as f:
     text = f.read()
-rows = re.findall(r'value:\s*"((?:[^"\\]|\\.)*)"\s*,\s*\n\s*maxCount:\s*(\d+)\s*,', text)
-if not rows:
-    raise SystemExit("probe: BASELINE declares NO rows — cannot derive a loose-budget subject. Refusing to report a pass for a case that never ran.")
-value, count = rows[0]
 pattern = re.compile(
-    r'(value:\s*"' + re.escape(value) + r'"\s*,\s*\n\s*maxCount:\s*)' + count + r'(\s*,)'
+    r'(value:\s*"' + re.escape(value) + r'"\s*,\s*\n\s*maxCount:\s*)' + re.escape(count) + r'(\s*,)'
 )
 new_text, n = pattern.subn(r"\g<1>99\g<2>", text, count=1)
 if n != 1:
-    raise SystemExit("probe: derived row %r/%s could not be widened — probe invalid" % (value, count))
+    raise SystemExit("probe: seeded row could not be widened — probe invalid")
 with open(path, "w") as f:
     f.write(new_text)
-sys.stdout.write("%s\t%s" % (value, count))
 PYEOF
-  )"
-  LOOSE_VALUE="${LOOSE_SUBJECT%%$'\t'*}"
-  LOOSE_COUNT="${LOOSE_SUBJECT##*$'\t'}"
-  echo "[INFO] derived loose-budget subject: BASELINE row \"$LOOSE_VALUE\" declared maxCount=$LOOSE_COUNT -> widened to 99"
-  if ! grep -qF "maxCount: 99" "$MUTATED_GUARD"; then
-    FAILURES+=("MUST_BLOCK loose-budget — mutation did NOT land in the guard copy — probe invalid")
-    log MUST_BLOCK "FAIL — loose-budget — mutation did not land"
-  else
-    set +e
-    output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$MUTATED_GUARD" 2>&1)"
-    status=$?
-    set -e
-    if [ "$status" -ne 0 ] &&
-       echo "$output" | grep -qF "\"$LOOSE_VALUE\"" &&
-       echo "$output" | grep -qF "maxCount=99" &&
-       echo "$output" | grep -Eq "actually has only [0-9]+ occurrence"; then
-      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
-      log MUST_BLOCK "PASS — loose-budget — maxCount widened $LOOSE_COUNT->99 with zero bundle change blocked, naming declared=99 vs the actual count derived from the artifact"
+    if ! grep -qF "maxCount: 99" "$MUTATED_GUARD"; then
+      FAILURES+=("MUST_BLOCK loose-budget — mutation did NOT land in the guard copy — probe invalid")
+      log MUST_BLOCK "FAIL — loose-budget — mutation did not land"
     else
-      FAILURES+=("MUST_BLOCK loose-budget — guard exited $status (expected non-zero) or did not name declared=99 vs the actual count it derived — output: $output")
-      log MUST_BLOCK "FAIL — loose-budget — exit=$status"
+      set +e
+      output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$MUTATED_GUARD" 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -ne 0 ] &&
+         echo "$output" | grep -qF "\"$LOOSE_VALUE\"" &&
+         echo "$output" | grep -qF "maxCount=99" &&
+         echo "$output" | grep -Eq "actually has only [0-9]+ occurrence"; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — loose-budget — maxCount widened $LOOSE_COUNT->99 with zero bundle change blocked, naming declared=99 vs the actual count derived from the artifact"
+      else
+        FAILURES+=("MUST_BLOCK loose-budget — guard exited $status (expected non-zero) or did not name declared=99 vs the actual count it derived — output: $output")
+        log MUST_BLOCK "FAIL — loose-budget — exit=$status"
+      fi
     fi
   fi
 fi
+(cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-loose)
 
 # ---------------------------------------------------------------------------
 # MUST_PASS #6 — a brand-new, harmless component using ONLY legitimate
@@ -764,42 +847,58 @@ fi
 # ---------------------------------------------------------------------------
 # MUST_PASS #7 — a genuine violation carrying the WRITTEN, anchored
 # `// allow-hardcoded-word: <reason>` marker must NOT be reported.
-# ---------------------------------------------------------------------------
+#
+# SEEDED, not anchored on existing source — same landmine and same fix as
+# MUST_BLOCK #5 above: this used to anchor on MosaicOrgPanel.tsx's
+# `owner: { label: "Owner", ... }` role-config object literal, which PR #101
+# deleted when it turned the label into a host prop. The probe now seeds its
+# own fixture instead of hunting for material it does not control.
+#
 # Same POSITION note as MUST_BLOCK #5 above: only a `//` comment interleaved
 # between OBJECT-LITERAL PROPERTIES is confirmed to survive esbuild's
 # unminified output (a comment before `return (` or a JSX child is stripped
 # and would make this test vacuous).
+# ---------------------------------------------------------------------------
 MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+DECLARED_EXCEPTION_VALUE="Probedeclaredexception"
+if grep -rqF "$DECLARED_EXCEPTION_VALUE" "$CLONE/src" 2>/dev/null; then
+  echo "probe: seeded value \"$DECLARED_EXCEPTION_VALUE\" ALREADY exists in the clone's sources — it would not be a subject this probe controls. Refusing to run MUST_PASS #7." >&2
+  exit 1
+fi
 git -C "$CLONE" checkout --quiet -b probe-pass-declared "$BASE"
-python3 - "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx" <<'PYEOF'
-import sys
-path = sys.argv[1]
-with open(path) as f:
-    text = f.read()
-needle = '    owner: {\n      label: "Owner",\n'
-replacement = (
-    '    owner: {\n'
-    '      // allow-hardcoded-word: probe MUST_PASS declared-exception case, restored before merge\n'
-    '      label: "Probedeclaredexception",\n'
-)
-if needle not in text:
-    raise SystemExit(f"probe: injection anchor not found in {path}")
-text = text.replace(needle, replacement, 1)
-with open(path, "w") as f:
-    f.write(text)
-PYEOF
-if ! grep -qF "allow-hardcoded-word: probe MUST_PASS declared-exception case" "$CLONE/src/components/org-panel/MosaicOrgPanel.tsx"; then
-  FAILURES+=("MUST_PASS declared-exception — mutation did NOT land — probe invalid")
+mkdir -p "$CLONE/src/components/probe-declared-exception-seed"
+cat > "$CLONE/src/components/probe-declared-exception-seed/MosaicProbeDeclaredExceptionSeed.tsx" <<'SEEDEOF'
+import * as React from "react";
+
+// Object literal mirroring a real per-role config shape (label + description
+// per key) — the comment BETWEEN properties below is the thing under test.
+const probeDeclaredExceptionSeedConfig = {
+  owner: {
+    // allow-hardcoded-word: probe MUST_PASS declared-exception case, restored before merge
+    label: "Probedeclaredexception",
+  },
+};
+
+export const MosaicProbeDeclaredExceptionSeed = React.forwardRef<HTMLSpanElement>((_props, ref) => (
+  <span ref={ref}>{probeDeclaredExceptionSeedConfig.owner.label}</span>
+));
+MosaicProbeDeclaredExceptionSeed.displayName = "MosaicProbeDeclaredExceptionSeed";
+SEEDEOF
+printf '\nexport { MosaicProbeDeclaredExceptionSeed } from "./components/probe-declared-exception-seed/MosaicProbeDeclaredExceptionSeed";\n' >> "$CLONE/src/index.ts"
+if ! grep -qF "allow-hardcoded-word: probe MUST_PASS declared-exception case" "$CLONE/src/components/probe-declared-exception-seed/MosaicProbeDeclaredExceptionSeed.tsx"; then
+  FAILURES+=("MUST_PASS declared-exception — seeded fixture did NOT land — probe invalid")
 else
   (cd "$CLONE" && git add -A && git commit --quiet -m "probe: declared exception via // allow-hardcoded-word marker")
   log INFO "building declared-exception tree (this takes ~15-25s)..."
   if ! build_clone; then
     FAILURES+=("MUST_PASS declared-exception build — pnpm build failed")
+  elif ! grep -qF "$DECLARED_EXCEPTION_VALUE" "$CLONE/dist/index.cjs"; then
+    FAILURES+=("MUST_PASS declared-exception — seeded value never reached the bundle — probe invalid")
   else
     set +e
     output="$(run_guard 2>&1)"
     set -e
-    if ! echo "$output" | grep -qF "Probedeclaredexception"; then
+    if ! echo "$output" | grep -qF "$DECLARED_EXCEPTION_VALUE"; then
       MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
       log MUST_PASS "PASS — declared // allow-hardcoded-word exception honored, not reported"
     else
