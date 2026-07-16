@@ -106,7 +106,7 @@ cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title
 run_guard() {
   local base_ref="$1"
   cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
-  (cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base_ref" node scripts/pr-title-matches-diff-guard.mjs)
+  (cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$base_ref" node scripts/pr-title-matches-diff-guard.mjs)
 }
 
 # Resolve a base commit ONCE for cases that need "any valid ancestor to diff
@@ -542,7 +542,7 @@ run_guard_push_path() {
   local sha="$1"
   (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet --detach "$sha")
   cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
-  (cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="HEAD^" node scripts/pr-title-matches-diff-guard.mjs)
+  (cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="HEAD^" node scripts/pr-title-matches-diff-guard.mjs)
 }
 
 # --- MUST_BLOCK: the three real merge commits, on the push-to-main path. ---
@@ -683,7 +683,7 @@ else
     # (a) no override: guard reads the synthetic subject (zero literal
     #     token, always) — a genuinely LYING title silently PASSES.
     set +e
-    output_no_override="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+    output_no_override="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$base" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
     status_no_override=$?
     set -e
     if [ "$status_no_override" -eq 0 ] && echo "$output_no_override" | grep -qF "no component claim to verify"; then
@@ -698,7 +698,7 @@ else
     #     read the synthetic subject.
     real_title="$(cd "$CLONE" && git log -1 --format=%s "$sha")"
     set +e
-    output_fixed="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+    output_fixed="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
     status_fixed=$?
     set -e
     if [ "$status_fixed" -ne 0 ] && echo "$output_fixed" | grep -qF "BLOCKED" && ! echo "$output_fixed" | grep -qF "Merge ${sha} into ${base}"; then
@@ -730,7 +730,7 @@ else
     cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
     real_title="$(cd "$CLONE" && git log -1 --format=%s "$sha")"
     set +e
-    output_honest="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+    output_honest="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
     status_honest=$?
     set -e
     if [ "$status_honest" -eq 0 ] && echo "$output_honest" | grep -qF "OK"; then
@@ -805,7 +805,7 @@ if (cd "$CLONE" && git cat-file -e "$BOGUS_HEAD" 2>/dev/null); then
   log MUST_REFUSE "FAIL — unresolvable-HEAD_REF — mutation did not land (bogus SHA resolves)"
 else
   set +e
-  output="$(cd "$CLONE" && PR_TITLE_GUARD_HEAD_REF="$BOGUS_HEAD" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  output="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_HEAD_REF="$BOGUS_HEAD" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
   status=$?
   set -e
   if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE"; then
@@ -826,7 +826,7 @@ if (cd "$CLONE" && git cat-file -e "$BOGUS_BASE" 2>/dev/null); then
   log MUST_REFUSE "FAIL — unresolvable-BASE_REF — mutation did not land (bogus SHA resolves)"
 else
   set +e
-  output="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$BOGUS_BASE" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  output="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$BOGUS_BASE" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
   status=$?
   set -e
   if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE"; then
@@ -854,7 +854,7 @@ elif ! (cd "$CLONE" && git cat-file -t "$BLOB_SHA" 2>/dev/null | grep -qF "blob"
   log MUST_REFUSE "FAIL — non-commit-BASE_REF — resolved object is not a blob"
 else
   set +e
-  output="$(cd "$CLONE" && PR_TITLE_GUARD_BASE_REF="$BLOB_SHA" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  output="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$BLOB_SHA" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
   status=$?
   set -e
   if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE"; then
@@ -879,7 +879,7 @@ if [ -z "$base_for_pr" ]; then
 else
   refuse_setup
   set +e
-  output="$(cd "$CLONE" && GITHUB_EVENT_NAME="pull_request" PR_TITLE_GUARD_BASE_REF="$base_for_pr" PR_TITLE_GUARD_HEAD_REF="$sha" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
+  output="$(cd "$CLONE" && env -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME GITHUB_EVENT_NAME="pull_request" PR_TITLE_GUARD_BASE_REF="$base_for_pr" PR_TITLE_GUARD_HEAD_REF="$sha" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
   status=$?
   set -e
   if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSES TO JUDGE" && echo "$output" | grep -qF "PR_TITLE_GUARD_SUBJECT"; then
