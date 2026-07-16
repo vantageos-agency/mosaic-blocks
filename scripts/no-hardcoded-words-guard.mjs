@@ -297,24 +297,9 @@ const ESCAPE_MARKER_RE = /^\s*\/\/\s*allow-hardcoded-word:\s*(\S.+)$/;
 // follow-ups for the fixes in flight.
 const BASELINE = [
   {
-    value: "Select ",
-    maxCount: 8,
-    note: "MosaicAgentComposer / MosaicChatSidebar family — hardcoded `Select <thing>` button/action labels, scheduled for prop-driven i18n in the in-flight agent-composer follow-up PR.",
-  },
-  {
     value: "Remove ",
-    maxCount: 4,
+    maxCount: 2,
     note: "Tag/badge/integrations `Remove <thing>` action labels — same follow-up PR as `Select `.",
-  },
-  {
-    value: "Edit ",
-    maxCount: 2,
-    note: "`Edit <thing>` action labels — same follow-up PR as `Select `.",
-  },
-  {
-    value: "Change ",
-    maxCount: 2,
-    note: "`Change <thing>` action labels — same follow-up PR as `Select `.",
   },
   {
     value: "Member",
@@ -327,31 +312,6 @@ const BASELINE = [
     note: "MosaicOrgPanel role badge/label — fixed by PR #101 (org-panel i18n props).",
   },
   {
-    value: "Thinking approach and decision-making process",
-    maxCount: 1,
-    note: "MosaicAgentComposer step description — fixed by PR #99.",
-  },
-  {
-    value: "Standard access to workspaces and content",
-    maxCount: 1,
-    note: "MosaicOrgPanel role description — fixed by PR #101.",
-  },
-  {
-    value: "Slug: lowercase letters, numbers, hyphens only",
-    maxCount: 1,
-    note: "MosaicOrgPanel form hint — fixed by PR #101.",
-  },
-  {
-    value: "Slug is required",
-    maxCount: 1,
-    note: "MosaicOrgPanel form validation message — fixed by PR #101.",
-  },
-  {
-    value: "Professional expertise and domain knowledge",
-    maxCount: 1,
-    note: "MosaicAgentComposer step description — fixed by PR #99.",
-  },
-  {
     value: "Owner",
     maxCount: 1,
     note: "MosaicOrgPanel role badge/label — fixed by PR #101.",
@@ -362,11 +322,6 @@ const BASELINE = [
     note: "MosaicChatSidebar section heading — fixed by the in-flight chat-sidebar follow-up PR.",
   },
   {
-    value: "Name is required",
-    maxCount: 1,
-    note: "MosaicOrgPanel form validation message — fixed by PR #101.",
-  },
-  {
     value: "Make ",
     maxCount: 1,
     note: "MosaicOrgPanel member-role action label (`Make admin`, etc.) — fixed by PR #101.",
@@ -375,31 +330,6 @@ const BASELINE = [
     value: "Joined ",
     maxCount: 1,
     note: "MosaicOrgPanel member-list metadata label — fixed by PR #101.",
-  },
-  {
-    value: "Invalid email",
-    maxCount: 1,
-    note: "MosaicOrgPanel invite-form validation message — fixed by PR #101.",
-  },
-  {
-    value: "Full access to organization settings and member management",
-    maxCount: 1,
-    note: "MosaicOrgPanel role description — fixed by PR #101.",
-  },
-  {
-    value: "Full access including billing and organization deletion",
-    maxCount: 1,
-    note: "MosaicOrgPanel role description — fixed by PR #101.",
-  },
-  {
-    value: "Email is required",
-    maxCount: 1,
-    note: "MosaicOrgPanel invite-form validation message — fixed by PR #101.",
-  },
-  {
-    value: "Communication style and personality traits",
-    maxCount: 1,
-    note: "MosaicAgentComposer step description — fixed by PR #99.",
   },
   {
     value: "Agents (",
