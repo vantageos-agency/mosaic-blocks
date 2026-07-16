@@ -274,18 +274,35 @@ if [ "$LANDING_OK" = true ]; then
       new_forms=0
       for case_desc in "${FORM_CHECKS[@]}"; do
         IFS='|' read -r _label snippet_pattern <<< "$case_desc"
-        if ! PROBE_SNIPPET="$snippet_pattern" python3 - "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" <<'BASELINEQ'
+        set +e
+        PROBE_SNIPPET="$snippet_pattern" python3 - "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" <<'BASELINEQ'
 import os
 import re
 import sys
 with open(sys.argv[1]) as f:
     text = f.read()
+# UNPARSEABLE and EMPTY are different answers, and conflating them was a bug of
+# mine: an empty BASELINE is a COMPLETE, VALID answer to "does BASELINE declare
+# this value?" — no, it declares nothing, so every injected form is new. Only a
+# MISSING array literal means the question could not be read at all; that one
+# still refuses loudly.
+if not re.search(r'^const BASELINE = \[', text, re.M):
+    # EXIT 2 = REFUSES TO ANSWER, and it must be DISTINGUISHABLE from exit 1
+    # ("not a member"). Both were exit 1 for one revision of this block: an
+    # unreadable BASELINE would then have been silently counted as "not a
+    # member" for every form — a fail-OPEN in the probe that exists to prove a
+    # guard fails closed. The caller treats 2 as fatal.
+    sys.stderr.write("probe: cannot find the BASELINE array literal in the guard source — the question could not be read at all. Refusing.\n")
+    sys.exit(2)
 rows = [m[0] for m in re.findall(r'value:\s*"((?:[^"\\]|\\.)*)"\s*,\s*\n\s*maxCount:\s*(\d+)\s*,', text)]
-if not rows:
-    raise SystemExit("probe: BASELINE declares NO rows — cannot derive the expected offender delta. Refusing.")
 sys.exit(0 if os.environ["PROBE_SNIPPET"] in rows else 1)
 BASELINEQ
-        then
+        membership=$?
+        set -e
+        if [ "$membership" -eq 2 ]; then
+          echo "probe: BASELINE membership query REFUSED for \"$snippet_pattern\" — refusing to guess the expected offender delta." >&2
+          exit 1
+        elif [ "$membership" -eq 1 ]; then
           new_forms=$((new_forms + 1))
         fi
       done
