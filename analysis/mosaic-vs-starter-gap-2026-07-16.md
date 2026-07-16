@@ -7,7 +7,7 @@
 
 - Reference app SHA actually audited: **`5fcc2459eda4384882245790c885c071098b0420`** (`origin/main`), read from a clean detached worktree (`git worktree add <tmp> origin/main`), NOT the dirty/stale local checkout (which sat on branch `audit/react-doctor-2026-05-29` at `a352aa4`, with uncommitted local edits). This SHA is a snapshot; the branch will move.
 - mosaic-blocks SHA this document was written against: `f5a2e62467feb9a68117fae3ad49f3cd8b6d3e98` (branch `gamma/starter-gap-audit`, cut from `main` at `e3c4e61`).
-- Component inventory derived, not typed from memory: `grep -o "^export { Mosaic[A-Za-z0-9]*" src/index.ts | sort -u` → 96 exports at time of audit (re-run before any PR to re-derive; do not copy this count forward).
+- Component inventory derived, not typed from memory: `grep -o "^export { Mosaic[A-Za-z0-9]*" src/index.ts | sort -u | wc -l` on mosaic-blocks `f5a2e62467feb9a68117fae3ad49f3cd8b6d3e98` → **111** (self-verified by re-running the command after Pi flagged a discrepancy; the figure previously written in this document — 96 — was wrong and is retracted here, not silently overwritten. Re-run before any PR to re-derive; do not copy this count forward).
 - **No screenshots were produced.** This is a static read of source files (CSS, TSX) across both repos — no dev server was booted, no browser render was captured. Any "visual" claim below is inferred from token values and class names, not from a pixel comparison. Flagged explicitly per instruction rather than asserting a visual proof that doesn't exist.
 
 ## 1. Design language of the reference app (read from source, not assumed)
@@ -54,6 +54,75 @@
 | `DashboardHeader` (370 lines: org switcher + credits + i18n switcher + notif + user menu, single cohesive header) | `MosaicDashboardHeader.tsx` exists (own file, own stories/tests) — **not read in depth in this pass**; flagged as needing its own dedicated diff before a components PR is scoped, since header scope (credits display, i18n switcher) may not map 1:1 | Needs follow-up read before PR-2 (components) is scoped — do not assume parity | (scoping needed) |
 | `AppSidebar` groups (OVERVIEW / WORKSPACE, no footer, hover-expand via `:has()`) | `MosaicAppSidebar.tsx` ships its own generalized nav-groups/quick-actions/recent-items/footer-status-slot API (props-driven, no hardcoded groups) — architecture is intentionally more generic (per its own doc comment: "generalized... fully props-driven") | Not a defect — mosaic's version is deliberately more abstract for reuse. Gap is in the DEFAULT visual treatment (colors/spacing/hover-expand behavior), not the API shape | M |
 
+## 2bis. Per-screen audit (read from JSX, screen by screen — required scope)
+
+Every file below was opened and read directly on the audited SHA (`5fcc245`); none of this section is inferred.
+
+### Screen: `dashboard` (`app/[locale]/dashboard/page.tsx`)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Credit-balance metric card (`.card-elevated`, icon-container, `tabular-nums` value) | No dedicated "metric card" export in the census (`MosaicStatsGrid` is the closest, not read in depth this pass) | Not diffed at component-prop level; flagged, not silently skipped | (needs a dedicated diff before PR-2 scoping) |
+| "Architect CTA" card with custom `<ui-button>` web-component tag, `btn-shadow active-scale rounded-full` | `MosaicButton` exists but the starter page uses a raw custom element `<ui-button>`, not the shadcn/mosaic `Button` — i.e. the reference app itself is inconsistent (mixes its own shadcn `Button` elsewhere with a `<ui-button>` custom element here) | Gap is partly IN the reference app, not only in mosaic — flag for Pi before treating this as a mosaic target | S (flag only) |
+| Recent-sessions list (`bg-card border rounded-xl`, divider rows, empty state with icon + CTA link) | `MosaicSessionList` / `MosaicSessionCard` exist in the census | Not diffed prop-by-prop this pass | (follow-up) |
+| Status badge with inline `oklch()` literal color (`border-[oklch(0.62_0.18_240)]/40`) bypassing the semantic token layer entirely | `MosaicBadge` uses only semantic `variant` classes, no raw oklch literal | Reference app itself has a token-bypass here (raw oklch, not `--chart-*`/`--primary`) — worth flagging back to the reference app's own team, not just a mosaic fix | S |
+
+### Screen: `dashboard/chat` (`app/[locale]/dashboard/chat/page.tsx`, list view; `[chatId]/page.tsx` not opened this pass)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Chat list header with "new chat" button + inline SVG plus icon | `MosaicChatSidebar` / `MosaicChatThread` exist but this is a full-width LIST page, not a sidebar — no direct 1:1 export found for this specific list-page layout | Missing pattern: mosaic has thread/sidebar/composer atoms, not this "flat searchable chat list" page-level pattern | M |
+| Search input with left icon overlay (`pointer-events-none absolute` icon inside `input`) | No dedicated "search input with icon" export found in the census (closest: `MosaicInputGroup`, not read in depth) | Not diffed at prop level | (follow-up) |
+| Project filter `<select>` with custom chevron overlay | No equivalent found in census — mosaic exports `MosaicSelect` (likely Radix-based, not a raw `<select>`) | Architecture difference: raw `<select>` + manual chevron vs (presumed) Radix `Select` — not confirmed without opening `MosaicSelect.tsx`, flagged not asserted | (follow-up) |
+| Pinned/unpinned sort, pin icon, relative-date formatting (`formatDate`) | Not present as a component — this is page-level logic, not a component gap | N/A — logic difference, not a UI gap | — |
+
+### Screen: `dashboard/architect` (`app/[locale]/dashboard/architect/page.tsx` + `_components/session-list.tsx`; `_components/chat-interface.tsx` not opened this pass)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Page header with `size-8 rounded-xl bg-muted` icon badge + title + "New session" text-link action | No direct export match found in census for this specific header pattern (closest: `MosaicDashboardHeader`, different scope — global header, not a per-page section header) | Missing pattern-level component (a reusable "page section header") | S–M |
+| `WorkspaceLoading` / `NoWorkspace` / `EmptyState` (all three use the shared `.icon-container` utility + centered text stack) | `MosaicEmptyState` exists in the census | Not diffed prop-by-prop; `.icon-container` utility itself (2.5rem icon box, `bg-muted/50` at 50% mix) has no confirmed mosaic-side equivalent utility class | (follow-up on `MosaicEmptyState` diff; utility gap confirmed) |
+| `StatusDot` with literal `oklch()` colors per status (active/completed/abandoned) | No "status dot" export found in census | Same token-bypass pattern as the dashboard-page badge — raw oklch literals recur at multiple sites in the reference app, not isolated to one file | S (token gap, recurring) |
+| Session-list rows with relative-time formatting | `MosaicSessionList` exists | Not diffed prop-by-prop this pass | (follow-up) |
+
+### Screen: `dashboard/missions` (`app/[locale]/dashboard/missions/page.tsx` + `components/missions/*.tsx`, 6 files / 965 lines total)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| `MissionsHeader` + `MissionFilters` + `ViewOptions` (board/list toggle) | No direct 1:1 export found in census for a "mission board header with filter + view-toggle" composite | Missing composite pattern (mosaic has `MosaicKanbanBoard`/`MosaicKanbanColumn` atoms, not the header/filter/toggle shell around them) | M |
+| `MissionBoard` (drag-and-drop kanban, 5 fixed status columns: pending/executing/awaiting_checkpoint/completed/failed, native HTML5 drag events, optimistic local state before Convex mutation confirms) | `MosaicKanbanBoard` + `MosaicKanbanColumn` exist in the census | Column-count and status-vocabulary are domain-specific to the reference app (Convex mission schema) — **this is exactly the kind of business-specific vocabulary that must NOT be hardcoded into mosaic-blocks** per project doctrine; the gap to close is prop-driven column config, not literally these 5 statuses | M |
+| `MissionListView` (alternate to board), `MissionStats` (245 lines — not opened in depth this pass) | `MosaicStatsGrid` (stats), no direct list-view export confirmed | `MissionStats` (245 lines) not read in depth — flagged, not silently skipped | (follow-up) |
+| Loading spinner: raw inline SVG spin animation (`animate-spin`, two-path circle+arc), not `MosaicSkeleton` | `MosaicSkeleton` exists in census but this reference-app spot uses a spinner, not a skeleton — different loading-state pattern entirely | No "spinner" export found in the mosaic census | S |
+
+### Screen: `dashboard/account` (`app/[locale]/dashboard/account/page.tsx` + `components/dashboard/account/AccountTabs.tsx`)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Custom tab implementation (own `TabId` union type + inline SVG icons per tab: profile/subscription/usage/notifications) — confirmed NOT the shadcn/Radix `Tabs` primitive (`grep` for `TabsList`/`TabsTrigger`/`<Tabs` in `AccountTabs.tsx` returned zero matches) | No `MosaicTabs` export found in the census at all | **Missing component entirely** — mosaic-blocks has no tabs primitive/export, and the reference app rolls its own rather than using a shared one | M |
+| Page header skeleton (`animate-pulse` blocks matching final layout dimensions) | `MosaicSkeleton` exists | Not diffed prop-by-prop | (follow-up) |
+| Individual tab content (`ProfileTab`, `SubscriptionTab`, `UsageCreditsTab`, `NotificationsTab` — the last explicitly dead-code-commented per a `biome-ignore` note in source, "used when Notifications tab is uncommented") | `MosaicProfilePanel`, `MosaicPreferencesPanel`, `MosaicApiKeyPanel` exist in census as plausible analogues | Not opened/diffed this pass — named here as candidates only, not confirmed matches | (follow-up) |
+
+### Screen: `dashboard/configurator` (`app/[locale]/dashboard/configurator/page.tsx` + `components/design-system/customizer.tsx`, not opened)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Live design-system customizer: `Customizer` panel + `DesignSystemProvider` (URL-param-driven via `nuqs`), live color-swatch preview grid (8 swatches incl. `bg-chart-1`/`bg-chart-2`), button-variant preview row | **No equivalent found anywhere in the 111-export census** — no `MosaicCustomizer`, no `MosaicThemeConfigurator`; closest are `MosaicThemeProvider` / `MosaicThemeToggle`, which only toggle light/dark, not a full token customizer | **Missing entirely** — this is the single largest component gap found in this audit: the reference app ships a live multi-axis (style/color/font/radius) design customizer; mosaic ships a binary theme toggle | L |
+
+### Screen: `create` (`app/[locale]/create/page.tsx` — onboarding entry point)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Same "design system customizer" pattern as `dashboard/configurator`, but with ITS OWN separate `Customizer` + `DesignSystemProvider` under `components/create/` (confirmed by import paths — `@/components/create/customizer` vs `@/components/design-system/customizer` used by the dashboard route) | Same gap as above (no mosaic equivalent) | Reference app itself duplicates this feature across two independent component trees (`components/create/*` and `components/design-system/*`) — flagged as a reference-app-side observation, not a mosaic defect, but relevant to scoping: porting once vs twice | L (shared with configurator gap above) |
+| Responsive layout: fixed sidebar customizer on desktop (`md:w-72 md:border-r`), horizontal scroll customizer bar on mobile (`md:hidden`) | N/A — no mosaic component to compare, per above | Same as above | — |
+
+### Screen: `sign-in` / `sign-up` (`app/[locale]/sign-in/[[...sign-in]]/page.tsx`, `app/[locale]/sign-up/[[...sign-up]]/page.tsx`)
+| Element | Mosaic equivalent | Gap | Effort |
+|---|---|---|---|
+| Both pages: fixed `bg-gray-950` (hardcoded Tailwind gray, NOT `bg-background` / any OKLCH semantic token), centered `max-w-md` column, `<SignIn>`/`<SignUp>` Clerk widget, translated title/subtitle above the widget | `MosaicSignInLayout` / `MosaicSignUpLayout` exist in the census (`src/components/auth/sign-in-layout`, `src/components/auth/sign-up-layout` — not opened in depth this pass) | Confirmed defect in the reference app itself: hardcoded `bg-gray-950` bypasses the entire OKLCH token/preset system described in §1 — this page does NOT follow the reference app's own design-token doctrine. Flag to Pi/Laurent: should mosaic's `MosaicSignInLayout`/`MosaicSignUpLayout` replicate this bypass (visual parity) or use `bg-background` (token-correct)? Not decided here. | S (decision needed before port) |
+
+### Screens I could NOT complete a full component-level diff for, named explicitly (not silent)
+- `dashboard/chat/[chatId]/page.tsx` (individual chat thread view) — page listed in the directory scan but its file contents were not opened this pass; the list-page (`chat/page.tsx`) was audited, the thread-detail page was not.
+- `dashboard/architect/_components/chat-interface.tsx` — imported by `architect/page.tsx` and confirmed to exist, but its internals were not opened.
+- `components/missions/mission-stats.tsx` (245 lines), `mission-filters.tsx` (286 lines), `mission-list-view.tsx`, `view-options.tsx`, `mission-column.tsx` — existence and line counts confirmed (`wc -l`), contents not opened line-by-line.
+- `components/design-system/customizer.tsx` (dashboard/configurator) and `components/create/customizer.tsx` (create) — both confirmed to exist via import paths in the pages that use them; neither file's internals were opened, so the "Missing entirely" verdict above rests on the mosaic-side census (confirmed absent) cross-referenced with the PAGE-level JSX (confirmed present), not on a full read of the customizer component's own internals.
+- `dashboard/account/tabs/{ProfileTab,SubscriptionTab,UsageCreditsTab,NotificationsTab}.tsx` — confirmed to exist via imports in `AccountTabs.tsx`, not opened individually.
+- `MosaicDashboardHeader.tsx`, `MosaicDashboardLayout.tsx`, `MosaicChatSidebar.tsx`, `MosaicSignInLayout`/`MosaicSignUpLayout` internals, and the remaining mosaic-side exports not named above — not read in depth on the mosaic side; the census (grep) confirms existence, not prop/behavior parity.
+
+Reason these were not completed: audit time budget for this pass. This list is the explicit follow-up scope for PR-2 fine-grained diffing — it is NOT a silent gap; every item above is named with the exact file path that still needs opening.
+
 ## 3. Ordered PR plan (tokens → components → theme, per direction)
 
 1. **PR-1 — Tokens** (`src/styles.css`): add the missing token layer only, no component changes.
@@ -65,23 +134,28 @@
    - `--ease-out-expo` as a shared CSS custom property.
    - Effort: S. No breaking change — additive tokens only, existing consumers unaffected.
 
-2. **PR-2 — Components**: consume the new tokens; fix at least one token-bypass defect found in this audit.
-   - `MosaicAppSidebar.tsx`: replace hardcoded `text-green-500` with the new `--success` token (concrete, already-identified defect, not speculative).
-   - `MosaicButton` / `button-variants.ts`: add a `.card-elevated`-equivalent utility OR document its absence as a deliberate choice (per the "declared divergence, not a silent gap" rule) — decide in review, not in this audit.
-   - `MosaicDashboardHeader.tsx`: dedicated read-and-diff against `components/dashboard/DashboardHeader.tsx` BEFORE scoping any code change — flagged above as not yet compared line-by-line; do not assume parity from the export existing.
-   - Effort: M (bounded by the diff work above, which has not been done yet).
+2. **PR-2 — Components**: consume the new tokens; fix concrete token-bypass defects found in this audit; complete the still-open per-screen diffs (§2bis "could not complete" list) before writing any component code.
+   - `MosaicAppSidebar.tsx`: replace hardcoded `text-green-500` with the new `--success` token (concrete, already-identified defect).
+   - Reference-app-side raw `oklch()` literals recur at ≥2 confirmed sites (dashboard-page status badge, architect session-list `StatusDot`) bypassing the reference app's OWN token system — flag back to the reference-app owners; mosaic should not copy this bypass, it should use the new `--chart-*`/semantic tokens from PR-1.
+   - `MosaicButton` / `button-variants.ts`: add a `.card-elevated`-equivalent utility OR document its absence as a deliberate choice — decide in review.
+   - **New: `MosaicTabs` does not exist at all** (confirmed by grep across the full 111-export census — zero `Tabs` match) while the reference app's account screen rolls its own tab implementation. Decide whether mosaic ships a Tabs primitive before porting the account screen.
+   - `MosaicDashboardHeader.tsx`, `MosaicChatSidebar.tsx`, `MosaicSessionList`, `MosaicEmptyState`, `MosaicKanbanBoard`/`MosaicKanbanColumn`, `MosaicSignInLayout`/`MosaicSignUpLayout`: each needs the dedicated line-by-line diff named in §2bis's "could not complete" list BEFORE its corresponding reference-app screen is ported — do not assume parity from the export existing.
+   - Effort: M–L (bounded by the diff work listed in §2bis, none of which has been done yet).
 
-3. **PR-3 — Theme / preset system**: the large structural item.
+3. **PR-3 — Theme / preset system + the two largest structural gaps found**
    - Decide (with Pi/Laurent, not unilaterally): does mosaic-blocks adopt the reference app's SIX-preset body-class-overlay mechanism, or does it ship ONE default look matching Luma only (the reference app's current default preset per `globals.css` import order — `base.css` first, then all six style files unconditionally, with the active look controlled by a runtime `PresetLoader` component this audit did not trace)?
-   - If "one look matching Luma": land `rounded-4xl` pill buttons + `active:translate-y-px` press as the new `MosaicButton` default. Effort: S.
-   - If "full preset system": port the `.cn-*` overlay-class architecture. Effort: L — this is the item requiring the most upfront design decision before any code is written.
+     - If "one look matching Luma": land `rounded-4xl` pill buttons + `active:translate-y-px` press as the new `MosaicButton` default. Effort: S.
+     - If "full preset system": port the `.cn-*` overlay-class architecture. Effort: L.
+   - **Design customizer (`dashboard/configurator` + `create` screens)**: the reference app ships a live, URL-param-driven, multi-axis (style/color/font/radius) design-system customizer with zero equivalent anywhere in mosaic-blocks' 111-export census (`MosaicThemeToggle` is light/dark only). This is the single largest component gap in the whole audit. Needs its own scoping decision — is this even in mosaic-blocks' scope, or does it stay reference-app-only? Effort: L, and possibly out-of-scope — flagged for Pi/Laurent, not decided here.
+   - **Sign-in/sign-up hardcoded `bg-gray-950`**: both reference-app auth pages bypass the OKLCH token system entirely with a literal Tailwind gray, contradicting the reference app's own design doctrine described in §1. Decide: should `MosaicSignInLayout`/`MosaicSignUpLayout` replicate this (visual parity with what ships today) or correct it to `bg-background` (token-correct, diverges from current reference-app pixels)? Effort: S, decision-gated.
 
 ## 4. What this audit did NOT do (explicit, per read-only scope)
 
 - No component code was created or modified.
 - No screenshots were captured (explicitly flagged in §Provenance, not silently omitted).
-- `MosaicDashboardHeader.tsx`, `MosaicDashboardLayout.tsx`, `MosaicChatSidebar.tsx`, and the remaining ~90 exported components were NOT individually diffed against their reference-app counterparts — only the shell (sidebar, header, layout), buttons, badges, and the token file were read in depth. A full per-screen component diff (dashboard/chat, dashboard/architect, dashboard/missions, dashboard/account, dashboard/configurator, onboarding/create, sign-in/sign-up) is out of scope for this pass and should be a follow-up task if PR-2 needs finer granularity than stated above.
-- No decision was made on the PR-3 preset-system question — it is surfaced for Pi/Laurent, not resolved here.
+- Every required screen (dashboard, dashboard/chat, dashboard/architect, dashboard/missions, dashboard/account, dashboard/configurator, create, sign-in, sign-up) was opened and read directly from its JSX — see §2bis for the full per-screen element/gap table.
+- Within those screens, a named subset of files (thread-detail chat page, architect chat-interface, four mission sub-components, both customizer implementations, four account tab files, and several mosaic-side component internals) was confirmed to EXIST but not read line-by-line — the exact list is in §2bis "Screens I could NOT complete a full component-level diff for", not a silent gap.
+- No decision was made on the PR-3 preset-system question, the design-customizer scope question, or the sign-in `bg-gray-950` question — all three are surfaced for Pi/Laurent, not resolved here.
 
 ---
 
