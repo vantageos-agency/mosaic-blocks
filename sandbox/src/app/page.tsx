@@ -700,6 +700,13 @@ export default function SandboxPage() {
                   creatingLabel="Creating…"
                   optionalInstructionsHelp="Optional: Add specific behaviors or constraints for your agent"
                   unnamedAgentLabel="Unnamed Agent"
+                  roleSublabel="Professional expertise and domain knowledge"
+                  personaSublabel="Communication style and personality traits"
+                  frameworkSublabel="Thinking approach and decision-making process"
+                  editModuleAriaLabel={(label) => `Edit ${label}`}
+                  removeModuleAriaLabel={(label) => `Remove ${label}`}
+                  selectModuleAriaLabel={(label) => `Select ${label}`}
+                  changeModuleLabel={(label) => `Change ${label}`}
                   labels={{
                     role: "Role",
                     persona: "Persona",
