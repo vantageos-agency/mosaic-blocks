@@ -1,6 +1,5 @@
 ---
 name: vantage-design-system
-description: VantageOS design system conventions for building or reviewing UI in EveVantage and fleet apps. Use when adding a new UI component, scaffolding a new app shell, choosing color tokens, wiring the EN/FR switcher or dark/light toggle, or before claiming a UI change is "done". Triggers on "new component", "new page", "new app", "design tokens", "dark mode", "light mode", "language switcher", "i18n toggle", "screenshot", "visual proof", "blank page", "empty state".
 ---
 
 # VantageOS design system
