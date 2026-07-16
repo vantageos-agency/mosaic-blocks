@@ -109,6 +109,29 @@ jobs:
       - name: Probe — version resolver refuses loudly (unknown flag, dead registry)
         run: bash scripts/tests/probe-derive-next-version.sh
 
+      # ── 8d-2. Skills standard guard (Day 116 root-fix) ───────────────────────
+      #    `grep -rln 'skills' .github/workflows/` on this repo used to return
+      #    EMPTY — no CI job ever opened a skill's diff. Two doc PRs merged on
+      #    a green Gates that only proved the TypeScript library builds. This
+      #    step is diff-scoped: it validates every skills/<name>/ directory
+      #    the PR's diff touches against skill-standard-v2.md (frontmatter,
+      #    description trigger clause, body length, no "SELLABLE AS" heading,
+      #    resolvable relative links, evals/evals.json shape) — three-state
+      #    exit (0 conform / 1 violation named / 2 refuses to judge, naming
+      #    what it could not read). See scripts/skills-standard-guard.mjs
+      #    header for the full "why", including why it is diff-scoped rather
+      #    than a full-tree scan. PR-ONLY: BASE_REF...HEAD needs the PR's real
+      #    head SHA, not the synthetic pull_request merge commit (same
+      #    reasoning as the release artifacts guard above).
+      - name: Skills standard guard
+        if: github.event_name == 'pull_request'
+        env:
+          SKILLS_GUARD_HEAD_REF: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/skills-standard-guard.mjs
+
+      - name: Probe — skills standard guard bites
+        run: bash scripts/tests/probe-skills-standard-guard.sh
+
       # ── 8e. PR title matches diff guard ──────────────────────────────────────
       #    A merge title is a hand-typed claim about an artifact a machine can
       #    read (the diff). PR-ONLY, same shape as the release artifacts guard:
