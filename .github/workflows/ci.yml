@@ -178,6 +178,21 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # ── 9b. No hardcoded words guard (SIN-01) ────────────────────────────────
+      #    This library ships ZERO user-facing words of its own — every
+      #    user-facing string is a HOST-supplied prop (bilingual FR+EN by
+      #    design). Scans the BUILT artifact (dist/index.cjs), never source —
+      #    what ships is what matters; source-level greps missed 3 of the 4
+      #    forms this guard now covers (see the guard's own header comment).
+      #    EXPECTED RED until the currently-known offenders are fixed by other
+      #    PRs (tracked separately) — this guard's job is to make the
+      #    remaining list machine-derived, not to fix it in this PR.
+      - name: No hardcoded words guard (SIN-01)
+        run: node scripts/no-hardcoded-words-guard.mjs
+
+      - name: Probe — no hardcoded words guard bites
+        run: bash scripts/tests/probe-no-hardcoded-words-guard.sh
+
       # ── 10. Sandbox install + build (Next.js — Rule #19) ─────────────────────
       #    The sandbox is a standalone pnpm project (not a workspace member).
       #    Install its deps first (including the freshly built local lib via file:..).
