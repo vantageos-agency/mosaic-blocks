@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "skills": {
+    "better-ui": {
+      "upstream": {
+        "repo": "https://github.com/jakubkrehel/skills",
+        "path": "better-ui",
+        "commit": "941e95e9daf2be6c17e0285be0155e60dc2b9fe"
+      },
+      "note": "Cloned unmodified from upstream at vendoring time. See skills/ATTRIBUTION.md.",
+      "files": {
+        "SKILL.md": "sha256:941e95e9daf2be6c17e0285be0155e60dc2b9fef6b640ab98a16670d70c28889",
+        "animations.md": "sha256:d63653e38442a95d824d9827137574cd53a0acf5ed6926bc5395540fe5298047",
+        "performance.md": "sha256:ce907ae3d9a55cc996364518cbace376c9d88b64206fdc4c67809199115aa613",
+        "surfaces.md": "sha256:ca1feef55ebb7267ed01d9d717eb4857a2e333665719e04ac878ab104478a824"
+      }
+    },
+    "better-colors": {
+      "upstream": {
+        "repo": "https://github.com/jakubkrehel/skills",
+        "path": "better-colors",
+        "commit": "f0d99ef14d99304362cca1c2b0f4e6fce44779b3"
+      },
+      "note": "Cloned unmodified from upstream at vendoring time. See skills/ATTRIBUTION.md.",
+      "files": {
+        "SKILL.md": "sha256:f0d99ef14d99304362cca1c2b0f4e6fce44779b3ba0ddb68084f1250b547907a",
+        "accessibility-contrast.md": "sha256:ef405133cbca83ea2934ea3bf59338df8f6e81db81bca7eccb2eb54133295b34",
+        "color-conversion.md": "sha256:c2a09184f2b3aeac20bd174c29030f1aa1d79c51fbc28d599dcea53cadc5b342",
+        "gamut-and-tailwind.md": "sha256:18e410dd1dfd985fa43c1ae1cba9a843641f13baf211c25ca95c2f3d247c158e",
+        "palette-generation.md": "sha256:c4c18dd24a0ce7f84c8db8cf55a0fd454b612082605ee8f50db2cf1b5e01d30a"
+      }
+    },
+    "better-typography": {
+      "upstream": {
+        "repo": "https://github.com/jakubkrehel/skills",
+        "path": "better-typography",
+        "commit": "a17408922649a87721669e19fe185342a91c147"
+      },
+      "note": "Cloned unmodified from upstream at vendoring time. See skills/ATTRIBUTION.md.",
+      "files": {
+        "SKILL.md": "sha256:a17408922649a87721669e19fe185342a91c147e554134d2bcc1b103a9967b88",
+        "choosing-fonts.md": "sha256:7ada14fbf8af2fe5e045a9b2effefc83a50bd590f97845bedb221ed074f649e1",
+        "css-cheat-sheet.md": "sha256:bf0d8b3f136c6087bb464d90a2659d1ae06be8d873ef87318928ce3eefca4996",
+        "details-and-accessibility.md": "sha256:6c01a4b2e9a57f06e90ba05956ae3f8c746e9c0b032929ea9a8c7abb47226388",
+        "spacing-and-sizing.md": "sha256:8d95064d0ee5e3f42bf4bda09a0264ce3ade96d59137a3b5853c447d7c17a8bf",
+        "variable-fonts-and-opentype.md": "sha256:b7ceb5adaabab0c62ecf5d28f77db1485de32be4095bfd9a844bbda31f9ba31c",
+        "wrapping-and-punctuation.md": "sha256:28986e834421dff80349823616e1afb0b62cc7e0f60d5949451f234a37d2c919"
+      }
+    }
+  }
+}

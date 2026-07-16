@@ -67,13 +67,15 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const SKILLS_DIR = "skills";
+const VENDORED_MANIFEST_PATH = `${SKILLS_DIR}/VENDORED.json`;
 
 const BASE_REF = process.env.SKILLS_GUARD_BASE_REF?.trim() || "origin/main";
 const HEAD_REF = process.env.SKILLS_GUARD_HEAD_REF?.trim() || "HEAD";
@@ -200,6 +202,213 @@ function parseFrontmatter(raw, skillPath) {
   flushFolded();
 
   return { fields, body: lines.slice(closeIdx + 1).join("\n"), bodyStartLine: closeIdx + 2 };
+}
+
+/**
+ * VENDORED EXEMPTION — Day 116 follow-up (Eta-measured gap, PR #124 review).
+ *
+ * WHY THIS EXISTS: `better-ui/`, `better-colors/`, `better-typography/` are
+ * byte-identical MIT clones of https://github.com/jakubkrehel/skills (see
+ * `skills/ATTRIBUTION.md`). Applying skill-standard-v2.md to them — a
+ * `version:` field, the "even if they don't say X" trigger clause, an
+ * evals/evals.json — would mean REWRITING upstream content, destroying the
+ * one property that makes vendoring them worthwhile: they are proven-good,
+ * unmodified third-party guidance. Eta measured directly: touching even a
+ * comment in `better-ui/SKILL.md` under the un-exempted guard produced 3
+ * un-fixable violations (missing version, missing trigger clause, missing
+ * evals) on content this repo does not own and should not rewrite.
+ *
+ * THE RULE IS DERIVED, NEVER A HARDCODED LIST — `.claude/rules/
+ * derive-never-type.md` + `.claude/rules/guard-formulation-census.md`: a
+ * literal `["better-ui", "better-colors", "better-typography"]` array in
+ * this file would be exactly the disease those rules close (it silently
+ * stops covering the 4th vendored skill someone adds next month, and a
+ * reader has no way to tell "vendored" from "home-grown, just untouched").
+ * The domain of "which skill dirs are vendored" is DERIVED from a
+ * structured manifest, `skills/VENDORED.json` — never from prose (a
+ * free-text scanner over ATTRIBUTION.md would be exactly the "parses free
+ * prose" anti-pattern `guard-formulation-census.md` bans: too lax (misses a
+ * reworded sentence) or too zealous (fires on a sentence merely quoting the
+ * marker) — a STRUCTURED field is the only shape a guard may ever mordre on.
+ *
+ * VERIFIABILITY, NOT JUST DECLARATION: a bare "this dir is vendored" claim
+ * in a manifest is not proof — a home-grown skill could add itself to the
+ * manifest to dodge the standard entirely. Two independent checks close
+ * that:
+ *
+ *   1. DIGEST INTEGRITY — the manifest pins a sha256 of every file under
+ *      the skill dir *as captured at vendoring time*. This guard
+ *      recomputes those digests from disk on every run. Any drift (a
+ *      file edited, added, or removed since vendoring) is a LOUD
+ *      violation naming the exact file and byte-mismatch — never a
+ *      silent pass. Scenario (b) in the probe: editing a vendored file
+ *      breaks its digest and the guard BITES.
+ *
+ *   2. ENTRY PROVENANCE — a skill is only exempt if its `VENDORED.json`
+ *      entry is UNCHANGED between BASE_REF and HEAD_REF. If the *current
+ *      diff itself* adds or edits that skill's manifest entry, exemption
+ *      is refused and the skill falls through to the FULL standard check
+ *      instead. This is what stops a home-grown skill from declaring
+ *      itself vendored inside the very PR that introduces it: the fresh
+ *      manifest entry it would need to add is, by definition, new in this
+ *      diff, so provenance check #2 refuses the exemption and the skill
+ *      must pass skill-standard-v2.md on its own merits (version, trigger
+ *      clause, evals) like any home-grown skill. Scenario (c) in the
+ *      probe.
+ *
+ *      Consequence, stated plainly: to add a NEW vendored skill, its
+ *      manifest entry must land in a PRIOR, separately-reviewed commit
+ *      before any PR can rely on the exemption. This guard does not
+ *      support "vendor and exempt in the same diff" — a deliberate,
+ *      named limitation, not a silent gap.
+ *
+ * DECLARED LIMIT OF WHAT THIS PROVES (write it, never pretend otherwise —
+ * `.claude/rules/derive-never-type.md`): this guard can prove "declared
+ * vendored AND byte-identical to what was declared". It CANNOT prove
+ * "byte-identical to the live upstream right now" — CI here has no
+ * reliable outbound network path to re-clone jakubkrehel/skills on every
+ * run, and minting one just to re-verify 3 files is a bigger surface than
+ * the gap it would close. If upstream drifts, this manifest goes stale
+ * until a human re-vendors deliberately. That is a known, accepted gap,
+ * not a hidden one.
+ */
+
+/** @returns {string} sha256 hex digest of the file at `absPath`. */
+function sha256OfFile(absPath) {
+  return createHash("sha256").update(readFileSync(absPath)).digest("hex");
+}
+
+/** Recursively list files under `absDir`, returning paths relative to `absDir`, sorted. */
+function listFilesRecursive(absDir) {
+  const out = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      const abs = join(dir, entry);
+      const st = statSync(abs);
+      if (st.isDirectory()) walk(abs);
+      else out.push(relative(absDir, abs));
+    }
+  };
+  walk(absDir);
+  return out.sort();
+}
+
+/**
+ * Load `skills/VENDORED.json` at a given git ref (`BASE_REF` or `HEAD_REF`).
+ * Returns `null` if the file does not exist at that ref (not every ref has
+ * to carry a manifest — e.g. history before this feature landed). A file
+ * that exists but does not parse as JSON is a LOUD GuardUnreadable, never a
+ * silent `null`.
+ */
+function loadManifestAtRef(ref) {
+  const raw = git(["show", `${ref}:${VENDORED_MANIFEST_PATH}`], { allowFail: true });
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new GuardUnreadable(
+      `${VENDORED_MANIFEST_PATH} at ${ref}: does not parse as JSON — ${err.message}`,
+    );
+  }
+}
+
+/**
+ * Load the on-disk manifest (working tree at HEAD_REF checkout). Missing
+ * file → `null` (no vendored skills declared at all, every touched skill
+ * goes through the full standard). Malformed JSON → LOUD GuardUnreadable.
+ */
+function loadManifestOnDisk() {
+  const absPath = join(ROOT, VENDORED_MANIFEST_PATH);
+  if (!existsSync(absPath)) return null;
+  try {
+    return JSON.parse(readFileSync(absPath, "utf8"));
+  } catch (err) {
+    throw new GuardUnreadable(`${VENDORED_MANIFEST_PATH}: does not parse as JSON — ${err.message}`);
+  }
+}
+
+/**
+ * Decide whether `skillName` is exempt as VENDORED, and if so, verify its
+ * digest integrity. Returns `{ exempt: true }` (all digests match, entry
+ * provenance is prior to this diff — the skill is skipped from the
+ * standard) or `{ exempt: false, reason }` (not in manifest, entry changed
+ * in this diff, or digest mismatch — falls through to / reports a
+ * violation). Never silently exempts on ambiguity — an unreadable case
+ * throws GuardUnreadable (fail-closed).
+ */
+function checkVendoredExemption(skillName, manifestOnDisk, manifestAtBase, violations) {
+  const entryOnDisk = manifestOnDisk?.skills?.[skillName];
+  if (!entryOnDisk) {
+    return { exempt: false, reason: "not declared in skills/VENDORED.json" };
+  }
+
+  const entryAtBase = manifestAtBase?.skills?.[skillName];
+  if (JSON.stringify(entryAtBase) !== JSON.stringify(entryOnDisk)) {
+    // Provenance check #2: this diff itself introduces or changes the
+    // manifest entry — refuse the exemption. This is what stops a
+    // home-grown skill from self-declaring VENDORED in the same PR that
+    // adds it (scenario (c) in the probe).
+    violations.push({
+      file: VENDORED_MANIFEST_PATH,
+      rule: "skills-standard-guard § VENDORED exemption — entry provenance",
+      detail: `${skillName}: skills/VENDORED.json entry is new or changed in this diff — a vendored-skill exemption cannot be granted in the same diff that introduces or edits its own manifest entry. Land the manifest entry in a prior, separately-reviewed commit, or this skill must conform to the full skill-standard-v2.md standard.`,
+    });
+    return { exempt: false, reason: "manifest entry changed in this diff" };
+  }
+
+  // Digest check #1: recompute every file's sha256 and compare to the
+  // manifest, in BOTH directions (missing files, AND extra untracked files
+  // not present in the manifest — both are a break of the pinned set).
+  const absSkillDir = join(ROOT, SKILLS_DIR, skillName);
+  const declaredFiles =
+    entryOnDisk.files && typeof entryOnDisk.files === "object" ? entryOnDisk.files : null;
+  if (!declaredFiles) {
+    throw new GuardUnreadable(
+      `${VENDORED_MANIFEST_PATH}: entry "${skillName}" has no "files" digest map — cannot verify vendored integrity`,
+    );
+  }
+
+  const actualFiles = listFilesRecursive(absSkillDir);
+  const declaredPaths = Object.keys(declaredFiles).sort();
+
+  for (const rel of declaredPaths) {
+    if (!actualFiles.includes(rel)) {
+      violations.push({
+        file: `${SKILLS_DIR}/${skillName}/${rel}`,
+        rule: "skills-standard-guard § VENDORED exemption — digest integrity",
+        detail:
+          "file declared in skills/VENDORED.json is missing on disk (vendored skill was pruned since vendoring)",
+      });
+    }
+  }
+  for (const rel of actualFiles) {
+    if (!declaredPaths.includes(rel)) {
+      violations.push({
+        file: `${SKILLS_DIR}/${skillName}/${rel}`,
+        rule: "skills-standard-guard § VENDORED exemption — digest integrity",
+        detail:
+          "file exists on disk but is not declared in skills/VENDORED.json (vendored skill grew a file since vendoring)",
+      });
+    }
+  }
+  for (const rel of declaredPaths) {
+    if (!actualFiles.includes(rel)) continue; // already reported above
+    const expected = declaredFiles[rel];
+    const actual = `sha256:${sha256OfFile(join(absSkillDir, rel))}`;
+    if (expected !== actual) {
+      violations.push({
+        file: `${SKILLS_DIR}/${skillName}/${rel}`,
+        rule: "skills-standard-guard § VENDORED exemption — digest integrity",
+        detail: `content no longer matches the pinned vendored digest (expected ${expected}, got ${actual}) — this vendored file was modified; either restore it, or if the change is deliberate, re-vendor: update the VENDORED.json digest in its OWN prior commit, and if it must diverge from upstream, remove it from VENDORED.json entirely so it is judged by the full skill-standard-v2.md standard`,
+      });
+    }
+  }
+
+  const hasViolationsForThisSkill = violations.some((v) =>
+    v.file.startsWith(`${SKILLS_DIR}/${skillName}/`),
+  );
+  if (hasViolationsForThisSkill) return { exempt: false, reason: "digest mismatch" };
+  return { exempt: true };
 }
 
 /**
@@ -375,7 +584,7 @@ function checkEvals(skillPath, skillName, absSkillDir, violations) {
  * diff touched — an eval-emptying edit that leaves SKILL.md alone must still
  * be caught, and vice versa).
  */
-function validateSkillDir(skillName, violations) {
+function validateSkillDir(skillName, manifestOnDisk, manifestAtBase, violations) {
   const skillPath = `${SKILLS_DIR}/${skillName}`;
   const absSkillDir = join(ROOT, skillPath);
   if (!existsSync(absSkillDir)) {
@@ -383,6 +592,26 @@ function validateSkillDir(skillName, violations) {
       `${skillPath}: directory referenced by the diff does not exist on disk`,
     );
   }
+
+  const vendored = checkVendoredExemption(skillName, manifestOnDisk, manifestAtBase, violations);
+  if (vendored.exempt) return; // digest-verified vendored skill — standard does not apply
+  if (vendored.reason === "digest mismatch") {
+    // A PREVIOUSLY-declared vendored skill whose pinned content has drifted.
+    // The violation is already recorded above, naming the exact file and
+    // digests. Do NOT additionally judge it against skill-standard-v2.md —
+    // that would pile confusing "missing version/evals" noise onto content
+    // that is, by declaration, still meant to be a vendored clone, not a
+    // home-grown skill under construction. The fix is "restore the file or
+    // re-vendor", never "add a version field to someone else's clone".
+    return;
+  }
+  // Not exempt because it was never declared in the manifest, OR because
+  // this diff itself introduces/edits the manifest entry (provenance
+  // violation already recorded above). Either way, fall through to the full
+  // skill-standard-v2.md check — this is the path that keeps a home-grown
+  // skill from dodging the standard by self-declaring VENDORED in the same
+  // diff that adds it.
+
   const skillMdPath = join(absSkillDir, "SKILL.md");
   if (!existsSync(skillMdPath)) {
     violations.push({
@@ -434,9 +663,16 @@ function main() {
     return;
   }
 
+  // Loaded ONCE for the whole diff: the on-disk manifest (HEAD_REF's
+  // checked-out state) and the manifest as it stood at BASE_REF (for the
+  // entry-provenance check — was this skill's exemption already granted
+  // BEFORE this diff, or is the diff itself trying to grant it?).
+  const manifestOnDisk = loadManifestOnDisk();
+  const manifestAtBase = loadManifestAtRef(BASE_REF);
+
   const violations = [];
   for (const skillName of skillDirs) {
-    validateSkillDir(skillName, violations);
+    validateSkillDir(skillName, manifestOnDisk, manifestAtBase, violations);
   }
 
   if (violations.length > 0) {

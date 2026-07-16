@@ -30,6 +30,26 @@
 #      verdict.
 #   5. Restores the invoking worktree untouched (`git diff` unchanged).
 #
+# VENDORED-exemption poles (skills/VENDORED.json, Eta's PR #124 review gap):
+# recensed domain of "what can happen to a declared-vendored skill dir" per
+# .claude/rules/guard-formulation-census.md — three forms, three real sites:
+#   e. better-colors — MUST_PASS: SKILL.md TOUCHED (mode-only chmod, content
+#      byte-identical) while its VENDORED.json entry predates the diff —
+#      digest still matches, exempted, exit 0.
+#   f. better-ui     — MUST_BLOCK: SKILL.md CONTENT modified (trivial
+#      comment) on a previously-declared VENDORED entry — digest breaks,
+#      guard bites naming "digest integrity".
+#   g. probe-fake-vendored-skill — MUST_BLOCK: a brand-new, non-conformant
+#      home-grown skill dir adds ITS OWN VENDORED.json entry in the SAME
+#      diff that introduces it (self-declaring VENDORED to dodge the
+#      standard) — entry provenance check refuses the exemption (the entry
+#      did not exist at BASE_REF) and the skill falls through to, and fails,
+#      the full skill-standard-v2.md check.
+# All three digests in the fixtures below are DERIVED from the actual
+# on-disk clone content via `regen_vendored_manifest` (node sha256), never
+# hand-typed — a probe that hand-types the hex it is meant to verify would be
+# exactly the disease `.claude/rules/derive-never-type.md` closes.
+#
 # Usage: bash scripts/tests/probe-skills-standard-guard.sh
 set -euo pipefail
 
@@ -144,6 +164,50 @@ make_baseline_compliant() {
   # append the trigger clause to the description line (single-line description
   # in all 4 shipped skills, verified against real content)
   sed -i 's/^description: \(.*\)$/description: \1 Use this even if they don'"'"'t say the skill name explicitly./' "$f"
+}
+
+# Regenerate (or add to) skills/VENDORED.json inside $CLONE for the named
+# skill dirs, computing every file's sha256 from the ACTUAL on-disk content
+# at call time — never a hand-typed digest. Preserves any pre-existing
+# entries already present in the file.
+regen_vendored_manifest() {
+  local clone_dir="$CLONE"
+  node - "$clone_dir" "$@" <<'NODE'
+const { readFileSync, writeFileSync, existsSync, readdirSync, statSync } = require("node:fs");
+const { createHash } = require("node:crypto");
+const { join } = require("node:path");
+const [, , cloneDir, ...names] = process.argv;
+const manifestPath = join(cloneDir, "skills", "VENDORED.json");
+let manifest = { schema_version: 1, skills: {} };
+if (existsSync(manifestPath)) {
+  manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+}
+function walk(dir) {
+  let out = [];
+  for (const e of readdirSync(dir)) {
+    const p = join(dir, e);
+    const st = statSync(p);
+    if (st.isDirectory()) out = out.concat(walk(p));
+    else out.push(p);
+  }
+  return out;
+}
+for (const name of names) {
+  const dir = join(cloneDir, "skills", name);
+  const files = walk(dir).sort();
+  const digests = {};
+  for (const f of files) {
+    const rel = f.slice(dir.length + 1);
+    digests[rel] = `sha256:${createHash("sha256").update(readFileSync(f)).digest("hex")}`;
+  }
+  manifest.skills[name] = {
+    upstream: { repo: "https://github.com/jakubkrehel/skills", path: name, commit: "probe-fixture" },
+    note: "probe fixture entry, digests derived from on-disk content at fixture time",
+    files: digests,
+  };
+}
+writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+NODE
 }
 
 # ---------------------------------------------------------------------------
@@ -414,6 +478,104 @@ else
   else
     FAILURES+=("EXIT2 no-skills-dir — guard exited $status (expected 2) or did not name the refusal — output: $output")
     log EXIT2 "FAIL — no-skills-dir — exit=$status output=$output"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Case e — MUST_PASS (VENDORED): better-colors, SKILL.md TOUCHED but content
+# byte-identical (mode-only chmod). The file appears in the diff (git tracks
+# mode changes), so touchedSkillDirs() picks up better-colors — the guard
+# must recompute digests, find them unchanged, and exempt it.
+# ---------------------------------------------------------------------------
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+reset_clone "$base"
+(cd "$CLONE" && git checkout --quiet -b probe-pass-vendored-mode-touch "$base")
+regen_vendored_manifest better-colors
+(cd "$CLONE" && git add -- skills/VENDORED.json && git commit --quiet -m "probe: declare better-colors VENDORED (fixture baseline, PRIOR commit)")
+baseline_sha="$(cd "$CLONE" && git rev-parse HEAD)"
+chmod 755 "$CLONE/skills/better-colors/SKILL.md"
+(cd "$CLONE" && git add -- skills/better-colors/SKILL.md && git commit --quiet -m "probe: mode-only touch on VENDORED better-colors/SKILL.md (content byte-identical)")
+if ! git -C "$CLONE" diff --name-only "$baseline_sha" HEAD | grep -qF "skills/better-colors/SKILL.md"; then
+  FAILURES+=("MUST_PASS vendored-mode-touch — mutation did NOT land (file absent from diff) — probe invalid")
+else
+  set +e
+  output="$(run_guard "$baseline_sha" HEAD 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — VENDORED better-colors touched (mode only, digest unchanged) — exempted, exit 0"
+  else
+    FAILURES+=("MUST_PASS vendored-mode-touch — guard exited $status (expected 0) — output: $output")
+    log MUST_PASS "FAIL — vendored-mode-touch — exit=$status output=$output"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Case f — MUST_BLOCK (VENDORED): better-ui, SKILL.md CONTENT modified
+# (trivial comment) on a previously-declared VENDORED entry. Digest breaks —
+# guard must bite, naming the file and "digest integrity", never silently
+# pass a modified vendored file.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+reset_clone "$base"
+(cd "$CLONE" && git checkout --quiet -b probe-block-vendored-modified "$base")
+regen_vendored_manifest better-ui
+(cd "$CLONE" && git add -- skills/VENDORED.json && git commit --quiet -m "probe: declare better-ui VENDORED (fixture baseline, PRIOR commit)")
+baseline_sha="$(cd "$CLONE" && git rev-parse HEAD)"
+printf '\n<!-- probe: trivial comment injected into VENDORED content -->\n' >> "$CLONE/skills/better-ui/SKILL.md"
+(cd "$CLONE" && git add -- skills/better-ui/SKILL.md && git commit --quiet -m "probe: trivial comment edit on real shipped VENDORED better-ui/SKILL.md")
+if ! grep -qF "probe: trivial comment injected" "$CLONE/skills/better-ui/SKILL.md"; then
+  FAILURES+=("MUST_BLOCK vendored-modified — mutation did NOT land — probe invalid")
+else
+  set +e
+  output="$(run_guard "$baseline_sha" HEAD 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 1 ] && echo "$output" | grep -qF "better-ui/SKILL.md" && echo "$output" | grep -qF "digest integrity"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — VENDORED better-ui content modified — guard exited 1, named digest mismatch"
+  else
+    FAILURES+=("MUST_BLOCK vendored-modified — guard exited $status (expected 1) or missing digest-integrity mention — output: $output")
+    log MUST_BLOCK "FAIL — vendored-modified — exit=$status output=$output"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Case g — MUST_BLOCK (VENDORED): a brand-new, non-conformant home-grown
+# skill adds ITS OWN VENDORED.json entry in the SAME diff that introduces
+# it — self-declaring VENDORED to dodge the standard. Entry-provenance check
+# must refuse the exemption (the entry did not exist at BASE_REF) and the
+# skill must fall through to, and fail, the full skill-standard-v2.md check.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+reset_clone "$base"
+(cd "$CLONE" && git checkout --quiet -b probe-block-fake-vendored-self-declare "$base")
+baseline_sha="$(cd "$CLONE" && git rev-parse HEAD)"
+mkdir -p "$CLONE/skills/probe-fake-vendored-skill"
+cat > "$CLONE/skills/probe-fake-vendored-skill/SKILL.md" <<'EOF'
+---
+name: probe-fake-vendored-skill
+description: a home-grown skill trying to dodge the standard by claiming VENDORED status.
+---
+
+# Probe fake-vendored skill — no version, no evals, no trigger clause
+EOF
+regen_vendored_manifest probe-fake-vendored-skill
+(cd "$CLONE" && git add -- skills/probe-fake-vendored-skill skills/VENDORED.json && git commit --quiet -m "probe: home-grown skill self-declares VENDORED in the SAME diff that introduces it")
+if ! grep -qF "probe-fake-vendored-skill" "$CLONE/skills/VENDORED.json"; then
+  FAILURES+=("MUST_BLOCK fake-vendored-self-declare — mutation did NOT land (manifest entry absent) — probe invalid")
+else
+  set +e
+  output="$(run_guard "$baseline_sha" HEAD 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 1 ] && echo "$output" | grep -qF "entry provenance" && echo "$output" | grep -qF "probe-fake-vendored-skill"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — home-grown skill self-declaring VENDORED in-diff — exemption refused AND full standard failed"
+  else
+    FAILURES+=("MUST_BLOCK fake-vendored-self-declare — guard exited $status (expected 1) or missing provenance/skill mention — output: $output")
+    log MUST_BLOCK "FAIL — fake-vendored-self-declare — exit=$status output=$output"
   fi
 fi
 
