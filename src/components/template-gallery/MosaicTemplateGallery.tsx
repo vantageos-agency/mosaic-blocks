@@ -303,6 +303,13 @@ export interface MosaicTemplatePreviewProps {
   selectLabel: string;
   /** Label for the cancel button (shown when `onClose` is set). Required, no default. */
   cancelLabel: string;
+  /**
+   * Formatter for the "Agents (N)" heading, shown only when `template.agents`
+   * is non-empty. Optional — when absent, the heading is not rendered at all
+   * (no fallback word). The host owns the language
+   * (e.g. `(count) => t('TemplatePreview.agentsCount', { count })`).
+   */
+  formatAgentsHeading?: (count: number) => string;
 }
 
 export function MosaicTemplatePreview({
@@ -311,6 +318,7 @@ export function MosaicTemplatePreview({
   onClose,
   selectLabel,
   cancelLabel,
+  formatAgentsHeading,
 }: MosaicTemplatePreviewProps) {
   return (
     <div data-slot="template-preview" className="flex flex-col gap-4 p-4">
@@ -334,7 +342,11 @@ export function MosaicTemplatePreview({
 
       {template.agents && template.agents.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-medium">Agents ({template.agents.length})</p>
+          {formatAgentsHeading && (
+            <p className="mb-2 text-sm font-medium">
+              {formatAgentsHeading(template.agents.length)}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             {template.agents.map((agent) => (
               <div

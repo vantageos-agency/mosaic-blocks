@@ -35,6 +35,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
+          removeAgentAriaLabel={(name) => `Remove ${name}`}
           {...requiredQuickAgentLabels}
         />
       </Wrapper>,
@@ -47,6 +48,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
+          removeAgentAriaLabel={(name) => `Remove ${name}`}
           {...requiredQuickAgentLabels}
         />
       </Wrapper>,
@@ -63,6 +65,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={() => {}}
+          removeAgentAriaLabel={(name) => `Remove ${name}`}
           {...requiredQuickAgentLabels}
         />
       </Wrapper>,
@@ -81,6 +84,7 @@ describe("MosaicQuickAgentSelector", () => {
             availableAgents={availableAgents}
             onAddAgent={() => {}}
             onRemoveAgent={() => {}}
+            removeAgentAriaLabel={(name) => `Remove ${name}`}
             {...requiredQuickAgentLabels}
           />
         </Wrapper>,
@@ -97,6 +101,7 @@ describe("MosaicQuickAgentSelector", () => {
           availableAgents={availableAgents}
           onAddAgent={() => {}}
           onRemoveAgent={onRemove}
+          removeAgentAriaLabel={(name) => `Remove ${name}`}
           {...requiredQuickAgentLabels}
         />
       </Wrapper>,
@@ -115,6 +120,7 @@ describe("MosaicQuickAgentSelector", () => {
             availableAgents={availableAgents}
             onAddAgent={() => {}}
             onRemoveAgent={() => {}}
+            removeAgentAriaLabel={(name) => `Remove ${name}`}
             maxAgents={1}
             {...requiredQuickAgentLabels}
           />

@@ -295,23 +295,7 @@ const ESCAPE_MARKER_RE = /^\s*\/\/\s*allow-hardcoded-word:\s*(\S.+)$/;
 //
 // This baseline may only ever SHRINK (rule 2) — see PR #99/#100/#101 and
 // follow-ups for the fixes in flight.
-const BASELINE = [
-  {
-    value: "Remove ",
-    maxCount: 2,
-    note: "Tag/badge/integrations `Remove <thing>` action labels — same follow-up PR as `Select `.",
-  },
-  {
-    value: "Notifications",
-    maxCount: 1,
-    note: "MosaicChatSidebar section heading — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-  {
-    value: "Agents (",
-    maxCount: 1,
-    note: "MosaicChatSidebar section heading with count — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-];
+const BASELINE = [];
 
 /**
  * @param {string} str

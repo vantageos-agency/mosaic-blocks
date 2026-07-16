@@ -59,6 +59,13 @@ export interface MosaicDashboardHeaderProps {
   /** Notification count (0 = no badge) */
   notificationCount?: number;
   onNotificationsClick?: () => void;
+  /**
+   * Formatter for the notifications button aria-label, read only when
+   * `onNotificationsClick` is set. Optional — when absent, the button
+   * renders with no `aria-label` (no fallback word). The host owns the
+   * language (e.g. `(count) => t('DashboardHeader.notifications', { count })`).
+   */
+  notificationsAriaLabel?: (count: number) => string;
   onSearchChange?: (query: string) => void;
   /** Right-side slot (theme toggle, avatar, quick actions, etc.) */
   actions?: React.ReactNode;
@@ -147,6 +154,7 @@ export function MosaicDashboardHeader({
   subtitle,
   notificationCount = 0,
   onNotificationsClick,
+  notificationsAriaLabel,
   onSearchChange,
   actions,
   logoSlot,
@@ -236,7 +244,7 @@ export function MosaicDashboardHeader({
                 type="button"
                 onClick={onNotificationsClick}
                 className="relative inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={`Notifications${notificationCount > 0 ? ` (${notificationCount})` : ""}`}
+                aria-label={notificationsAriaLabel?.(notificationCount)}
               >
                 <BellIcon />
                 {notificationCount > 0 && (

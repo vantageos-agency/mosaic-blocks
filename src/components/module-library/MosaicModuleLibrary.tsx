@@ -98,6 +98,13 @@ export interface MosaicModuleLibraryProps {
    * no default.
    */
   tagListAddPlaceholder: string;
+  /**
+   * Formatter for a tag-chip's remove-button aria-label, read only when a
+   * `tag-list` field renders an existing tag. Optional — when absent, the
+   * remove button renders with no `aria-label` (no fallback word). The host
+   * owns the language (e.g. `(tag) => t('ModuleForm.removeTag', { tag })`).
+   */
+  removeTagAriaLabel?: (tag: string) => string;
   className?: string;
 }
 
@@ -207,6 +214,13 @@ export interface MosaicModuleFormBaseProps {
    * no default.
    */
   tagListAddPlaceholder: string;
+  /**
+   * Formatter for a tag-chip's remove-button aria-label, read only when a
+   * `tag-list` field renders an existing tag. Optional — when absent, the
+   * remove button renders with no `aria-label` (no fallback word). The host
+   * owns the language (e.g. `(tag) => t('ModuleForm.removeTag', { tag })`).
+   */
+  removeTagAriaLabel?: (tag: string) => string;
 }
 
 /**
@@ -244,6 +258,7 @@ export function MosaicModuleForm(props: MosaicModuleFormProps) {
     descriptionPlaceholder,
     cancelLabel,
     tagListAddPlaceholder,
+    removeTagAriaLabel,
   } = props;
   const [formData, setFormData] = React.useState<Partial<MosaicModuleItem>>({
     name: item?.name ?? "",
@@ -422,7 +437,7 @@ export function MosaicModuleForm(props: MosaicModuleFormProps) {
                       type="button"
                       onClick={() => removeTag(field.id, tag)}
                       className="hover:text-destructive"
-                      aria-label={`Remove ${tag}`}
+                      aria-label={removeTagAriaLabel?.(tag)}
                     >
                       <XIcon />
                     </button>
@@ -593,6 +608,7 @@ function LibraryContent({
   closeEditorAriaLabel,
   editModalTitle,
   tagListAddPlaceholder,
+  removeTagAriaLabel,
 }: MosaicModuleLibraryProps) {
   const [query, setQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState(tabs?.[0]?.id ?? "all");
@@ -735,6 +751,7 @@ function LibraryContent({
           descriptionPlaceholder={descriptionPlaceholder}
           cancelLabel={cancelLabel}
           tagListAddPlaceholder={tagListAddPlaceholder}
+          removeTagAriaLabel={removeTagAriaLabel}
           // The library renders the form in BOTH modes, so it legitimately
           // keeps both labels required on its OWN props — and hands the form
           // exactly the one that its mode actually renders.
