@@ -78,6 +78,20 @@ const NAVIGATION_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Snapshot of which messages are currently in the thread's viewport.
+ *
+ * Shape mirrors the shadcn `useMessageScrollerVisibility()` convention
+ * (`currentAnchorId` / `visibleMessageIds`) so a host migrating from one to
+ * the other does not need to remap fields.
+ */
+export interface MosaicChatThreadVisibleRange {
+  /** Ids (DOM `id` attribute) of the direct children currently intersecting the viewport, in DOM order. */
+  visibleMessageIds: string[];
+  /** Id of the topmost visible child — a stable "you are here" anchor for a future jump-to-message affordance. `null` when nothing is visible. */
+  currentAnchorId: string | null;
+}
+
 export interface MosaicChatThreadProps {
   /** The host-rendered message list (or any other scrollable content). */
   children: React.ReactNode;
@@ -91,6 +105,21 @@ export interface MosaicChatThreadProps {
   className?: string;
   /** React 19 ref prop — forwarded to the root scrollable element. */
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * OPTIONAL. Called whenever the set of visible messages changes, as
+   * observed via `IntersectionObserver` on the content wrapper's direct
+   * children. `children` stays fully opaque to this component — the only
+   * signal read off each child is its DOM `id` attribute, never its content
+   * or shape. A child without an `id` is silently excluded from the report
+   * (nothing to identify it by), never introspected further.
+   *
+   * When this prop is omitted, NO `IntersectionObserver` is created — hosts
+   * that do not need visible-range tracking pay zero cost for it.
+   *
+   * Opens the door to a future "jump to message" affordance built on top of
+   * `currentAnchorId`.
+   */
+  onVisibleRangeChange?: (range: MosaicChatThreadVisibleRange) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -108,8 +137,10 @@ export function MosaicChatThread({
   scrollToBottomLabel,
   className,
   ref,
+  onVisibleRangeChange,
 }: MosaicChatThreadProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const isAtBottomRef = useRef(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -196,6 +227,55 @@ export function MosaicChatThread({
     };
   }, []);
 
+  // Reports which direct children of the content wrapper are currently
+  // visible, via IntersectionObserver — keyed on each child's DOM `id`.
+  // `children` stays opaque: only the `id` attribute is read, never content.
+  //
+  // No `onVisibleRangeChange` supplied => no observer is ever constructed —
+  // hosts that don't need visible-range tracking pay zero cost for it.
+  //
+  // Re-runs when `children` changes (elements to observe may have changed)
+  // or when `onVisibleRangeChange` itself changes. `children` is a deliberate
+  // re-run trigger, not a value read inside the effect body (only the DOM
+  // children of `contentRef` are read, via the ref) — same pattern as the
+  // stick-to-bottom effect below.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  useEffect(() => {
+    if (!onVisibleRangeChange) {
+      return;
+    }
+    const content = contentRef.current;
+    if (!content) {
+      return;
+    }
+
+    const visibility = new Map<Element, boolean>();
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        visibility.set(entry.target, entry.isIntersecting);
+      }
+      const visibleMessageIds: string[] = [];
+      for (const child of Array.from(content.children)) {
+        if (child.id && visibility.get(child)) {
+          visibleMessageIds.push(child.id);
+        }
+      }
+      onVisibleRangeChange({
+        visibleMessageIds,
+        currentAnchorId: visibleMessageIds[0] ?? null,
+      });
+    });
+
+    for (const child of Array.from(content.children)) {
+      observer.observe(child);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [children, onVisibleRangeChange]);
+
   // `children` is a deliberate re-run trigger (a new message was appended),
   // not a value read inside the effect body — the effect only touches refs.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
@@ -215,7 +295,7 @@ export function MosaicChatThread({
       onKeyDown={handleKeyDown}
       className={cn(chatThreadRootVariants(), className)}
     >
-      <div data-slot="chat-thread-content" className={chatThreadContentVariants()}>
+      <div ref={contentRef} data-slot="chat-thread-content" className={chatThreadContentVariants()}>
         {children}
       </div>
       {!isAtBottom && (

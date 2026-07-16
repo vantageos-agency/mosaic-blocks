@@ -20,7 +20,7 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MosaicChatThread } from "./MosaicChatThread.js";
 
 const SCROLL_LABEL = "Revenir au dernier message";
@@ -521,5 +521,139 @@ describe("MosaicChatThread", () => {
     }).not.toThrow();
 
     removeSpy.mockRestore();
+  });
+
+  // ── onVisibleRangeChange ─────────────────────────────────────────────────
+  //
+  // jsdom does not implement IntersectionObserver at all — there is no real
+  // browser layout engine underneath it, so there is nothing to polyfill
+  // faithfully. The `MockIntersectionObserver` below is a hand-written stand-in
+  // that records which elements were `observe()`-d and lets the test invoke
+  // its callback with synthetic `IntersectionObserverEntry`-shaped objects.
+  //
+  // What this mock PROVES: the component (a) constructs an IntersectionObserver
+  // exactly when `onVisibleRangeChange` is supplied, (b) calls `observe()` on
+  // the content wrapper's direct children, (c) reduces whatever entries the
+  // observer callback is handed into `{ visibleMessageIds, currentAnchorId }`
+  // using only each element's `id` attribute (never its text/content), and
+  // (d) calls `disconnect()` on unmount.
+  //
+  // What this mock does NOT prove: that a real browser's IntersectionObserver
+  // fires with the same entries, at the same time, for the same scroll
+  // geometry. Real intersection timing, thresholds, and root-margin behaviour
+  // are NOT exercised here — that is out of reach for jsdom and would need a
+  // real-browser (Playwright) test to verify. This suite only proves the
+  // component's reducer logic given whatever entries the browser eventually
+  // hands it.
+  class MockIntersectionObserver implements IntersectionObserver {
+    static instances: MockIntersectionObserver[] = [];
+    readonly root: Element | Document | null = null;
+    readonly rootMargin = "";
+    readonly thresholds: ReadonlyArray<number> = [];
+    callback: IntersectionObserverCallback;
+    observedElements: Element[] = [];
+    disconnect = vi.fn();
+    observe = vi.fn((element: Element) => {
+      this.observedElements.push(element);
+    });
+    unobserve = vi.fn();
+    takeRecords = vi.fn(() => []);
+
+    constructor(callback: IntersectionObserverCallback) {
+      this.callback = callback;
+      MockIntersectionObserver.instances.push(this);
+    }
+  }
+
+  function makeEntry(target: Element, isIntersecting: boolean): IntersectionObserverEntry {
+    return {
+      target,
+      isIntersecting,
+      boundingClientRect: target.getBoundingClientRect(),
+      intersectionRatio: isIntersecting ? 1 : 0,
+      intersectionRect: target.getBoundingClientRect(),
+      rootBounds: null,
+      time: 0,
+    } as IntersectionObserverEntry;
+  }
+
+  beforeEach(() => {
+    MockIntersectionObserver.instances = [];
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("calls onVisibleRangeChange with the visible message ids when intersection changes", () => {
+    const onVisibleRangeChange = vi.fn();
+    render(
+      <MosaicChatThread
+        scrollToBottomLabel={SCROLL_LABEL}
+        onVisibleRangeChange={onVisibleRangeChange}
+      >
+        <div id="msg-1">first</div>
+        <div id="msg-2">second</div>
+      </MosaicChatThread>,
+    );
+
+    const observer = MockIntersectionObserver.instances[0];
+    expect(observer).toBeTruthy();
+    const [el1, el2] = observer.observedElements;
+
+    observer.callback([makeEntry(el1, true), makeEntry(el2, false)], observer);
+
+    expect(onVisibleRangeChange).toHaveBeenCalledWith({
+      visibleMessageIds: ["msg-1"],
+      currentAnchorId: "msg-1",
+    });
+  });
+
+  it("mounts no IntersectionObserver when onVisibleRangeChange is not supplied", () => {
+    render(
+      <MosaicChatThread scrollToBottomLabel={SCROLL_LABEL}>
+        <div id="msg-1">first</div>
+      </MosaicChatThread>,
+    );
+
+    expect(MockIntersectionObserver.instances.length).toBe(0);
+  });
+
+  it("keeps children opaque — reduces visibility from element ids only, never from text content", () => {
+    const onVisibleRangeChange = vi.fn();
+    render(
+      <MosaicChatThread
+        scrollToBottomLabel={SCROLL_LABEL}
+        onVisibleRangeChange={onVisibleRangeChange}
+      >
+        <div id="msg-1">super secret message body</div>
+      </MosaicChatThread>,
+    );
+
+    const observer = MockIntersectionObserver.instances[0];
+    const [el1] = observer.observedElements;
+    observer.callback([makeEntry(el1, true)], observer);
+
+    const [payload] = onVisibleRangeChange.mock.calls[0];
+    expect(payload.visibleMessageIds).toEqual(["msg-1"]);
+    expect(JSON.stringify(payload)).not.toContain("secret message body");
+  });
+
+  it("disconnects the observer on unmount — mutation-guarded", () => {
+    const onVisibleRangeChange = vi.fn();
+    const { unmount } = render(
+      <MosaicChatThread
+        scrollToBottomLabel={SCROLL_LABEL}
+        onVisibleRangeChange={onVisibleRangeChange}
+      >
+        <div id="msg-1">first</div>
+      </MosaicChatThread>,
+    );
+
+    const observer = MockIntersectionObserver.instances[0];
+    unmount();
+
+    expect(observer.disconnect).toHaveBeenCalledTimes(1);
   });
 });
