@@ -23,6 +23,9 @@ import * as React from "react";
 import { MosaicAdaptiveModal } from "../adaptive-modal/MosaicAdaptiveModal.js";
 import { MosaicAppSidebar } from "../app-sidebar/MosaicAppSidebar.js";
 import type { MosaicAppSidebarProps } from "../app-sidebar/MosaicAppSidebar.js";
+
+/** Omit that distributes over a discriminated union instead of collapsing it. */
+type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 import { useDevice } from "../device-provider/MosaicDeviceProvider.js";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
@@ -77,8 +80,12 @@ export interface MosaicDashboardLayoutProps {
    * Props forwarded to MosaicAppSidebar (navItems, quickActions, etc.).
    * Required — MosaicAppSidebar itself requires host-owned aria-label /
    * heading strings with no default.
+   *
+   * Uses a distributive Omit so the bottomNavItems/bottomNavAriaLabel
+   * discriminated union on MosaicAppSidebarProps survives the Omit — a plain
+   * `Omit<Union, K>` collapses the union and loses the discriminant.
    */
-  sidebarProps: Omit<MosaicAppSidebarProps, "isCollapsed" | "onToggleCollapse">;
+  sidebarProps: DistributiveOmit<MosaicAppSidebarProps, "isCollapsed" | "onToggleCollapse">;
   /** Whether sidebar starts collapsed (default false) */
   defaultSidebarCollapsed?: boolean;
   /** Mobile sidebar modal title. Required, no default. */

@@ -106,7 +106,7 @@ export interface MosaicSidebarFooterStatus {
   icon?: React.ReactNode;
 }
 
-export interface MosaicAppSidebarProps {
+interface MosaicAppSidebarBaseProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   /** Current active path — used to highlight active nav items */
@@ -123,6 +123,13 @@ export interface MosaicAppSidebarProps {
   logoSlot?: React.ReactNode;
   /** Footer status pill */
   footerStatus?: MosaicSidebarFooterStatus;
+  /**
+   * Position of the collapse/expand chevron toggle. Defaults to "top" (inside
+   * the header) — the pre-existing behavior, unchanged for current consumers.
+   * "bottom" anchors it in its own zone below the nav (and below bottomNavItems
+   * when present), matching a footer-anchored nav pattern.
+   */
+  chevronPosition?: "top" | "bottom";
   /**
    * aria-label for the root `<div>` sidebar landmark. Required — host-owned,
    * no default.
@@ -141,6 +148,17 @@ export interface MosaicAppSidebarProps {
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
+
+/**
+ * bottomNavAriaLabel is REQUIRED exactly where it is READ: the bottom nav zone
+ * only renders `<nav>` when bottomNavItems is provided, so the label is only
+ * required in that branch — never a silently-missing default.
+ */
+export type MosaicAppSidebarProps = MosaicAppSidebarBaseProps &
+  (
+    | { bottomNavItems?: undefined; bottomNavAriaLabel?: string }
+    | { bottomNavItems: MosaicSidebarNavItem[]; bottomNavAriaLabel: string }
+  );
 
 // ── Inline icons ──────────────────────────────────────────────────────────────
 
@@ -268,6 +286,9 @@ export function MosaicAppSidebar({
   recentItems = [],
   logoSlot,
   footerStatus,
+  chevronPosition = "top",
+  bottomNavItems = [],
+  bottomNavAriaLabel,
   sidebarAriaLabel,
   mainNavAriaLabel,
   quickActionsHeading,
@@ -302,6 +323,22 @@ export function MosaicAppSidebar({
     onNavigate?.(href);
   };
 
+  const collapseToggleButton = !isMobile && (
+    <button
+      type="button"
+      onClick={onToggleCollapse}
+      aria-label={isCollapsed ? expandSidebarAriaLabel : collapseSidebarAriaLabel}
+      className={cn(
+        "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+        "hover:bg-sidebar-accent text-sidebar-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        isCollapsed && "mx-auto",
+      )}
+    >
+      {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+    </button>
+  );
+
   return (
     <div
       ref={ref}
@@ -326,21 +363,7 @@ export function MosaicAppSidebar({
               {logoSlot}
             </div>
           )}
-          {!isMobile && (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              aria-label={isCollapsed ? expandSidebarAriaLabel : collapseSidebarAriaLabel}
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-                "hover:bg-sidebar-accent text-sidebar-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                isCollapsed && "mx-auto",
-              )}
-            >
-              {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </button>
-          )}
+          {chevronPosition === "top" && collapseToggleButton}
         </div>
       </div>
 
@@ -522,6 +545,66 @@ export function MosaicAppSidebar({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Bottom-anchored nav (e.g. Settings) — transposed from the reference
+           Sidebar's border-t bottom zone, kept separate from footerStatus ── */}
+      {bottomNavItems.length > 0 && (
+        <div
+          data-slot="app-sidebar-bottom-nav"
+          className={cn("shrink-0 border-t border-sidebar-border p-2", isCollapsed && "px-2")}
+        >
+          <nav aria-label={bottomNavAriaLabel}>
+            <div className="space-y-0.5">
+              {bottomNavItems.map((item) => {
+                const isActive = activePath === item.href;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleNavClick(item.href)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "group flex w-full min-h-[44px] items-center rounded-lg p-3 transition-colors",
+                      "hover:bg-sidebar-accent",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      isActive && "bg-sidebar-accent",
+                      isCollapsed ? "justify-center" : "justify-start gap-3",
+                    )}
+                  >
+                    {isCollapsed ? (
+                      <span className="text-sidebar-foreground" title={item.label}>
+                        {item.icon ?? (
+                          <span className="text-xs font-bold">{item.label.charAt(0)}</span>
+                        )}
+                      </span>
+                    ) : (
+                      <>
+                        {item.icon && <span className="text-sidebar-foreground">{item.icon}</span>}
+                        <span className="mosaic-sidebar-label-in text-sm font-medium text-sidebar-foreground">
+                          {item.label}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+      )}
+
+      {/* ── Collapse toggle anchored at the bottom of the rail ── */}
+      {chevronPosition === "bottom" && collapseToggleButton && (
+        <div
+          data-slot="app-sidebar-toggle-zone"
+          className={cn(
+            "shrink-0 border-t border-sidebar-border p-2 flex",
+            isCollapsed ? "justify-center" : "justify-end",
+          )}
+        >
+          {collapseToggleButton}
         </div>
       )}
     </div>
