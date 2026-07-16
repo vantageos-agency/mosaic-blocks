@@ -327,21 +327,6 @@ const BASELINE = [
     note: "MosaicOrgPanel role badge/label — fixed by PR #101 (org-panel i18n props).",
   },
   {
-    value: "acme-inc",
-    maxCount: 1,
-    note: "MosaicOrgPanel slug input placeholder — fixed by PR #101 (org-panel i18n props). This is the reviewer's own probe case: once PR #101 lands and this row is deleted, re-injecting it becomes a brand-new offender under rule 1 and the guard goes RED.",
-  },
-  {
-    value: "View thread",
-    maxCount: 1,
-    note: "MosaicChatSidebar thread action label — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-  {
-    value: "View not found: ",
-    maxCount: 1,
-    note: "Internal view-router fallback message — fixed by PR #100.",
-  },
-  {
     value: "Thinking approach and decision-making process",
     maxCount: 1,
     note: "MosaicAgentComposer step description — fixed by PR #99.",
@@ -387,11 +372,6 @@ const BASELINE = [
     note: "MosaicOrgPanel member-role action label (`Make admin`, etc.) — fixed by PR #101.",
   },
   {
-    value: "Like (",
-    maxCount: 1,
-    note: "MosaicChatSidebar reaction-count label — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-  {
     value: "Joined ",
     maxCount: 1,
     note: "MosaicOrgPanel member-list metadata label — fixed by PR #101.",
@@ -417,11 +397,6 @@ const BASELINE = [
     note: "MosaicOrgPanel invite-form validation message — fixed by PR #101.",
   },
   {
-    value: "Dislike (",
-    maxCount: 1,
-    note: "MosaicChatSidebar reaction-count label — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-  {
     value: "Communication style and personality traits",
     maxCount: 1,
     note: "MosaicAgentComposer step description — fixed by PR #99.",
@@ -430,11 +405,6 @@ const BASELINE = [
     value: "Agents (",
     maxCount: 1,
     note: "MosaicChatSidebar section heading with count — fixed by the in-flight chat-sidebar follow-up PR.",
-  },
-  {
-    value: "AI",
-    maxCount: 1,
-    note: "MosaicChatSidebar badge label — fixed by the in-flight chat-sidebar follow-up PR.",
   },
 ];
 
