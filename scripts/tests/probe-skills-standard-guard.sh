@@ -580,6 +580,57 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Case h — MUST_BLOCK (VENDORED, Pi's live attack, same day): a manifest
+# entry naming a skill directory that DOES NOT EXIST ON DISK, added by
+# ITSELF — no skills/<name>/... path is touched, only skills/VENDORED.json.
+# Pi measured this exact case against this guard's own SHA before this fix:
+# `touchedSkillDirs()` never saw the manifest edit (VENDORED.json is a
+# top-level file under skills/, same carve-out as ATTRIBUTION.md), so the
+# guard printed "this diff touches no skills/<name>/ directory" and exited
+# 0 — a phantom entry could merge clean, then a follow-up PR adding the real
+# directory would find the entry already "predating" it (provenance
+# satisfied) and dodge the standard in two moves. This pole proves the fix:
+# touching skills/VENDORED.json alone must widen the checked set to every
+# name the manifest lists, and a name with no matching directory must BITE
+# — exit 1, naming the exact phantom skill — closing the two-PR path at
+# PR#1, before a PR#2 ever gets a chance.
+# ---------------------------------------------------------------------------
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+reset_clone "$base"
+(cd "$CLONE" && git checkout --quiet -b probe-block-phantom-manifest-entry "$base")
+regen_vendored_manifest better-ui
+(cd "$CLONE" && git add -- skills/VENDORED.json && git commit --quiet -m "probe: declare better-ui VENDORED (fixture baseline, PRIOR commit)")
+baseline_sha="$(cd "$CLONE" && git rev-parse HEAD)"
+# Copy a real, already-vendored entry (better-ui) onto a name whose
+# directory does not exist ANYWHERE on disk — exactly Pi's attack: reuse a
+# legitimate entry's shape, point it at nothing.
+node -e "
+const fs = require('node:fs');
+const manifestPath = '$CLONE/skills/VENDORED.json';
+const m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+m.skills['evil-home-skill'] = JSON.parse(JSON.stringify(m.skills['better-ui']));
+fs.writeFileSync(manifestPath, JSON.stringify(m, null, 2) + '\n');
+"
+(cd "$CLONE" && git add -- skills/VENDORED.json && git commit --quiet -m "probe: ATTACK — phantom VENDORED entry 'evil-home-skill', no directory touched, no skills/<name>/ path in this diff at all")
+if ! grep -qF "evil-home-skill" "$CLONE/skills/VENDORED.json"; then
+  FAILURES+=("MUST_BLOCK phantom-manifest-entry — mutation did NOT land (entry absent) — probe invalid")
+elif [ -d "$CLONE/skills/evil-home-skill" ]; then
+  FAILURES+=("MUST_BLOCK phantom-manifest-entry — probe invalid: skills/evil-home-skill/ exists on disk, this pole requires it to be ABSENT")
+else
+  set +e
+  output="$(run_guard "$baseline_sha" HEAD 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 1 ] && echo "$output" | grep -qF "evil-home-skill" && echo "$output" | grep -qF "does not exist on disk"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — phantom manifest entry (no skills/<name>/ path in diff at all) — guard exited 1, named the phantom skill"
+  else
+    FAILURES+=("MUST_BLOCK phantom-manifest-entry — guard exited $status (expected 1) or did not name the phantom skill — output: $output")
+    log MUST_BLOCK "FAIL — phantom-manifest-entry — exit=$status output=$output"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Restoration proof — the INVOKING worktree, never the scratch clone.
 # ---------------------------------------------------------------------------
 reset_clone "$base" 2>/dev/null || true

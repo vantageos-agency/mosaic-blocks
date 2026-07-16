@@ -271,6 +271,63 @@ function parseFrontmatter(raw, skillPath) {
  * the gap it would close. If upstream drifts, this manifest goes stale
  * until a human re-vendors deliberately. That is a known, accepted gap,
  * not a hidden one.
+ *
+ * CLOSED HOLE (Pi's live attack, same day): the mechanism above only ever
+ * ran for names in `touchedSkillDirs()` — i.e. names derived from paths
+ * `skills/<name>/...` that literally appear in the diff. `skills/
+ * VENDORED.json` itself is NOT under `skills/<name>/` (it is a top-level
+ * file directly under `skills/`, same carve-out as `ATTRIBUTION.md` — see
+ * `touchedSkillDirs()`'s own doc comment). Pi measured, live, on this
+ * guard's own SHA: adding a manifest entry for a skill directory that DOES
+ * NOT EXIST ON DISK (`evil-home-skill`, a copy-pasted `better-ui` entry)
+ * produced `exit 0` — "this diff touches no skills/<name>/ directory" —
+ * because the manifest edit alone never touched any `skills/<name>/` path.
+ * Two-PR consequence Pi named: PR#1 lands the phantom entry (exit 0, merges
+ * clean); PR#2 adds the real `skills/evil-home-skill/` directory — its
+ * manifest entry now PREDATES the diff (satisfies provenance), so a
+ * non-conformant home-grown skill is exempted from the standard in two
+ * moves. The guard's own exemption gate was outside the guard's scope — an
+ * angle mort, not a documented out-of-scope.
+ *
+ * A SECOND, independently-derived hole closes with the SAME fix (found
+ * while verifying Pi's — not silently omitted): retro-vendoring an
+ * ALREADY-SHIPPED, non-conformant, home-grown skill by adding a manifest
+ * entry for it that matches its CURRENT, untouched, real digests. That
+ * skill's directory never appears in `touchedSkillDirs()` either (no file
+ * under it changed) — so under a naive "existence + digest for every
+ * listed entry" patch alone, this entry would pass (dir exists, digest
+ * matches reality) and the skill would be permanently exempted from ever
+ * needing a `version:`/evals, despite being 100% home-grown project
+ * content. Provenance — not just digest — must apply to EVERY manifest
+ * entry, not only ones whose directory is separately diff-touched.
+ *
+ * THE FIX: any diff that touches `skills/VENDORED.json` (added, changed, or
+ * had an entry removed) widens the checked-skill set to the UNION of every
+ * skill name appearing in the manifest at EITHER `BASE_REF` or `HEAD_REF` —
+ * not only names whose directory path appears in the diff. Each of those
+ * names is then run through the exact same `checkVendoredExemption()` +
+ * `validateSkillDir()` machinery as a normally diff-touched skill:
+ *   - phantom entry (declared, directory absent on disk) → digest-integrity
+ *     violation, exit 1, naming the phantom skill — closes hole #1 at
+ *     PR#1, before a PR#2 ever gets a chance.
+ *   - entry+directory added together in one diff → entry is new vs
+ *     BASE_REF → provenance refuses the exemption → falls through to, and
+ *     fails, the full standard (unchanged from before).
+ *   - entry added alone, referencing an EXISTING (touched-or-not)
+ *     directory → entry is STILL new vs BASE_REF (provenance is keyed on
+ *     the entry's own history, not on whether the directory happens to be
+ *     in the diff) → refuses the exemption → the full standard now runs
+ *     against that directory even though no file under it changed in this
+ *     diff → closes hole #2.
+ * CONSEQUENCE, stated plainly (workflow, not silent): under this fix there
+ * is NO diff, ever, that can introduce a NEW vendored entry and have it
+ * exempted in the same PR — including the very first vendoring of a
+ * genuine third-party clone (real upstream content legitimately lacks
+ * `version:`/evals too). Onboarding skill #4 as VENDORED THEREFORE REQUIRES
+ * the existing `// allow-skills-standard: <reason>` commit-message escape
+ * hatch for that one onboarding PR — a human-reviewed, already-documented
+ * exception, not a new bypass invented for this case. Every subsequent PR
+ * then benefits from steady-state provenance (entry predates the diff).
  */
 
 /** @returns {string} sha256 hex digest of the file at `absPath`. */
@@ -340,6 +397,22 @@ function checkVendoredExemption(skillName, manifestOnDisk, manifestAtBase, viola
   const entryOnDisk = manifestOnDisk?.skills?.[skillName];
   if (!entryOnDisk) {
     return { exempt: false, reason: "not declared in skills/VENDORED.json" };
+  }
+
+  // Phantom-entry check, closes Pi's live attack: a manifest entry can name
+  // a `skills/<name>/` directory that is NOT reachable via `touchedSkillDirs()`
+  // at all (the entry alone was added/edited — `skills/VENDORED.json` is a
+  // top-level file, not a `skills/<name>/...` path). Verify the directory
+  // actually exists BEFORE trusting any digest computation against it —
+  // reading files under a non-existent directory would throw a raw ENOENT,
+  // not this guard's own named violation.
+  if (!existsSync(join(ROOT, SKILLS_DIR, skillName))) {
+    violations.push({
+      file: VENDORED_MANIFEST_PATH,
+      rule: "skills-standard-guard § VENDORED exemption — digest integrity",
+      detail: `${skillName}: skills/VENDORED.json declares this skill VENDORED but skills/${skillName}/ does not exist on disk — a phantom manifest entry names no real directory, and is refused outright.`,
+    });
+    return { exempt: false, reason: "phantom entry", haltFullStandard: true };
   }
 
   const entryAtBase = manifestAtBase?.skills?.[skillName];
@@ -587,22 +660,25 @@ function checkEvals(skillPath, skillName, absSkillDir, violations) {
 function validateSkillDir(skillName, manifestOnDisk, manifestAtBase, violations) {
   const skillPath = `${SKILLS_DIR}/${skillName}`;
   const absSkillDir = join(ROOT, skillPath);
-  if (!existsSync(absSkillDir)) {
-    throw new GuardUnreadable(
-      `${skillPath}: directory referenced by the diff does not exist on disk`,
-    );
-  }
 
+  // Vendored-exemption check runs FIRST, before the generic "directory must
+  // exist" throw below — a name reached ONLY via a `skills/VENDORED.json`
+  // manifest entry (never via a `skills/<name>/...` path in the diff) that
+  // points at a non-existent directory is a NAMEABLE violation (a phantom
+  // entry), not an unreadable paradox. Ordering matters: if this check ran
+  // after the existsSync throw, a phantom entry would abort the whole run
+  // with exit 2 "refusing to judge" instead of a precise exit 1 naming the
+  // fraudulent entry.
   const vendored = checkVendoredExemption(skillName, manifestOnDisk, manifestAtBase, violations);
   if (vendored.exempt) return; // digest-verified vendored skill — standard does not apply
-  if (vendored.reason === "digest mismatch") {
-    // A PREVIOUSLY-declared vendored skill whose pinned content has drifted.
-    // The violation is already recorded above, naming the exact file and
-    // digests. Do NOT additionally judge it against skill-standard-v2.md —
-    // that would pile confusing "missing version/evals" noise onto content
-    // that is, by declaration, still meant to be a vendored clone, not a
-    // home-grown skill under construction. The fix is "restore the file or
-    // re-vendor", never "add a version field to someone else's clone".
+  if (vendored.reason === "digest mismatch" || vendored.haltFullStandard) {
+    // Either a PREVIOUSLY-declared vendored skill whose pinned content has
+    // drifted, or a phantom entry naming no real directory. The violation
+    // is already recorded above, naming the exact file/skill. Do NOT
+    // additionally judge it against skill-standard-v2.md — for a digest
+    // mismatch that would pile confusing "missing version/evals" noise onto
+    // content that is, by declaration, still meant to be a vendored clone;
+    // for a phantom entry there is no directory to even read.
     return;
   }
   // Not exempt because it was never declared in the manifest, OR because
@@ -610,7 +686,14 @@ function validateSkillDir(skillName, manifestOnDisk, manifestAtBase, violations)
   // violation already recorded above). Either way, fall through to the full
   // skill-standard-v2.md check — this is the path that keeps a home-grown
   // skill from dodging the standard by self-declaring VENDORED in the same
-  // diff that adds it.
+  // diff that adds it, OR by retro-declaring an already-shipped,
+  // untouched, non-conformant skill VENDORED after the fact.
+
+  if (!existsSync(absSkillDir)) {
+    throw new GuardUnreadable(
+      `${skillPath}: directory referenced by the diff does not exist on disk`,
+    );
+  }
 
   const skillMdPath = join(absSkillDir, "SKILL.md");
   if (!existsSync(skillMdPath)) {
@@ -653,15 +736,7 @@ function main() {
   }
 
   const changed = changedFiles();
-  const skillDirs = touchedSkillDirs(changed);
-
-  if (skillDirs.length === 0) {
-    console.log(
-      "skills-standard-guard: OK — this diff touches no skills/<name>/ directory. Nothing to check.",
-    );
-    process.exitCode = 0;
-    return;
-  }
+  let skillDirs = touchedSkillDirs(changed);
 
   // Loaded ONCE for the whole diff: the on-disk manifest (HEAD_REF's
   // checked-out state) and the manifest as it stood at BASE_REF (for the
@@ -669,6 +744,29 @@ function main() {
   // BEFORE this diff, or is the diff itself trying to grant it?).
   const manifestOnDisk = loadManifestOnDisk();
   const manifestAtBase = loadManifestAtRef(BASE_REF);
+
+  // THE FIX for Pi's live attack (see the long comment above
+  // `checkVendoredExemption`): `skills/VENDORED.json` is a top-level file,
+  // never itself a `skills/<name>/...` path, so a diff that ONLY edits the
+  // manifest — adding a phantom entry, or retro-declaring an untouched
+  // existing skill VENDORED — never appears in `touchedSkillDirs()` at all.
+  // Whenever the manifest itself is part of this diff, widen the checked
+  // set to the UNION of every skill name the manifest names at EITHER ref —
+  // each of those names is then judged by the exact same
+  // provenance-then-digest machinery as a normally diff-touched skill.
+  if (changed.includes(VENDORED_MANIFEST_PATH)) {
+    const namesOnDisk = manifestOnDisk?.skills ? Object.keys(manifestOnDisk.skills) : [];
+    const namesAtBase = manifestAtBase?.skills ? Object.keys(manifestAtBase.skills) : [];
+    skillDirs = [...new Set([...skillDirs, ...namesOnDisk, ...namesAtBase])].sort();
+  }
+
+  if (skillDirs.length === 0) {
+    console.log(
+      "skills-standard-guard: OK — this diff touches no skills/<name>/ directory and no skills/VENDORED.json entry. Nothing to check.",
+    );
+    process.exitCode = 0;
+    return;
+  }
 
   const violations = [];
   for (const skillName of skillDirs) {
