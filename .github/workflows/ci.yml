@@ -148,13 +148,30 @@ jobs:
       #    passes the REAL PR title explicitly (PR_TITLE_GUARD_SUBJECT) and
       #    diffs the REAL base/head SHAs of the PR, never the merge ref's own
       #    parent.
+      #    Three-state exit contract (0 PASS / 1 VIOLATION / 2 REFUSES TO
+      #    JUDGE — the guard could not obtain its own instrument, e.g. a git
+      #    command failed or CI withheld PR_TITLE_GUARD_SUBJECT). Both
+      #    non-zero codes fail this step; the `set -o pipefail` + exit-code
+      #    branch below makes the TWO KINDS OF RED distinguishable in the
+      #    log instead of collapsing into one generic step failure.
       - name: PR title matches diff guard
         if: github.event_name == 'pull_request'
         env:
           PR_TITLE_GUARD_SUBJECT: ${{ github.event.pull_request.title }}
           PR_TITLE_GUARD_BASE_REF: ${{ github.event.pull_request.base.sha }}
           PR_TITLE_GUARD_HEAD_REF: ${{ github.event.pull_request.head.sha }}
-        run: node scripts/pr-title-matches-diff-guard.mjs
+        run: |
+          set +e
+          node scripts/pr-title-matches-diff-guard.mjs
+          code=$?
+          set -e
+          if [ "$code" -eq 2 ]; then
+            echo "::error::PR title matches diff guard REFUSES TO JUDGE (exit 2) — it could not obtain its own instrument, see the guard's own stderr above. This is NOT a title/diff violation."
+            exit 2
+          elif [ "$code" -ne 0 ]; then
+            echo "::error::PR title matches diff guard BLOCKED (exit $code) — the title does not match its own diff, see the guard's own stderr above."
+            exit "$code"
+          fi
 
       # ── 8e-2. Same guard, run against the artifact that actually lies ──────
       #    A PR title is correct by the time it merges — GitHub keeps it
@@ -165,11 +182,24 @@ jobs:
       #    first parent so the guard reads the merge commit's own subject
       #    against the merge commit's own diff — the exact artifact/diff pair
       #    the real incident lived in.
+      #    Same three-state contract and same distinguishable-red handling as
+      #    the pull_request step above.
       - name: Merge commit title matches diff guard (push:main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           PR_TITLE_GUARD_BASE_REF: HEAD^
-        run: node scripts/pr-title-matches-diff-guard.mjs
+        run: |
+          set +e
+          node scripts/pr-title-matches-diff-guard.mjs
+          code=$?
+          set -e
+          if [ "$code" -eq 2 ]; then
+            echo "::error::Merge commit title matches diff guard REFUSES TO JUDGE (exit 2) — it could not obtain its own instrument, see the guard's own stderr above. This is NOT a title/diff violation."
+            exit 2
+          elif [ "$code" -ne 0 ]; then
+            echo "::error::Merge commit title matches diff guard BLOCKED (exit $code) — the merge commit subject does not match its own diff, see the guard's own stderr above."
+            exit "$code"
+          fi
 
       - name: Probe — PR title matches diff guard bites
         run: bash scripts/tests/probe-pr-title-matches-diff.sh

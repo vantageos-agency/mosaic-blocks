@@ -138,6 +138,19 @@ const MOSAIC_TOKEN_RE = /Mosaic[A-Z][a-zA-Z0-9]*/g;
 const SCOPE_RE = /^[a-z]+\(([a-zA-Z0-9_.-]+)\):/;
 
 /**
+ * Thrown for every path where this guard cannot obtain its instrument (the
+ * diff, the subject, the escape-hatch marker) — as opposed to obtaining it
+ * and finding a violation. Caught exactly once, at the bottom of this file,
+ * and turned into exit code 2 (REFUSES TO JUDGE), never exit 0 or exit 1. A
+ * guard with only two exit states files "I could not measure" into either a
+ * silent PASS (fail-open: absence of measurement becomes a certificate of
+ * cleanliness) or a VIOLATION that proves nothing (a red indistinguishable
+ * from a real lying title) — both are wrong. See this file's probe for one
+ * MUST_REFUSE case per site that can throw this.
+ */
+class InstrumentUnavailableError extends Error {}
+
+/**
  * Run a git command, exit-code-checked. NEVER swallow a non-zero exit — a
  * git command this guard cannot run means it cannot verify the PR's diff at
  * all, and refusing loudly beats reporting a clean bill of health on data it
@@ -150,7 +163,7 @@ function git(args) {
     return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" });
   } catch (err) {
     const stderr = err && typeof err === "object" && "stderr" in err ? String(err.stderr) : "";
-    throw new Error(
+    throw new InstrumentUnavailableError(
       `pr-title-matches-diff-guard: \`git ${args.join(" ")}\` failed — cannot verify this PR's diff. ` +
         `Refusing to pass silently. stderr: ${stderr || err.message}`,
     );
@@ -177,6 +190,19 @@ function headSubject() {
   const explicit = process.env.PR_TITLE_GUARD_SUBJECT;
   if (explicit != null && explicit.trim() !== "") {
     return explicit.trim();
+  }
+  // On the pull_request path, an EMPTY/unset PR_TITLE_GUARD_SUBJECT is not
+  // "no override given, fall back to HEAD's subject" — HEAD on that path is
+  // the SYNTHETIC `refs/pull/N/merge` ref (carrier 2, see header), and
+  // silently reading it is exactly the fail-open this guard exists to close:
+  // every PR touching src/components/ would read a subject nobody wrote and
+  // report a false, uniform verdict. This IS the instrument being withheld —
+  // refuse loudly instead of reading the wrong carrier.
+  if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+    throw new InstrumentUnavailableError(
+      "PR_TITLE_GUARD_SUBJECT is empty/unset on a pull_request event — refusing to fall back to HEAD's own subject, " +
+        "which on this path is the synthetic `refs/pull/N/merge` merge subject nobody wrote, never the real PR title.",
+    );
   }
   return git(["log", "-1", "--pretty=%s", HEAD_REF]).trim();
 }
@@ -350,4 +376,33 @@ function main() {
   );
 }
 
-main();
+// THREE-STATE EXIT CONTRACT (per .claude/rules/derive-never-type.md and
+// .claude/rules/guard-formulation-census.md — an instrument that cannot say
+// "I could not measure" lies in whichever direction its two states force it
+// into):
+//   0 = PASS      — measured, and it is clean.
+//   1 = VIOLATION — measured, and it lies (set via process.exitCode inside
+//                   main(), a normal return — the diff/subject WERE read).
+//   2 = REFUSES TO JUDGE — could NOT obtain the instrument. Every throw site
+//                   in this file (all five `git()` call sites, plus the
+//                   pull_request-with-empty-subject case in headSubject())
+//                   raises InstrumentUnavailableError; this is the ONLY
+//                   place it is caught, and it is never silently absorbed
+//                   into 0 or 1.
+try {
+  main();
+} catch (err) {
+  if (err instanceof InstrumentUnavailableError) {
+    console.error(`pr-title-matches-diff-guard: REFUSES TO JUDGE — ${err.message}`);
+    process.exit(2);
+  }
+  // An error this guard did not itself construct as "instrument
+  // unavailable" is still a failure to measure, not a clean bill of health
+  // and not a proven violation — same exit code, so a future throw site
+  // nobody wired through InstrumentUnavailableError still refuses loudly
+  // instead of silently becoming exit 0.
+  console.error(
+    `pr-title-matches-diff-guard: REFUSES TO JUDGE — unexpected failure: ${err.stack || err}`,
+  );
+  process.exit(2);
+}
