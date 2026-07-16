@@ -1,7 +1,7 @@
 ---
 name: vantage-design-system
 version: 1.1.0
-description: VantageOS design system conventions for building or reviewing UI in EveVantage and fleet apps. Use when adding a new UI component, scaffolding a new app shell, choosing color tokens, wiring the EN/FR switcher or dark/light toggle, or before claiming a UI change is "done". Triggers on "new component", "new page", "new app", "design tokens", "dark mode", "light mode", "language switcher", "i18n toggle", "screenshot", "visual proof", "blank page", "empty state".
+description: VantageOS design system conventions for building or reviewing UI in EveVantage and fleet apps. Use when adding a new UI component, scaffolding a new app shell, choosing color tokens, wiring the EN/FR switcher or dark/light toggle, or before claiming a UI change is "done". Triggers on "new component", "new page", "new app", "design tokens", "dark mode", "light mode", "language switcher", "i18n toggle", "screenshot", "visual proof", "blank page", "empty state" — even if they don't say "design system" explicitly.
 ---
 
 # VantageOS design system
@@ -44,11 +44,15 @@ The reference app shell (sidebar, dark/light toggle, EN/FR switcher, card
 layout) already exists. Base every new app's shell on it instead of
 building one from scratch:
 
-- Repo: `vantage-registry`
-- Branch: `fix/orgscope-personal-workspaces`
+- Repo: `vantage-registry`, on `main` — `apps/dashboard/components/`
+  (layout/sidebar.tsx, layout/topbar.tsx with ThemeToggle,
+  i18n/locale-switcher.tsx). Landed via merge commit
+  `003710ebd618ad8548e945e1f933107e7cd50874`; the original feature branch
+  no longer exists — derive from main, never from a branch name someone
+  remembered.
 
-Pull that branch, read the shell components it contains, and adapt — do
-not reinvent sidebar navigation, the theme toggle, or the locale switcher.
+Read those shell components and adapt — do not reinvent sidebar
+navigation, the theme toggle, or the locale switcher.
 
 ## 3. Tokens: OKLCH, dark/light, EN/FR by default
 
@@ -60,11 +64,18 @@ not reinvent sidebar navigation, the theme toggle, or the locale switcher.
 - Every new screen ships an EN/FR switcher by default (see the reference
   shell in point 2). Bilingual is the starting state, not a follow-up task.
 
-## 4. The six styling rules — every JSX line, no exceptions
+## 4. The six styling rules — every JSX line in a consuming app
 
 Distilled from a production-tested internal reference design system. A PR
 that violates any of these on a touched line is non-conformant, whatever
 the tests say.
+
+Scope boundary: these rules bind APPLICATION code (EveVantage, fleet app
+screens, anything consuming the design system). Design-system primitives
+in this repo may legitimately carry arbitrary values or raw palette
+classes — a primitive DEFINES the scale the rules point to. Inside a
+primitive, a deliberate exception is declared in a code comment where it
+sits; it is never silent.
 
 1. **Always semantic tokens.** `bg-card text-card-foreground border-border`
    — never raw palette classes with dark variants bolted on
