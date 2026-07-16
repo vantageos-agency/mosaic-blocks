@@ -99,6 +99,21 @@ export interface MosaicAgentComposerProps {
   previewConfigLabel: string;
   customInstructionsPreviewLabel: string;
   selectAllModulesLabel: string;
+  /**
+   * Module-slot action strings — required, host-owned, no default, no silent
+   * English fallback (SIN-01). Each is a compose function rather than a
+   * flat string because the composed phrase ("Edit {label}", "Select
+   * {label}"…) is not just a word substitution: word order, articles, and
+   * even verb placement relative to the noun vary by language (e.g. the verb
+   * precedes the noun in English but not in every language). The host is the
+   * only party that can own that composition.
+   */
+  editModuleAriaLabel: (label: string) => string;
+  removeModuleAriaLabel: (label: string) => string;
+  /** Used for both the empty-slot aria-label and its visible button text. */
+  selectModuleAriaLabel: (label: string) => string;
+  /** Visible text on the "change selection" button once a module is filled. */
+  changeModuleLabel: (label: string) => string;
   // NOTE: `requiredLabel` used to be declared here, on the SHARED props type,
   // but the desktop composer never renders it — only MosaicAgentComposerMobile
   // does (its module slots show a "required" marker). Requiring it here forced
@@ -107,6 +122,33 @@ export interface MosaicAgentComposerProps {
   // Found by the no-lying-prop-contract guard.
   /** Fallback name shown in the preview when `agentName` is empty. Required, no default. */
   unnamedAgentLabel: string;
+}
+
+// NOTE: same class of gap that produced the `requiredLabel` split above.
+// The three module-slot sublabels below are rendered unconditionally by the
+// Desktop variant on every render, but MosaicAgentComposerMobile never reads
+// them — its own module-slot component takes no sublabel prop at all. Adding
+// them to the shared `MosaicAgentComposerProps` would force every Mobile-only
+// host to supply strings that component never displays, i.e. the exact
+// lying-prop-contract this codebase hunts. They live here instead, on a
+// Desktop-only extension of the shared type.
+export interface MosaicAgentComposerDesktopProps extends MosaicAgentComposerProps {
+  /**
+   * Required host-owned strings — no default, no fallback. Read
+   * unconditionally by the three module slots on every render.
+   */
+  roleSublabel: string;
+  personaSublabel: string;
+  frameworkSublabel: string;
+  /**
+   * Which module slots must be filled before the live preview renders.
+   * Optional — defaults to all four (role, persona, framework, model), i.e.
+   * the exact behavior this component had before this prop existed. No
+   * existing consumer needs to change anything to keep working unchanged.
+   * Desktop-only: MosaicAgentComposerMobile has no live-preview panel and
+   * never reads this prop.
+   */
+  previewRequires?: Array<"role" | "persona" | "framework" | "model">;
 }
 
 // ── Inline icons ──────────────────────────────────────────────────────────────
@@ -176,9 +218,21 @@ interface ModuleSlotProps {
   module?: MosaicComposerModule;
   onSelect: () => void;
   onRemove: () => void;
+  editAriaLabel: string;
+  removeAriaLabel: string;
+  selectAriaLabel: string;
 }
 
-function ModuleSlot({ label, sublabel, module, onSelect, onRemove }: ModuleSlotProps) {
+function ModuleSlot({
+  label,
+  sublabel,
+  module,
+  onSelect,
+  onRemove,
+  editAriaLabel,
+  removeAriaLabel,
+  selectAriaLabel,
+}: ModuleSlotProps) {
   return (
     <div className="rounded-xl border border-border bg-card">
       <div className="border-b border-border px-4 pt-4 pb-3">
@@ -208,7 +262,7 @@ function ModuleSlot({ label, sublabel, module, onSelect, onRemove }: ModuleSlotP
               <button
                 type="button"
                 onClick={onSelect}
-                aria-label={`Edit ${label}`}
+                aria-label={editAriaLabel}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <svg
@@ -229,7 +283,7 @@ function ModuleSlot({ label, sublabel, module, onSelect, onRemove }: ModuleSlotP
               <button
                 type="button"
                 onClick={onRemove}
-                aria-label={`Remove ${label}`}
+                aria-label={removeAriaLabel}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <svg
@@ -253,11 +307,11 @@ function ModuleSlot({ label, sublabel, module, onSelect, onRemove }: ModuleSlotP
           <button
             type="button"
             onClick={onSelect}
-            aria-label={`Select ${label}`}
+            aria-label={selectAriaLabel}
             className="flex w-full min-h-[72px] items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <PlusIcon />
-            Select {label}
+            {selectAriaLabel}
           </button>
         )}
       </div>
@@ -304,13 +358,26 @@ export function MosaicAgentComposerDesktop({
   customInstructionsPreviewLabel,
   selectAllModulesLabel,
   unnamedAgentLabel,
-}: MosaicAgentComposerProps) {
+  roleSublabel,
+  personaSublabel,
+  frameworkSublabel,
+  editModuleAriaLabel,
+  removeModuleAriaLabel,
+  selectModuleAriaLabel,
+  changeModuleLabel,
+  previewRequires = ["role", "persona", "framework", "model"],
+}: MosaicAgentComposerDesktopProps) {
   // `labels` is fully required — every field is host-supplied, no default,
   // no fallback. Aliased to `L` only for call-site brevity below.
   const L = labels;
 
-  const allModulesSelected =
-    !!selectedRole && !!selectedPersona && !!selectedFramework && !!selectedModel;
+  const moduleBySlot = {
+    role: selectedRole,
+    persona: selectedPersona,
+    framework: selectedFramework,
+    model: selectedModel,
+  } as const;
+  const allModulesSelected = previewRequires.every((slot) => !!moduleBySlot[slot]);
 
   return (
     <div data-slot="agent-composer-desktop" className="grid h-full grid-cols-2 gap-6">
@@ -357,24 +424,33 @@ export function MosaicAgentComposerDesktop({
         {/* Module slots */}
         <ModuleSlot
           label={L.role}
-          sublabel="Professional expertise and domain knowledge"
+          sublabel={roleSublabel}
           module={selectedRole}
           onSelect={onSelectRole}
           onRemove={onRemoveRole}
+          editAriaLabel={editModuleAriaLabel(L.role)}
+          removeAriaLabel={removeModuleAriaLabel(L.role)}
+          selectAriaLabel={selectModuleAriaLabel(L.role)}
         />
         <ModuleSlot
           label={L.persona}
-          sublabel="Communication style and personality traits"
+          sublabel={personaSublabel}
           module={selectedPersona}
           onSelect={onSelectPersona}
           onRemove={onRemovePersona}
+          editAriaLabel={editModuleAriaLabel(L.persona)}
+          removeAriaLabel={removeModuleAriaLabel(L.persona)}
+          selectAriaLabel={selectModuleAriaLabel(L.persona)}
         />
         <ModuleSlot
           label={L.framework}
-          sublabel="Thinking approach and decision-making process"
+          sublabel={frameworkSublabel}
           module={selectedFramework}
           onSelect={onSelectFramework}
           onRemove={onRemoveFramework}
+          editAriaLabel={editModuleAriaLabel(L.framework)}
+          removeAriaLabel={removeModuleAriaLabel(L.framework)}
+          selectAriaLabel={selectModuleAriaLabel(L.framework)}
         />
 
         {/* Model slot */}
@@ -416,18 +492,18 @@ export function MosaicAgentComposerDesktop({
                   onClick={onSelectModel}
                   className="flex w-full min-h-[44px] items-center justify-center rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  Change {L.model}
+                  {changeModuleLabel(L.model)}
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={onSelectModel}
-                aria-label={`Select ${L.model}`}
+                aria-label={selectModuleAriaLabel(L.model)}
                 className="flex w-full min-h-[72px] items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <PlusIcon />
-                Select {L.model}
+                {selectModuleAriaLabel(L.model)}
               </button>
             )}
           </div>

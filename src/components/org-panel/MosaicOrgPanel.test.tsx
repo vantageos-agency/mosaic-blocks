@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
@@ -68,25 +68,45 @@ describe("MosaicOrgPanel", () => {
 });
 
 describe("MosaicOrgRoleBadge", () => {
-  it("renders admin badge", () => {
+  it("renders admin badge with host-supplied description", () => {
     // "role" here is a MosaicOrgRoleBadge domain prop (admin|member|owner), not an
     // HTML/ARIA role — read via a variable so static analyzers don't misparse the
     // literal as an aria-role attribute value.
     const roleValue: MosaicOrgRole = "admin";
-    render(<MosaicOrgRoleBadge role={roleValue} />);
-    expect(screen.getByText(/admin/i)).toBeTruthy();
+    render(
+      <MosaicOrgRoleBadge
+        role={roleValue}
+        label="Administrateur"
+        description="Peut gérer l'organisation"
+      />,
+    );
+    expect(screen.getByText("Administrateur")).toBeTruthy();
+    expect(screen.getByTitle("Peut gérer l'organisation")).toBeTruthy();
   });
 
-  it("renders member badge", () => {
+  it("renders member badge with host-supplied description", () => {
     const roleValue: MosaicOrgRole = "member";
-    render(<MosaicOrgRoleBadge role={roleValue} />);
-    expect(screen.getByText(/member/i)).toBeTruthy();
+    render(<MosaicOrgRoleBadge role={roleValue} label="Membre" description="Accès standard" />);
+    expect(screen.getByText("Membre")).toBeTruthy();
+    expect(screen.getByTitle("Accès standard")).toBeTruthy();
   });
 
-  it("renders owner badge", () => {
+  it("renders owner badge with host-supplied description", () => {
     const roleValue: MosaicOrgRole = "owner";
-    render(<MosaicOrgRoleBadge role={roleValue} />);
-    expect(screen.getByText(/owner/i)).toBeTruthy();
+    render(
+      <MosaicOrgRoleBadge role={roleValue} label="Propriétaire" description="Accès complet" />,
+    );
+    expect(screen.getByText("Propriétaire")).toBeTruthy();
+    expect(screen.getByTitle("Accès complet")).toBeTruthy();
+  });
+
+  it("fabricates no label/description word — both are exactly the host strings, nothing appended", () => {
+    const roleValue: MosaicOrgRole = "owner";
+    render(
+      <MosaicOrgRoleBadge role={roleValue} label="XYZ-HOST-LABEL" description="XYZ-HOST-STRING" />,
+    );
+    const badge = screen.getByText("XYZ-HOST-LABEL");
+    expect(badge.getAttribute("title")).toBe("XYZ-HOST-STRING");
   });
 });
 
@@ -129,6 +149,67 @@ describe("MosaicCreateOrgDialog", () => {
     expect(inputs.length).toBeGreaterThan(0);
   });
 
+  it("renders the host-supplied name-required message on submit with an empty name", () => {
+    render(
+      <Wrapper>
+        <MosaicCreateOrgDialog
+          open={true}
+          onOpenChange={() => {}}
+          onCreateOrg={() => {}}
+          title="Create Organization"
+          closeAriaLabel="Close dialog"
+          orgNameFieldLabel="Organization Name *"
+          orgNamePlaceholder="Acme Inc."
+          slugFieldLabel="Slug *"
+          slugPlaceholder="acme-inc"
+          descriptionFieldLabel="Description"
+          descriptionPlaceholder="Optional description…"
+          cancelLabel="Cancel"
+          creatingLabel="Creating…"
+          createLabel="Create Organization"
+          nameRequiredMessage="XYZ-NAME-REQUIRED"
+          slugRequiredMessage="XYZ-SLUG-REQUIRED"
+        />
+      </Wrapper>,
+    );
+    // fireEvent.click on the submit button is intercepted by native HTML5
+    // constraint validation (both fields carry `required`) before the
+    // submit event ever reaches React's onSubmit — the form never actually
+    // submits and every assertion trivially passes. Dispatch `submit`
+    // directly on the form to exercise the real validate() path.
+    const form = document.querySelector('[data-slot="create-org-dialog"]') as HTMLFormElement;
+    fireEvent.submit(form);
+    expect(screen.getByText("XYZ-NAME-REQUIRED")).toBeTruthy();
+    expect(screen.getByText("XYZ-SLUG-REQUIRED")).toBeTruthy();
+  });
+
+  it("fabricates no word when validation-message props are omitted — invalid submit renders no message text", () => {
+    render(
+      <Wrapper>
+        <MosaicCreateOrgDialog
+          open={true}
+          onOpenChange={() => {}}
+          onCreateOrg={() => {}}
+          title="Create Organization"
+          closeAriaLabel="Close dialog"
+          orgNameFieldLabel="Organization Name *"
+          orgNamePlaceholder="Acme Inc."
+          slugFieldLabel="Slug *"
+          slugPlaceholder="acme-inc"
+          descriptionFieldLabel="Description"
+          descriptionPlaceholder="Optional description…"
+          cancelLabel="Cancel"
+          creatingLabel="Creating…"
+          createLabel="Create Organization"
+        />
+      </Wrapper>,
+    );
+    const form = document.querySelector('[data-slot="create-org-dialog"]') as HTMLFormElement;
+    fireEvent.submit(form);
+    expect(screen.queryByText(/required/i)).toBeNull();
+    expect(screen.queryByText(/invalid/i)).toBeNull();
+  });
+
   it("renders the host-supplied slug placeholder and fabricates no word of its own", () => {
     render(
       <Wrapper>
@@ -163,6 +244,10 @@ describe("MosaicInviteMemberDialog", () => {
           open={true}
           onOpenChange={() => {}}
           onInvite={() => Promise.resolve()}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
           title="Invite Member"
           closeAriaLabel="Close dialog"
           emailFieldLabel="Email address *"
@@ -177,6 +262,63 @@ describe("MosaicInviteMemberDialog", () => {
     const inputs = screen.queryAllByRole("textbox");
     expect(inputs.length).toBeGreaterThan(0);
   });
+
+  it("renders the host-supplied email-required message on submit with an empty email", () => {
+    render(
+      <Wrapper>
+        <MosaicInviteMemberDialog
+          open={true}
+          onOpenChange={() => {}}
+          onInvite={() => Promise.resolve()}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
+          title="Invite Member"
+          closeAriaLabel="Close dialog"
+          emailFieldLabel="Email address *"
+          emailPlaceholder="colleague@example.com"
+          roleFieldLabel="Role"
+          cancelLabel="Cancel"
+          sendingLabel="Sending…"
+          sendInvitationLabel="Send Invitation"
+          emailRequiredMessage="XYZ-EMAIL-REQUIRED"
+          emailInvalidMessage="XYZ-EMAIL-INVALID"
+        />
+      </Wrapper>,
+    );
+    const form = document.querySelector('[data-slot="invite-member-dialog"]') as HTMLFormElement;
+    fireEvent.submit(form);
+    expect(screen.getByText("XYZ-EMAIL-REQUIRED")).toBeTruthy();
+  });
+
+  it("fabricates no word when validation-message props are omitted — invalid submit renders no message text", () => {
+    render(
+      <Wrapper>
+        <MosaicInviteMemberDialog
+          open={true}
+          onOpenChange={() => {}}
+          onInvite={() => Promise.resolve()}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
+          title="Invite Member"
+          closeAriaLabel="Close dialog"
+          emailFieldLabel="Email address *"
+          emailPlaceholder="colleague@example.com"
+          roleFieldLabel="Role"
+          cancelLabel="Cancel"
+          sendingLabel="Sending…"
+          sendInvitationLabel="Send Invitation"
+        />
+      </Wrapper>,
+    );
+    const form = document.querySelector('[data-slot="invite-member-dialog"]') as HTMLFormElement;
+    fireEvent.submit(form);
+    expect(screen.queryByText(/required/i)).toBeNull();
+    expect(screen.queryByText(/invalid/i)).toBeNull();
+  });
 });
 
 describe("MosaicMemberList", () => {
@@ -187,12 +329,28 @@ describe("MosaicMemberList", () => {
           members={members}
           onRemoveMember={() => {}}
           onChangeRole={() => {}}
+          roles={[
+            { value: "admin", label: "Admin" },
+            { value: "member", label: "Member" },
+          ]}
           youLabel="You"
           memberActionsAriaLabel="Member actions"
           removeMemberLabel="Remove member"
           emptyMessage="No members found."
           inviteLabel="Invite"
           searchPlaceholder="Search members…"
+          roleDescriptions={{
+            owner: "Owner access",
+            admin: "Admin access",
+            member: "Member access",
+          }}
+          roleLabels={{
+            owner: "Owner",
+            admin: "Admin",
+            member: "Member",
+          }}
+          joinedLabel={(date) => `Joined ${date}`}
+          makeRoleLabel={(roleLabel) => `Make ${roleLabel}`}
         />
       </Wrapper>,
     );

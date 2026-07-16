@@ -64,12 +64,28 @@ export const Default: Story = {
               members={members}
               onRemoveMember={(id) => console.log("remove", id)}
               onChangeRole={(id, role) => console.log("role", id, role)}
+              roles={[
+                { value: "admin", label: "Admin" },
+                { value: "member", label: "Member" },
+              ]}
               youLabel="You"
               memberActionsAriaLabel="Member actions"
               removeMemberLabel="Remove member"
               emptyMessage="No members found."
               inviteLabel="Invite"
               searchPlaceholder="Search members…"
+              roleDescriptions={{
+                owner: "Full access including billing and organization deletion",
+                admin: "Full access to organization settings and member management",
+                member: "Standard access to workspaces and content",
+              }}
+              roleLabels={{
+                owner: "Owner",
+                admin: "Admin",
+                member: "Member",
+              }}
+              joinedLabel={(date) => `Joined ${date}`}
+              makeRoleLabel={(roleLabel) => `Make ${roleLabel}`}
             />
           </MosaicDeviceProvider>
         ),
@@ -90,9 +106,21 @@ export const RoleBadges: Story = {
   args: { org },
   render: () => (
     <div className="flex items-center gap-2">
-      <MosaicOrgRoleBadge role={ownerRole} />
-      <MosaicOrgRoleBadge role={adminRole} />
-      <MosaicOrgRoleBadge role={memberRole} />
+      <MosaicOrgRoleBadge
+        role={ownerRole}
+        label="Owner"
+        description="Full access including billing and organization deletion"
+      />
+      <MosaicOrgRoleBadge
+        role={adminRole}
+        label="Admin"
+        description="Full access to organization settings and member management"
+      />
+      <MosaicOrgRoleBadge
+        role={memberRole}
+        label="Member"
+        description="Standard access to workspaces and content"
+      />
     </div>
   ),
 };

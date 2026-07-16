@@ -69,43 +69,51 @@ export interface MosaicStatItem {
 
 // ── MosaicOrgRoleBadge ────────────────────────────────────────────────────────
 
-const roleConfig: Record<MosaicOrgRole, { label: string; className: string; description: string }> =
-  {
-    owner: {
-      label: "Owner",
-      className: "bg-primary text-primary-foreground",
-      description: "Full access including billing and organization deletion",
-    },
-    admin: {
-      label: "Admin",
-      className: "bg-secondary text-secondary-foreground",
-      description: "Full access to organization settings and member management",
-    },
-    member: {
-      label: "Member",
-      className: "bg-muted text-muted-foreground",
-      description: "Standard access to workspaces and content",
-    },
-  };
+// Styling only — no user-facing words. The display LABEL for each role is a
+// required host-owned prop (see MosaicOrgRoleBadgeProps.label below); this
+// map only supplies the Tailwind className, which is never rendered as text.
+const roleClassName: Record<MosaicOrgRole, string> = {
+  owner: "bg-primary text-primary-foreground",
+  admin: "bg-secondary text-secondary-foreground",
+  member: "bg-muted text-muted-foreground",
+};
 
 export interface MosaicOrgRoleBadgeProps {
   role: MosaicOrgRole;
+  /**
+   * Host-owned display label for this role (e.g. "Owner" / "Propriétaire").
+   * Required, no default — the label is rendered unconditionally whenever
+   * the badge renders, so there is no branch where this value is absent.
+   */
+  label: string;
+  /**
+   * Host-owned description rendered as the badge's `title` tooltip.
+   * Required, no default — the `title` attribute is set unconditionally
+   * whenever the badge renders, so there is no branch where this value is
+   * absent.
+   */
+  description: string;
   className?: string;
 }
 
-export function MosaicOrgRoleBadge({ role, className }: MosaicOrgRoleBadgeProps) {
-  const config = roleConfig[role] ?? roleConfig.member;
+export function MosaicOrgRoleBadge({
+  role,
+  label,
+  description,
+  className,
+}: MosaicOrgRoleBadgeProps) {
+  const config = roleClassName[role] ?? roleClassName.member;
   return (
     <span
       data-slot="org-role-badge"
-      title={config.description}
+      title={description}
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        config.className,
+        config,
         className,
       )}
     >
-      {config.label}
+      {label}
     </span>
   );
 }
@@ -193,6 +201,16 @@ export interface MosaicCreateOrgDialogProps {
   cancelLabel: string;
   creatingLabel: string;
   createLabel: string;
+  /**
+   * Optional host-owned validation messages. Each is rendered ONLY when the
+   * corresponding field is invalid — omitting one means the field is still
+   * validated (submission is still blocked) but no message text renders.
+   * No fallback word: an absent prop is silence, never a manufactured
+   * English string.
+   */
+  nameRequiredMessage?: string;
+  slugRequiredMessage?: string;
+  slugFormatMessage?: string;
 }
 
 export function MosaicCreateOrgDialog({
@@ -211,18 +229,22 @@ export function MosaicCreateOrgDialog({
   cancelLabel,
   creatingLabel,
   createLabel,
+  nameRequiredMessage,
+  slugRequiredMessage,
+  slugFormatMessage,
 }: MosaicCreateOrgDialogProps) {
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  // Validity is tracked as a discriminant, never as a hardcoded message —
+  // the field is invalid whether or not the host supplies display text.
+  const [errors, setErrors] = React.useState<{ name?: boolean; slug?: "required" | "format" }>({});
 
   const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = "Name is required";
-    if (!slug.trim()) errs.slug = "Slug is required";
-    else if (!/^[a-z0-9-]+$/.test(slug))
-      errs.slug = "Slug: lowercase letters, numbers, hyphens only";
+    const errs: { name?: boolean; slug?: "required" | "format" } = {};
+    if (!name.trim()) errs.name = true;
+    if (!slug.trim()) errs.slug = "required";
+    else if (!/^[a-z0-9-]+$/.test(slug)) errs.slug = "format";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -286,7 +308,9 @@ export function MosaicCreateOrgDialog({
               errors.name ? "border-destructive" : "border-input",
             )}
           />
-          {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+          {errors.name && nameRequiredMessage && (
+            <p className="text-xs text-destructive">{nameRequiredMessage}</p>
+          )}
         </div>
         {/* Slug */}
         <div className="space-y-1.5">
@@ -306,7 +330,12 @@ export function MosaicCreateOrgDialog({
               errors.slug ? "border-destructive" : "border-input",
             )}
           />
-          {errors.slug && <p className="text-xs text-destructive">{errors.slug}</p>}
+          {errors.slug === "required" && slugRequiredMessage && (
+            <p className="text-xs text-destructive">{slugRequiredMessage}</p>
+          )}
+          {errors.slug === "format" && slugFormatMessage && (
+            <p className="text-xs text-destructive">{slugFormatMessage}</p>
+          )}
         </div>
         {/* Description */}
         <div className="space-y-1.5">
@@ -352,7 +381,12 @@ export interface MosaicInviteMemberDialogProps {
   onOpenChange: (open: boolean) => void;
   onInvite: (data: { email: string; role: MosaicOrgRole }) => void | Promise<void>;
   isLoading?: boolean;
-  roles?: Array<{ value: MosaicOrgRole; label: string }>;
+  /**
+   * Host-owned role options (value + display label). Required, no default —
+   * a default role list would reintroduce hardcoded English labels
+   * ("Admin"/"Member") the library must never ship on its own.
+   */
+  roles: Array<{ value: MosaicOrgRole; label: string }>;
   /** Dialog title. Required, no default. */
   title: string;
   /**
@@ -366,19 +400,22 @@ export interface MosaicInviteMemberDialogProps {
   cancelLabel: string;
   sendingLabel: string;
   sendInvitationLabel: string;
+  /**
+   * Optional host-owned validation messages. Each is rendered ONLY when the
+   * email field is invalid for that specific reason — an absent prop means
+   * the field is still validated (submission still blocked) but renders no
+   * message text. No fallback word.
+   */
+  emailRequiredMessage?: string;
+  emailInvalidMessage?: string;
 }
-
-const DEFAULT_ROLES: Array<{ value: MosaicOrgRole; label: string }> = [
-  { value: "admin", label: "Admin" },
-  { value: "member", label: "Member" },
-];
 
 export function MosaicInviteMemberDialog({
   open,
   onOpenChange,
   onInvite,
   isLoading = false,
-  roles = DEFAULT_ROLES,
+  roles,
   title,
   closeAriaLabel,
   emailFieldLabel,
@@ -387,15 +424,19 @@ export function MosaicInviteMemberDialog({
   cancelLabel,
   sendingLabel,
   sendInvitationLabel,
+  emailRequiredMessage,
+  emailInvalidMessage,
 }: MosaicInviteMemberDialogProps) {
   const [email, setEmail] = React.useState("");
   const [role, setRole] = React.useState<MosaicOrgRole>("member");
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  // Validity is tracked as a discriminant, never as a hardcoded message —
+  // the field is invalid whether or not the host supplies display text.
+  const [errors, setErrors] = React.useState<{ email?: "required" | "invalid" }>({});
 
   const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!email.trim()) errs.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Invalid email";
+    const errs: { email?: "required" | "invalid" } = {};
+    if (!email.trim()) errs.email = "required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "invalid";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -439,7 +480,12 @@ export function MosaicInviteMemberDialog({
               errors.email ? "border-destructive" : "border-input",
             )}
           />
-          {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+          {errors.email === "required" && emailRequiredMessage && (
+            <p className="text-xs text-destructive">{emailRequiredMessage}</p>
+          )}
+          {errors.email === "invalid" && emailInvalidMessage && (
+            <p className="text-xs text-destructive">{emailInvalidMessage}</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <label htmlFor="invite-role" className="text-sm font-medium">
@@ -489,7 +535,12 @@ export interface MosaicMemberListProps {
   onChangeRole?: (memberId: string, role: MosaicOrgRole) => void;
   onRemoveMember?: (memberId: string) => void;
   onInvite?: () => void;
-  roles?: Array<{ value: MosaicOrgRole; label: string }>;
+  /**
+   * Host-owned role options (value + display label), used to populate the
+   * "change role" menu. Required, no default — a default role list would
+   * reintroduce hardcoded English labels the library must never ship.
+   */
+  roles: Array<{ value: MosaicOrgRole; label: string }>;
   isLoading?: boolean;
   searchPlaceholder: string;
   /**
@@ -501,6 +552,32 @@ export interface MosaicMemberListProps {
   removeMemberLabel: string;
   emptyMessage: string;
   inviteLabel: string;
+  /**
+   * Host-owned description per role, rendered as each member's role badge
+   * tooltip. Required, no default — every rendered row shows a role badge
+   * unconditionally.
+   */
+  roleDescriptions: Record<MosaicOrgRole, string>;
+  /**
+   * Host-owned display label per role, rendered inside each member's role
+   * badge. Required, no default — every rendered row shows a role badge
+   * unconditionally.
+   */
+  roleLabels: Record<MosaicOrgRole, string>;
+  /**
+   * Host-composed "joined on <date>" caption. Required, no default; called
+   * ONLY for members that have a `joinedAt` — a member without one renders
+   * no caption at all, so the function is never invoked for that row. The
+   * host owns the whole sentence (word order varies by language), never a
+   * library-side "Joined " + date concatenation.
+   */
+  joinedLabel: (date: string) => string;
+  /**
+   * Host-composed "make <role>" menu-item caption (e.g. "Make admin" /
+   * "Nommer admin"). Required, no default; the host owns the whole sentence,
+   * never a library-side "Make " + label concatenation.
+   */
+  makeRoleLabel: (roleLabel: string) => string;
   className?: string;
 }
 
@@ -513,15 +590,23 @@ function MemberRow({
   youLabel,
   memberActionsAriaLabel,
   removeMemberLabel,
+  roleDescriptions,
+  roleLabels,
+  joinedLabel,
+  makeRoleLabel,
 }: {
   member: MosaicOrgMember;
   currentUserId?: string;
   onChangeRole?: (id: string, role: MosaicOrgRole) => void;
   onRemoveMember?: (id: string) => void;
-  roles?: Array<{ value: MosaicOrgRole; label: string }>;
+  roles: Array<{ value: MosaicOrgRole; label: string }>;
   youLabel: string;
   memberActionsAriaLabel: string;
   removeMemberLabel: string;
+  roleDescriptions: Record<MosaicOrgRole, string>;
+  roleLabels: Record<MosaicOrgRole, string>;
+  joinedLabel: (date: string) => string;
+  makeRoleLabel: (roleLabel: string) => string;
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
@@ -568,9 +653,13 @@ function MemberRow({
           )}
         </div>
         <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-        {joinedDate && <p className="text-xs text-muted-foreground">Joined {joinedDate}</p>}
+        {joinedDate && <p className="text-xs text-muted-foreground">{joinedLabel(joinedDate)}</p>}
       </div>
-      <MosaicOrgRoleBadge role={member.role} />
+      <MosaicOrgRoleBadge
+        role={member.role}
+        label={roleLabels[member.role]}
+        description={roleDescriptions[member.role]}
+      />
       {!isSelf && (onChangeRole || onRemoveMember) && (
         <div ref={menuRef} className="relative shrink-0">
           <button
@@ -615,7 +704,7 @@ function MemberRow({
                         }}
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
                       >
-                        Make {r.label}
+                        {makeRoleLabel(r.label)}
                       </button>
                     ),
                 )}
@@ -646,7 +735,7 @@ export function MosaicMemberList({
   onChangeRole,
   onRemoveMember,
   onInvite,
-  roles = DEFAULT_ROLES,
+  roles,
   isLoading,
   searchPlaceholder,
   youLabel,
@@ -654,6 +743,10 @@ export function MosaicMemberList({
   removeMemberLabel,
   emptyMessage,
   inviteLabel,
+  roleDescriptions,
+  roleLabels,
+  joinedLabel,
+  makeRoleLabel,
   className,
 }: MosaicMemberListProps) {
   const [query, setQuery] = React.useState("");
@@ -724,8 +817,8 @@ export function MosaicMemberList({
 
       {isLoading ? (
         <div className="space-y-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
+          {["skeleton-1", "skeleton-2", "skeleton-3"].map((skeletonId) => (
+            <div key={skeletonId} className="h-14 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       ) : (
@@ -741,6 +834,10 @@ export function MosaicMemberList({
               youLabel={youLabel}
               memberActionsAriaLabel={memberActionsAriaLabel}
               removeMemberLabel={removeMemberLabel}
+              roleDescriptions={roleDescriptions}
+              roleLabels={roleLabels}
+              joinedLabel={joinedLabel}
+              makeRoleLabel={makeRoleLabel}
             />
           ))}
           {filtered.length === 0 && (

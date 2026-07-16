@@ -359,6 +359,7 @@ export { MosaicAgentComposerDesktop } from "./components/agent-composer/MosaicAg
 export { MosaicAgentComposerMobile } from "./components/agent-composer/MosaicAgentComposerMobile.js";
 export type {
   MosaicAgentComposerProps,
+  MosaicAgentComposerDesktopProps,
   MosaicComposerModule,
   MosaicComposerModel,
 } from "./components/agent-composer/MosaicAgentComposer.js";

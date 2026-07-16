@@ -19,13 +19,28 @@
 // React import not needed — JSX transform handles it
 import { useDevice } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAgentComposerDesktop } from "./MosaicAgentComposerDesktop.js";
+import type { MosaicAgentComposerDesktopProps } from "./MosaicAgentComposerDesktop.js";
 import { MosaicAgentComposerMobile } from "./MosaicAgentComposerMobile.js";
 import type { MosaicAgentComposerMobileProps } from "./MosaicAgentComposerMobile.js";
 
 // Re-export shared types for convenience
 export type { MosaicAgentComposerProps } from "./MosaicAgentComposerDesktop.js";
+export type { MosaicAgentComposerDesktopProps } from "./MosaicAgentComposerDesktop.js";
 export type { MosaicAgentComposerMobileProps } from "./MosaicAgentComposerMobile.js";
 export type { MosaicComposerModule, MosaicComposerModel } from "./MosaicAgentComposerDesktop.js";
+
+/**
+ * The orchestrator can render EITHER variant at runtime depending on
+ * viewport, so it must accept the union of both variants' required props
+ * up front — it cannot know statically which one will render. This is the
+ * same reasoning already applied to `requiredLabel` (Mobile-only) and now
+ * extended to the three Desktop-only module-slot sublabels.
+ */
+export type MosaicAgentComposerOrchestratorProps = MosaicAgentComposerMobileProps &
+  Pick<
+    MosaicAgentComposerDesktopProps,
+    "roleSublabel" | "personaSublabel" | "frameworkSublabel" | "previewRequires"
+  >;
 
 /**
  * MosaicAgentComposer — device-adaptive composer that renders the Desktop
@@ -57,7 +72,7 @@ export type { MosaicComposerModule, MosaicComposerModel } from "./MosaicAgentCom
  *   />
  * </MosaicDeviceProvider>
  */
-export function MosaicAgentComposer(props: MosaicAgentComposerMobileProps) {
+export function MosaicAgentComposer(props: MosaicAgentComposerOrchestratorProps) {
   const { isMobile } = useDevice();
   return isMobile ? (
     <MosaicAgentComposerMobile {...props} />
