@@ -240,6 +240,25 @@ jobs:
       - name: Probe — no hardcoded words guard bites
         run: bash scripts/tests/probe-no-hardcoded-words-guard.sh
 
+      # ── SELF-GATE — the guard's own three-state discipline is DERIVED, ──────
+      #    never asserted from memory (see .claude/rules/derive-never-type.md,
+      #    eta-workspace/.claude/rules/three-state-verdict.md — the doctrine PR
+      #    #131 implements: a two-state instrument answering a three-state
+      #    question is a defect, and `exit(2)` "REFUSING TO JUDGE" must stay
+      #    distinct from `exit(1)` a real measured violation). The count below
+      #    is READ from the guard's own shipped source, not typed by hand — if
+      #    a future edit drops the third state back to a bare throw/exit(1),
+      #    this step goes to zero and fails loud, instead of the drift passing
+      #    silently.
+      - name: SELF-GATE — derive process.exit(2) refusal-path count from the guard's own source
+        run: |
+          COUNT=$(grep -c 'process.exit(2)' scripts/no-hardcoded-words-guard.mjs)
+          echo "SELF-GATE: no-hardcoded-words-guard.mjs declares ${COUNT} process.exit(2) refusal path(s)."
+          if [ "${COUNT}" -lt 1 ]; then
+            echo "::error::SELF-GATE — no-hardcoded-words-guard.mjs has ZERO process.exit(2) refusal paths. The three-state discipline (PR #131) has regressed to two states."
+            exit 1
+          fi
+
       # ── Real-browser e2e (native <dialog>) ───────────────────────────────────
       # Without these two steps the suite added by this PR would exist and never
       # RUN: vitest excludes e2e/** and nothing else invoked it. A test nobody
