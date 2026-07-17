@@ -109,6 +109,9 @@ jobs:
       - name: Probe — version resolver refuses loudly (unknown flag, dead registry)
         run: bash scripts/tests/probe-derive-next-version.sh
 
+      - name: Probe — derive-release-artifacts PR URL is resolved, never scraped
+        run: bash scripts/tests/probe-derive-pr-url-resolution.sh
+
       # ── 8d-2. Skills standard guard (Day 116 root-fix) ───────────────────────
       #    `grep -rln 'skills' .github/workflows/` on this repo used to return
       #    EMPTY — no CI job ever opened a skill's diff. Two doc PRs merged on
@@ -444,13 +447,23 @@ jobs:
 
           if [ ${CREATE_RC} -eq 0 ]; then
             echo "derive-release-artifacts: opened a new PR for ${BRANCH}."
-            PR_URL="${CREATE_OUTPUT}"
           elif echo "${CREATE_OUTPUT}" | grep -qi "already exists"; then
             echo "derive-release-artifacts: a PR for ${BRANCH} already exists — reusing it (re-run path)."
-            PR_URL=$(gh pr view "$BRANCH" --json url --jq .url)
           else
             echo "::error::gh pr create failed for a reason other than 'PR already exists' — not papering over it."
             exit ${CREATE_RC}
+          fi
+
+          # PR_URL is a value GitHub already holds — resolved from the
+          # artifact, never scraped from gh's stdout/stderr. CREATE_OUTPUT
+          # above decides WHICH PATH was taken; its exact text never becomes
+          # data. If gh cannot resolve the URL, that is fatal: an empty arg
+          # to `gh pr merge` would be exactly the silent-wrong-thing this repo
+          # bans.
+          PR_URL=$(gh pr view "$BRANCH" --json url --jq .url)
+          if [ -z "${PR_URL}" ]; then
+            echo "::error::could not resolve the PR URL for branch ${BRANCH} via 'gh pr view' — refusing to call 'gh pr merge' with an empty URL."
+            exit 1
           fi
 
           gh pr merge --auto --squash "${PR_URL}"
