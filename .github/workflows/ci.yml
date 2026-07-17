@@ -290,6 +290,14 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      # `gh pr create` below is a GraphQL createPullRequest call, and it needs
+      # its own scope: with `contents: write` alone the branch pushes fine and
+      # the PR call dies with "Resource not accessible by integration". That is
+      # exactly what happened on every merge for a week — the branch landed,
+      # the PR never opened, and the orphan bot/derive-* branches are the
+      # tombstones. The job went red loudly; nobody read it, which is its own
+      # lesson.
+      pull-requests: write
 
     steps:
       - name: Checkout
