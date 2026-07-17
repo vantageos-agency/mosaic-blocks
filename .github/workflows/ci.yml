@@ -381,8 +381,19 @@ jobs:
 
       # main is a protected branch, so the bot CANNOT push to it directly
       # (GH006) — and that is the protection working, not a fault to route
-      # around. It opens a PR instead and lets GitHub auto-merge it once Gates
-      # is green: no human gesture, protection intact.
+      # around. It opens a PR instead and asks GitHub to auto-merge it once
+      # Gates is green.
+      #
+      # KNOWN, DECLARED LIMITATION (measured, not theoretical): a PR opened by
+      # a bot using the default GITHUB_TOKEN has its `pull_request` run parked
+      # by GitHub in `action_required` until a human clicks "Approve and run".
+      # Gates is a REQUIRED check with strict mode, so a check that can never
+      # START leaves the PR blocked forever — silently, a green that never
+      # arrives rather than a red anyone reads. Closing this gap needs a
+      # non-default credential for `gh pr create` (a deploy key or app token
+      # whose PRs are not subject to the fork-approval gate) — a credential
+      # decision, not a YAML change, and it is not made here. Until it is,
+      # every release needs one human "Approve and run" click on this PR.
       #
       # The `// allow-release-artifacts:` marker must sit in the HEAD commit's
       # message — this is the one PR that legitimately carries the derived
@@ -411,8 +422,35 @@ jobs:
           // allow-release-artifacts: this is the derive commit — it is the one
           commit that is SUPPOSED to carry version, counts and registry.json,
           and its content is the deriver's output, byte for byte."
-          git push origin "$BRANCH"
-          gh pr create --base main --head "$BRANCH" \
+
+          # BRANCH is derived from version+SHA, so a re-run of the same commit
+          # computes the identical name. The prior attempt may already have
+          # pushed it before dying further down the step — that push must not
+          # be treated as a foreign edit to protect against, it is this same
+          # job's own prior attempt. --force-with-lease (never a blind --force)
+          # updates it safely without a human deleting branches by hand.
+          git push --force-with-lease origin "$BRANCH"
+
+          # `gh pr create` fails if a PR already exists for this head — the
+          # ONLY condition allowed to be non-fatal here. Any other failure
+          # (bad token, network, branch protection, etc.) stays fatal.
+          set +e
+          CREATE_OUTPUT=$(gh pr create --base main --head "$BRANCH" \
             --title "chore(release): derive version ${VERSION} + docs counts + registry.json" \
-            --body "Derived on main after merge, by the bot. Version read from the npm registry, counts from \`src/index.ts\`, \`registry.json\` from the exported component directories — nothing hand-typed. Auto-merges once Gates is green."
-          gh pr merge --auto --squash "$BRANCH"
+            --body "Derived on main after merge, by the bot. Version read from the npm registry, counts from \`src/index.ts\`, \`registry.json\` from the exported component directories — nothing hand-typed. Needs one human \"Approve and run\" click on the Gates check (bot-opened PR, see workflow comment above)." 2>&1)
+          CREATE_RC=$?
+          set -e
+          echo "${CREATE_OUTPUT}"
+
+          if [ ${CREATE_RC} -eq 0 ]; then
+            echo "derive-release-artifacts: opened a new PR for ${BRANCH}."
+            PR_URL="${CREATE_OUTPUT}"
+          elif echo "${CREATE_OUTPUT}" | grep -qi "already exists"; then
+            echo "derive-release-artifacts: a PR for ${BRANCH} already exists — reusing it (re-run path)."
+            PR_URL=$(gh pr view "$BRANCH" --json url --jq .url)
+          else
+            echo "::error::gh pr create failed for a reason other than 'PR already exists' — not papering over it."
+            exit ${CREATE_RC}
+          fi
+
+          gh pr merge --auto --squash "${PR_URL}"
