@@ -108,7 +108,8 @@ function TrendingIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="text-green-500"
+      // allow-undeclared-theme-token: success-500 wired to canonical --mosaic-color-success-* (status triads are NOT aliased, #64); resolves via @import "@vantageos/mosaic-tokens/css" at styles.css:4; hand-declaring `var(--success-500)` here would duplicate tokens.css (derive-never-type).
+      className="text-success-500"
     >
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
       <polyline points="17 6 23 6 23 12" />
