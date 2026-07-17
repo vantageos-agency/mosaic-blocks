@@ -445,6 +445,14 @@ packages:
       svix:
         optional: true
 
+  '@vantageos/mosaic-tokens@0.5.0':
+    resolution: {integrity: sha512-zzQV8dVFoFfVNfHdjg29VlUuemmD8MoHPX+OfdZ3Mt8Nte13dbD/G7utUqpSn0MOyPeGQi07usrcmc1eqImnXQ==}
+    peerDependencies:
+      tailwindcss: ^4.1.0
+    peerDependenciesMeta:
+      tailwindcss:
+        optional: true
+
   baseline-browser-mapping@2.10.37:
     resolution: {integrity: sha512-girxaJ7WZssDOFhzCGZTDKoTa1gk6A1TbflaYTpykLJ4UU9Fz9kx1aREM8JCuoVHbL8X8T/mJg7w2oYSq72Oig==}
     engines: {node: '>=6.0.0'}
@@ -952,6 +960,7 @@ snapshots:
   '@vantageos/mosaic-blocks@file:..(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svix@1.96.1)(tailwindcss@4.3.1)':
     dependencies:
       '@base-ui/react': 1.5.0(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@vantageos/mosaic-tokens': 0.5.0(tailwindcss@4.3.1)
       class-variance-authority: 0.7.1
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
@@ -962,6 +971,10 @@ snapshots:
       - '@date-fns/tz'
       - '@types/react'
       - date-fns
+
+  '@vantageos/mosaic-tokens@0.5.0(tailwindcss@4.3.1)':
+    optionalDependencies:
+      tailwindcss: 4.3.1
 
   baseline-browser-mapping@2.10.37: {}
 
