@@ -1,6 +1,6 @@
 {
   "name": "@vantageos/mosaic-blocks",
-  "version": "0.5.32-alpha",
+  "version": "0.5.33-alpha",
   "description": "VantageOS React composed blocks — Next.js 16 + React 19 + Tailwind v4 + @base-ui/react. Published alpha.",
   "license": "FSL-1.1-Apache-2.0",
   "type": "module",
@@ -51,7 +51,7 @@
     "type": "git",
     "url": "git+https://github.com/vantageos-agency/mosaic-blocks.git"
   },
-  "homepage": "https://vantageos.com/mosaic-blocks",
+  "homepage": "https://github.com/vantageos-agency/mosaic-blocks#readme",
   "scripts": {
     "build": "tsup && node scripts/prepend-use-client.mjs && node scripts/copy-assets.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
