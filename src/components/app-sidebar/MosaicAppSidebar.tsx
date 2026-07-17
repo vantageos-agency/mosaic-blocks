@@ -529,7 +529,7 @@ export function MosaicAppSidebar({
         <div className="shrink-0 border-t border-sidebar-border p-4">
           {!isCollapsed ? (
             <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/30 p-3">
-              {footerStatus.icon && <span className="text-green-500">{footerStatus.icon}</span>}
+              {footerStatus.icon && <span className="text-success-500">{footerStatus.icon}</span>}
               {!footerStatus.icon && <TrendingUpIcon />}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-sidebar-foreground">{footerStatus.label}</p>
@@ -540,7 +540,7 @@ export function MosaicAppSidebar({
             </div>
           ) : (
             <div className="flex justify-center">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent/30 text-green-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent/30 text-success-500">
                 {footerStatus.icon ?? <TrendingUpIcon />}
               </div>
             </div>

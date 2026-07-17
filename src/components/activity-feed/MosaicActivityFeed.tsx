@@ -145,7 +145,10 @@ export interface MosaicActivityFeedProps {
 // ── Status colors ─────────────────────────────────────────────────────────────
 
 const STATUS_CLASSES: Record<string, string> = {
-  active: "bg-green-500/10 text-green-600 border border-green-500/20 dark:text-green-400",
+  // success-700 already carries a dark-mode-adjusted value in the token set
+  // (@vantageos/mosaic-tokens [data-theme="dark"] block), so no dark: prefix
+  // is needed here — it replaces the old dark:text-green-400 override.
+  active: "bg-success-500/10 text-success-700 border border-success-500/20",
   completed: "bg-blue-500/10 text-blue-600 border border-blue-500/20 dark:text-blue-400",
   archived: "bg-gray-500/10 text-gray-600 border border-gray-500/20 dark:text-gray-400",
 };

@@ -163,7 +163,7 @@ export function MosaicAdaptiveNavigation({
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                       item.isComplete
-                        ? "bg-green-500 text-white"
+                        ? "bg-success-500 text-white"
                         : "bg-muted text-muted-foreground",
                     )}
                     aria-hidden="true"
@@ -233,7 +233,7 @@ export function MosaicAdaptiveNavigation({
                 className={cn(
                   "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                   item.isComplete
-                    ? "bg-green-500 text-white"
+                    ? "bg-success-500 text-white"
                     : isActive
                       ? "bg-primary-foreground/20 text-primary-foreground"
                       : "bg-background text-muted-foreground",
