@@ -32,6 +32,7 @@
   /* Success status triad — wired from @vantageos/mosaic-tokens (not aliased
      upstream on purpose, see aliases.css comment; mosaic-blocks is the first
      real consumer of a bare `success-*` utility, so we wire it here). */
+  /* allow-stale-theme-token: success-50 is the reserved light-tint shade of the success triad (success-500/700 ARE consumed, see MosaicActivityFeed etc.) — kept wired so a future subtle-background success state does not silently resolve to nothing; theme-tokens-declared-guard.mjs GAP B fix (this PR) is what makes this row visible as declared for the first time (previously masked by the backreference bug it closes). */
   --color-success-50: var(--mosaic-color-success-50);
   --color-success-500: var(--mosaic-color-success-500);
   --color-success-700: var(--mosaic-color-success-700);

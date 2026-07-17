@@ -269,6 +269,193 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# MUST_BLOCK #7/#8/#9 — GAP A families: inset-ring / inset-shadow /
+# text-shadow, each undeclared. One mutation PER FORM (per
+# .claude/rules/guard-formulation-census.md — a bipolar probe alone does not
+# prove a guard mordant on every form of the domain it covers).
+# ---------------------------------------------------------------------------
+declare -A GAP_A_FAMILIES=(
+  [inset-ring]="inset-ring-probe-ir-ghost"
+  [inset-shadow]="inset-shadow-probe-is-ghost"
+  [text-shadow]="text-shadow-probe-ts-ghost"
+)
+for family in "${!GAP_A_FAMILIES[@]}"; do
+  class="${GAP_A_FAMILIES[$family]}"
+  # class = "<family>-probe-<abbrev>-ghost" -> token = "probe-<abbrev>-ghost"
+  token="${class#${family}-}"
+  dir="$SCRATCH/gapA-${family}"
+  write_fixture_tree "$dir"
+  cat > "$dir/src/components/probe/ProbeFixture.tsx" <<EOF
+export function ProbeFixture() {
+  return (
+    <div className="bg-probe-brand ${class}">
+      probe fixture — GAP A ${family} undeclared
+    </div>
+  );
+}
+EOF
+  assert_landed "$dir/src/components/probe/ProbeFixture.tsx" "$class" "GAP A ${family} injection"
+
+  set +e
+  out="$(run_guard "$dir/src" "$dir/src/styles.css" 2>&1)"
+  status=$?
+  set -e
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  if [ "$status" -eq 1 ] && echo "$out" | grep -qF -- "--color-${token}"; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — GAP A ${family} undeclared — guard named --color-${token}, exit 1"
+  else
+    FAILURES+=("MUST_BLOCK GAP A ${family} undeclared — exit=$status, output:\n$out")
+    log MUST_BLOCK "FAIL — GAP A ${family} undeclared — exit=$status"
+  fi
+done
+
+# ---------------------------------------------------------------------------
+# COUNTER-TO-ZERO — installed tailwindcss vs. this guard's static domain.
+# Prints the SAME derivation the guard runs on every invocation, so a human
+# reviewing this probe's output sees the live count, not a claim.
+# ---------------------------------------------------------------------------
+echo
+echo "----- GAP A counter-to-zero (installed tailwindcss vs COLOR_BEARING_PREFIXES) -----"
+node --input-type=module -e "
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const libPath = require.resolve('tailwindcss', { paths: ['$REPO_ROOT'] });
+const text = readFileSync(libPath, 'utf8');
+const re = /r\(\"([a-z][a-z-]*)\",\(\)=>\[\{[\s\S]{0,400}?valueThemeKeys:\[([^\]]*)\]/g;
+const derived = new Set();
+let m;
+while ((m = re.exec(text))) { if (/\"--color\"/.test(m[2])) derived.add(m[1]); }
+const guardSrc = readFileSync('$REPO_ROOT/scripts/theme-tokens-declared-guard.mjs', 'utf8');
+const staticListMatch = guardSrc.match(/const COLOR_BEARING_PREFIXES = \[([\s\S]*?)\];/);
+const staticList = new Set([...staticListMatch[1].matchAll(/\"([a-z-]+)\"/g)].map((mm) => mm[1]));
+const unknown = [...derived].filter((p) => !staticList.has(p));
+console.log('installed tailwindcss color-bearing prefixes (derived):', [...derived].sort().join(', '));
+console.log('COLOR_BEARING_PREFIXES (static domain):', [...staticList].sort().join(', '));
+console.log('UNCOVERED (counter-to-zero):', unknown.length, unknown.length ? unknown.join(', ') : '(none)');
+"
+
+# ---------------------------------------------------------------------------
+# MUST_PASS #7 — GAP B: canonical --mosaic-color-* consumed with NO escape
+# marker, resolved purely via @import-following (no styles.css var()
+# right-hand-side byte-match required).
+# ---------------------------------------------------------------------------
+GAPB_PASS_DIR="$SCRATCH/gapB-pass"
+mkdir -p "$GAPB_PASS_DIR/src/components/probe"
+cat > "$GAPB_PASS_DIR/src/probe-token-package.css" <<'EOF'
+:root {
+  --mosaic-probe-external: oklch(0.55 0.12 200);
+}
+EOF
+cat > "$GAPB_PASS_DIR/src/styles.css" <<'EOF'
+@import "./probe-token-package.css";
+
+@theme inline {
+  --color-probe-external: var(--mosaic-probe-external);
+}
+EOF
+cat > "$GAPB_PASS_DIR/src/components/probe/ProbeFixture.tsx" <<'EOF'
+export function ProbeFixture() {
+  return (
+    <div className="bg-probe-external">
+      probe fixture — GAP B canonical token via @import, no marker
+    </div>
+  );
+}
+EOF
+assert_landed "$GAPB_PASS_DIR/src/styles.css" "@import \"./probe-token-package.css\"" "GAP B pass-case @import"
+assert_landed "$GAPB_PASS_DIR/src/components/probe/ProbeFixture.tsx" "bg-probe-external" "GAP B pass-case consumption"
+
+set +e
+gapb_pass_output="$(run_guard "$GAPB_PASS_DIR/src" "$GAPB_PASS_DIR/src/styles.css" 2>&1)"
+gapb_pass_status=$?
+set -e
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+if [ "$gapb_pass_status" -eq 0 ]; then
+  MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+  log MUST_PASS "PASS — GAP B: --mosaic-* token resolved via @import chain, NO marker needed — exit 0"
+else
+  FAILURES+=("MUST_PASS GAP B @import-resolved token — expected exit 0, got $gapb_pass_status, output:\n$gapb_pass_output")
+  log MUST_PASS "FAIL — GAP B @import-resolved token — exit=$gapb_pass_status"
+fi
+
+# ---------------------------------------------------------------------------
+# MUST_BLOCK #10 — genuine dangle NOT supplied by any @import: @import
+# resolution must not blind the guard to a real broken reference.
+# ---------------------------------------------------------------------------
+GAPB_DANGLE_DIR="$SCRATCH/gapB-dangle"
+mkdir -p "$GAPB_DANGLE_DIR/src/components/probe"
+cat > "$GAPB_DANGLE_DIR/src/probe-token-package.css" <<'EOF'
+:root {
+  --mosaic-probe-external: oklch(0.55 0.12 200);
+}
+EOF
+cat > "$GAPB_DANGLE_DIR/src/styles.css" <<'EOF'
+@import "./probe-token-package.css";
+
+@theme inline {
+  --color-probe-dangling: var(--this-name-is-declared-nowhere);
+}
+EOF
+cat > "$GAPB_DANGLE_DIR/src/components/probe/ProbeFixture.tsx" <<'EOF'
+export function ProbeFixture() {
+  return (
+    <div className="bg-probe-dangling">
+      probe fixture — GAP B genuine dangle, not supplied by any @import
+    </div>
+  );
+}
+EOF
+assert_landed "$GAPB_DANGLE_DIR/src/styles.css" "--this-name-is-declared-nowhere" "GAP B dangle injection"
+
+set +e
+gapb_dangle_output="$(run_guard "$GAPB_DANGLE_DIR/src" "$GAPB_DANGLE_DIR/src/styles.css" 2>&1)"
+gapb_dangle_status=$?
+set -e
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+if [ "$gapb_dangle_status" -eq 1 ] && echo "$gapb_dangle_output" | grep -qF -- "--color-probe-dangling"; then
+  MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+  log MUST_BLOCK "PASS — GAP B genuine dangle (not supplied by @import) — named --color-probe-dangling, exit 1"
+else
+  FAILURES+=("MUST_BLOCK GAP B genuine dangle — expected exit 1 naming --color-probe-dangling, got exit=$gapb_dangle_status, output:\n$gapb_dangle_output")
+  log MUST_BLOCK "FAIL — GAP B genuine dangle — exit=$gapb_dangle_status"
+fi
+
+# ---------------------------------------------------------------------------
+# MUST_REFUSE — unresolvable @import specifier must REFUSE TO JUDGE (exit 2),
+# never a silent pass and never conflated with a real exit-1 violation.
+# ---------------------------------------------------------------------------
+GAPB_REFUSE_DIR="$SCRATCH/gapB-refuse"
+mkdir -p "$GAPB_REFUSE_DIR/src/components/probe"
+cat > "$GAPB_REFUSE_DIR/src/styles.css" <<'EOF'
+@import "@vantageos/this-package-does-not-exist-anywhere/css";
+
+@theme inline {
+  --color-probe-unreachable: var(--whatever);
+}
+EOF
+cat > "$GAPB_REFUSE_DIR/src/components/probe/ProbeFixture.tsx" <<'EOF'
+export function ProbeFixture() {
+  return <div className="bg-probe-unreachable">probe fixture — unresolvable @import</div>;
+}
+EOF
+assert_landed "$GAPB_REFUSE_DIR/src/styles.css" "@vantageos/this-package-does-not-exist-anywhere" "MUST_REFUSE injection"
+
+set +e
+gapb_refuse_output="$(run_guard "$GAPB_REFUSE_DIR/src" "$GAPB_REFUSE_DIR/src/styles.css" 2>&1)"
+gapb_refuse_status=$?
+set -e
+MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+if [ "$gapb_refuse_status" -eq 2 ] && echo "$gapb_refuse_output" | grep -qF -- "REFUSES TO JUDGE"; then
+  MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+  log MUST_BLOCK "PASS — unresolvable @import specifier — exit 2 REFUSES TO JUDGE, distinguishable from exit 1"
+else
+  FAILURES+=("MUST_REFUSE unresolvable @import — expected exit 2 with REFUSES TO JUDGE, got exit=$gapb_refuse_status, output:\n$gapb_refuse_output")
+  log MUST_BLOCK "FAIL — unresolvable @import specifier — exit=$gapb_refuse_status"
+fi
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 echo
