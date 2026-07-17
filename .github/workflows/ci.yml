@@ -436,20 +436,26 @@ jobs:
           # Stable name (no SHA suffix): every merge that derives the SAME
           # VERSION reuses the SAME branch, so --force-with-lease below
           # updates the ONE existing branch/PR instead of opening a new one
-          # each merge. `checkout -B` (create-or-reset), not `-b`: within a
-          # single job run this checkout only ever runs once, so `-b` would
-          # also work today — but `-B` is the create-or-reset form and stays
-          # correct if this step is ever retried within the same job (a local
-          # branch of the same name would already exist from the first
-          # attempt) or if a future change starts fetching bot/derive refs
-          # before this point. NOTE: `actions/checkout@v4` above only fetches
-          # the triggering ref (main); it does NOT fetch other branches, so
-          # there is no local remote-tracking ref for bot/derive-* here
-          # regardless of `-b` vs `-B` — force-with-lease's protection in
-          # this job therefore still comes from the *rename* (stable name),
-          # not from a pre-fetched lease value; it guards against two
-          # concurrent runs racing on push, per git's documented fallback
-          # when no remote-tracking ref is known locally.
+          # each merge. That rename is what makes the reuse path reachable
+          # at all — a SHA-suffixed name made a new PR on every merge.
+          #
+          # This job's checkout step (l.328) sets `fetch-depth: 0`, which
+          # fetches full history for ALL branches, not just main — on a
+          # reuse run that includes `bot/derive-${VERSION}` itself, so a
+          # remote-tracking ref `origin/bot/derive-${VERSION}` already
+          # exists locally by the time we get here. `--force-with-lease
+          # origin "$BRANCH"` (no explicit expected value) therefore has a
+          # REAL lease: it compares against that freshly-fetched ref and
+          # only force-updates if the remote still matches what was just
+          # fetched — guarding against a genuinely concurrent run, never a
+          # blind force.
+          #
+          # `checkout -B` (create-or-reset), not `-b`: on a reuse run a
+          # local branch/ref named bot/derive-${VERSION} can already exist
+          # from the fetch above, and `-b` would fail with "branch already
+          # exists". `-B` resets it deterministically from the freshly
+          # built main HEAD every run, then the commit + force-with-lease
+          # push carries the new artifacts on top.
           git checkout -B "$BRANCH"
           git add package.json src/version.ts README.md docs/components-catalog.md registry.json
           git commit -m "chore(release): derive version ${VERSION} + docs counts + registry.json
