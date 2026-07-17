@@ -509,7 +509,7 @@ else
       FAILURES+=("MUST_BLOCK ratchet-grown build — pnpm build failed")
     else
       set +e
-      output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      output="$(cd "$CLONE" && node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
       status=$?
       set -e
       if [ "$status" -ne 0 ] && echo "$output" | grep -qF "GREW" && echo "$output" | grep -qF "\"$GROWN_SEED_VALUE\""; then
@@ -649,7 +649,7 @@ else
       log MUST_BLOCK "FAIL — ratchet-stale — premise not met"
     else
       set +e
-      output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      output="$(cd "$CLONE" && node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
       status=$?
       set -e
       if [ "$status" -ne 0 ] && echo "$output" | grep -qF "STALE" && echo "$output" | grep -qF "\"$RATCHET_VALUE\""; then
@@ -789,7 +789,7 @@ PYEOF
       log MUST_BLOCK "FAIL — loose-budget — mutation did not land"
     else
       set +e
-      output="$(cd "$CLONE" && NO_HARDCODED_WORDS_DIST="$CLONE/dist/index.cjs" node "$MUTATED_GUARD" 2>&1)"
+      output="$(cd "$CLONE" && node "$MUTATED_GUARD" 2>&1)"
       status=$?
       set -e
       if [ "$status" -ne 0 ] &&
@@ -950,23 +950,49 @@ fi
 # are lies. Per .claude/rules/derive-never-type.md, this pole is REQUIRED,
 # and per .claude/rules/guard-formulation-census.md it must cover EVERY
 # refusal path the guard's OWN SOURCE contains — not a remembered subset.
-# Recensement, derived by reading scripts/no-hardcoded-words-guard.mjs (never
-# enumerated from memory): grep '^\s*throw new Error(' / the two
-# process.exit(2) call sites finds EXACTLY THREE "cannot measure" branches:
+#
+# RE-DERIVED DOMAIN (first pass was mono-formulation and cost a false
+# green): grepping `^\s*throw` / `process.exit(2)` only finds a refusal that
+# ANNOUNCES itself — it is structurally blind to a path that SHOULD refuse
+# but instead falls through to a normal pass. That exact blind spot let
+# `printf '' > dist/index.cjs && node scripts/no-hardcoded-words-guard.mjs`
+# print "OK... this guard is now absolute" and exit 0 on a completely empty
+# artifact — measured, reported by the coordinator, confirmed here. The
+# correct method is to enumerate every TERMINAL PATH of `main()` (read the
+# whole function, ask "did this path measure something real, or should it
+# have refused?"), not to grep for the syntax of a refusal. That reading
+# finds FOUR "cannot measure" branches, not three:
 #
 #   1. main() — readFileSync(DIST_PATH) fails (artifact missing/unreadable).
-#   2. findWebhookHandlerFunctionSpan() — the handler marker is found but no
+#   2. main() — the artifact opened but is empty (0 non-whitespace bytes) —
+#      a `pnpm build` that silently produced nothing. THIS is the one the
+#      throw-grep could not see, because nothing here used to throw at all.
+#   3. main() — the artifact opened but is implausibly small and/or carries
+#      none of the `require(...)` landmarks a real build of this library
+#      always emits (truncated/corrupted build).
+#   4. findWebhookHandlerFunctionSpan() — the handler marker is found but no
 #      opening `{` follows it anywhere in the text (cannot bound the scope).
-#   3. findWebhookHandlerFunctionSpan() — the handler's body never closes
+#   5. findWebhookHandlerFunctionSpan() — the handler's body never closes
 #      (brace depth never returns to 0 before EOF).
 #
-# Cases 2 and 3 are properties of the BUILT ARTIFACT's text, not of any
-# `src/**` shape a component author could write — so, like the ratchet
-# subjects above, they are exercised by mutating a COPY of a real, freshly
-# built dist/index.cjs directly (never the invoking worktree, never a
-# fixture claiming to be src). Each mutation's landing is grep-asserted
-# BEFORE the guard runs against it, and each case asserts BOTH exit code 2
-# AND that the message names the missing instrument.
+# (Cases 4/5 keep their original numbering intent but are listed 4/5 here
+# since case 2 above was inserted ahead of them in main()'s own control
+# flow — five total exit-2 sites, four distinct MUST_REFUSE scenarios below
+# since 4 and 5 are each their own case, giving 5 cases total.)
+#
+# NO ENV-VAR REDIRECTION: an earlier revision of both the guard and this
+# probe used `NO_HARDCODED_WORDS_DIST` to point the guard at a scratch file
+# outside the real build directory. That is itself a bypass surface — any
+# caller can aim the guard at an arbitrary "clean" or empty file and collect
+# a green with no relationship to what the project actually ships. The
+# override has been REMOVED from the guard entirely (see its own "Usage"
+# header comment). Every case below instead mutates the REAL, already-built
+# `$CLONE/dist/index.cjs` directly (backing it up first, restoring it after)
+# and runs the guard via `cd "$CLONE" && node scripts/...` so it resolves
+# its one true path exactly as it does in production. Each mutation's
+# landing is asserted BEFORE the guard runs against it, and each case
+# asserts BOTH exit code 2 AND that the message names the missing
+# instrument.
 # ---------------------------------------------------------------------------
 git -C "$CLONE" checkout --quiet "$BASE"
 # The guard-under-test is never part of any probe commit (see run_guard()'s
@@ -976,42 +1002,93 @@ git -C "$CLONE" checkout --quiet "$BASE"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
 log INFO "building clean MUST_REFUSE artifact (this takes ~15-25s)..."
 if ! build_clone; then
-  MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 3))
+  MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 5))
   FAILURES+=("MUST_REFUSE setup — pnpm build failed on clean $BASE, cannot derive an artifact to mutate")
 else
   HANDLER_MARKER="function MosaicClerkWebhookHandler("
-  if ! grep -qF "$HANDLER_MARKER" "$CLONE/dist/index.cjs"; then
-    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 3))
-    FAILURES+=("MUST_REFUSE setup — \"$HANDLER_MARKER\" not found in the built artifact — probe cannot exercise cases 2/3, refusing to guess a pass")
+  REAL_DIST="$CLONE/dist/index.cjs"
+  REAL_DIST_BACKUP="$SCRATCH/dist-index-cjs.orig-backup"
+  cp "$REAL_DIST" "$REAL_DIST_BACKUP"
+  if ! grep -qF "$HANDLER_MARKER" "$REAL_DIST"; then
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 5))
+    FAILURES+=("MUST_REFUSE setup — \"$HANDLER_MARKER\" not found in the built artifact — probe cannot exercise cases 4/5, refusing to guess a pass")
   else
-    REFUSE_DIST_DIR="$SCRATCH/refuse-dist"
-    mkdir -p "$REFUSE_DIST_DIR"
-
-    # --- MUST_REFUSE 1: artifact missing/unreadable. ---
-    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
-    MISSING_DIST="$REFUSE_DIST_DIR/does-not-exist.cjs"
-    if [ -e "$MISSING_DIST" ]; then
-      FAILURES+=("MUST_REFUSE missing-artifact — scratch path unexpectedly exists — probe invalid")
-      log MUST_REFUSE "FAIL — missing-artifact — scratch path pre-exists"
-    else
+    # Run the guard against whatever currently sits at $REAL_DIST, restore
+    # the pristine backup unconditionally afterward (even on failure), and
+    # report exit code + output via the two named out-params below.
+    run_guard_on_real_dist() {
       set +e
-      output="$(NO_HARDCODED_WORDS_DIST="$MISSING_DIST" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
-      status=$?
+      REFUSE_OUTPUT="$(cd "$CLONE" && node scripts/no-hardcoded-words-guard.mjs 2>&1)"
+      REFUSE_STATUS=$?
       set -e
-      if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSING TO JUDGE" && echo "$output" | grep -qF "$MISSING_DIST"; then
+    }
+    restore_real_dist() {
+      cp "$REAL_DIST_BACKUP" "$REAL_DIST"
+    }
+
+    # --- MUST_REFUSE 1: artifact missing entirely (mv aside, per the task's
+    #     own acceptance criteria — depriving the guard of its instrument,
+    #     never redirecting it to a scratch path). ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    mv "$REAL_DIST" "$SCRATCH/moved-aside-index.cjs"
+    if [ -e "$REAL_DIST" ]; then
+      FAILURES+=("MUST_REFUSE missing-artifact — mv did not remove $REAL_DIST — probe invalid")
+      log MUST_REFUSE "FAIL — missing-artifact — mv did not land"
+    else
+      run_guard_on_real_dist
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "dist/index.cjs"; then
         MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
-        log MUST_REFUSE "PASS — missing artifact — exited 2, REFUSED TO JUDGE, named the unreadable path"
+        log MUST_REFUSE "PASS — instrument removed (mv dist aside) — exited 2, REFUSED TO JUDGE, named dist/index.cjs"
       else
-        FAILURES+=("MUST_REFUSE missing-artifact — guard exited $status (expected 2) or did not name the path — output: $output")
-        log MUST_REFUSE "FAIL — missing-artifact — exit=$status output=$output"
+        FAILURES+=("MUST_REFUSE missing-artifact — guard exited $REFUSE_STATUS (expected 2) or did not name dist/index.cjs — output: $REFUSE_OUTPUT")
+        log MUST_REFUSE "FAIL — missing-artifact — exit=$REFUSE_STATUS output=$REFUSE_OUTPUT"
       fi
     fi
+    mv "$SCRATCH/moved-aside-index.cjs" "$REAL_DIST"
 
-    # --- MUST_REFUSE 2: handler marker present, no opening `{` follows it
+    # --- MUST_REFUSE 2: artifact present but EMPTY — the exact false-green
+    #     the coordinator caught. A `pnpm build` that silently produces
+    #     nothing must never be read as "carries zero hardcoded words". ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    printf '' > "$REAL_DIST"
+    if [ -s "$REAL_DIST" ]; then
+      FAILURES+=("MUST_REFUSE empty-artifact — truncation did NOT land ($REAL_DIST is not empty) — probe invalid")
+      log MUST_REFUSE "FAIL — empty-artifact — mutation did not land"
+    else
+      run_guard_on_real_dist
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "empty"; then
+        MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+        log MUST_REFUSE "PASS — empty artifact — exited 2, REFUSED TO JUDGE, named it empty (this is the case that was a FALSE GREEN before the fix)"
+      else
+        FAILURES+=("MUST_REFUSE empty-artifact — guard exited $REFUSE_STATUS (expected 2, naming 'empty') — output: $REFUSE_OUTPUT")
+        log MUST_REFUSE "FAIL — empty-artifact — exit=$REFUSE_STATUS output=$REFUSE_OUTPUT"
+      fi
+    fi
+    restore_real_dist
+
+    # --- MUST_REFUSE 3: artifact present but implausibly small / missing
+    #     the require(...) landmark a real build always carries. ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    printf '// tiny non-bundle content, no module imports at all\nconsole.log("x");\n' > "$REAL_DIST"
+    if [ "$(wc -c < "$REAL_DIST")" -ge 1000 ] || grep -qF "require(" "$REAL_DIST"; then
+      FAILURES+=("MUST_REFUSE tiny-artifact — replacement did NOT land as a tiny, require()-free file — probe invalid")
+      log MUST_REFUSE "FAIL — tiny-artifact — mutation did not land as intended"
+    else
+      run_guard_on_real_dist
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "does not look like a real built"; then
+        MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+        log MUST_REFUSE "PASS — tiny/non-bundle artifact — exited 2, REFUSED TO JUDGE, named it as not a real bundle"
+      else
+        FAILURES+=("MUST_REFUSE tiny-artifact — guard exited $REFUSE_STATUS (expected 2, naming 'does not look like a real built') — output: $REFUSE_OUTPUT")
+        log MUST_REFUSE "FAIL — tiny-artifact — exit=$REFUSE_STATUS output=$REFUSE_OUTPUT"
+      fi
+    fi
+    restore_real_dist
+
+    # --- MUST_REFUSE 4: handler marker present, no opening `{` follows it
     #     anywhere in the text (truncate the artifact right at the marker). ---
     MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
-    NO_BRACE_DIST="$REFUSE_DIST_DIR/no-opening-brace.cjs"
-    python3 - "$CLONE/dist/index.cjs" "$NO_BRACE_DIST" "$HANDLER_MARKER" <<'PYEOF'
+    python3 - "$REAL_DIST_BACKUP" "$REAL_DIST" "$HANDLER_MARKER" <<'PYEOF'
 import sys
 src, dst, marker = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(src) as f:
@@ -1022,7 +1099,7 @@ with open(dst, "w") as f:
     f.write(truncated)
 PYEOF
     NO_BRACE_LANDED=1
-    python3 - "$NO_BRACE_DIST" "$HANDLER_MARKER" <<'PYEOF' || NO_BRACE_LANDED=0
+    python3 - "$REAL_DIST" "$HANDLER_MARKER" <<'PYEOF' || NO_BRACE_LANDED=0
 import sys
 path, marker = sys.argv[1], sys.argv[2]
 with open(path) as f:
@@ -1038,25 +1115,22 @@ PYEOF
       FAILURES+=("MUST_REFUSE no-opening-brace — truncation did NOT land as intended (marker absent, or a brace still follows it) — probe invalid")
       log MUST_REFUSE "FAIL — no-opening-brace — mutation did not land as intended"
     else
-      set +e
-      output="$(NO_HARDCODED_WORDS_DIST="$NO_BRACE_DIST" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
-      status=$?
-      set -e
-      if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSING TO JUDGE" && echo "$output" | grep -qF "no opening"; then
+      run_guard_on_real_dist
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "no opening"; then
         MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
         log MUST_REFUSE "PASS — handler marker with no opening brace — exited 2, REFUSED TO JUDGE, named the unbound scope"
       else
-        FAILURES+=("MUST_REFUSE no-opening-brace — guard exited $status (expected 2) or did not name the missing brace — output: $output")
-        log MUST_REFUSE "FAIL — no-opening-brace — exit=$status output=$output"
+        FAILURES+=("MUST_REFUSE no-opening-brace — guard exited $REFUSE_STATUS (expected 2) or did not name the missing brace — output: $REFUSE_OUTPUT")
+        log MUST_REFUSE "FAIL — no-opening-brace — exit=$REFUSE_STATUS output=$REFUSE_OUTPUT"
       fi
     fi
+    restore_real_dist
 
-    # --- MUST_REFUSE 3: handler body opens but never closes before EOF
+    # --- MUST_REFUSE 5: handler body opens but never closes before EOF
     #     (truncate the artifact right after the first `{` following the
     #     marker, so brace depth never returns to 0). ---
     MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
-    UNCLOSED_DIST="$REFUSE_DIST_DIR/unclosed-body.cjs"
-    python3 - "$CLONE/dist/index.cjs" "$UNCLOSED_DIST" "$HANDLER_MARKER" <<'PYEOF'
+    python3 - "$REAL_DIST_BACKUP" "$REAL_DIST" "$HANDLER_MARKER" <<'PYEOF'
 import sys
 src, dst, marker = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(src) as f:
@@ -1067,22 +1141,20 @@ truncated = text[: braceIdx + 1]
 with open(dst, "w") as f:
     f.write(truncated)
 PYEOF
-    if [ "$(tail -c 1 "$UNCLOSED_DIST")" != "{" ]; then
+    if [ "$(tail -c 1 "$REAL_DIST")" != "{" ]; then
       FAILURES+=("MUST_REFUSE unclosed-body — truncation did NOT land (file does not end on the opening brace) — probe invalid")
       log MUST_REFUSE "FAIL — unclosed-body — mutation did not land as intended"
     else
-      set +e
-      output="$(NO_HARDCODED_WORDS_DIST="$UNCLOSED_DIST" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
-      status=$?
-      set -e
-      if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSING TO JUDGE" && echo "$output" | grep -qF "never closes"; then
+      run_guard_on_real_dist
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "never closes"; then
         MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
         log MUST_REFUSE "PASS — handler body never closes — exited 2, REFUSED TO JUDGE, named the unbalanced scope"
       else
-        FAILURES+=("MUST_REFUSE unclosed-body — guard exited $status (expected 2) or did not name the unbalanced scope — output: $output")
-        log MUST_REFUSE "FAIL — unclosed-body — exit=$status output=$output"
+        FAILURES+=("MUST_REFUSE unclosed-body — guard exited $REFUSE_STATUS (expected 2) or did not name the unbalanced scope — output: $REFUSE_OUTPUT")
+        log MUST_REFUSE "FAIL — unclosed-body — exit=$REFUSE_STATUS output=$REFUSE_OUTPUT"
       fi
     fi
+    restore_real_dist
   fi
 fi
 

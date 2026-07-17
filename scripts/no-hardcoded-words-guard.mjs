@@ -132,7 +132,17 @@
  *     of file+line to work from, instead of a human re-typing the count.
  *
  * Usage: node scripts/no-hardcoded-words-guard.mjs
- *   Scans dist/index.cjs (override via NO_HARDCODED_WORDS_DIST for probes).
+ *   Scans dist/index.cjs relative to the current working directory — always
+ *   the real artifact at its real path, never redirectable. An earlier
+ *   revision accepted a `NO_HARDCODED_WORDS_DIST` override so probes could
+ *   point the guard at a scratch clone's build without `cd`-ing into it.
+ *   That is exactly the shape of a silent bypass: any caller (a probe, CI,
+ *   a careless script) can aim the guard at an arbitrary file — including a
+ *   trivially "clean" or empty one — and collect a green that says nothing
+ *   about what the project actually ships. Every probe/test invocation below
+ *   instead `cd`s into the directory holding the real `dist/index.cjs` (or
+ *   moves/mutates that real file directly) before invoking this script with
+ *   no environment override at all.
  *
  * RATCHET (2026-07-14) — WHY THIS GUARD MERGES TODAY INSTEAD OF WAITING FOR
  * EVERY OFFENDER TO BE FIXED FIRST:
@@ -199,8 +209,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const DIST_PATH =
-  process.env.NO_HARDCODED_WORDS_DIST ?? resolve(process.cwd(), "dist", "index.cjs");
+// No environment override — the guard always scans the real artifact at its
+// real path, relative to the current working directory. See the header
+// comment ("Usage") for why an override was removed rather than added-to.
+const DIST_PATH = resolve(process.cwd(), "dist", "index.cjs");
 
 // ---------------------------------------------------------------------------
 // Spec-derived closed sets — sourced from an external standard, never from
@@ -709,6 +721,50 @@ function main() {
     console.error(
       `REFUSING TO JUDGE: no-hardcoded-words-guard cannot read ${DIST_PATH} — run \`pnpm build\` first. Refusing ` +
         `to report a clean bill of health when the artifact under test could not even be opened. Underlying error: ${err.message}`,
+    );
+    process.exit(2);
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // REFUSAL — the artifact opened cleanly but is empty, or too small/absent
+  // the structural landmarks any genuine build of this library carries.
+  //
+  // WHY THIS EXISTS (found by re-deriving the refusal DOMAIN from every
+  // TERMINAL PATH of main(), not from `grep '^\s*throw'`): a `grep` for
+  // `throw` only ever finds a refusal that ANNOUNCES itself. It is
+  // structurally blind to the opposite defect — a path that should refuse
+  // but instead falls through to a normal PASS. Before this check existed,
+  // `printf '' > dist/index.cjs && node scripts/no-hardcoded-words-guard.mjs`
+  // printed "OK — carries zero hardcoded user-facing words... this guard is
+  // now absolute" and exited 0:
+  // a `pnpm build` that silently produced NOTHING got a clean bill of
+  // health, because an empty/near-empty string has no candidate literals
+  // for either pass to flag, and `findWebhookHandlerFunctionSpan` treats "no
+  // marker found" as "handler removed/renamed" (a legitimate state) rather
+  // than "nothing was ever built". That is a FAIL-OPEN, the opposite defect
+  // from the three throw-sites above (which all failed closed) — and it is
+  // reachable precisely because nothing in the pre-fix code ever asked "does
+  // this look like a real build at all?".
+  //
+  // The landmark checked is derived from what THIS project's own build
+  // toolchain (tsup/esbuild, see tsup.config.ts) actually emits into every
+  // CJS bundle it has ever produced — a `require(...)` call for at least the
+  // first external dependency — not a number invented for this guard. A
+  // build that emits zero `require(` calls and/or is implausibly small has
+  // not built this library; there is nothing here to certify either way.
+  // ---------------------------------------------------------------------
+  const MIN_PLAUSIBLE_BUNDLE_BYTES = 1000;
+  if (text.trim().length === 0) {
+    console.error(
+      `REFUSING TO JUDGE: no-hardcoded-words-guard read ${DIST_PATH} but it is empty (0 bytes of non-whitespace content). A real build of this library is never empty — this looks like \`pnpm build\` silently produced nothing. Refusing to report a clean bill of health on an artifact that was never actually built.`,
+    );
+    process.exit(2);
+    return;
+  }
+  if (text.length < MIN_PLAUSIBLE_BUNDLE_BYTES || !/require\(/.test(text)) {
+    console.error(
+      `REFUSING TO JUDGE: no-hardcoded-words-guard read ${DIST_PATH} (${text.length} byte(s)) but it does not look like a real built CJS bundle of this library — every genuine build emits multiple \`require(...)\` calls and is well over ${MIN_PLAUSIBLE_BUNDLE_BYTES} bytes. Refusing to report a clean bill of health on content that was never actually built (or was truncated/corrupted before this guard ran).`,
     );
     process.exit(2);
     return;
