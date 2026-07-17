@@ -62,6 +62,8 @@ MUST_BLOCK_PASS=0
 MUST_BLOCK_TOTAL=0
 MUST_PASS_PASS=0
 MUST_PASS_TOTAL=0
+MUST_REFUSE_PASS=0
+MUST_REFUSE_TOTAL=0
 FAILURES=()
 
 log() { echo "[$1] $2"; }
@@ -943,6 +945,148 @@ fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-pass-declared)
 
 # ---------------------------------------------------------------------------
+# MUST_REFUSE — the third pole. A guard with only PASS/BLOCK files "I could
+# not measure" as either a clean bill of health or a real violation — both
+# are lies. Per .claude/rules/derive-never-type.md, this pole is REQUIRED,
+# and per .claude/rules/guard-formulation-census.md it must cover EVERY
+# refusal path the guard's OWN SOURCE contains — not a remembered subset.
+# Recensement, derived by reading scripts/no-hardcoded-words-guard.mjs (never
+# enumerated from memory): grep '^\s*throw new Error(' / the two
+# process.exit(2) call sites finds EXACTLY THREE "cannot measure" branches:
+#
+#   1. main() — readFileSync(DIST_PATH) fails (artifact missing/unreadable).
+#   2. findWebhookHandlerFunctionSpan() — the handler marker is found but no
+#      opening `{` follows it anywhere in the text (cannot bound the scope).
+#   3. findWebhookHandlerFunctionSpan() — the handler's body never closes
+#      (brace depth never returns to 0 before EOF).
+#
+# Cases 2 and 3 are properties of the BUILT ARTIFACT's text, not of any
+# `src/**` shape a component author could write — so, like the ratchet
+# subjects above, they are exercised by mutating a COPY of a real, freshly
+# built dist/index.cjs directly (never the invoking worktree, never a
+# fixture claiming to be src). Each mutation's landing is grep-asserted
+# BEFORE the guard runs against it, and each case asserts BOTH exit code 2
+# AND that the message names the missing instrument.
+# ---------------------------------------------------------------------------
+git -C "$CLONE" checkout --quiet "$BASE"
+# The guard-under-test is never part of any probe commit (see run_guard()'s
+# own comment above) — re-install THIS branch's copy before building/testing,
+# or every case below silently re-tests the OLD, unpatched guard checked out
+# from $BASE instead of the fix this probe exists to prove.
+cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+log INFO "building clean MUST_REFUSE artifact (this takes ~15-25s)..."
+if ! build_clone; then
+  MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 3))
+  FAILURES+=("MUST_REFUSE setup — pnpm build failed on clean $BASE, cannot derive an artifact to mutate")
+else
+  HANDLER_MARKER="function MosaicClerkWebhookHandler("
+  if ! grep -qF "$HANDLER_MARKER" "$CLONE/dist/index.cjs"; then
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 3))
+    FAILURES+=("MUST_REFUSE setup — \"$HANDLER_MARKER\" not found in the built artifact — probe cannot exercise cases 2/3, refusing to guess a pass")
+  else
+    REFUSE_DIST_DIR="$SCRATCH/refuse-dist"
+    mkdir -p "$REFUSE_DIST_DIR"
+
+    # --- MUST_REFUSE 1: artifact missing/unreadable. ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    MISSING_DIST="$REFUSE_DIST_DIR/does-not-exist.cjs"
+    if [ -e "$MISSING_DIST" ]; then
+      FAILURES+=("MUST_REFUSE missing-artifact — scratch path unexpectedly exists — probe invalid")
+      log MUST_REFUSE "FAIL — missing-artifact — scratch path pre-exists"
+    else
+      set +e
+      output="$(NO_HARDCODED_WORDS_DIST="$MISSING_DIST" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSING TO JUDGE" && echo "$output" | grep -qF "$MISSING_DIST"; then
+        MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+        log MUST_REFUSE "PASS — missing artifact — exited 2, REFUSED TO JUDGE, named the unreadable path"
+      else
+        FAILURES+=("MUST_REFUSE missing-artifact — guard exited $status (expected 2) or did not name the path — output: $output")
+        log MUST_REFUSE "FAIL — missing-artifact — exit=$status output=$output"
+      fi
+    fi
+
+    # --- MUST_REFUSE 2: handler marker present, no opening `{` follows it
+    #     anywhere in the text (truncate the artifact right at the marker). ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    NO_BRACE_DIST="$REFUSE_DIST_DIR/no-opening-brace.cjs"
+    python3 - "$CLONE/dist/index.cjs" "$NO_BRACE_DIST" "$HANDLER_MARKER" <<'PYEOF'
+import sys
+src, dst, marker = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(src) as f:
+    text = f.read()
+idx = text.index(marker)
+truncated = text[: idx + len(marker)]
+with open(dst, "w") as f:
+    f.write(truncated)
+PYEOF
+    NO_BRACE_LANDED=1
+    python3 - "$NO_BRACE_DIST" "$HANDLER_MARKER" <<'PYEOF' || NO_BRACE_LANDED=0
+import sys
+path, marker = sys.argv[1], sys.argv[2]
+with open(path) as f:
+    text = f.read()
+idx = text.find(marker)
+if idx == -1:
+    sys.exit(1)  # marker itself did not land
+if "{" in text[idx + len(marker):]:
+    sys.exit(1)  # a brace still follows the marker — truncation missed
+sys.exit(0)
+PYEOF
+    if [ "$NO_BRACE_LANDED" -ne 1 ]; then
+      FAILURES+=("MUST_REFUSE no-opening-brace — truncation did NOT land as intended (marker absent, or a brace still follows it) — probe invalid")
+      log MUST_REFUSE "FAIL — no-opening-brace — mutation did not land as intended"
+    else
+      set +e
+      output="$(NO_HARDCODED_WORDS_DIST="$NO_BRACE_DIST" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSING TO JUDGE" && echo "$output" | grep -qF "no opening"; then
+        MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+        log MUST_REFUSE "PASS — handler marker with no opening brace — exited 2, REFUSED TO JUDGE, named the unbound scope"
+      else
+        FAILURES+=("MUST_REFUSE no-opening-brace — guard exited $status (expected 2) or did not name the missing brace — output: $output")
+        log MUST_REFUSE "FAIL — no-opening-brace — exit=$status output=$output"
+      fi
+    fi
+
+    # --- MUST_REFUSE 3: handler body opens but never closes before EOF
+    #     (truncate the artifact right after the first `{` following the
+    #     marker, so brace depth never returns to 0). ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    UNCLOSED_DIST="$REFUSE_DIST_DIR/unclosed-body.cjs"
+    python3 - "$CLONE/dist/index.cjs" "$UNCLOSED_DIST" "$HANDLER_MARKER" <<'PYEOF'
+import sys
+src, dst, marker = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(src) as f:
+    text = f.read()
+markerIdx = text.index(marker)
+braceIdx = text.index("{", markerIdx)
+truncated = text[: braceIdx + 1]
+with open(dst, "w") as f:
+    f.write(truncated)
+PYEOF
+    if [ "$(tail -c 1 "$UNCLOSED_DIST")" != "{" ]; then
+      FAILURES+=("MUST_REFUSE unclosed-body — truncation did NOT land (file does not end on the opening brace) — probe invalid")
+      log MUST_REFUSE "FAIL — unclosed-body — mutation did not land as intended"
+    else
+      set +e
+      output="$(NO_HARDCODED_WORDS_DIST="$UNCLOSED_DIST" node "$CLONE/scripts/no-hardcoded-words-guard.mjs" 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -eq 2 ] && echo "$output" | grep -qF "REFUSING TO JUDGE" && echo "$output" | grep -qF "never closes"; then
+        MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+        log MUST_REFUSE "PASS — handler body never closes — exited 2, REFUSED TO JUDGE, named the unbalanced scope"
+      else
+        FAILURES+=("MUST_REFUSE unclosed-body — guard exited $status (expected 2) or did not name the unbalanced scope — output: $output")
+        log MUST_REFUSE "FAIL — unclosed-body — exit=$status output=$output"
+      fi
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Restoration proof — the INVOKING worktree, never the scratch clone, must
 # be untouched by this probe.
 # ---------------------------------------------------------------------------
@@ -952,8 +1096,9 @@ POST_PROBE_DIFF="$(git diff --stat)"
 echo ""
 echo "==================== PROBE SUMMARY ===================="
 echo "Baseline offender count on clean $BASE (guard expected RED — known, un-fixed offenders): ${BASELINE_COUNT:-N/A}"
-echo "MUST_BLOCK: $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
-echo "MUST_PASS:  $MUST_PASS_PASS/$MUST_PASS_TOTAL"
+echo "MUST_BLOCK:  $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
+echo "MUST_PASS:   $MUST_PASS_PASS/$MUST_PASS_TOTAL"
+echo "MUST_REFUSE: $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL"
 echo "Restoration ($REPO_ROOT diff before vs after probe, must be IDENTICAL — all probe work happened in the scratch clone, never here):"
 if [ "$PRE_PROBE_DIFF" != "$POST_PROBE_DIFF" ]; then
   echo "BEFORE:"
@@ -973,4 +1118,4 @@ if [ "${#FAILURES[@]}" -gt 0 ]; then
 fi
 
 echo ""
-echo "ALL BIPOLAR CASES PASSED — false positives: 0"
+echo "ALL TRIPOLAR CASES PASSED (MUST_BLOCK / MUST_PASS / MUST_REFUSE) — false positives: 0"

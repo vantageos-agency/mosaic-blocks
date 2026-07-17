@@ -117,9 +117,14 @@
  * FAIL-CLOSED BY CONSTRUCTION:
  *   - Any candidate this guard cannot confidently classify as legitimate is
  *     a VIOLATION labelled "unclassified shape" — never a silent pass.
- *   - Any I/O failure (dist/index.cjs missing, unreadable, etc.) throws and
- *     exits non-zero — a guard that cannot read its own input must not
- *     report a clean bill of health.
+ *   - Any I/O/scope failure this guard cannot measure through (dist/index.cjs
+ *     missing/unreadable, or the one function-body span it must bound
+ *     unparseable) prints `REFUSING TO JUDGE: ...` naming what could not be
+ *     read and exits 2 — a THIRD, DISTINCT exit code from both exit 1 (a
+ *     real, measured violation) and exit 0 (a real, measured clean tree).
+ *     A scaffolding failure and an actual violation must never share a code:
+ *     any CI caller that treats "non-zero" as "hardcoded word found" would
+ *     otherwise misreport a broken build as a content defect.
  *   - This guard is EXPECTED to fail loudly on current `main` (14+ known
  *     offenders, several more this generic derivation additionally finds —
  *     e.g. `roleConfig` badge labels "Owner"/"Admin"/"Member"). That failure
@@ -670,9 +675,12 @@ function findWebhookHandlerFunctionSpan(text) {
   if (markerIndex === -1) return null; // handler removed/renamed — nothing to exclude
   const bodyStart = text.indexOf("{", markerIndex);
   if (bodyStart === -1) {
-    throw new Error(
-      "no-hardcoded-words-guard: found `function MosaicClerkWebhookHandler(` but no opening `{` — cannot bound its scope. Refusing to guess.",
+    console.error(
+      "REFUSING TO JUDGE: no-hardcoded-words-guard found `function MosaicClerkWebhookHandler(` " +
+        "but no opening `{` — cannot bound its scope, and cannot report a clean bill of health " +
+        "while unable to measure. Refusing to guess.",
     );
+    process.exit(2);
   }
   let depth = 0;
   let i = bodyStart;
@@ -685,9 +693,12 @@ function findWebhookHandlerFunctionSpan(text) {
     }
     i++;
   }
-  throw new Error(
-    "no-hardcoded-words-guard: `function MosaicClerkWebhookHandler(`'s body never closes (unbalanced braces) — cannot bound its scope. Refusing to guess.",
+  console.error(
+    "REFUSING TO JUDGE: no-hardcoded-words-guard found `function MosaicClerkWebhookHandler(`'s " +
+      "body never closes (unbalanced braces) — cannot bound its scope, and cannot report a clean " +
+      "bill of health while unable to measure. Refusing to guess.",
   );
+  process.exit(2);
 }
 
 function main() {
@@ -695,10 +706,12 @@ function main() {
   try {
     text = readFileSync(DIST_PATH, "utf8");
   } catch (err) {
-    throw new Error(
-      `no-hardcoded-words-guard: cannot read ${DIST_PATH} — run \`pnpm build\` first. Refusing to report a clean ` +
-        `bill of health when the artifact under test could not even be opened. Underlying error: ${err.message}`,
+    console.error(
+      `REFUSING TO JUDGE: no-hardcoded-words-guard cannot read ${DIST_PATH} — run \`pnpm build\` first. Refusing ` +
+        `to report a clean bill of health when the artifact under test could not even be opened. Underlying error: ${err.message}`,
     );
+    process.exit(2);
+    return;
   }
 
   const webhookHandlerSpan = findWebhookHandlerFunctionSpan(text);
