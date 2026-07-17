@@ -307,7 +307,6 @@ export function MosaicAppSidebar({
 
   const sidebarWidth = isMobile ? "100%" : isCollapsed ? "64px" : "280px";
 
-  // allow-undeclared-theme-token: success-500 wired to canonical --mosaic-color-success-* (status triads are NOT aliased, #64); resolves via @import "@vantageos/mosaic-tokens/css" at styles.css:4; hand-declaring `var(--success-500)` here would duplicate tokens.css (derive-never-type).
   const footerStatusIconClass = "text-success-500";
 
   const toggleSubmenu = (id: string) => {

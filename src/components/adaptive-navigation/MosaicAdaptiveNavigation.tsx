@@ -162,7 +162,6 @@ export function MosaicAdaptiveNavigation({
                   <div
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                      // allow-undeclared-theme-token: success-500 wired to canonical --mosaic-color-success-* (status triads are NOT aliased, #64); resolves via @import "@vantageos/mosaic-tokens/css" at styles.css:4; hand-declaring `var(--success-500)` here would duplicate tokens.css (derive-never-type).
                       item.isComplete
                         ? "bg-success-500 text-white"
                         : "bg-muted text-muted-foreground",
@@ -233,7 +232,6 @@ export function MosaicAdaptiveNavigation({
               <div
                 className={cn(
                   "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                  // allow-undeclared-theme-token: success-500 wired to canonical --mosaic-color-success-* (status triads are NOT aliased, #64); resolves via @import "@vantageos/mosaic-tokens/css" at styles.css:4; hand-declaring `var(--success-500)` here would duplicate tokens.css (derive-never-type).
                   item.isComplete
                     ? "bg-success-500 text-white"
                     : isActive

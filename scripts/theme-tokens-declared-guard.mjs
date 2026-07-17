@@ -87,6 +87,47 @@
  * Usage: node scripts/theme-tokens-declared-guard.mjs
  *   Scans `src/**\/*.{ts,tsx}` (override via THEME_TOKENS_SRC_DIR for
  *   probes) and `src/styles.css` (override via THEME_TOKENS_STYLES_PATH).
+ *
+ * TWO DOMAINS THIS GUARD MUST NOT HARDCODE (per
+ * .claude/rules/guard-formulation-census.md — "a guard that hardcodes a
+ * domain instead of deriving it from the installed artifact is the SAME
+ * class of defect, no matter which of its two domains drifts"):
+ *
+ *   GAP A — COLOR_BEARING_PREFIXES was a Tailwind v3-era enumeration. The
+ *   installed `tailwindcss` (v4) registers MORE prefixes that accept a bare
+ *   color token (`inset-ring`, `inset-shadow`, `text-shadow`, `drop-shadow`)
+ *   than this list knew about. `deriveKnownColorBearingPrefixes()` below
+ *   reads the INSTALLED package's own compiled utility registrations (never
+ *   retyped from memory) and REFUSES TO JUDGE (exit 2) the instant the
+ *   installed package exposes a color-bearing prefix this list does not
+ *   cover — the counter-to-zero check is load-bearing at every run, not a
+ *   one-off backfill. Verified empirically (via `tailwindcss`'s own
+ *   `compile()` API, `--theme{--color-mytoken:red}` + each new prefix) that
+ *   ALL of these resolve through the SAME `--color-<token>` custom property
+ *   as `bg`/`ring`/`shadow` — there is no separate `--text-shadow-*`
+ *   namespace for a custom token; Tailwind v4 always names the color
+ *   variable `--color-<token>` regardless of which utility family consumes
+ *   it. No per-prefix variable-name remap is required or correct.
+ *
+ *   GAP B — the "declared" set was collected ONLY from this package's own
+ *   `src/styles.css`, and required the declaration's `var(--X)` right-hand
+ *   side to be BYTE-IDENTICAL to the left-hand token name (`declaredTokenRe`
+ *   backreference `var\(--\1\)`). But `src/styles.css` re-exports canonical
+ *   tokens from `@vantageos/mosaic-tokens` via `--color-success-500:
+ *   var(--mosaic-color-success-500);` — a DIFFERENT right-hand name — so the
+ *   backreference silently rejected a token this library plainly DOES
+ *   declare, forcing PR #137 to paper over the false positive with 5
+ *   `// allow-undeclared-theme-token` markers instead of fixing the guard.
+ *   `resolveImportedCustomProperties()` below (a) drops the byte-identical
+ *   backreference requirement — any `--color-<token>: var(--<anything>);`
+ *   line in `@theme inline` counts as declaring `<token>`, matching how
+ *   Tailwind itself treats the declaration — and (b) follows every
+ *   `@import "<pkg>/...";` in `src/styles.css`, resolves the SPECIFIER via
+ *   this package's own `node_modules` (never a hardcoded token list), and
+ *   folds every custom property THAT FILE declares into the "resolvable"
+ *   set. A token whose `var(--Y)` right-hand side is not declared ANYWHERE
+ *   — not in `styles.css` itself, not in an imported file — is still a
+ *   GENUINE dangle and is still reported UNDECLARED, naming it.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -109,7 +150,14 @@ const STYLES_PATH = resolve(REPO_ROOT, process.env.THEME_TOKENS_STYLES_PATH ?? "
 // https://tailwindcss.com/docs/colors ("Using color utilities" — background,
 // text, border, ring, ring-offset, divide, outline, decoration, placeholder,
 // accent, caret, fill, stroke, shadow, and the gradient stop utilities
-// from/via/to).
+// from/via/to) PLUS the Tailwind v4 additions verified empirically against
+// the installed `tailwindcss` package (see header comment "GAP A" and
+// `deriveKnownColorBearingPrefixes()` below, which REFUSES TO JUDGE the
+// instant the installed package exposes a prefix not in this list):
+// `inset-ring` (https://tailwindcss.com/docs/box-shadow#inset-rings),
+// `inset-shadow` (https://tailwindcss.com/docs/box-shadow#inset-shadows),
+// `text-shadow` (https://tailwindcss.com/docs/text-shadow),
+// `drop-shadow` (https://tailwindcss.com/docs/filter-drop-shadow#setting-the-drop-shadow-color).
 const COLOR_BEARING_PREFIXES = [
   "bg",
   "text",
@@ -128,6 +176,10 @@ const COLOR_BEARING_PREFIXES = [
   "from",
   "via",
   "to",
+  "inset-ring",
+  "inset-shadow",
+  "text-shadow",
+  "drop-shadow",
 ];
 // Sorted longest-prefix-first so "ring-offset" is tried before "ring" —
 // otherwise "ring-offset-sidebar" would be misparsed as prefix "ring" +
@@ -289,10 +341,34 @@ const NON_COLOR_SUFFIXES = {
   caret: new Set(["current", "transparent"]),
   fill: new Set(["none", "current", "transparent"]),
   stroke: new Set(["none", "current", "transparent", "0", "1", "2"]),
-  shadow: new Set(["none", "xs", "sm", "md", "lg", "xl", "2xl", "inner", "current", "transparent"]),
+  shadow: new Set([
+    "none",
+    "2xs",
+    "xs",
+    "sm",
+    "md",
+    "lg",
+    "xl",
+    "2xl",
+    "inner",
+    "current",
+    "transparent",
+  ]),
   from: new Set(["0%", "5%", "10%", "current", "transparent"]),
   via: new Set(["0%", "5%", "10%", "current", "transparent"]),
   to: new Set(["0%", "5%", "10%", "current", "transparent"]),
+  // Tailwind v4 additions (source: theme.css shipped by the installed
+  // `tailwindcss` package — `--inset-ring-*`/`--inset-shadow-*`/
+  // `--text-shadow-*`/`--drop-shadow-*` scale keys). Verified empirically
+  // (see header "GAP A") that a CUSTOM color token on any of these four
+  // resolves through `--color-<token>` exactly like `bg`/`ring`/`shadow` —
+  // no separate namespace, so these suffix sets only need to list the
+  // BUILT-IN (non-color) scale/size keywords, same shape as every other
+  // prefix above.
+  "inset-ring": new Set(["0", "1", "2", "4", "8", "current", "transparent"]),
+  "inset-shadow": new Set(["none", "2xs", "xs", "sm", "current", "transparent"]),
+  "text-shadow": new Set(["none", "2xs", "xs", "sm", "md", "lg", "current", "transparent"]),
+  "drop-shadow": new Set(["none", "xs", "sm", "md", "lg", "xl", "2xl", "current", "transparent"]),
 };
 
 // Numeric gradient-stop positions Tailwind allows (0%..100% in 5-unit
@@ -388,6 +464,62 @@ function loadBuiltinColorFamilies() {
   return families;
 }
 
+// Baseline prefixes ANY successful extraction must find — if the installed
+// package's internals changed shape enough that even these known-color
+// utilities are invisible to the regex below, the extraction itself is
+// broken and must REFUSE rather than silently report "nothing new" (a
+// broken extraction reporting zero unknowns is indistinguishable from a
+// genuinely-complete list unless it is cross-checked against something it
+// MUST find).
+const KNOWN_COLOR_PREFIX_EXTRACTION_BASELINE = ["bg", "ring", "shadow"];
+
+/**
+ * Derives the set of utility-prefix names the INSTALLED `tailwindcss`
+ * package itself registers as accepting a bare color/`--color-*` theme
+ * value, by reading the package's own compiled entry point (never retyped
+ * from memory — per .claude/rules/derive-never-type.md). Tailwind v4 bundles
+ * its utility registrations into a single minified `dist/lib.js`; each
+ * color-accepting utility is registered via a call shaped
+ * `r("<name>",()=>[{...,valueThemeKeys:[...,"--color",...]}])`. This is a
+ * best-effort static extraction against Tailwind's OWN shipped artifact
+ * (not a guess at Tailwind's public API) — see header "GAP A" for why a
+ * full semantic derivation (compiling and diffing generated CSS for every
+ * conceivable prefix) was rejected as disproportionate for a completeness
+ * check that only needs to catch a NEW prefix appearing, not classify one.
+ */
+function deriveKnownColorBearingPrefixes() {
+  const require = createRequire(import.meta.url);
+  let libPath;
+  try {
+    libPath = require.resolve("tailwindcss", { paths: [REPO_ROOT] });
+  } catch (err) {
+    throw new Error(
+      `theme-tokens-declared-guard: cannot resolve \`tailwindcss\` from this package's own node_modules — refusing to guess whether the installed version added new color-bearing utility prefixes. Run \`pnpm install\` first. Underlying error: ${err.message}`,
+    );
+  }
+  let libText;
+  try {
+    libText = readFileSync(libPath, "utf8");
+  } catch (err) {
+    throw new Error(
+      `theme-tokens-declared-guard: found but could not read ${libPath} — refusing to guess. ` +
+        `Underlying error: ${err.message}`,
+    );
+  }
+  const registrationRe = /r\("([a-z][a-z-]*)",\(\)=>\[\{[\s\S]{0,400}?valueThemeKeys:\[([^\]]*)\]/g;
+  const derived = new Set();
+  for (let m = registrationRe.exec(libText); m !== null; m = registrationRe.exec(libText)) {
+    if (/"--color"/.test(m[2])) derived.add(m[1]);
+  }
+  const missingBaseline = KNOWN_COLOR_PREFIX_EXTRACTION_BASELINE.filter((p) => !derived.has(p));
+  if (missingBaseline.length > 0) {
+    throw new Error(
+      `theme-tokens-declared-guard: color-bearing-prefix extraction against the installed \`tailwindcss\` at ${libPath} did not find KNOWN prefix(es) [${missingBaseline.join(", ")}] that MUST always be color-bearing — the extraction pattern itself is broken (Tailwind's internals likely changed shape), so ANY "nothing new" verdict from it right now would be unverifiable. Refusing to guess.`,
+    );
+  }
+  return derived;
+}
+
 /**
  * Classifies a color-bearing utility's suffix into either "built-in"
  * (Tailwind ships it, e.g. red-500, current, transparent) or a bare custom
@@ -453,6 +585,70 @@ function lineForIndex(text, index) {
   return text.slice(0, index).split("\n").length;
 }
 
+// Matches every top-level `@import "<specifier>";` (or single-quoted) line —
+// the ONLY shape this file's own header comment documents
+// (`@import "@vantageos/mosaic-tokens/css";`). `@import url(...)` and
+// `@import` with media queries are OUT of scope for a design-token
+// stylesheet of this shape; if one appears, `readdirSync`-style silent
+// skipping is exactly the disease `guard-formulation-census.md` forbids, so
+// an unrecognized `@import` form is collected and surfaced as a REFUSAL
+// rather than silently ignored (see caller).
+const IMPORT_RE = /^@import\s+(?:url\()?["']([^"']+)["']\)?[^;]*;\s*$/gm;
+const ANY_CUSTOM_PROPERTY_DECL_RE = /^\s*(--[a-z0-9-]+):\s*[^;]+;\s*$/gm;
+
+/**
+ * Resolves every `@import "<specifier>";` in `cssText` against THIS
+ * package's own `node_modules` (bare specifiers) or relative to `fromDir`
+ * (relative specifiers), reads each imported file, and returns the set of
+ * ALL custom-property names (`--foo`) declared anywhere in those files —
+ * per GAP B in the header comment. Never a hardcoded list of "known" token
+ * package files: whatever `src/styles.css` actually imports, resolved via
+ * the same live `node_modules` Node itself would use.
+ */
+function resolveImportedCustomProperties(cssText, fromDir) {
+  const require = createRequire(import.meta.url);
+  const resolvable = new Set();
+  const unresolvedImports = [];
+  for (let m = IMPORT_RE.exec(cssText); m !== null; m = IMPORT_RE.exec(cssText)) {
+    const specifier = m[1];
+    if (specifier.startsWith("http://") || specifier.startsWith("https://")) continue; // remote fonts etc — not a token source
+    let resolvedPath;
+    try {
+      if (specifier.startsWith(".") || specifier.startsWith("/")) {
+        resolvedPath = resolve(fromDir, specifier);
+      } else {
+        resolvedPath = require.resolve(specifier, { paths: [REPO_ROOT] });
+      }
+    } catch (err) {
+      unresolvedImports.push({ specifier, reason: err.message });
+      continue;
+    }
+    let importedText;
+    try {
+      importedText = readFileSync(resolvedPath, "utf8");
+    } catch (err) {
+      unresolvedImports.push({
+        specifier,
+        reason: `resolved to ${resolvedPath} but could not be read: ${err.message}`,
+      });
+      continue;
+    }
+    for (
+      let pm = ANY_CUSTOM_PROPERTY_DECL_RE.exec(importedText);
+      pm !== null;
+      pm = ANY_CUSTOM_PROPERTY_DECL_RE.exec(importedText)
+    ) {
+      resolvable.add(pm[1].slice(2)); // strip leading "--"
+    }
+  }
+  if (unresolvedImports.length > 0) {
+    throw new Error(
+      `cannot resolve @import specifier(s) in ${relative(REPO_ROOT, fromDir)}/styles.css: ${unresolvedImports.map((u) => `"${u.specifier}" (${u.reason})`).join("; ")} — refusing to guess whether the tokens they would have supplied exist.`,
+    );
+  }
+  return resolvable;
+}
+
 function main() {
   let stylesText;
   try {
@@ -467,26 +663,72 @@ function main() {
 
   let builtinFamilies;
   let sourceFiles;
+  let knownColorBearingPrefixes;
+  let importedCustomProps;
   try {
     builtinFamilies = loadBuiltinColorFamilies();
     sourceFiles = listSourceFiles(SRC_DIR);
+    knownColorBearingPrefixes = deriveKnownColorBearingPrefixes();
+    importedCustomProps = resolveImportedCustomProperties(stylesText, dirname(STYLES_PATH));
   } catch (err) {
     console.error(`theme-tokens-declared-guard: REFUSES TO JUDGE — ${err.message}`);
     process.exitCode = 2;
     return;
   }
 
+  // ---- GAP A counter-to-zero: installed tailwindcss vs. this guard's domain ----
+  // A color-bearing prefix the installed package exposes but this guard's
+  // static COLOR_BEARING_PREFIXES domain does not cover is an angle blind
+  // spot, not a "pass" — per .claude/rules/guard-formulation-census.md this
+  // guard REFUSES TO JUDGE rather than silently missing utilities using it.
+  const staticPrefixSet = new Set(COLOR_BEARING_PREFIXES);
+  const unknownPrefixes = [...knownColorBearingPrefixes].filter((p) => !staticPrefixSet.has(p));
+  if (unknownPrefixes.length > 0) {
+    console.error(
+      `theme-tokens-declared-guard: REFUSES TO JUDGE — the installed \`tailwindcss\` package registers color-bearing utility prefix(es) [${unknownPrefixes.sort().join(", ")}] that COLOR_BEARING_PREFIXES does not cover. Add them (with their non-color suffix keywords, source-cited) before this guard can judge anything — an uncovered prefix is a silent miss, not a clean bill of health.`,
+    );
+    process.exitCode = 2;
+    return;
+  }
+
   // ---- Declared custom tokens (from `@theme inline` block) ----
-  // `--color-<token>: var(--<token>);` — the library's own custom-token
-  // declaration idiom (see src/styles.css's own header comment).
-  const declaredTokenRe = /^\s*--color-([a-z0-9-]+):\s*var\(--\1\);\s*$/gm;
+  // `--color-<token>: var(--<anything>);` — the library's own custom-token
+  // declaration idiom (see src/styles.css's own header comment). The
+  // right-hand `var(...)` name is DELIBERATELY NOT required to equal the
+  // token (GAP B, header comment) — this package re-exports canonical
+  // `@vantageos/mosaic-tokens` names (`--mosaic-color-success-500`) under
+  // its own public `--color-<token>` surface. A token is genuinely declared
+  // only if the right-hand name resolves to SOMETHING — either the token
+  // name itself, a custom property declared elsewhere in this same
+  // `styles.css`, or one declared by a package it `@import`s (never a
+  // hardcoded list of "known" imports — see `resolveImportedCustomProperties`).
+  // A right-hand name that resolves NOWHERE is a genuine dangle and is
+  // intentionally NOT added to `declared`, so it still surfaces as
+  // UNDECLARED below, naming it.
+  const declaredTokenRe = /^\s*--color-([a-z0-9-]+):\s*var\(--([a-z0-9-]+)\);\s*$/gm;
+  const localCustomProps = new Set();
+  for (
+    let pm = ANY_CUSTOM_PROPERTY_DECL_RE.exec(stylesText);
+    pm !== null;
+    pm = ANY_CUSTOM_PROPERTY_DECL_RE.exec(stylesText)
+  ) {
+    localCustomProps.add(pm[1].slice(2));
+  }
+  const resolvableCustomProps = new Set([...localCustomProps, ...importedCustomProps]);
   const declared = new Map(); // token -> line number
+  const danglingDeclarations = []; // { token, varName, line } — declared LHS whose var() target resolves nowhere
   for (
     let dm = declaredTokenRe.exec(stylesText);
     dm !== null;
     dm = declaredTokenRe.exec(stylesText)
   ) {
-    declared.set(dm[1], lineForIndex(stylesText, dm.index));
+    const [, token, varName] = dm;
+    const line = lineForIndex(stylesText, dm.index);
+    if (varName === token || resolvableCustomProps.has(varName)) {
+      declared.set(token, line);
+    } else {
+      danglingDeclarations.push({ token, varName, line });
+    }
   }
 
   // ---- Consumed custom tokens (scan src/**) ----
@@ -552,17 +794,28 @@ function main() {
     stale.push({ token, line });
   }
 
-  if (undeclared.length === 0 && stale.length === 0) {
+  if (undeclared.length === 0 && stale.length === 0 && danglingDeclarations.length === 0) {
     console.log(
       `theme-tokens-declared-guard: OK — every custom color token consumed in ${relative(
         REPO_ROOT,
         SRC_DIR,
-      )}/** is declared in ${relative(REPO_ROOT, STYLES_PATH)}, and every declared custom token is consumed.`,
+      )}/** is declared in ${relative(REPO_ROOT, STYLES_PATH)} (directly or via its @import chain), and every declared custom token is consumed.`,
     );
     return;
   }
 
   const sections = [];
+  if (danglingDeclarations.length > 0) {
+    const details = danglingDeclarations
+      .map(
+        ({ token, varName, line }) =>
+          `  - --color-${token} (${relative(REPO_ROOT, STYLES_PATH)}:${line}) — declares \`var(--${varName})\`, but \`--${varName}\` is not declared in ${relative(REPO_ROOT, STYLES_PATH)} itself, nor by anything it @imports: a genuine dangling reference, not a false positive of the @import-following mechanism`,
+      )
+      .join("\n");
+    sections.push(
+      `BROKEN theme token declaration(s) (${danglingDeclarations.length}) — the left-hand \`--color-*\` property exists, but its right-hand \`var(...)\` target resolves to nothing anywhere this guard can see, so the token evaluates to an invalid/empty value at runtime:\n${details}\n\nFix: point the declaration at a custom property that is actually declared (locally, or by a package this stylesheet @imports).`,
+    );
+  }
   if (undeclared.length > 0) {
     const details = undeclared
       .map(({ token, sites }) => {
