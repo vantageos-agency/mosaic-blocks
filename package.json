@@ -51,7 +51,6 @@
     "type": "git",
     "url": "git+https://github.com/vantageos-agency/mosaic-blocks.git"
   },
-  "homepage": "https://github.com/vantageos-agency/mosaic-blocks#readme",
   "scripts": {
     "build": "tsup && node scripts/prepend-use-client.mjs && node scripts/copy-assets.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
