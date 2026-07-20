@@ -23,6 +23,7 @@
   "files": [
     "dist",
     "registry.json",
+    "r",
     "README.md",
     "LICENSE"
   ],
@@ -62,6 +63,7 @@
     "sync-versions": "node scripts/sync-versions.mjs",
     "docs:counts": "node scripts/docs-counts.mjs",
     "registry:derive": "node scripts/registry-json-derive.mjs",
+    "build:registry-items": "node scripts/build-registry-items.mjs",
     "parse-guard": "node scripts/parse-guard.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
