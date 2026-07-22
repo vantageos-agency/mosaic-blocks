@@ -36,6 +36,17 @@
   --color-success-50: var(--mosaic-color-success-50);
   --color-success-500: var(--mosaic-color-success-500);
   --color-success-700: var(--mosaic-color-success-700);
+
+  /* Info status pair — consumed by MosaicCallout (variant="info") and
+     MosaicMatchInput (matchState="exact"/"partial"/"ambiguous"). */
+  --color-info-50: var(--mosaic-color-info-50);
+  --color-info-500: var(--mosaic-color-info-500);
+
+  /* Warning status triad — consumed by MosaicCallout (variant="warning")
+     and MosaicMatchInput (matchState="partial"/"ambiguous"). */
+  --color-warning-50: var(--mosaic-color-warning-50);
+  --color-warning-500: var(--mosaic-color-warning-500);
+  --color-warning-700: var(--mosaic-color-warning-700);
 }
 
 /* ── MosaicLogosGrid stagger animation ────────────────────────────────────── */
