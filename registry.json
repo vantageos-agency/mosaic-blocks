@@ -458,6 +458,29 @@
       ]
     },
     {
+      "name": "mosaic-callout",
+      "type": "registry:ui",
+      "title": "MosaicCallout",
+      "description": "MosaicCallout — inline bordered notice",
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "files": [
+        {
+          "path": "src/components/callout/MosaicCallout.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/callout/MosaicCallout.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/callout/callout-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-card",
       "type": "registry:ui",
       "title": "MosaicCard",
@@ -784,6 +807,27 @@
       ]
     },
     {
+      "name": "mosaic-editable-cell",
+      "type": "registry:ui",
+      "title": "MosaicEditableCell",
+      "description": "MosaicEditableCell — table cell with double-click-to-edit",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/editable-cell/MosaicEditableCell.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/editable-cell/MosaicEditableCell.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/editable-cell/editable-cell-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-empty-state",
       "type": "registry:ui",
       "title": "MosaicEmptyState",
@@ -1041,6 +1085,27 @@
         },
         {
           "path": "src/components/marketplace-list/MosaicMarketplaceList.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-match-input",
+      "type": "registry:ui",
+      "title": "MosaicMatchInput",
+      "description": "MosaicMatchInput — autocomplete carrying a match state",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/match-input/MosaicMatchInput.stories.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/match-input/MosaicMatchInput.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/match-input/match-input-variants.ts",
           "type": "registry:ui"
         }
       ]
