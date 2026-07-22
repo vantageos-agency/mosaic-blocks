@@ -2,7 +2,7 @@
 
 **All imports:** `import { ComponentName } from "@vantageos/mosaic-blocks"`
 
-Documented: **82 Mosaic* components + 10 hooks** — a curated subset with usage
+Documented: **85 Mosaic* components + 10 hooks** — a curated subset with usage
 snippets and prop notes, not the full public API. `src/index.ts` exports
 **180** `Mosaic*` components and **283** total named exports; see `README.md`
 Section 6 for the complete, machine-checked list of every export.
@@ -389,6 +389,55 @@ Full documentation in `docs/auth.md`.
 
 ---
 
+## Validation-screen blocks (T4)
+
+Blocks for review screens where a human confirms or corrects machine-proposed
+data. All copy enters by prop — none of the three ships an English fallback
+string, so a host that forgets a label sees a type error, never untranslated
+text (Rule #2, branding-swappable).
+
+| Name | Import path | Description | Mobile variant? | Auth-related? | Depends-on |
+|------|-------------|-------------|-----------------|---------------|------------|
+| `MosaicCallout` | `@vantageos/mosaic-blocks` | Inline bordered notice, `info` \| `warning`; also exports `calloutVariants` | No | No | — |
+| `MosaicMatchInput` | `@vantageos/mosaic-blocks` | Autocomplete carrying a four-value match state plus a locked mode; also exports `matchStateVariants`, `matchStateSignal` | No | No | `MosaicCombobox` |
+| `MosaicEditableCell` | `@vantageos/mosaic-blocks` | Table cell: double-click to edit, validate or cancel; also exports `editableCellVariants` | No | No | — |
+
+### MosaicCallout
+
+`title: string` is required; `children` carries the body, `icon` an optional
+leading node. The two variants are symmetric — neither darkens its text — so a
+warning never reads as an error.
+
+### MosaicMatchInput
+
+Composed **above** `MosaicCombobox`, it does not replace it: every combobox
+prop passes through except `disabled` and `className`.
+
+```tsx
+<MosaicMatchInput
+  items={candidates}
+  matchState="ambiguous"
+  stateLabels={{ exact: "…", partial: "…", ambiguous: "…", none: "…" }}
+  locked={false}
+/>
+```
+
+`matchState` is `"exact" | "partial" | "ambiguous" | "none"`, and each of the
+four carries a distinct `(role, aria-live)` pair derived by `matchStateSignal`.
+`ambiguous` carries the most urgent signal of the four: an absent match is
+visible on its own, whereas an ambiguous one can be accepted silently and
+wrongly. `locked` freezes the value while keeping it readable.
+
+### MosaicEditableCell
+
+`value`, `onCommit(next)` and `editAriaLabel` are required. `validate(next)`
+returns an error string or `null`; a non-null result blocks the commit and is
+rendered in place. Cancel restores the current `value` prop rather than a
+snapshot taken at edit time, so a value that changed externally mid-edit is not
+silently reverted.
+
+---
+
 ## Base-UI atoms (T3-C)
 
 | Name | Import path | Description | Mobile variant? | Auth-related? | Depends-on |
@@ -427,7 +476,7 @@ Full documentation in `docs/auth.md`.
 ## Documented / exported ratio
 
 This catalog is a **curated subset**, not the full public API. It documents
-**82 `Mosaic*` components** and **10 hooks** out of the **180** `Mosaic*`
+**85 `Mosaic*` components** and **10 hooks** out of the **180** `Mosaic*`
 components (**283** total named exports) that `src/index.ts` actually
 exports. The full 1:1 list lives in `README.md` Section 6, which is guarded
 by a CI test against drift.
@@ -450,9 +499,10 @@ below):
 - Multi-tenant: 2
 - Landing blocks: 9
 - Utility blocks: 6
+- Validation-screen blocks: 3
 - Base-UI atoms: 11
 
-Total unique `Mosaic*` components documented in this catalog: **82**
+Total unique `Mosaic*` components documented in this catalog: **85**
 
 Hooks documented in the "Hooks summary" table: **10**
 (`useDevice`, `useBreakpoint`, `useIsMobile`, `useIsTablet`, `useIsDesktop`,
