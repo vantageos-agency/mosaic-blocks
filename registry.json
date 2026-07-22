@@ -7,7 +7,7 @@
       "name": "mosaic-accordion",
       "type": "registry:ui",
       "title": "MosaicAccordion",
-      "description": "MosaicAccordion \u2014 @base-ui/react Accordion primitive",
+      "description": "MosaicAccordion — @base-ui/react Accordion primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -56,7 +56,7 @@
       "name": "mosaic-adaptive-modal",
       "type": "registry:ui",
       "title": "MosaicAdaptiveModal",
-      "description": "Unified modal/sheet: Dialog on desktop, bottom-sheet on mobile. Uses native <dialog> element (focus trap, Escape key, backdrop). Single API: isOpen, onClose, title, children, description. No Radix/Vaul dep \u2014 fully portable.",
+      "description": "Unified modal/sheet: Dialog on desktop, bottom-sheet on mobile. Uses native <dialog> element (focus trap, Escape key, backdrop). Single API: isOpen, onClose, title, children, description. No Radix/Vaul dep — fully portable.",
       "dependencies": [],
       "files": [
         {
@@ -90,7 +90,7 @@
       "name": "mosaic-add-memory-form",
       "type": "registry:ui",
       "title": "MosaicAddMemoryForm",
-      "description": "MosaicAddMemoryForm \u2014 presentational \"record a new memory\" form",
+      "description": "MosaicAddMemoryForm — presentational \"record a new memory\" form",
       "dependencies": [],
       "files": [
         {
@@ -107,7 +107,7 @@
       "name": "mosaic-agent-builder-modal",
       "type": "registry:ui",
       "title": "MosaicAgentBuilderModal",
-      "description": "MosaicAgentBuilderModal \u2014 modal shell for composing/configuring an agent, confirmed or cancelled by the host.",
+      "description": "MosaicAgentBuilderModal — modal shell for composing/configuring an agent, confirmed or cancelled by the host.",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -143,7 +143,7 @@
       "name": "mosaic-agent-chat",
       "type": "registry:ui",
       "title": "MosaicAgentChat",
-      "description": "MosaicAgentChat \u2014 presentational session harness: MVP-8, the last MVP piece, wiring MosaicChatThread + MosaicChatMessage + MosaicChatComposer + MosaicApprovalPrompt into one send/resume/respond harness.",
+      "description": "MosaicAgentChat — presentational session harness: MVP-8, the last MVP piece, wiring MosaicChatThread + MosaicChatMessage + MosaicChatComposer + MosaicApprovalPrompt into one send/resume/respond harness.",
       "dependencies": [],
       "files": [
         {
@@ -160,7 +160,7 @@
       "name": "mosaic-agent-composer",
       "type": "registry:ui",
       "title": "MosaicAgentComposer",
-      "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type \u2014 no domain coupling.",
+      "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type — no domain coupling.",
       "dependencies": [],
       "files": [
         {
@@ -185,7 +185,7 @@
       "name": "mosaic-agent-editor",
       "type": "registry:ui",
       "title": "MosaicAgentEditor",
-      "description": "MosaicAgentEditor \u2014 agent config form (name / role / instructions)",
+      "description": "MosaicAgentEditor — agent config form (name / role / instructions)",
       "dependencies": [],
       "files": [
         {
@@ -219,7 +219,7 @@
       "name": "mosaic-agent-preview",
       "type": "registry:ui",
       "title": "MosaicAgentPreview",
-      "description": "MosaicAgentPreview \u2014 presentational, controlled preview of an agent configuration before creation is confirmed.",
+      "description": "MosaicAgentPreview — presentational, controlled preview of an agent configuration before creation is confirmed.",
       "dependencies": [],
       "files": [
         {
@@ -236,7 +236,7 @@
       "name": "mosaic-alert-dialog",
       "type": "registry:ui",
       "title": "MosaicAlertDialog",
-      "description": "MosaicAlertDialog \u2014 confirm-before-irreversible-action dialog (compound API)",
+      "description": "MosaicAlertDialog — confirm-before-irreversible-action dialog (compound API)",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -268,7 +268,7 @@
       "name": "mosaic-api-key-panel",
       "type": "registry:ui",
       "title": "MosaicApiKeyPanel",
-      "description": "MosaicApiKeyPanel \u2014 presentational \"bring your own key\" (BYOK) panel.",
+      "description": "MosaicApiKeyPanel — presentational \"bring your own key\" (BYOK) panel.",
       "dependencies": [],
       "files": [
         {
@@ -302,7 +302,7 @@
       "name": "mosaic-approval-prompt",
       "type": "registry:ui",
       "title": "MosaicApprovalPrompt",
-      "description": "MosaicApprovalPrompt \u2014 presentational \"reprendre la main\" tool-call approval",
+      "description": "MosaicApprovalPrompt — presentational \"reprendre la main\" tool-call approval",
       "dependencies": [],
       "files": [
         {
@@ -474,7 +474,7 @@
       "name": "mosaic-chat-composer",
       "type": "registry:ui",
       "title": "MosaicChatComposer",
-      "description": "MosaicChatComposer \u2014 presentational, controlled chat input + send/stop button",
+      "description": "MosaicChatComposer — presentational, controlled chat input + send/stop button",
       "dependencies": [],
       "files": [
         {
@@ -491,7 +491,7 @@
       "name": "mosaic-chat-message",
       "type": "registry:ui",
       "title": "MosaicChatMessage",
-      "description": "MosaicChatMessage \u2014 one chat message: role + ordered parts (text / reasoning / tool call).",
+      "description": "MosaicChatMessage — one chat message: role + ordered parts (text / reasoning / tool call).",
       "dependencies": [],
       "files": [
         {
@@ -508,7 +508,7 @@
       "name": "mosaic-chat-sidebar",
       "type": "registry:ui",
       "title": "MosaicChatSidebar",
-      "description": "MosaicChatSidebar \u2014 presentational, disposition-only column of conversation threads.",
+      "description": "MosaicChatSidebar — presentational, disposition-only column of conversation threads.",
       "dependencies": [],
       "files": [
         {
@@ -525,7 +525,7 @@
       "name": "mosaic-chat-thread",
       "type": "registry:ui",
       "title": "MosaicChatThread",
-      "description": "MosaicChatThread \u2014 presentational, auto-scrolling chat message stream",
+      "description": "MosaicChatThread — presentational, auto-scrolling chat message stream",
       "dependencies": [],
       "files": [
         {
@@ -542,7 +542,7 @@
       "name": "mosaic-checkbox",
       "type": "registry:ui",
       "title": "MosaicCheckbox",
-      "description": "MosaicCheckbox \u2014 @base-ui/react Checkbox primitive",
+      "description": "MosaicCheckbox — @base-ui/react Checkbox primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -557,7 +557,7 @@
       "name": "mosaic-collapsible",
       "type": "registry:ui",
       "title": "MosaicCollapsible",
-      "description": "MosaicCollapsible \u2014 @base-ui/react Collapsible primitive",
+      "description": "MosaicCollapsible — @base-ui/react Collapsible primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -651,7 +651,7 @@
       "name": "mosaic-data-table",
       "type": "registry:ui",
       "title": "MosaicDataTable",
-      "description": "MosaicDataTable \u2014 generic sortable data table",
+      "description": "MosaicDataTable — generic sortable data table",
       "dependencies": [],
       "files": [
         {
@@ -700,7 +700,7 @@
       "name": "mosaic-document-upload",
       "type": "registry:ui",
       "title": "MosaicDocumentUpload",
-      "description": "MosaicDocumentUpload \u2014 presentational document drop-zone + file status list",
+      "description": "MosaicDocumentUpload — presentational document drop-zone + file status list",
       "dependencies": [],
       "files": [
         {
@@ -717,7 +717,7 @@
       "name": "mosaic-drawer",
       "type": "registry:ui",
       "title": "MosaicDrawer",
-      "description": "MosaicDrawer \u2014 agent detail viewed as a side panel (SW-xx)",
+      "description": "MosaicDrawer — agent detail viewed as a side panel (SW-xx)",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -751,7 +751,7 @@
       "name": "mosaic-edit-memory-dialog",
       "type": "registry:ui",
       "title": "MosaicEditMemoryDialog",
-      "description": "MosaicEditMemoryDialog \u2014 dialog to correct a stale knowledge entry (a \"memory\"): edit its content, type and tags, then save or cancel.",
+      "description": "MosaicEditMemoryDialog — dialog to correct a stale knowledge entry (a \"memory\"): edit its content, type and tags, then save or cancel.",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -770,7 +770,7 @@
       "name": "mosaic-edit-session-dialog",
       "type": "registry:ui",
       "title": "MosaicEditSessionDialog",
-      "description": "MosaicEditSessionDialog \u2014 presentational \"rename / reclassify a work-in-progress session\" form modal",
+      "description": "MosaicEditSessionDialog — presentational \"rename / reclassify a work-in-progress session\" form modal",
       "dependencies": [],
       "files": [
         {
@@ -787,7 +787,7 @@
       "name": "mosaic-empty-state",
       "type": "registry:ui",
       "title": "MosaicEmptyState",
-      "description": "MosaicEmptyState \u2014 centered vertical stack for empty/zero-data states",
+      "description": "MosaicEmptyState — centered vertical stack for empty/zero-data states",
       "dependencies": [],
       "files": [
         {
@@ -854,7 +854,7 @@
       "name": "mosaic-filter-bar",
       "type": "registry:ui",
       "title": "MosaicFilterBar",
-      "description": "MosaicFilterBar \u2014 responsive horizontal control bar for filter rows",
+      "description": "MosaicFilterBar — responsive horizontal control bar for filter rows",
       "dependencies": [],
       "files": [
         {
@@ -951,7 +951,7 @@
       "name": "mosaic-kanban-board",
       "type": "registry:ui",
       "title": "MosaicKanbanBoard",
-      "description": "MosaicKanbanBoard \u2014 horizontal scrollable kanban board container.",
+      "description": "MosaicKanbanBoard — horizontal scrollable kanban board container.",
       "dependencies": [],
       "files": [
         {
@@ -998,7 +998,7 @@
       "name": "mosaic-markdown",
       "type": "registry:ui",
       "title": "MosaicMarkdown",
-      "description": "MosaicMarkdown \u2014 presentational, dependency-free markdown renderer",
+      "description": "MosaicMarkdown — presentational, dependency-free markdown renderer",
       "dependencies": [],
       "files": [
         {
@@ -1015,7 +1015,7 @@
       "name": "mosaic-marketplace-card",
       "type": "registry:ui",
       "title": "MosaicMarketplaceCard",
-      "description": "MosaicMarketplaceCard \u2014 standalone agent-type gallery tile (M1)",
+      "description": "MosaicMarketplaceCard — standalone agent-type gallery tile (M1)",
       "dependencies": [],
       "files": [
         {
@@ -1049,7 +1049,7 @@
       "name": "mosaic-memory-card",
       "type": "registry:ui",
       "title": "MosaicMemoryCard",
-      "description": "MosaicMemoryCard \u2014 memory item card (detailed / compact variants)",
+      "description": "MosaicMemoryCard — memory item card (detailed / compact variants)",
       "dependencies": [],
       "files": [
         {
@@ -1066,7 +1066,7 @@
       "name": "mosaic-memory-dashboard",
       "type": "registry:ui",
       "title": "MosaicMemoryDashboard",
-      "description": "MosaicMemoryDashboard \u2014 landing surface of a knowledge base: a header with a title and a primary \"add\" action, a row of host-supplied summary statistics, an optional slot for a search bar, a host-controlled view-mode toggle (tiles / rows), and a slot for results.",
+      "description": "MosaicMemoryDashboard — landing surface of a knowledge base: a header with a title and a primary \"add\" action, a row of host-supplied summary statistics, an optional slot for a search bar, a host-controlled view-mode toggle (tiles / rows), and a slot for results.",
       "dependencies": [],
       "files": [
         {
@@ -1083,7 +1083,7 @@
       "name": "mosaic-memory-grid",
       "type": "registry:ui",
       "title": "MosaicMemoryGrid",
-      "description": "MosaicMemoryGrid \u2014 presentational, tile-disposition-only grid of host items",
+      "description": "MosaicMemoryGrid — presentational, tile-disposition-only grid of host items",
       "dependencies": [],
       "files": [
         {
@@ -1100,7 +1100,7 @@
       "name": "mosaic-memory-list",
       "type": "registry:ui",
       "title": "MosaicMemoryList",
-      "description": "MosaicMemoryList \u2014 presentational, row-disposition-only list of host items",
+      "description": "MosaicMemoryList — presentational, row-disposition-only list of host items",
       "dependencies": [],
       "files": [
         {
@@ -1117,7 +1117,7 @@
       "name": "mosaic-memory-search",
       "type": "registry:ui",
       "title": "MosaicMemorySearch",
-      "description": "MosaicMemorySearch \u2014 search bar over a host-supplied knowledge base: a query input, optional filter chips (by type/tag), a clear action, and a result-count indication.",
+      "description": "MosaicMemorySearch — search bar over a host-supplied knowledge base: a query input, optional filter chips (by type/tag), a clear action, and a result-count indication.",
       "dependencies": [],
       "files": [
         {
@@ -1134,7 +1134,7 @@
       "name": "mosaic-mention-input",
       "type": "registry:ui",
       "title": "MosaicMentionInput",
-      "description": "MosaicMentionInput \u2014 text input that opens an anchored, host-owned list of mentionable entries when the host-chosen trigger character is typed.",
+      "description": "MosaicMentionInput — text input that opens an anchored, host-owned list of mentionable entries when the host-chosen trigger character is typed.",
       "dependencies": [],
       "files": [
         {
@@ -1185,7 +1185,7 @@
       "name": "mosaic-message-search",
       "type": "registry:ui",
       "title": "MosaicMessageSearch",
-      "description": "MosaicMessageSearch \u2014 search bar over the messages of a single, already-open conversation: a query input and a clear action, with the matching results rendered entirely by the host.",
+      "description": "MosaicMessageSearch — search bar over the messages of a single, already-open conversation: a query input and a clear action, with the matching results rendered entirely by the host.",
       "dependencies": [],
       "files": [
         {
@@ -1198,7 +1198,7 @@
       "name": "mosaic-model-selector",
       "type": "registry:ui",
       "title": "MosaicModelSelector",
-      "description": "MosaicModelSelector \u2014 @base-ui/react Combobox primitive",
+      "description": "MosaicModelSelector — @base-ui/react Combobox primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1217,7 +1217,7 @@
       "name": "mosaic-module-card",
       "type": "registry:ui",
       "title": "MosaicModuleCard",
-      "description": "Selected-module display card for composer slot. Shows name, description, optional details, emoji icon, tags, edit/remove actions. Props: type, module {name, description, details?, icon?, tags?}, onEdit, onRemove, isSelected, isCustom. Generic \u2014 no debate domain types.",
+      "description": "Selected-module display card for composer slot. Shows name, description, optional details, emoji icon, tags, edit/remove actions. Props: type, module {name, description, details?, icon?, tags?}, onEdit, onRemove, isSelected, isCustom. Generic — no debate domain types.",
       "dependencies": [],
       "files": [
         {
@@ -1308,7 +1308,7 @@
       "name": "mosaic-org-panel",
       "type": "registry:ui",
       "title": "MosaicOrgPanel",
-      "description": "Generic org management shell. Includes MosaicOrgRoleBadge, MosaicMultiOrgIndicator, MosaicCreateOrgDialog, MosaicInviteMemberDialog, MosaicMemberList. Pure presentational \u2014 no Clerk/Convex.",
+      "description": "Generic org management shell. Includes MosaicOrgRoleBadge, MosaicMultiOrgIndicator, MosaicCreateOrgDialog, MosaicInviteMemberDialog, MosaicMemberList. Pure presentational — no Clerk/Convex.",
       "dependencies": [],
       "files": [
         {
@@ -1325,7 +1325,7 @@
       "name": "mosaic-org-switcher",
       "type": "registry:ui",
       "title": "MosaicOrgSwitcher",
-      "description": "Presentational org picker dropdown. Current org + avatar in trigger. Pure props \u2014 no Clerk. Auth wiring is T1.5.",
+      "description": "Presentational org picker dropdown. Current org + avatar in trigger. Pure props — no Clerk. Auth wiring is T1.5.",
       "dependencies": [],
       "files": [
         {
@@ -1361,7 +1361,7 @@
       "name": "mosaic-popover",
       "type": "registry:ui",
       "title": "MosaicPopover",
-      "description": "MosaicPopover \u2014 @base-ui/react Popover primitive, anchored to any host element",
+      "description": "MosaicPopover — @base-ui/react Popover primitive, anchored to any host element",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1427,7 +1427,7 @@
       "name": "mosaic-progress",
       "type": "registry:ui",
       "title": "MosaicProgress",
-      "description": "MosaicProgress \u2014 @base-ui/react Progress primitive",
+      "description": "MosaicProgress — @base-ui/react Progress primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1493,7 +1493,7 @@
       "name": "mosaic-radio-group",
       "type": "registry:ui",
       "title": "MosaicRadioGroup",
-      "description": "MosaicRadioGroup \u2014 @base-ui/react RadioGroup + Radio primitives",
+      "description": "MosaicRadioGroup — @base-ui/react RadioGroup + Radio primitives",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1508,7 +1508,7 @@
       "name": "mosaic-reply-input",
       "type": "registry:ui",
       "title": "MosaicReplyInput",
-      "description": "MosaicReplyInput \u2014 presentational, controlled reply input scoped to one thread",
+      "description": "MosaicReplyInput — presentational, controlled reply input scoped to one thread",
       "dependencies": [],
       "files": [
         {
@@ -1544,7 +1544,7 @@
       "name": "mosaic-save-chat-as-memory-form",
       "type": "registry:ui",
       "title": "MosaicSaveChatAsMemoryForm",
-      "description": "MosaicSaveChatAsMemoryForm \u2014 presentational \"turn this thread into agency knowledge\" form: the chat \u2192 memory bridge.",
+      "description": "MosaicSaveChatAsMemoryForm — presentational \"turn this thread into agency knowledge\" form: the chat → memory bridge.",
       "dependencies": [],
       "files": [
         {
@@ -1561,7 +1561,7 @@
       "name": "mosaic-save-template-modal",
       "type": "registry:ui",
       "title": "MosaicSaveTemplateModal",
-      "description": "MosaicSaveTemplateModal \u2014 presentational \"save as template\" form modal",
+      "description": "MosaicSaveTemplateModal — presentational \"save as template\" form modal",
       "dependencies": [],
       "files": [
         {
@@ -1578,7 +1578,7 @@
       "name": "mosaic-scroll-area",
       "type": "registry:ui",
       "title": "MosaicScrollArea",
-      "description": "MosaicScrollArea \u2014 @base-ui/react ScrollArea primitive",
+      "description": "MosaicScrollArea — @base-ui/react ScrollArea primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1625,7 +1625,7 @@
       "name": "mosaic-separator",
       "type": "registry:ui",
       "title": "MosaicSeparator",
-      "description": "MosaicSeparator \u2014 @base-ui/react Separator primitive",
+      "description": "MosaicSeparator — @base-ui/react Separator primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1640,7 +1640,7 @@
       "name": "mosaic-session-card",
       "type": "registry:ui",
       "title": "MosaicSessionCard",
-      "description": "MosaicSessionCard \u2014 a single work-in-progress session at a glance (default / compact variants)",
+      "description": "MosaicSessionCard — a single work-in-progress session at a glance (default / compact variants)",
       "dependencies": [],
       "files": [
         {
@@ -1657,7 +1657,7 @@
       "name": "mosaic-session-list",
       "type": "registry:ui",
       "title": "MosaicSessionList",
-      "description": "MosaicSessionList \u2014 presentational, layout-disposition-only list of the workstation's in-progress sessions",
+      "description": "MosaicSessionList — presentational, layout-disposition-only list of the workstation's in-progress sessions",
       "dependencies": [],
       "files": [
         {
@@ -1674,7 +1674,7 @@
       "name": "mosaic-skeleton",
       "type": "registry:ui",
       "title": "MosaicSkeleton",
-      "description": "MosaicSkeleton \u2014 loading skeleton primitive for @vantageos/mosaic-blocks.",
+      "description": "MosaicSkeleton — loading skeleton primitive for @vantageos/mosaic-blocks.",
       "dependencies": [
         "class-variance-authority"
       ],
@@ -1693,7 +1693,7 @@
       "name": "mosaic-slider",
       "type": "registry:ui",
       "title": "MosaicSlider",
-      "description": "MosaicSlider \u2014 @base-ui/react Slider primitive",
+      "description": "MosaicSlider — @base-ui/react Slider primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1721,7 +1721,7 @@
       "name": "mosaic-step-pipeline",
       "type": "registry:ui",
       "title": "MosaicStepPipeline",
-      "description": "MosaicStepPipeline \u2014 ordered stage progress pipeline",
+      "description": "MosaicStepPipeline — ordered stage progress pipeline",
       "dependencies": [],
       "files": [
         {
@@ -1753,7 +1753,7 @@
       "name": "mosaic-tabs",
       "type": "registry:ui",
       "title": "MosaicTabs",
-      "description": "MosaicTabs \u2014 @base-ui/react Tabs primitive",
+      "description": "MosaicTabs — @base-ui/react Tabs primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1768,7 +1768,7 @@
       "name": "mosaic-tag-input",
       "type": "registry:ui",
       "title": "MosaicTagInput",
-      "description": "MosaicTagInput \u2014 presentational tag/chip input with optional autocomplete.",
+      "description": "MosaicTagInput — presentational tag/chip input with optional autocomplete.",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -1787,7 +1787,7 @@
       "name": "mosaic-template-agent-card",
       "type": "registry:ui",
       "title": "MosaicTemplateAgentCard",
-      "description": "MosaicTemplateAgentCard \u2014 agent-type template preview card",
+      "description": "MosaicTemplateAgentCard — agent-type template preview card",
       "dependencies": [],
       "files": [
         {
@@ -1804,7 +1804,7 @@
       "name": "mosaic-template-category-chips",
       "type": "registry:ui",
       "title": "MosaicTemplateCategoryChips",
-      "description": "MosaicTemplateCategoryChips \u2014 presentational horizontal chip row filtering agent-templates by category.",
+      "description": "MosaicTemplateCategoryChips — presentational horizontal chip row filtering agent-templates by category.",
       "dependencies": [],
       "files": [
         {
@@ -1838,7 +1838,7 @@
       "name": "mosaic-template-list",
       "type": "registry:ui",
       "title": "MosaicTemplateList",
-      "description": "MosaicTemplateList \u2014 presentational, disposition-only list of host items",
+      "description": "MosaicTemplateList — presentational, disposition-only list of host items",
       "dependencies": [],
       "files": [
         {
@@ -1855,7 +1855,7 @@
       "name": "mosaic-template-management-panel",
       "type": "registry:ui",
       "title": "MosaicTemplateManagementPanel",
-      "description": "MosaicTemplateManagementPanel \u2014 manage a host-supplied list of saved agent templates: rename, duplicate, delete.",
+      "description": "MosaicTemplateManagementPanel — manage a host-supplied list of saved agent templates: rename, duplicate, delete.",
       "dependencies": [],
       "files": [
         {
@@ -1885,7 +1885,7 @@
       "name": "mosaic-textarea",
       "type": "registry:ui",
       "title": "MosaicTextarea",
-      "description": "MosaicTextarea \u2014 native <textarea> styled atom",
+      "description": "MosaicTextarea — native <textarea> styled atom",
       "dependencies": [],
       "files": [
         {
@@ -1930,7 +1930,7 @@
       "name": "mosaic-thread-indicator",
       "type": "registry:ui",
       "title": "MosaicThreadIndicator",
-      "description": "MosaicThreadIndicator \u2014 signals a thread has UNREAD replies",
+      "description": "MosaicThreadIndicator — signals a thread has UNREAD replies",
       "dependencies": [],
       "files": [
         {
@@ -1947,7 +1947,7 @@
       "name": "mosaic-thread-view",
       "type": "registry:ui",
       "title": "MosaicThreadView",
-      "description": "MosaicThreadView \u2014 one client request, several agents replying beneath it",
+      "description": "MosaicThreadView — one client request, several agents replying beneath it",
       "dependencies": [],
       "files": [
         {
@@ -1964,7 +1964,7 @@
       "name": "mosaic-toast",
       "type": "registry:ui",
       "title": "MosaicToast",
-      "description": "Presentational ephemeral notification (success/error/info/warning), optional auto-dismiss via durationMs, host-controlled action node. Paired with MosaicToastProvider for stack positioning (top-right/top-center/bottom-right/bottom-center). No toast queue/runtime \u2014 the host owns the visible stack.",
+      "description": "Presentational ephemeral notification (success/error/info/warning), optional auto-dismiss via durationMs, host-controlled action node. Paired with MosaicToastProvider for stack positioning (top-right/top-center/bottom-right/bottom-center). No toast queue/runtime — the host owns the visible stack.",
       "dependencies": [
         "class-variance-authority"
       ],
@@ -1987,7 +1987,7 @@
       "name": "mosaic-tool-toggle-list",
       "type": "registry:ui",
       "title": "MosaicToolToggleList",
-      "description": "MosaicToolToggleList \u2014 presentational per-tool enable switch + approval level selector, grouped into host-supplied sections.",
+      "description": "MosaicToolToggleList — presentational per-tool enable switch + approval level selector, grouped into host-supplied sections.",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -2006,7 +2006,7 @@
       "name": "mosaic-tooltip",
       "type": "registry:ui",
       "title": "MosaicTooltip",
-      "description": "MosaicTooltip \u2014 @base-ui/react Tooltip primitive",
+      "description": "MosaicTooltip — @base-ui/react Tooltip primitive",
       "dependencies": [
         "@base-ui/react"
       ],
@@ -2021,7 +2021,7 @@
       "name": "mosaic-url-scraper",
       "type": "registry:ui",
       "title": "MosaicUrlScraper",
-      "description": "MosaicUrlScraper \u2014 presentational URL-input + scraped-content preview",
+      "description": "MosaicUrlScraper — presentational URL-input + scraped-content preview",
       "dependencies": [],
       "files": [
         {
@@ -2030,70 +2030,6 @@
         },
         {
           "path": "src/components/url-scraper/url-scraper-variants.ts",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-callout",
-      "type": "registry:ui",
-      "title": "MosaicCallout",
-      "description": "Inline bordered notice. variant info/warning maps to role status/alert. Required title, optional icon/children supplied by host, data-slot=\"callout\".",
-      "dependencies": [
-        "class-variance-authority"
-      ],
-      "files": [
-        {
-          "path": "src/components/callout/MosaicCallout.tsx",
-          "type": "registry:ui"
-        },
-        {
-          "path": "src/components/callout/callout-variants.ts",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-match-input",
-      "type": "registry:ui",
-      "title": "MosaicMatchInput",
-      "description": "Autocomplete carrying a match state (exact/partial/ambiguous/none), composed above MosaicCombobox. matchState and stateLabels are required props, host owns all copy. data-slot=\"match-input\".",
-      "dependencies": [
-        "class-variance-authority",
-        "@base-ui/react"
-      ],
-      "registryDependencies": [
-        "mosaic-combobox"
-      ],
-      "files": [
-        {
-          "path": "src/components/match-input/MosaicMatchInput.tsx",
-          "type": "registry:ui"
-        },
-        {
-          "path": "src/components/match-input/match-input-variants.ts",
-          "type": "registry:ui"
-        }
-      ]
-    },
-    {
-      "name": "mosaic-editable-cell",
-      "type": "registry:ui",
-      "title": "MosaicEditableCell",
-      "description": "Double-click-to-edit table cell composed above MosaicInput. Enter commits (blocked by a failing validate), Escape cancels and restores the original value. data-slot=\"editable-cell\".",
-      "dependencies": [
-        "class-variance-authority"
-      ],
-      "registryDependencies": [
-        "mosaic-input"
-      ],
-      "files": [
-        {
-          "path": "src/components/editable-cell/MosaicEditableCell.tsx",
-          "type": "registry:ui"
-        },
-        {
-          "path": "src/components/editable-cell/editable-cell-variants.ts",
           "type": "registry:ui"
         }
       ]
