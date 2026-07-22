@@ -1029,3 +1029,25 @@ export {
   saveChatAsMemoryFormFooterVariants,
   saveChatAsMemoryFormRootVariants,
 } from "./components/save-chat-as-memory-form/save-chat-as-memory-form-variants.js";
+
+// ── MosaicCallout — inline bordered notice (info/warning) ───────────────────
+export { MosaicCallout, calloutVariants } from "./components/callout/MosaicCallout.js";
+export type { MosaicCalloutProps } from "./components/callout/MosaicCallout.js";
+
+// ── MosaicMatchInput — autocomplete carrying a match state ──────────────────
+export {
+  MosaicMatchInput,
+  matchStateVariants,
+} from "./components/match-input/MosaicMatchInput.js";
+export type {
+  MosaicMatchInputProps,
+  MosaicMatchInputState,
+  MosaicMatchInputStateLabels,
+} from "./components/match-input/MosaicMatchInput.js";
+
+// ── MosaicEditableCell — double-click-to-edit table cell ────────────────────
+export {
+  MosaicEditableCell,
+  editableCellVariants,
+} from "./components/editable-cell/MosaicEditableCell.js";
+export type { MosaicEditableCellProps } from "./components/editable-cell/MosaicEditableCell.js";
