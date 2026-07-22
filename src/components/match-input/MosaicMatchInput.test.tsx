@@ -59,36 +59,52 @@ describe("MosaicMatchInput", () => {
     expect(screen.getByText("Partial match")).toBeTruthy();
   });
 
-  it("NEGATIVE POLE: ambiguous state must NOT render identically to none state", () => {
-    const { container: ambiguousContainer, unmount } = render(
+  // Every state below is rendered with the SAME label text on purpose.
+  // If the test asserted on label text (or on a role||text disjunction),
+  // it would pass regardless of what the component actually does — the
+  // fixture would be saving a broken component. Distinguishing the
+  // states must be entirely on the component's own DOM signal
+  // (role + aria-live), which is what these tests assert directly.
+  const sameLabelForAllStates = {
+    exact: "SAME",
+    partial: "SAME",
+    ambiguous: "SAME",
+    none: "SAME",
+  };
+
+  function renderIndicator(matchState: "exact" | "partial" | "ambiguous" | "none") {
+    const { container, unmount } = render(
       <MosaicMatchInput
         items={items}
-        matchState="ambiguous"
-        stateLabels={stateLabels}
+        matchState={matchState}
+        stateLabels={sameLabelForAllStates}
         emptyMessage="No results"
       />,
     );
-    const ambiguousStatus = screen.getByText("Ambiguous match");
-    const ambiguousRole = ambiguousStatus.getAttribute("role");
-    const ambiguousAccessibleText = ambiguousStatus.textContent;
+    const indicator = container.querySelector("[data-match-state]");
+    if (!indicator) {
+      throw new Error(`no [data-match-state] indicator rendered for matchState=${matchState}`);
+    }
+    const signal = {
+      role: indicator.getAttribute("role"),
+      ariaLive: indicator.getAttribute("aria-live"),
+    };
     unmount();
+    return signal;
+  }
 
-    render(
-      <MosaicMatchInput
-        items={items}
-        matchState="none"
-        stateLabels={stateLabels}
-        emptyMessage="No results"
-      />,
-    );
-    const noneStatus = screen.getByText("No match");
-    const noneRole = noneStatus.getAttribute("role");
-    const noneAccessibleText = noneStatus.textContent;
+  it("NEGATIVE POLE: ambiguous must render a DOM signal distinct from none, even with an identical label", () => {
+    const ambiguous = renderIndicator("ambiguous");
+    const none = renderIndicator("none");
 
-    // The two states must differ on at least one accessible signal
-    // (role and/or text) — ambiguous must warn the user distinctly from none.
-    expect(ambiguousRole !== noneRole || ambiguousAccessibleText !== noneAccessibleText).toBe(true);
-    expect(ambiguousContainer).toBeTruthy();
+    expect(ambiguous.role !== none.role || ambiguous.ariaLive !== none.ariaLive).toBe(true);
+  });
+
+  it("NEGATIVE POLE: ambiguous must render a DOM signal distinct from partial, even with an identical label", () => {
+    const ambiguous = renderIndicator("ambiguous");
+    const partial = renderIndicator("partial");
+
+    expect(ambiguous.role !== partial.role || ambiguous.ariaLive !== partial.ariaLive).toBe(true);
   });
 
   it("renders locked mode as a disabled/read-only input", () => {

@@ -1,0 +1,33 @@
+fix(match-input): make ambiguous distinguishable by component, not label
+
+The prior negative-pole test passed even on a broken component: its
+assertion was a disjunction where the text branch was trivially true
+by construction of the test fixture (each state had a distinct label),
+so the test proved nothing about matchStateSignal itself. Proven by
+mutation: collapsing matchStateRole to a constant left the suite green.
+
+Also fixes a real semantic inversion: "ambiguous" (a wrong candidate
+can be silently accepted) was mapped to the calm role="status", less
+urgent than "none" (nothing matched, nothing to decide).
+
+- match-input-variants.ts: matchStateRole -> matchStateSignal, returning
+  a (role, aria-live) pair. All four states now carry mutually distinct
+  pairs: exact=status/off, partial=status/polite,
+  ambiguous=alert/assertive (most urgent), none=alert/polite.
+- MosaicMatchInput.tsx: applies role + aria-live + data-match-state from
+  the signal instead of a role-only mapping.
+- MosaicMatchInput.test.tsx: negative-pole tests now pass an IDENTICAL
+  label across all four states, so only the component's own DOM signal
+  can make them pass. Assertions read the two channels directly
+  instead of a role-or-text disjunction. Added the missing
+  ambiguous-vs-partial case.
+
+Mutation proof (collapsing matchStateSignal to a constant
+role=status/ariaLive=polite for every state): both negative-pole tests
+go RED (2 failed / 5 passed). Restored, tests GREEN (7 passed), git
+diff clean before this commit.
+
+Only match-input/* touched; MosaicCallout, MosaicEditableCell, and
+version files untouched.
+
+Orchestrator: Gamma — VantageOS Team | 2026-07-22

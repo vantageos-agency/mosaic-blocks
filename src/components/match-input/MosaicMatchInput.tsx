@@ -14,7 +14,7 @@ import {
   type MosaicComboboxItem,
   type MosaicComboboxProps,
 } from "../combobox/MosaicCombobox.js";
-import { matchStateRole, matchStateVariants } from "./match-input-variants.js";
+import { matchStateSignal, matchStateVariants } from "./match-input-variants.js";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -70,13 +70,18 @@ export function MosaicMatchInput({
   className,
   ...comboboxProps
 }: MosaicMatchInputProps) {
-  const role = matchStateRole(matchState);
+  const { role, ariaLive } = matchStateSignal(matchState);
   const label = stateLabels[matchState];
 
   return (
     <div data-slot="match-input" className={cn("flex flex-col gap-1", className)}>
       <MosaicCombobox {...comboboxProps} disabled={locked} />
-      <span role={role} className={matchStateVariants({ matchState })}>
+      <span
+        role={role}
+        aria-live={ariaLive}
+        data-match-state={matchState}
+        className={matchStateVariants({ matchState })}
+      >
         {label}
       </span>
     </div>
