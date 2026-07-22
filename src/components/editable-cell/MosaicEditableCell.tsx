@@ -57,7 +57,11 @@ export function MosaicEditableCell({
   ref,
 }: MosaicEditableCellProps) {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState(value);
+  // Not seeded from `value`: the read-mode view below always renders the
+  // live `value` prop directly, never `draft`. `draft` only exists for the
+  // duration of an edit session and is (re)seeded from the CURRENT prop by
+  // `startEdit`, never from a snapshot taken at mount.
+  const [draft, setDraft] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
 
   function startEdit() {
@@ -134,5 +138,3 @@ export function MosaicEditableCell({
 }
 
 MosaicEditableCell.displayName = "MosaicEditableCell";
-
-export { editableCellVariants };

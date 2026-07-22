@@ -86,4 +86,27 @@ describe("MosaicEditableCell", () => {
     fireEvent.doubleClick(screen.getByText("Alpha"));
     expect(screen.queryByRole("textbox")).toBeNull();
   });
+
+  it("STATE SYNC: reflects an external value change while not editing (no stale snapshot)", () => {
+    const { rerender } = render(
+      <MosaicEditableCell value="Alpha" onCommit={() => {}} editAriaLabel="Edit value" />,
+    );
+    rerender(<MosaicEditableCell value="Beta" onCommit={() => {}} editAriaLabel="Edit value" />);
+    expect(screen.getByText("Beta")).toBeTruthy();
+    expect(screen.queryByText("Alpha")).toBeNull();
+  });
+
+  it("STATE SYNC: cancelling after an external value change while editing restores the CURRENT prop, not the value seen at mount", () => {
+    const { rerender } = render(
+      <MosaicEditableCell value="Alpha" onCommit={() => {}} editAriaLabel="Edit value" />,
+    );
+    fireEvent.doubleClick(screen.getByText("Alpha"));
+    // the prop changes externally WHILE the cell is being edited
+    rerender(<MosaicEditableCell value="Gamma" onCommit={() => {}} editAriaLabel="Edit value" />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "typed junk" } });
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Escape" });
+
+    expect(screen.getByText("Gamma")).toBeTruthy();
+    expect(screen.queryByText("Alpha")).toBeNull();
+  });
 });

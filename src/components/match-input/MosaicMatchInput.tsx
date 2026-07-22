@@ -89,5 +89,3 @@ export function MosaicMatchInput({
 }
 
 MosaicMatchInput.displayName = "MosaicMatchInput";
-
-export { matchStateVariants };

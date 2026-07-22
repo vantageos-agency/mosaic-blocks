@@ -79,5 +79,3 @@ export function MosaicCallout({
 }
 
 MosaicCallout.displayName = "MosaicCallout";
-
-export { calloutVariants };
