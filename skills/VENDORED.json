@@ -5,9 +5,9 @@
       "upstream": {
         "repo": "https://github.com/jakubkrehel/skills",
         "path": "better-ui",
-        "commit": "941e95e9daf2be6c17e0285be0155e60dc2b9fe"
+        "commit": "f8a1574b08319685705a82e3c28139d1c935af9e"
       },
-      "note": "Cloned unmodified from upstream at vendoring time. See skills/ATTRIBUTION.md.",
+      "note": "Vendored from jakubkrehel/skills at commit f8a1574b08319685705a82e3c28139d1c935af9e (2026-07-13); files byte-identical to that commit. Previous `commit` value (941e95e9daf2be6c17e0285be0155e60dc2b9fe) was not a git SHA — it was the first 39 hex chars of this entry's SKILL.md sha256, a self-referential pointer that could never contradict the digest it decorated.",
       "files": {
         "SKILL.md": "sha256:941e95e9daf2be6c17e0285be0155e60dc2b9fef6b640ab98a16670d70c28889",
         "animations.md": "sha256:d63653e38442a95d824d9827137574cd53a0acf5ed6926bc5395540fe5298047",
@@ -19,9 +19,9 @@
       "upstream": {
         "repo": "https://github.com/jakubkrehel/skills",
         "path": "better-colors",
-        "commit": "f0d99ef14d99304362cca1c2b0f4e6fce44779b3"
+        "commit": "575d40abf2e4173f88d7592ced3d62224b7b0cde"
       },
-      "note": "Cloned unmodified from upstream at vendoring time. See skills/ATTRIBUTION.md.",
+      "note": "Vendored from jakubkrehel/skills at commit 575d40abf2e4173f88d7592ced3d62224b7b0cde (2026-07-23); files byte-identical to that commit. Previous `commit` value (f0d99ef14d99304362cca1c2b0f4e6fce44779b3) was not a git SHA — it was the first 39 hex chars of this entry's SKILL.md sha256, a self-referential pointer that could never contradict the digest it decorated.",
       "files": {
         "SKILL.md": "sha256:f0d99ef14d99304362cca1c2b0f4e6fce44779b3ba0ddb68084f1250b547907a",
         "accessibility-contrast.md": "sha256:ef405133cbca83ea2934ea3bf59338df8f6e81db81bca7eccb2eb54133295b34",
@@ -34,9 +34,9 @@
       "upstream": {
         "repo": "https://github.com/jakubkrehel/skills",
         "path": "better-typography",
-        "commit": "a17408922649a87721669e19fe185342a91c147"
+        "commit": "575d40abf2e4173f88d7592ced3d62224b7b0cde"
       },
-      "note": "Cloned unmodified from upstream at vendoring time. See skills/ATTRIBUTION.md.",
+      "note": "Vendored from jakubkrehel/skills at commit 575d40abf2e4173f88d7592ced3d62224b7b0cde (2026-07-23); files byte-identical to that commit. Previous `commit` value (a17408922649a87721669e19fe185342a91c147) was not a git SHA — it was the first 39 hex chars of this entry's SKILL.md sha256, a self-referential pointer that could never contradict the digest it decorated.",
       "files": {
         "SKILL.md": "sha256:a17408922649a87721669e19fe185342a91c147e554134d2bcc1b103a9967b88",
         "choosing-fonts.md": "sha256:7ada14fbf8af2fe5e045a9b2effefc83a50bd590f97845bedb221ed074f649e1",
