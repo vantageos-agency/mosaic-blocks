@@ -70,6 +70,7 @@ import {
   SECTION6_TOTAL_RE,
   extractRealExports,
   extractVersionTableRowStatusByLine,
+  findUnrecognizedCountClaims,
   lineNumberAt,
   mosaicCountPatterns,
   totalExportsPatterns,
@@ -112,6 +113,33 @@ function assertRequiredAnchorsPresent(label, src, anchors) {
       .join("\n");
     throw new Error(
       `docs-counts: ${missing.length} required anchor(s) not found in ${label} — a sentence this script depends on to keep the count derived was reworded (or removed) without updating the matching regex:\n${details}\n\nFix: either restore the sentence's wording, or update the named anchor(s) in scripts/docs-counts-shared.mjs to match the new phrasing.`,
+    );
+  }
+}
+
+/**
+ * Fail-closed on the UNKNOWN: any count-shaped claim (a standalone integer
+ * adjacent to a plural domain noun) that attaches to no known derived anchor,
+ * sits on no Historical row, and carries no inline `<!-- count-exempt: ... -->`
+ * declaration. This is the class the anchor regexes above cannot see — an
+ * unbacktick'd prose count such as "999 Mosaic components" — and which used to
+ * pass GREEN. Throws in BOTH modes (there is nothing to auto-fix: the claim is
+ * either reworded into a known anchor, or declared non-derived inline).
+ * @param {string} label file label for the error message
+ * @param {string} src doc source
+ * @param {Map<number, string>} historicalStatusByLine only non-empty for README
+ */
+function assertNoUnrecognizedCountClaims(label, src, historicalStatusByLine) {
+  const unrecognized = findUnrecognizedCountClaims(src, historicalStatusByLine);
+  if (unrecognized.length > 0) {
+    const details = unrecognized
+      .map(
+        (u) =>
+          `  - ${label}:${u.line} — count-shaped claim "${u.text}" attaches to NO known derived anchor and carries no <!-- count-exempt: <reason> --> declaration\n      "${u.lineText}"`,
+      )
+      .join("\n");
+    throw new Error(
+      `docs-counts: ${unrecognized.length} unrecognized count-shaped claim(s) — a standalone number adjacent to a domain noun (components/exports/hooks) the guard cannot attach to src/index.ts. FAIL-CLOSED (derive-never-type + guard-formulation-census: a guard covers its whole domain or fails loud on the member it cannot read). Fix each: EITHER reword it into a known anchor wording (so its value is derived & verified), OR — if it is deliberately NOT a src/index.ts count (a curated subset, an illustration) — declare it inline on the same line with \`<!-- count-exempt: <reason> -->\`.\n${details}`,
     );
   }
 }
@@ -233,6 +261,12 @@ function main() {
   assertRequiredAnchorsPresent(CATALOG_PATH, catalogSrc, CATALOG_REQUIRED_ANCHORS);
 
   const historicalStatusByLine = extractVersionTableRowStatusByLine(readmeSrc);
+
+  // Fail-closed on any count-shaped claim the anchors above cannot attach —
+  // BEFORE the generic scan/rewrite runs, so an unverifiable prose count can
+  // never be silently skipped by anchors that simply do not match it.
+  assertNoUnrecognizedCountClaims(README_PATH, readmeSrc, historicalStatusByLine);
+  assertNoUnrecognizedCountClaims(CATALOG_PATH, catalogSrc, new Map());
 
   const readmeResult = processDoc(README_PATH, readmeSrc, expected, historicalStatusByLine);
   const catalogResult = processDoc(CATALOG_PATH, catalogSrc, expected, new Map());

@@ -39,7 +39,7 @@
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mosaicCountPatterns, totalExportsPatterns } from "./docs-counts-shared.mjs";
+import { isCountShaped, mosaicCountPatterns, totalExportsPatterns } from "./docs-counts-shared.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -167,10 +167,21 @@ function addedLines(diffText) {
  */
 function matchesAnyCountPattern(text) {
   const patterns = [...mosaicCountPatterns(), ...totalExportsPatterns()];
-  return patterns.some((re) => {
-    re.lastIndex = 0;
-    return re.test(text);
-  });
+  if (
+    patterns.some((re) => {
+      re.lastIndex = 0;
+      return re.test(text);
+    })
+  ) {
+    return true;
+  }
+  // Fail-closed on the UNKNOWN wording too: a count-SHAPED added line (a
+  // standalone integer adjacent to a plural domain noun) that the anchor
+  // patterns above do not recognise — e.g. an unbacktick'd "999 Mosaic
+  // components" — is still a count claim a component PR must not hand-type.
+  // Without this, the shared blind spot let such a line through on the diff
+  // side exactly as it did on the --check side.
+  return isCountShaped(text);
 }
 
 /**
