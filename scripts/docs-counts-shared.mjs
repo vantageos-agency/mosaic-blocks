@@ -200,3 +200,176 @@ export const CATALOG_LIVE_LIB_RE =
   /exports\s*\*\*(\d+)\*\*\s*`Mosaic\*`\s*components and\s*\*\*(\d+)\*\*\s*total named exports/s;
 export const CATALOG_FOOTER_RE =
   /Total unique `Mosaic\*` components documented in this catalog:\s*\*\*(\d+)\*\*/;
+
+// ---------------------------------------------------------------------------
+// FAIL-CLOSED count-shaped-claim detection (derive-never-type +
+// guard-formulation-census).
+//
+// The anchor regexes above only recognise the count FORMS the authors have met
+// so far (backtick-wrapped `Mosaic*`, bold numbers, the "opinionated" hero
+// wording, "total named exports"). Any OTHER phrasing of a library-wide count —
+// most simply an unbacktick'd prose sentence like "The library exports 999
+// Mosaic components in total." — is structurally invisible to every anchor, so
+// a hand-typed FALSE number in that shape passes GREEN through both consumers.
+// That is the mono-formulation disease: a guard that only knows the forms its
+// author happened to enumerate, failing OPEN on every other member of the same
+// domain.
+//
+// The remedy is NOT one more anchor regex (that repeats the disease). It is a
+// SEPARATE, deliberately BROADER detector for the SHAPE of a count claim — a
+// standalone integer adjacent to a plural domain noun (components / exports /
+// hooks) — that is intentionally a superset of the recognised anchors. A claim
+// this detector sees is then classified:
+//   - it overlaps a KNOWN anchor            -> verified elsewhere (keep as-is)
+//   - it sits on a Historical versioning row -> a dated fact, declared by its
+//                                               Status column (see the classifier)
+//   - its line carries a <!-- count-exempt: <reason> --> marker
+//                                            -> a deliberately-non-derived figure,
+//                                               declared IN THE DOC where the reader sees it
+//   - none of the above                      -> FAIL LOUD, naming file + line + text.
+//
+// Bounded on purpose: it matches ONLY a number adjacent to a domain noun, never
+// arbitrary prose — a prose scanner is either too lax or too zealous and gets
+// torn out (see release-artifacts-guard.mjs's MARKER_RE history for the same
+// lesson). It VERIFIES structured anchors and FAILS CLOSED on a count-shaped
+// claim it cannot attach; it never mines free prose for TRUTH.
+// ---------------------------------------------------------------------------
+
+// Plural domain nouns whose adjacency to a standalone integer makes a claim
+// "count-shaped". Plural only, so a dependency-version cell like
+// "`^7` | Using any auth component" (singular, and not even adjacent) never trips it.
+const COUNT_DOMAIN_NOUN = "(?:components|exports|hooks)";
+// Markdown / keyword tokens allowed to sit BETWEEN the number and the domain
+// noun without breaking a count claim. Anything NOT in this set (a comma, a
+// pipe, an unrelated word such as "sizes" or "variants") ends the run, so
+// "4 sizes; also exports `buttonVariants`" is NOT a count claim.
+const COUNT_QUALIFIER =
+  "(?:`?Mosaic\\*?`?|total|named|exported|shipped|documented|unique|opinionated|distinct|UI|fully-typed)";
+
+/**
+ * Factory (fresh RegExp per call — no shared mutable lastIndex). Matches a
+ * count-SHAPED claim: a standalone integer (never mid-token, so "wave-2
+ * components" and "^1.0.0" are excluded) followed, through zero or more allowed
+ * qualifier words, by a plural domain noun; plus the bare "N opinionated" hero
+ * shape where the noun is elided.
+ * @returns {RegExp[]}
+ */
+export function countShapedClaimPatterns() {
+  return [
+    new RegExp(
+      `(?<![-\\w.*])\\*{0,2}(\\d+)\\*{0,2}(?:\\s+${COUNT_QUALIFIER})*\\s+${COUNT_DOMAIN_NOUN}\\b`,
+      "gis",
+    ),
+    /(?<![-\w.*])(\d+)\s+opinionated\b/gis,
+  ];
+}
+
+/**
+ * @param {string} text a single line (or arbitrary text) to test.
+ * @returns {boolean} true if the text carries at least one count-shaped claim.
+ */
+export function isCountShaped(text) {
+  for (const re of countShapedClaimPatterns()) {
+    re.lastIndex = 0;
+    if (re.test(text)) return true;
+  }
+  return false;
+}
+
+/**
+ * Every count-shaped claim in a doc, with its char offset and 1-based line.
+ * @param {string} doc
+ * @returns {Array<{ number: string, index: number, matchText: string, line: number }>}
+ */
+export function extractCountShapedClaims(doc) {
+  const claims = [];
+  for (const re of countShapedClaimPatterns()) {
+    re.lastIndex = 0;
+    let match;
+    // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+    while ((match = re.exec(doc))) {
+      claims.push({
+        number: match[1],
+        index: match.index,
+        matchText: match[0],
+        line: lineNumberAt(doc, match.index),
+      });
+      if (match.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
+    }
+  }
+  return claims;
+}
+
+// Inline, reader-visible declaration for a count-shaped figure that is
+// deliberately NOT derived from src/index.ts (a curated subset, an illustrative
+// example, etc.). It lives on the SAME line as the number — never in a hidden
+// exclusion list at the bottom of a guard. A declared divergence is a decision;
+// a silent one is a hole.
+export const COUNT_EXEMPT_MARKER_RE = /<!--\s*count-exempt:\s*(\S.*?)\s*-->/;
+
+/**
+ * Char ranges of every KNOWN, recognised count anchor in a doc — the union of
+ * the generic scanners and the dedicated single-sentence anchors. A
+ * count-shaped claim overlapping one of these ranges is already verified by the
+ * existing machinery and is not a fail-closed candidate.
+ * @param {string} doc
+ * @returns {Array<[number, number]>}
+ */
+export function recognizedCountAnchorRanges(doc) {
+  const ranges = [];
+  const globalAnchors = [...mosaicCountPatterns(), ...totalExportsPatterns()];
+  for (const re of globalAnchors) {
+    re.lastIndex = 0;
+    let match;
+    // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+    while ((match = re.exec(doc))) {
+      ranges.push([match.index, match.index + match[0].length]);
+      if (match.index === re.lastIndex) re.lastIndex++;
+    }
+  }
+  const singleAnchors = [
+    HERO_RE,
+    SECTION6_SUMMARY_RE,
+    SECTION6_TOTAL_RE,
+    CATALOG_HEADER_DOCUMENTED_RE,
+    CATALOG_LIVE_LIB_RE,
+    CATALOG_FOOTER_RE,
+  ];
+  for (const re of singleAnchors) {
+    const match = re.exec(doc);
+    if (match) ranges.push([match.index, match.index + match[0].length]);
+  }
+  return ranges;
+}
+
+/**
+ * The fail-closed set: count-shaped claims that attach to NO known anchor, are
+ * NOT on a Historical versioning row, and carry NO inline count-exempt marker.
+ * Each is a number the guard cannot verify against src/index.ts and that no one
+ * declared as deliberately non-derived — exactly the class that used to pass
+ * GREEN.
+ * @param {string} doc
+ * @param {Map<number, VersionTableRowStatus>} [historicalStatusByLine]
+ * @returns {Array<{ line: number, number: string, text: string, lineText: string }>}
+ */
+export function findUnrecognizedCountClaims(doc, historicalStatusByLine = new Map()) {
+  const ranges = recognizedCountAnchorRanges(doc);
+  const lines = doc.split("\n");
+  const unrecognized = [];
+  for (const claim of extractCountShapedClaims(doc)) {
+    const start = claim.index;
+    const end = claim.index + claim.matchText.length;
+    const covered = ranges.some(([s, e]) => start < e && end > s);
+    if (covered) continue;
+    if (historicalStatusByLine.get(claim.line) === "Historical") continue;
+    const lineText = lines[claim.line - 1] ?? "";
+    if (COUNT_EXEMPT_MARKER_RE.test(lineText)) continue;
+    unrecognized.push({
+      line: claim.line,
+      number: claim.number,
+      text: claim.matchText.replace(/\s+/g, " ").trim(),
+      lineText: lineText.trim().slice(0, 160),
+    });
+  }
+  return unrecognized;
+}

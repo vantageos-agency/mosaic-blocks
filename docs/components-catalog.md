@@ -476,7 +476,7 @@ silently reverted.
 ## Documented / exported ratio
 
 This catalog is a **curated subset**, not the full public API. It documents
-**85 `Mosaic*` components** and **10 hooks** out of the **180** `Mosaic*`
+**85 `Mosaic*` components** and **10 hooks** <!-- count-exempt: curated-subset figures, NOT derived from src/index.ts; the 180/283 library totals on this same line ARE derived and guarded --> out of the **180** `Mosaic*`
 components (**283** total named exports) that `src/index.ts` actually
 exports. The full 1:1 list lives in `README.md` Section 6, which is guarded
 by a CI test against drift.
