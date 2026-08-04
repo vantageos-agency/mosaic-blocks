@@ -53,9 +53,32 @@
  *                                              AFTER the if-block owned by ¬L
  *                                              (early return — MosaicStepPipeline)
  *   5. `const isFoo = X.D === "L";` … `isFoo ? ( A ) : ( B )` / `isFoo && ( A )`
+ *   6. `switch (X.D) { case "L": <stmts> ... }` → each case owns its literal;
+ *                                              consecutive labels fall through
+ *                                              and share the body; `default:`
+ *                                              owns the complement of the
+ *                                              listed cases (MosaicChatMessage's
+ *                                              `switch (part.type)` part
+ *                                              dispatcher).
  * The `X.` prefix is optional (`props.variant`, `file.status`, or a bare
  * destructured `variant`). Text inside NO region is unconditional and counts
- * as read on every literal.
+ * as read on every literal. A gating form OUTSIDE this set on a per-branch
+ * union is a BLIND SPOT reported by name, never a silent pass (see below).
+ *
+ * ── Every candidate type is analyzed, not just the first ────────────────────
+ * A component can carry SEVERAL discriminated shapes at once — a shallow
+ * props-level enum (`messageRole: "user" | "assistant"`) AND a genuine
+ * per-branch item union (`parts: MosaicChatMessagePart[]`). Stopping at the
+ * first discriminant let the shallow enum SHADOW the real union: a dead
+ * required field on MosaicChatMessage's `"attachment"` branch passed 17/17
+ * GREEN because analysis never reached `MosaicChatMessagePart`. Every candidate
+ * type (the props type plus the item types it references) is analyzed; the set
+ * of shapes is DERIVED from the candidates, never assumed to be one.
+ *
+ * A union of NAMED interfaces is resolved whether it is written flat
+ * (`type P = A | B`) or with a LEADING pipe (`type P =\n  | A\n  | B`). The
+ * leading-pipe spelling previously fell into the inline-object-union branch and
+ * returned [] — the whole component dropped out of analysis silently.
  *
  * ── Fail-CLOSED, never fail-open ───────────────────────────────────────────
  * If a type declares per-branch required fields (fields inside union members)
@@ -443,8 +466,17 @@ function resolveTypeSpans(content: string, name: string, seen = new Set<string>(
   if (!typeAliasMatch || typeAliasMatch.index === undefined) return [];
   const cursor = skipWs(content, typeAliasMatch.index + typeAliasMatch[0].length);
 
-  // Inline object-union / single object shape.
-  if (content[cursor] === "|" || content[cursor] === "{") {
+  // Inline object-union / single object shape — but ONLY when the first
+  // significant token is an object literal `{`. A leading-pipe union of NAMED
+  // interfaces (`type X =\n  | AttachmentPart\n  | TextPart`) also starts with
+  // `|`, and must NOT be swallowed here: peek past the leading pipes/whitespace
+  // and, if the first member is an identifier rather than `{`, fall through to
+  // the named-interface union logic below. (This is the hole that hid
+  // MosaicChatMessagePart — a leading-pipe named union returned [] and the
+  // whole component fell out of analysis.)
+  let peek = cursor;
+  while (peek < content.length && (content[peek] === "|" || /\s/.test(content[peek]))) peek++;
+  if (content[peek] === "{") {
     const members: { literal: string; text: string }[] = [];
     let discriminant = "";
     let c = cursor;
@@ -465,14 +497,26 @@ function resolveTypeSpans(content: string, name: string, seen = new Set<string>(
     }
     if (members.length >= 2) return [{ kind: "union", discriminant, members }];
     if (members.length === 1) return [{ kind: "flat", text: members[0].text }];
+    // A `{`-led object type with no string-literal-discriminant member (a plain
+    // props object such as `type Base = { url: string; ... }`) is not a
+    // discriminated union: return [] exactly as before, so plain object aliases
+    // keep their established resolution (changing it would retro-actively flag
+    // shared base fields never rendered in one branch — a scope this fix does
+    // NOT open). A LEADING-PIPE union of NAMED interfaces never reaches here:
+    // its first significant token is an identifier, not `{`, so the peek gate
+    // above routes it to the named-interface union logic below.
     return [];
   }
 
   const semiIdx = findTopLevelChar(content, cursor, ";");
   const rhs = content.slice(cursor, semiIdx === -1 ? content.length : semiIdx);
 
-  // Union of NAMED interfaces (`type Props = DotsProps | SegmentsProps`).
-  const unionParts = splitTopLevel(rhs, "|").map((p) => p.trim());
+  // Union of NAMED interfaces — with or without a leading pipe
+  // (`type P = DotsProps | SegmentsProps` OR `type P =\n  | A\n  | B`). Empty
+  // parts from a leading/trailing pipe are dropped so the `\w+` test holds.
+  const unionParts = splitTopLevel(rhs, "|")
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
   if (unionParts.length >= 2 && unionParts.every((p) => /^\w+$/.test(p))) {
     const members: { literal: string; text: string }[] = [];
     let discriminant = "";
@@ -690,6 +734,68 @@ function findGatedRegions(body: string, discriminant: string, allLiterals: strin
     }
   }
 
+  // Form 6: `switch (X.D) { case "L": <stmts> ... }`. Each case label owns its
+  // literal; consecutive labels with no body between them fall through and
+  // share the following body region; a `default:` owns the complement of the
+  // listed cases. This is the form MosaicChatMessage's part dispatcher uses
+  // (`switch (part.type) { case "attachment": ... }`) — a discriminated union
+  // of NAMED interfaces gated at the item level, invisible to forms 1-5.
+  const switchRe = new RegExp(
+    `\\bswitch\\s*\\(\\s*[\\w.]*\\b${discriminant}\\b\\s*\\)\\s*\\{`,
+    "g",
+  );
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((match = switchRe.exec(body))) {
+    const braceOpen = match.index + match[0].length - 1;
+    const braceClose = findMatchingClose(body, braceOpen, "{", "}");
+    if (braceClose === -1) continue;
+    const base = braceOpen + 1;
+    const switchBody = body.slice(base, braceClose);
+
+    // Collect case/default labels IN ORDER at the switch's own brace depth
+    // (nested switches/objects do not leak their labels in).
+    type Label = { literal: string | null; start: number; end: number };
+    const labels: Label[] = [];
+    const caseLiterals = new Set<string>();
+    const labelRe = /\bcase\s+"([^"]+)"\s*:|\bdefault\s*:/g;
+    let lm: RegExpExecArray | null;
+    // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+    while ((lm = labelRe.exec(switchBody))) {
+      let depth = 0;
+      for (let k = 0; k < lm.index; k++) {
+        const ch = switchBody[k];
+        if (ch === "{" || ch === "(" || ch === "[") depth++;
+        else if (ch === "}" || ch === ")" || ch === "]") depth--;
+      }
+      if (depth !== 0) continue; // label of a nested switch
+      const literal = lm[1] ?? null;
+      if (literal !== null) caseLiterals.add(literal);
+      labels.push({ literal, start: lm.index, end: lm.index + lm[0].length });
+    }
+
+    const ownersFor = (pending: (string | null)[]): Set<string> => {
+      const owners = new Set<string>();
+      for (const lit of pending) {
+        if (lit === null) {
+          for (const l of allLiterals) if (!caseLiterals.has(l)) owners.add(l);
+        } else {
+          owners.add(lit);
+        }
+      }
+      return owners;
+    };
+
+    let pending: (string | null)[] = [];
+    for (let i = 0; i < labels.length; i++) {
+      pending.push(labels[i].literal);
+      const regStart = labels[i].end;
+      const regEnd = i + 1 < labels.length ? labels[i + 1].start : switchBody.length;
+      if (switchBody.slice(regStart, regEnd).trim() === "") continue; // fall-through
+      regions.push({ owners: ownersFor(pending), start: base + regStart, end: base + regEnd - 1 });
+      pending = [];
+    }
+  }
+
   // Form 5: `const isFoo = X.D === "L";` … `isFoo ? ( A ) : ( B )` / `isFoo && ( A )`
   const boolRe = new RegExp(
     `\\bconst\\s+(\\w+)\\s*=\\s*[\\w.]*\\b${discriminant}\\s*(===|!==)\\s*"([^"]+)"\\s*;`,
@@ -808,9 +914,22 @@ function extractFunctionDecls(content: string): FnDecl[] {
 }
 
 /**
- * The bodies relevant to ONE component: its own body, plus the bodies of any
- * function in the same file that it references (one level of delegation —
- * MosaicStepPipeline -> MosaicStepPipelineSegments/Dots).
+ * The bodies relevant to ONE component: its own body, plus the bodies of every
+ * function in the same file it reaches through the delegation graph, followed
+ * TRANSITIVELY (a visited set caps each body once).
+ *
+ * One level was not enough. A two-stage dispatch — the shape MosaicChatMessage
+ * ships — hides reads two hops away:
+ *
+ *   MosaicChatMessage        -> ChatMessagePartView          (level 1)
+ *   ChatMessagePartView      -> ChatMessageAttachmentPartView (level 2, reads
+ *                                                             the attachment
+ *                                                             fields)
+ *
+ * With a one-level walk the attachment fields (`fileName`, `url`, ...) looked
+ * "never read" — a false positive on clean code — and there was no room to
+ * catch a genuinely dead attachment field either. The closure follows every
+ * hop so a field is found where it is actually consumed, however deep.
  *
  * Scoped PER COMPONENT rather than per FILE: many files export several
  * components (6 in org-panel, 6 in card, 5 in tooltip, 4 in tabs...), and a
@@ -818,10 +937,21 @@ function extractFunctionDecls(content: string): FnDecl[] {
  * dead prop of the same name.
  */
 function bodiesForComponent(decls: FnDecl[], component: FnDecl): string[] {
-  const bodies = [component.body];
-  for (const other of decls) {
-    if (other.name === component.name) continue;
-    if (new RegExp(`\\b${other.name}\\b`).test(component.body)) bodies.push(other.body);
+  const byName = new Map(decls.map((d) => [d.name, d]));
+  const bodies: string[] = [];
+  const visited = new Set<string>();
+  const queue = [component.name];
+  while (queue.length > 0) {
+    const name = queue.shift() as string;
+    if (visited.has(name)) continue;
+    visited.add(name);
+    const decl = byName.get(name);
+    if (!decl) continue;
+    bodies.push(decl.body);
+    for (const other of decls) {
+      if (visited.has(other.name)) continue;
+      if (new RegExp(`\\b${other.name}\\b`).test(decl.body)) queue.push(other.name);
+    }
   }
   return bodies;
 }
@@ -887,9 +1017,20 @@ function analyzeFile(relPath: string, rawContent: string): FileReport {
       }
     }
 
-    const analysis = candidateTypes
-      .map((t) => analyzeType(content, t))
-      .find((a): a is Discriminated => a !== null);
+    // Analyze EVERY candidate type that carries a discriminant, not just the
+    // FIRST. A component can carry SEVERAL discriminated shapes at once — a
+    // shallow props-level enum (`messageRole: "user" | "assistant"`) AND a
+    // genuine per-branch item union (`parts: MosaicChatMessagePart[]`). Taking
+    // only the first let the shallow enum SHADOW the real union: the lying
+    // attachment field on MosaicChatMessage was invisible because analysis
+    // stopped at `messageRole` and never reached `MosaicChatMessagePart`. The
+    // set of discriminated shapes a component can carry is DERIVED from its
+    // candidate types, never assumed to be one.
+    const analyses: Discriminated[] = [];
+    for (const t of candidateTypes) {
+      const a = analyzeType(content, t);
+      if (a) analyses.push(a);
+    }
 
     const bodies = bodiesForComponent(decls, component);
 
@@ -911,136 +1052,135 @@ function analyzeFile(relPath: string, rawContent: string): FileReport {
       return local !== undefined && new RegExp(`\\b${local}\\b`).test(text);
     };
 
-    if (!analysis) {
-      // No discriminant anywhere — there is no BRANCH that can lie. But a
-      // required prop that is read NOWHERE is still a lying contract, just an
-      // unconditional one, and this is where dozens of components live. They
-      // are NOT waved through: the weaker invariant is enforced on all of
-      // them. (Without this, a dead required prop on any of the ~96
-      // NO-DISCRIMINANT public components was invisible.)
+    // The universal weak invariant, discriminant-independent: a required PROP
+    // read in NO body AT ALL is a lie regardless of branching. Checked in every
+    // non-blind, non-exempt verdict so the ~96 flat components are covered too.
+    const propsFlatText = resolveTypeSpans(content, component.propsType)
+      .filter((s): s is Extract<ResolvedSpan, { kind: "flat" }> => s.kind === "flat")
+      .map((s) => s.text)
+      .join("\n");
+    const pushReadAtAllViolations = () => {
+      for (const field of extractRequiredFieldNames(propsFlatText, "")) {
+        if (bodies.some((b) => readsField(field, b))) continue;
+        violations.push(
+          `${relPath}: required prop "${field}" of component "${component.name}" is never read at all — remove it or render it`,
+        );
+      }
+    };
+
+    if (analyses.length === 0) {
+      // No discriminant anywhere — there is no BRANCH that can lie. The weaker
+      // "read at all" invariant is still enforced (dozens of flat components).
       verdicts.push({
         component: component.name,
         status: "NO-DISCRIMINANT",
         reason: `props type "${component.propsType}" (and the item types it references) have no discriminated union and no literal-union field — no branch to lie about; all required props checked for "read at all"`,
       });
-      const flatText = resolveTypeSpans(content, component.propsType)
-        .filter((s): s is Extract<ResolvedSpan, { kind: "flat" }> => s.kind === "flat")
-        .map((s) => s.text)
-        .join("\n");
-      for (const field of extractRequiredFieldNames(flatText, "")) {
-        if (bodies.some((b) => readsField(field, b))) continue;
-        violations.push(
-          `${relPath}: required prop "${field}" of component "${component.name}" is never read at all — remove it or render it`,
-        );
-      }
+      pushReadAtAllViolations();
       continue;
     }
 
-    const { discriminant, literals, required, hasPerBranchDecls } = analysis;
+    let anyAnalyzed = false;
+    let reportedPerBranch = false;
+    let reportDiscriminant = analyses[0].discriminant;
+    let reportLiterals = analyses[0].literals;
+    let blindDetail: string | null = null;
+    const perBranchViolations: string[] = [];
 
-    // Regions are computed PER body: an early-return region must not spill
-    // across a function boundary.
-    const scanned = bodies.map((body) => ({
-      body,
-      regions: findGatedRegions(body, discriminant, literals),
-    }));
-    const totalRegions = scanned.reduce((n, s) => n + s.regions.length, 0);
+    for (const analysis of analyses) {
+      const { discriminant, literals, required, hasPerBranchDecls } = analysis;
 
-    if (totalRegions === 0) {
-      if (hasPerBranchDecls) {
-        // FAIL-CLOSED. Fields are declared PER BRANCH, so branching MUST
-        // exist — the guard simply cannot see it. Say so; never return a
-        // silent green.
-        verdicts.push({
-          component: component.name,
-          status: "BLIND-SPOT",
-          detail: `discriminant "${discriminant}" (${literals.join(" | ")}) declared per-branch in "${component.propsType}", but no gated region found`,
-        });
-        violations.push(
-          `${relPath}: cannot locate gated regions for discriminant "${discriminant}" in component "${component.name}" — guard blind spot (teach findGatedRegions the gating form, or add a written EXEMPTIONS entry)`,
-        );
+      // Regions are computed PER body: an early-return region must not spill
+      // across a function boundary.
+      const scanned = bodies.map((body) => ({
+        body,
+        regions: findGatedRegions(body, discriminant, literals),
+      }));
+      const totalRegions = scanned.reduce((n, s) => n + s.regions.length, 0);
+
+      if (totalRegions === 0) {
+        // FAIL-CLOSED, but only for a candidate that declares fields PER
+        // BRANCH: the branching MUST exist and the guard cannot see it. A flat
+        // enum with no gate is simply NOT-BRANCHED — not a blind spot. The
+        // first per-branch candidate the guard cannot gate wins the report.
+        if (hasPerBranchDecls && blindDetail === null) {
+          blindDetail = `discriminant "${discriminant}" (${literals.join(" | ")}) declared per-branch in a candidate type of "${component.propsType}", but no gated region found`;
+        }
         continue;
       }
 
-      // The discriminant exists but nothing branches on it (e.g.
-      // MosaicTooltip's `side`, merely forwarded to the positioner). There is
-      // no branch, so no branch can lie. This is NOT silence: the component is
-      // recorded as NOT-BRANCHED in the coverage inventory, AND every required
-      // field is still held to the weaker-but-real invariant "must be read
-      // somewhere at all" — a required prop read nowhere is a lying contract
-      // too, just an unconditional one.
+      anyAnalyzed = true;
+      // Prefer reporting the per-branch union as the ANALYZED discriminant.
+      if (!reportedPerBranch && hasPerBranchDecls) {
+        reportDiscriminant = discriminant;
+        reportLiterals = literals;
+        reportedPerBranch = true;
+      } else if (!reportedPerBranch) {
+        reportDiscriminant = discriminant;
+        reportLiterals = literals;
+      }
+
+      for (const [field, requiredOn] of required) {
+        const readOn = new Set<string>();
+        let readUnconditionally = false;
+
+        for (const { body, regions } of scanned) {
+          const chars = body.split("");
+          for (const region of regions) {
+            for (let i = region.start; i <= Math.min(region.end, chars.length - 1); i++) {
+              chars[i] = " ";
+            }
+          }
+          if (readsField(field, chars.join(""))) readUnconditionally = true;
+
+          for (const region of regions) {
+            if (!readsField(field, body.slice(region.start, region.end + 1))) continue;
+            for (const owner of region.owners) readOn.add(owner);
+          }
+        }
+
+        if (readUnconditionally) continue; // read outside every gate → all literals
+
+        for (const literal of requiredOn) {
+          if (readOn.has(literal)) continue;
+          perBranchViolations.push(
+            `${relPath}: required prop "${field}" is never read when ${discriminant}="${literal}" — declare it on the branch that renders it`,
+          );
+        }
+      }
+    }
+
+    if (anyAnalyzed) {
       verdicts.push({
         component: component.name,
-        status: "NOT-BRANCHED",
-        reason: `discriminant "${discriminant}" (${literals.join(" | ")}) is never branched on — no per-branch declarations; all required props checked for "read at all"`,
+        status: "ANALYZED",
+        discriminant: reportDiscriminant,
+        literals: reportLiterals,
       });
-      // Both the analyzed type's fields AND the component's OWN props fields —
-      // the discriminant may have come from an ITEM type, in which case
-      // `required` holds the item's fields and the props would go unchecked.
-      const notBranchedFlat = resolveTypeSpans(content, component.propsType)
-        .filter((s): s is Extract<ResolvedSpan, { kind: "flat" }> => s.kind === "flat")
-        .map((s) => s.text)
-        .join("\n");
-      const notBranchedFields = new Set([
-        ...required.keys(),
-        ...extractRequiredFieldNames(notBranchedFlat, discriminant),
-      ]);
-      for (const field of notBranchedFields) {
-        if (bodies.some((b) => readsField(field, b))) continue;
-        violations.push(
-          `${relPath}: required prop "${field}" of component "${component.name}" is never read at all — remove it or render it`,
-        );
-      }
+      violations.push(...perBranchViolations);
+      pushReadAtAllViolations();
       continue;
     }
 
-    verdicts.push({ component: component.name, status: "ANALYZED", discriminant, literals });
-
-    for (const [field, requiredOn] of required) {
-      const readOn = new Set<string>();
-      let readUnconditionally = false;
-
-      for (const { body, regions } of scanned) {
-        const chars = body.split("");
-        for (const region of regions) {
-          for (let i = region.start; i <= Math.min(region.end, chars.length - 1); i++) {
-            chars[i] = " ";
-          }
-        }
-        if (readsField(field, chars.join(""))) readUnconditionally = true;
-
-        for (const region of regions) {
-          if (!readsField(field, body.slice(region.start, region.end + 1))) continue;
-          for (const owner of region.owners) readOn.add(owner);
-        }
-      }
-
-      if (readUnconditionally) continue; // read outside every gate → all literals
-
-      for (const literal of requiredOn) {
-        if (readOn.has(literal)) continue;
-        violations.push(
-          `${relPath}: required prop "${field}" is never read when ${discriminant}="${literal}" — declare it on the branch that renders it`,
-        );
-      }
-    }
-
-    // The discriminant may have come from an ITEM type (e.g.
-    // MosaicModuleFormField.type), in which case `required` above holds the
-    // ITEM's fields and the component's OWN props were never checked at all.
-    // Every component's props are held to the universal invariant regardless of
-    // which type supplied the discriminant.
-    const propsFlatText = resolveTypeSpans(content, component.propsType)
-      .filter((s): s is Extract<ResolvedSpan, { kind: "flat" }> => s.kind === "flat")
-      .map((s) => s.text)
-      .join("\n");
-    for (const field of extractRequiredFieldNames(propsFlatText, discriminant)) {
-      if (required.has(field)) continue; // already covered by the per-branch check
-      if (bodies.some((b) => readsField(field, b))) continue;
+    if (blindDetail !== null) {
+      // FAIL-CLOSED: a per-branch union exists but no gating form matched.
+      // Never a silent green — name the component so the hole is visible.
+      verdicts.push({ component: component.name, status: "BLIND-SPOT", detail: blindDetail });
       violations.push(
-        `${relPath}: required prop "${field}" of component "${component.name}" is never read at all — remove it or render it`,
+        `${relPath}: guard blind spot — cannot locate gated regions for a per-branch union in component "${component.name}" — ${blindDetail} (teach findGatedRegions the gating form, or add a written EXEMPTIONS entry)`,
       );
+      continue;
     }
+
+    // Every candidate has a discriminant but none is branched on (e.g.
+    // MosaicTooltip's `side`, merely forwarded). No branch can lie; the weaker
+    // "read at all" invariant still applies.
+    verdicts.push({
+      component: component.name,
+      status: "NOT-BRANCHED",
+      reason: `discriminant "${reportDiscriminant}" (${reportLiterals.join(" | ")}) is never branched on — no per-branch declarations; all required props checked for "read at all"`,
+    });
+    pushReadAtAllViolations();
   }
 
   return { violations, verdicts };
@@ -1104,6 +1244,21 @@ const MUTATION_PROBES: {
     probeField: "gammaProbeLabel",
     expectLiteral: "loading",
     gatingForm: "&& gate on a props-level discriminated union",
+  },
+  {
+    // The hole this fix closes: a LEADING-PIPE union of NAMED interfaces
+    // (`type MosaicChatMessagePart = | TextPart | ... | AttachmentPart`), gated
+    // at the item level by `switch (part.type) { case "attachment": ... }` —
+    // Form 6. Before the fix the union was never analyzed at all (a shallow
+    // props-level enum `messageRole: "user" | "assistant"` shadowed it), so a
+    // dead required attachment field passed 17/17 GREEN. The injected field is
+    // read by nobody, so it is dead specifically on the "attachment" branch.
+    file: "chat-message/MosaicChatMessage.tsx",
+    anchor: "  fileName: string;",
+    inject: "  fileName: string;\n  gammaProbeNeverReadByAnyone: string;",
+    probeField: "gammaProbeNeverReadByAnyone",
+    expectLiteral: "attachment",
+    gatingForm: "switch/case on a leading-pipe union of named interfaces (Form 6)",
   },
   {
     // The component that exposed hole #3: not reachable when only ONE
@@ -1243,6 +1398,40 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
       fs.readFileSync(path.join(FIXTURES_ROOT, "MosaicUrlScraper.d370859.tsx"), "utf-8"),
     );
     expect(violations, `expected zero violations, got:\n${violations.join("\n")}`).toEqual([]);
+  });
+
+  /**
+   * FAIL-CLOSED proof (guard-formulation-census doctrine). Every mutation probe
+   * above proves the guard BITES a gating form it KNOWS. This one proves the
+   * complementary half: a per-branch union gated by a form it does NOT know is
+   * reported LOUDLY as a blind spot, never a silent green.
+   *
+   * The sample is constructed rather than mutated from a real component on
+   * purpose: fail-closed-on-unknown is, by definition, about a gating form the
+   * library does not contain, so no shipped component exhibits it. A
+   * leading-pipe union of named interfaces (`| AlphaPart | BetaPart`) dispatched
+   * through an object-lookup map (`renderers[part.type](part)`) is a realistic
+   * shape outside the inventoried set 1-6. `label` is declared per-branch, so
+   * branching MUST exist — and because the guard cannot locate it, it must fail
+   * closed by NAME. A `return []` / silent pass here is exactly the fail-open
+   * defect the rewrite exists to kill.
+   */
+  it("FAIL-CLOSED: a per-branch named union gated by an UNRECOGNIZED form is reported as a blind spot, never silently passed", () => {
+    const source = [
+      'export interface AlphaPart { type: "alpha"; label: string; }',
+      'export interface BetaPart { type: "beta"; body: string; }',
+      "export type ProbePart = | AlphaPart | BetaPart;",
+      "export interface ProbeProps { parts: ProbePart[]; }",
+      "const renderers = { alpha: (p) => p, beta: (p) => p };",
+      "export function ProbeWidget({ parts }: ProbeProps) {",
+      "  return parts.map((part) => renderers[part.type](part));",
+      "}",
+    ].join("\n");
+    const violations = findViolations("probe/ProbeWidget.tsx", source);
+    expect(
+      violations.some((v) => v.includes("ProbeWidget") && v.includes("blind spot")),
+      `guard failed OPEN on an unrecognized gating form — it must name the blind spot, not pass silently. Violations:\n${violations.join("\n") || "(none)"}`,
+    ).toBe(true);
   });
 
   it("MUST_PASS: every live component under src/components/ is clean AND fully analyzable (no blind spot)", () => {
