@@ -28,8 +28,6 @@ jobs:
       # ── 2. Setup pnpm ────────────────────────────────────────────────────────
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       # ── 3. Setup Node 22 + restore pnpm store cache ──────────────────────────
       - name: Setup Node.js
@@ -331,8 +329,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
