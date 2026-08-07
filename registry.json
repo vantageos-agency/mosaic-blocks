@@ -316,6 +316,27 @@
       ]
     },
     {
+      "name": "mosaic-artifact-canvas-adapter",
+      "type": "registry:ui",
+      "title": "MosaicArtifactCanvasAdapter",
+      "description": "MosaicArtifactCanvasAdapter — dual-source artifact runtime chrome.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-canvas-adapter/MosaicArtifactCanvasAdapter.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/artifact-canvas-adapter/normalize.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/artifact-canvas-adapter/types.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-clerk-org-switcher",
       "type": "registry:ui",
       "title": "MosaicClerkOrgSwitcher",
