@@ -77,6 +77,7 @@ const KNOWN_DEPENDENCIES = [
   "class-variance-authority",
   "@clerk/nextjs",
   "next-themes",
+  "recharts",
   "svix",
   "@vantageos/cloud-identity",
 ];

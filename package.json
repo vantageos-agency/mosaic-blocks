@@ -73,6 +73,7 @@
     "@vantageos/cloud-identity": "^0.2",
     "react": "^19",
     "react-dom": "^19",
+    "recharts": "^2.12.0",
     "svix": "^1.0.0",
     "tailwindcss": "^4.3.1"
   },
@@ -81,6 +82,9 @@
       "optional": true
     },
     "@vantageos/cloud-identity": {
+      "optional": true
+    },
+    "recharts": {
       "optional": true
     },
     "svix": {
@@ -108,6 +112,7 @@
     "jsdom": "^26.1.0",
     "react": "^19",
     "react-dom": "^19",
+    "recharts": "^2.12.0",
     "rimraf": "^6.0.1",
     "storybook": "^10.4.6",
     "svix": "^1.0.0",
