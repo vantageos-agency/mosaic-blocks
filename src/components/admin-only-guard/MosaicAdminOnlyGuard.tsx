@@ -145,8 +145,8 @@ function DefaultLoadingFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4 md:p-8">
       <div
-        role="status"
-        aria-label="loading"
+        data-slot="admin-only-guard-loading"
+        aria-hidden="true"
         className="size-8 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary md:size-10"
       />
     </div>

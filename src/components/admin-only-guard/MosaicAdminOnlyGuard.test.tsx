@@ -66,8 +66,8 @@ describe("MosaicAdminOnlyGuard", () => {
     expect(screen.queryByText("Admin Access Required")).toBeNull();
   });
 
-  it("renders the default spinner fallback when isLoaded is false and no loadingFallback is supplied", () => {
-    render(
+  it("renders the default decorative spinner fallback (no hardcoded word) when isLoaded is false and no loadingFallback is supplied", () => {
+    const { container } = render(
       <MosaicAdminOnlyGuard
         isAdmin={false}
         isLoaded={false}
@@ -78,7 +78,11 @@ describe("MosaicAdminOnlyGuard", () => {
         <div>{protectedText}</div>
       </MosaicAdminOnlyGuard>,
     );
-    expect(screen.getByRole("status", { name: "loading" })).toBeTruthy();
+    const spinner = container.querySelector('[data-slot="admin-only-guard-loading"]');
+    expect(spinner).toBeTruthy();
+    expect(spinner?.getAttribute("aria-hidden")).toBe("true");
+    expect(spinner?.hasAttribute("aria-label")).toBe(false);
+    expect(spinner?.hasAttribute("title")).toBe(false);
   });
 
   it("renders no exit button when onExit is not provided (read-only denied state)", () => {
