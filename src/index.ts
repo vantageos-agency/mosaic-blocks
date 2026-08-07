@@ -1108,3 +1108,13 @@ export type {
   MosaicArtifactChecklistPriority,
   MosaicArtifactChecklistLabels,
 } from "./components/artifact-checklist/MosaicArtifactChecklist.js";
+
+// ── EveVantage M3 C3: MosaicArtifactLibrary — org-scoped list/search of saved
+// artifacts, opening a selected one through the C1 adapter + C2 renderers.
+// Composed from any-debate-ai's ArtifactLibrary.tsx, stripped of its
+// folders/tags organizer and bulk actions (host-owned persistence) ──
+export { MosaicArtifactLibrary } from "./components/artifact-library/MosaicArtifactLibrary.js";
+export type {
+  MosaicArtifactLibraryProps,
+  MosaicArtifactLibraryItem,
+} from "./components/artifact-library/MosaicArtifactLibrary.js";
