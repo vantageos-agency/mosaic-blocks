@@ -104,6 +104,19 @@
       ]
     },
     {
+      "name": "mosaic-admin-only-guard",
+      "type": "registry:ui",
+      "title": "MosaicAdminOnlyGuard",
+      "description": "MosaicAdminOnlyGuard — permission gate that renders `children` for admins, an access-denied card for non-admins, and a loading fallback while permissions resolve, EveVantage M3 C7.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/admin-only-guard/MosaicAdminOnlyGuard.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-agent-builder-modal",
       "type": "registry:ui",
       "title": "MosaicAgentBuilderModal",
