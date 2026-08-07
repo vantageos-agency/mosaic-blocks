@@ -1140,3 +1140,15 @@ export {
   artifactSaveAsMemoryFormPreviewVariants,
   artifactSaveAsMemoryFormRootVariants,
 } from "./components/artifact-save-as-memory-form/artifact-save-as-memory-form-variants.js";
+
+// ── EveVantage M3 C5: MosaicArtifactVersionHistory — org-scoped version
+// timeline of a deliverable, letting the user select/restore a version.
+// Composed from any-debate-ai's VersionHistoryPanel.tsx, stripped of its
+// AdaptiveModal shell, in-memory versionHistoryManager store, search/
+// filter/diff/export UI, and framer-motion/shadcn deps (host-owned data +
+// persistence) ──
+export { MosaicArtifactVersionHistory } from "./components/artifact-version-history/MosaicArtifactVersionHistory.js";
+export type {
+  MosaicArtifactVersionHistoryProps,
+  MosaicArtifactVersionHistoryVersion,
+} from "./components/artifact-version-history/MosaicArtifactVersionHistory.js";

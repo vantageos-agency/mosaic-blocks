@@ -421,6 +421,19 @@
       ]
     },
     {
+      "name": "mosaic-artifact-version-history",
+      "type": "registry:ui",
+      "title": "MosaicArtifactVersionHistory",
+      "description": "MosaicArtifactVersionHistory — org-scoped version-history timeline for a deliverable, letting the user select a version to open through the C1 adapter + C2 renderers, and (optionally) restore an earlier version.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-version-history/MosaicArtifactVersionHistory.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-clerk-org-switcher",
       "type": "registry:ui",
       "title": "MosaicClerkOrgSwitcher",
