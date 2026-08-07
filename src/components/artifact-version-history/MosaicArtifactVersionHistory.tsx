@@ -44,46 +44,66 @@ export interface MosaicArtifactVersionHistoryVersion {
   isCurrent: boolean;
 }
 
-export interface MosaicArtifactVersionHistoryProps {
+export interface MosaicArtifactVersionHistoryBaseProps {
   /** Versions to render, host-ordered (newest-first is the caller's choice). */
   versions: MosaicArtifactVersionHistoryVersion[];
   selectedId: string | null;
   onSelectVersion: (id: string) => void;
-  /** Restores a version. Omit to render a read-only history (no restore action at all). */
-  onRestoreVersion?: (id: string) => void;
   /** Section heading. Required, no default. */
   title: string;
   /** Message shown when there are no versions. Required, no default. */
   emptyMessage: string;
   /** Badge text for the current/latest version. Required, no default. */
   currentLabel: string;
-  /** Restore button text. Required only when onRestoreVersion is provided. */
-  restoreLabel?: string;
-  /**
-   * Accessible name for a version's restore button. Required, no default —
-   * a bare icon/short label is never a substitute for an accessible name
-   * distinguishing which version is restored (see the C3 library's
-   * searchAriaLabel lesson).
-   */
-  restoreAriaLabel?: (version: MosaicArtifactVersionHistoryVersion) => string;
   /** Accessible name for a version's select button. Required, no default. */
   selectAriaLabel: (version: MosaicArtifactVersionHistoryVersion) => string;
   className?: string;
 }
 
-export function MosaicArtifactVersionHistory({
-  versions,
-  selectedId,
-  onSelectVersion,
-  onRestoreVersion,
-  title,
-  emptyMessage,
-  currentLabel,
-  restoreLabel,
-  restoreAriaLabel,
-  selectAriaLabel,
-  className,
-}: MosaicArtifactVersionHistoryProps) {
+/**
+ * Discriminated union on `onRestoreVersion` — the restore control only ever
+ * renders on the branch where a restore handler is supplied, so its label +
+ * accessible-name formatter are required EXACTLY there, never on the
+ * read-only branch. Requiring them unconditionally would force every
+ * read-only host to supply values the component never displays (the "lying
+ * prop contract" this retrofit closes — see the `no-lying-prop-contract`
+ * guard and the `MosaicMemoryCardVariantProps` precedent in
+ * `memory-card/MosaicMemoryCard.tsx`).
+ */
+export type MosaicArtifactVersionHistoryRestoreProps =
+  | {
+      /** Restores a version. */
+      onRestoreVersion: (id: string) => void;
+      /** Restore button visible text. Required — the control renders whenever `onRestoreVersion` is provided. */
+      restoreLabel: string;
+      /**
+       * Accessible name for a version's restore button, DISTINCT per
+       * version — a bare icon/shared label is never a substitute for an
+       * accessible name distinguishing which version is restored (see the
+       * C3 library's searchAriaLabel lesson). Required — the control
+       * renders whenever `onRestoreVersion` is provided.
+       */
+      restoreAriaLabel: (version: MosaicArtifactVersionHistoryVersion) => string;
+    }
+  | {
+      /** Omit to render a read-only history — no restore control at all. */
+      onRestoreVersion?: undefined;
+    };
+
+export type MosaicArtifactVersionHistoryProps = MosaicArtifactVersionHistoryBaseProps &
+  MosaicArtifactVersionHistoryRestoreProps;
+
+export function MosaicArtifactVersionHistory(props: MosaicArtifactVersionHistoryProps) {
+  const {
+    versions,
+    selectedId,
+    onSelectVersion,
+    title,
+    emptyMessage,
+    currentLabel,
+    selectAriaLabel,
+    className,
+  } = props;
   return (
     <div data-slot="artifact-version-history" className={cn("flex h-full flex-col", className)}>
       <div className="border-border border-b px-4 py-3">
@@ -139,18 +159,18 @@ export function MosaicArtifactVersionHistory({
                   </div>
                 </button>
 
-                {onRestoreVersion && !version.isCurrent && (
+                {props.onRestoreVersion && !version.isCurrent && (
                   <button
                     type="button"
-                    onClick={() => onRestoreVersion(version.id)}
+                    onClick={() => props.onRestoreVersion?.(version.id)}
                     className={cn(
                       "shrink-0 rounded-md border border-input px-2 py-1 text-xs",
                       "outline-none transition-colors hover:bg-muted",
                       "focus-visible:ring-[3px] focus-visible:ring-ring",
                     )}
-                    aria-label={restoreAriaLabel ? restoreAriaLabel(version) : restoreLabel}
+                    aria-label={props.restoreAriaLabel(version)}
                   >
-                    {restoreLabel}
+                    {props.restoreLabel}
                   </button>
                 )}
               </div>

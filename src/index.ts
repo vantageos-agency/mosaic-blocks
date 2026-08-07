@@ -1150,5 +1150,21 @@ export {
 export { MosaicArtifactVersionHistory } from "./components/artifact-version-history/MosaicArtifactVersionHistory.js";
 export type {
   MosaicArtifactVersionHistoryProps,
+  MosaicArtifactVersionHistoryBaseProps,
+  MosaicArtifactVersionHistoryRestoreProps,
   MosaicArtifactVersionHistoryVersion,
 } from "./components/artifact-version-history/MosaicArtifactVersionHistory.js";
+
+// ── EveVantage M3 C6: MosaicOrgContextDisplay — active organization
+// (cloisonnement/partitioning) indicator + switcher. Ported from
+// any-debate-ai's components/organization/org-context-display.tsx, stripped
+// of its mockOrgContext fixture and shadcn/ui Button; reuses this repo's own
+// MosaicOrgRoleBadge (org-panel/MosaicOrgPanel.tsx) instead of re-porting
+// role-badge.tsx ──
+export { MosaicOrgContextDisplay } from "./components/org-context-display/MosaicOrgContextDisplay.js";
+export type {
+  MosaicOrgContextDisplayProps,
+  MosaicOrgContextDisplayBaseProps,
+  MosaicOrgContextDisplaySwitchProps,
+  MosaicOrgContextInfo,
+} from "./components/org-context-display/MosaicOrgContextDisplay.js";
