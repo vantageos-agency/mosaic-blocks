@@ -13,6 +13,7 @@ const items: MosaicArtifactLibraryItem[] = [
 const labels = {
   title: "Artifact Library",
   searchPlaceholder: "Search artifacts…",
+  searchAriaLabel: "Search artifacts",
   emptyMessage: "No artifacts found.",
   typeLabel: (type: MosaicArtifactLibraryItem["type"]) =>
     ({ document: "Document", "data-table": "Table", checklist: "Checklist", chart: "Chart" })[type],
@@ -102,6 +103,12 @@ describe("MosaicArtifactLibrary", () => {
       },
     });
     expect(screen.getByText("Q3 Report", { selector: "h3" })).toBeTruthy();
+  });
+
+  it("exposes the search input's accessible name via the required searchAriaLabel prop", () => {
+    renderLibrary();
+    const input = screen.getByRole("searchbox", { name: "Search artifacts" });
+    expect(input.getAttribute("aria-label")).toBe("Search artifacts");
   });
 
   it("renders the type label for each item", () => {

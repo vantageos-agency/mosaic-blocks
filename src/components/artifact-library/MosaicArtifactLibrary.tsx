@@ -57,6 +57,14 @@ export interface MosaicArtifactLibraryProps {
   title: string;
   /** Search input placeholder. Required, no default. */
   searchPlaceholder: string;
+  /**
+   * Accessible name for the search input. Required, no default — the
+   * placeholder alone is never a substitute for an accessible name (it
+   * disappears once a value is typed and is not reliably exposed by every
+   * assistive technology), so this prop is mandatory and applied verbatim
+   * via aria-label.
+   */
+  searchAriaLabel: string;
   /** Message shown when the filtered item list is empty. Required, no default. */
   emptyMessage: string;
   /** Localizes an item's type badge. Required, no default. */
@@ -98,6 +106,7 @@ export function MosaicArtifactLibrary({
   onCloseCanvas,
   title,
   searchPlaceholder,
+  searchAriaLabel,
   emptyMessage,
   typeLabel,
   countLabel,
@@ -130,6 +139,7 @@ export function MosaicArtifactLibrary({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={searchPlaceholder}
+            aria-label={searchAriaLabel}
             className={cn(
               "w-full rounded-md border border-input bg-background py-2 pr-3 pl-9",
               "text-sm placeholder:text-muted-foreground",
