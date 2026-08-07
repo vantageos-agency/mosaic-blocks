@@ -1168,3 +1168,17 @@ export type {
   MosaicOrgContextDisplaySwitchProps,
   MosaicOrgContextInfo,
 } from "./components/org-context-display/MosaicOrgContextDisplay.js";
+
+// ── EveVantage M3 C7: MosaicAdminOnlyGuard — permission gate rendering
+// children for admins, an access-denied card for non-admins, and a loading
+// fallback while permissions resolve. Ported from any-debate-ai's
+// components/organization/admin-only-guard.tsx, stripped of its
+// next/navigation useRouter, mock useOrganizationContext Clerk fixture,
+// useDevice() JS branch, and shadcn/ui Button/lucide-react icons; reuses
+// this repo's own MosaicButton (button/Button.tsx) ──
+export { MosaicAdminOnlyGuard } from "./components/admin-only-guard/MosaicAdminOnlyGuard.js";
+export type {
+  MosaicAdminOnlyGuardProps,
+  MosaicAdminOnlyGuardBaseProps,
+  MosaicAdminOnlyGuardExitProps,
+} from "./components/admin-only-guard/MosaicAdminOnlyGuard.js";
