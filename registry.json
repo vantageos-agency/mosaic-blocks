@@ -391,6 +391,19 @@
       ]
     },
     {
+      "name": "mosaic-artifact-library",
+      "type": "registry:ui",
+      "title": "MosaicArtifactLibrary",
+      "description": "MosaicArtifactLibrary — org-scoped list/search of saved artifacts, opening a selected one through the C1 adapter (MosaicArtifactCanvasAdapter) + C2 renderers.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-library/MosaicArtifactLibrary.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-clerk-org-switcher",
       "type": "registry:ui",
       "title": "MosaicClerkOrgSwitcher",
