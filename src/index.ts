@@ -1118,3 +1118,25 @@ export type {
   MosaicArtifactLibraryProps,
   MosaicArtifactLibraryItem,
 } from "./components/artifact-library/MosaicArtifactLibrary.js";
+
+// ── EveVantage M3 C4: MosaicArtifactSaveAsMemoryForm — capitalises a saved
+// artifact into the host's memory/persistence layer. Composed from any-
+// debate-ai's save-artifact-as-memory-form.tsx, stripped of its
+// AdaptiveModal shell, mock-AI-extracted-learnings, and hardcoded
+// userRole-gated scope options (host-owned persistence + extraction) ──
+export { MosaicArtifactSaveAsMemoryForm } from "./components/artifact-save-as-memory-form/MosaicArtifactSaveAsMemoryForm.js";
+export type {
+  MosaicArtifactSaveAsMemoryFormProps,
+  MosaicArtifactSaveAsMemoryArtifact,
+  MosaicArtifactSaveAsMemoryArtifactType,
+  MosaicArtifactSaveAsMemoryScopeOption,
+} from "./components/artifact-save-as-memory-form/MosaicArtifactSaveAsMemoryForm.js";
+export {
+  artifactSaveAsMemoryFormButtonVariants,
+  artifactSaveAsMemoryFormErrorVariants,
+  artifactSaveAsMemoryFormFieldVariants,
+  artifactSaveAsMemoryFormFooterVariants,
+  artifactSaveAsMemoryFormLearningVariants,
+  artifactSaveAsMemoryFormPreviewVariants,
+  artifactSaveAsMemoryFormRootVariants,
+} from "./components/artifact-save-as-memory-form/artifact-save-as-memory-form-variants.js";

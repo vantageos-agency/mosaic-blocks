@@ -404,6 +404,23 @@
       ]
     },
     {
+      "name": "mosaic-artifact-save-as-memory-form",
+      "type": "registry:ui",
+      "title": "MosaicArtifactSaveAsMemoryForm",
+      "description": "MosaicArtifactSaveAsMemoryForm — presentational \"capitalise this artifact into memory\" form: the artifact → memory bridge, sibling of MosaicSaveChatAsMemoryForm (chat → memory) in the same product family.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-save-as-memory-form/MosaicArtifactSaveAsMemoryForm.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/artifact-save-as-memory-form/artifact-save-as-memory-form-variants.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-clerk-org-switcher",
       "type": "registry:ui",
       "title": "MosaicClerkOrgSwitcher",
