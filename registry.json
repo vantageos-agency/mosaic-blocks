@@ -1488,6 +1488,19 @@
       ]
     },
     {
+      "name": "mosaic-org-context-display",
+      "type": "registry:ui",
+      "title": "MosaicOrgContextDisplay",
+      "description": "MosaicOrgContextDisplay — active organization (cloisonnement) indicator + switcher, EveVantage M3 C6.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/org-context-display/MosaicOrgContextDisplay.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-org-panel",
       "type": "registry:ui",
       "title": "MosaicOrgPanel",
