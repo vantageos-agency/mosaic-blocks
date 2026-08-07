@@ -1048,3 +1048,26 @@ export { matchStateVariants } from "./components/match-input/match-input-variant
 export { MosaicEditableCell } from "./components/editable-cell/MosaicEditableCell.js";
 export type { MosaicEditableCellProps } from "./components/editable-cell/MosaicEditableCell.js";
 export { editableCellVariants } from "./components/editable-cell/editable-cell-variants.js";
+
+// ── EveVantage M3 keystone: MosaicArtifactCanvasAdapter — dual-source (@ai-sdk-tools/artifacts
+// + MCP Apps ui:// bridge) artifact runtime chrome, ported from any-debate-ai ──
+export { MosaicArtifactCanvasAdapter } from "./components/artifact-canvas-adapter/MosaicArtifactCanvasAdapter.js";
+export type {
+  MosaicArtifactCanvasAdapterProps,
+  MosaicArtifactCanvasAdapterLabels,
+} from "./components/artifact-canvas-adapter/MosaicArtifactCanvasAdapter.js";
+export {
+  normalizeArtifact,
+  normalizeFromAiSdkArtifacts,
+  normalizeFromMcpToolResult,
+} from "./components/artifact-canvas-adapter/normalize.js";
+export type {
+  ArtifactCanvasSource,
+  ArtifactType,
+  AiSdkArtifactsSource,
+  AiSdkArtifactEntry,
+  McpUiSource,
+  McpToolResult,
+  McpToolResultMeta,
+  NormalizedArtifact,
+} from "./components/artifact-canvas-adapter/types.js";

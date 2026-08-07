@@ -2098,6 +2098,27 @@
           "type": "registry:ui"
         }
       ]
+    },
+    {
+      "name": "mosaic-artifact-canvas-adapter",
+      "type": "registry:ui",
+      "title": "MosaicArtifactCanvasAdapter",
+      "description": "Dual-source artifact runtime chrome (canvas toggle + canvas + renderer + toolbar merged). Normalizes props from EITHER @ai-sdk-tools/artifacts useArtifacts() OR the MCP Apps ui:// bridge (GA nested _meta.ui.resourceUri) behind one internal contract, so one presentation layer renders under both runtimes. Props: source (ai-sdk-artifacts | mcp-ui), isOpen, onToggle, onClose, labels (required, zero hardcoded strings).",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-canvas-adapter/MosaicArtifactCanvasAdapter.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/artifact-canvas-adapter/normalize.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/artifact-canvas-adapter/types.ts",
+          "type": "registry:ui"
+        }
+      ]
     }
   ]
 }
