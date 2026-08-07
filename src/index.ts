@@ -1071,3 +1071,40 @@ export type {
   McpToolResultMeta,
   NormalizedArtifact,
 } from "./components/artifact-canvas-adapter/types.js";
+
+// ── EveVantage M3 C2: per-type artifact presentation renderers, fed by the
+// C1 adapter's normalized `data` shape. Dumb, contract-agnostic — no
+// @ai-sdk-tools/artifacts or MCP import here, ported from any-debate-ai ──
+export { MosaicArtifactDocument } from "./components/artifact-document/MosaicArtifactDocument.js";
+export type {
+  MosaicArtifactDocumentProps,
+  MosaicArtifactDocumentData,
+  MosaicArtifactDocumentSection,
+  MosaicArtifactDocumentLabels,
+} from "./components/artifact-document/MosaicArtifactDocument.js";
+
+export { MosaicArtifactDataTable } from "./components/artifact-data-table/MosaicArtifactDataTable.js";
+export type {
+  MosaicArtifactDataTableProps,
+  MosaicArtifactDataTableData,
+  MosaicArtifactDataTableColumn,
+  MosaicArtifactDataTableLabels,
+} from "./components/artifact-data-table/MosaicArtifactDataTable.js";
+
+export { MosaicArtifactChart } from "./components/artifact-chart/MosaicArtifactChart.js";
+export type {
+  MosaicArtifactChartProps,
+  MosaicArtifactChartData,
+  MosaicArtifactChartType,
+  MosaicArtifactChartConfig,
+  MosaicArtifactChartLabels,
+} from "./components/artifact-chart/MosaicArtifactChart.js";
+
+export { MosaicArtifactChecklist } from "./components/artifact-checklist/MosaicArtifactChecklist.js";
+export type {
+  MosaicArtifactChecklistProps,
+  MosaicArtifactChecklistData,
+  MosaicArtifactChecklistItem,
+  MosaicArtifactChecklistPriority,
+  MosaicArtifactChecklistLabels,
+} from "./components/artifact-checklist/MosaicArtifactChecklist.js";

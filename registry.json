@@ -337,6 +337,60 @@
       ]
     },
     {
+      "name": "mosaic-artifact-chart",
+      "type": "registry:ui",
+      "title": "MosaicArtifactChart",
+      "description": "MosaicArtifactChart — dumb, contract-agnostic chart artifact renderer",
+      "dependencies": [
+        "recharts"
+      ],
+      "files": [
+        {
+          "path": "src/components/artifact-chart/MosaicArtifactChart.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-artifact-checklist",
+      "type": "registry:ui",
+      "title": "MosaicArtifactChecklist",
+      "description": "MosaicArtifactChecklist — dumb, contract-agnostic checklist artifact renderer",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-checklist/MosaicArtifactChecklist.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-artifact-data-table",
+      "type": "registry:ui",
+      "title": "MosaicArtifactDataTable",
+      "description": "MosaicArtifactDataTable — dumb, contract-agnostic data-table artifact renderer",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-data-table/MosaicArtifactDataTable.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "mosaic-artifact-document",
+      "type": "registry:ui",
+      "title": "MosaicArtifactDocument",
+      "description": "MosaicArtifactDocument — dumb, contract-agnostic document artifact renderer",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/artifact-document/MosaicArtifactDocument.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-clerk-org-switcher",
       "type": "registry:ui",
       "title": "MosaicClerkOrgSwitcher",

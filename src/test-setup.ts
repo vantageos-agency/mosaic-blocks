@@ -44,6 +44,20 @@ Object.defineProperty(window, "matchMedia", {
   }),
 });
 
+// 1.5. ResizeObserver — not supported in jsdom; Recharts' ResponsiveContainer
+//      (artifact-chart) requires it to measure its container on mount.
+if (typeof window.ResizeObserver !== "function") {
+  class ResizeObserverPolyfill {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  // @ts-ignore — polyfill assignment
+  window.ResizeObserver = ResizeObserverPolyfill;
+  // @ts-ignore — recharts reads the global, not window., in some paths
+  global.ResizeObserver = ResizeObserverPolyfill;
+}
+
 // 2. HTMLDialogElement.showModal / close — not supported in jsdom
 if (!HTMLDialogElement.prototype.showModal) {
   HTMLDialogElement.prototype.showModal = function () {
