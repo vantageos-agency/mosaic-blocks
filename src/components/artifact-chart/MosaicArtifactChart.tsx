@@ -10,9 +10,18 @@
  * stripped of the type-switcher/refresh/download toolbar to keep this a
  * pure render component, per the C1 adapter contract.
  *
- * `recharts` is an OPTIONAL peer dependency (see package.json
- * peerDependenciesMeta) — only hosts rendering chart artifacts need it
- * installed.
+ * `recharts` is a genuinely OPTIONAL peer dependency (see package.json
+ * peerDependenciesMeta) — only hosts rendering chart artifacts need it.
+ * mosaic-blocks does not bundle it: this component follows the repo's
+ * canonical optional-peer pattern (dependency injection, see
+ * MosaicUserButton/MosaicMultiTenantProvider) instead of a static top-level
+ * `import ... from "recharts"`, which would make recharts a hard runtime
+ * requirement and contradict the "optional" contract — a caller without
+ * recharts installed would crash at module-resolution time. Only
+ * `import type` is used below: type-only imports are erased at build time,
+ * so no runtime dependency on recharts exists in the published bundle.
+ * Callers that DO want charts pass the recharts primitives via the
+ * `recharts` prop; callers that don't render `labels.unavailableMessage`.
  *
  * data-slot="artifact-chart" on the root.
  *
@@ -21,20 +30,20 @@
  */
 
 import type * as React from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+import type {
+  BarChart as BarChartType,
+  Bar as BarType,
+  CartesianGrid as CartesianGridType,
+  Cell as CellType,
+  Legend as LegendType,
+  LineChart as LineChartType,
+  Line as LineType,
+  PieChart as PieChartType,
+  Pie as PieType,
+  ResponsiveContainer as ResponsiveContainerType,
+  Tooltip as TooltipType,
+  XAxis as XAxisType,
+  YAxis as YAxisType,
 } from "recharts";
 
 // ── Utility ───────────────────────────────────────────────────────────────────
@@ -80,11 +89,40 @@ export interface MosaicArtifactChartLabels {
   pointsLabel: (count: number) => string;
   /** Shown when `data.type` is not one of bar/line/pie. */
   unsupportedTypeMessage: (type: string) => string;
+  /** Shown when the `recharts` prop is not supplied (optional peer absent). */
+  unavailableMessage: string;
+}
+
+/**
+ * Recharts primitives injected by the caller. Optional peer dependency —
+ * omit entirely when the host app does not render charts; the component
+ * then renders `labels.unavailableMessage` instead of crashing.
+ *
+ * @example
+ * import * as Recharts from "recharts"
+ * <MosaicArtifactChart data={data} labels={labels} recharts={Recharts} />
+ */
+export interface MosaicArtifactChartRecharts {
+  BarChart: typeof BarChartType;
+  Bar: typeof BarType;
+  LineChart: typeof LineChartType;
+  Line: typeof LineType;
+  PieChart: typeof PieChartType;
+  Pie: typeof PieType;
+  Cell: typeof CellType;
+  XAxis: typeof XAxisType;
+  YAxis: typeof YAxisType;
+  CartesianGrid: typeof CartesianGridType;
+  Tooltip: typeof TooltipType;
+  Legend: typeof LegendType;
+  ResponsiveContainer: typeof ResponsiveContainerType;
 }
 
 export interface MosaicArtifactChartProps {
   data: MosaicArtifactChartData;
   labels: MosaicArtifactChartLabels;
+  /** recharts primitives — omit when the optional recharts peer is absent. */
+  recharts?: MosaicArtifactChartRecharts;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -98,7 +136,23 @@ function seriesKeys(rows: Record<string, unknown>[], xAxisKey: string): string[]
 function renderChart(
   data: MosaicArtifactChartData,
   labels: MosaicArtifactChartLabels,
+  recharts: MosaicArtifactChartRecharts,
 ): React.ReactNode {
+  const {
+    BarChart,
+    Bar,
+    LineChart,
+    Line,
+    PieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+  } = recharts;
   const xAxisKey = data.config?.xAxis ?? Object.keys(data.data[0] ?? {})[0] ?? "";
   const colors = data.config?.colors ?? CHART_COLORS;
 
@@ -179,10 +233,18 @@ function renderChart(
  *     typeBadgeLabel: (t) => `${t} Chart`,
  *     pointsLabel: (n) => `${n} points`,
  *     unsupportedTypeMessage: (t) => `Unsupported chart type: ${t}`,
+ *     unavailableMessage: "Charts unavailable",
  *   }}
+ *   recharts={Recharts}
  * />
  */
-export function MosaicArtifactChart({ data, labels, className, ref }: MosaicArtifactChartProps) {
+export function MosaicArtifactChart({
+  data,
+  labels,
+  recharts,
+  className,
+  ref,
+}: MosaicArtifactChartProps) {
   return (
     <div
       ref={ref}
@@ -205,7 +267,18 @@ export function MosaicArtifactChart({ data, labels, className, ref }: MosaicArti
         </span>
       </div>
 
-      <div className="min-h-64 flex-1 p-6">{renderChart(data, labels)}</div>
+      <div className="min-h-64 flex-1 p-6">
+        {recharts ? (
+          renderChart(data, labels, recharts)
+        ) : (
+          <div
+            data-slot="artifact-chart-unavailable"
+            className="flex h-full items-center justify-center text-muted-foreground text-sm"
+          >
+            {labels.unavailableMessage}
+          </div>
+        )}
+      </div>
 
       {(data.metadata?.dataSource || data.metadata?.description) && (
         <div className="border-border border-t px-4 py-3">
