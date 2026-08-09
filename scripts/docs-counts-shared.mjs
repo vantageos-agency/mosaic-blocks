@@ -28,13 +28,52 @@
 // ---------------------------------------------------------------------------
 
 /**
- * Extract every named VALUE export from src/index.ts (ignores `export type`
- * re-exports — types are not "components").
+ * Extract every named VALUE export from src/index.ts.
+ *
+ * Covers the FULL ES module named-value-export grammar, not just the barrel
+ * `export { … } from "…";` form (guard-formulation-census: a domain-counter
+ * that only knows one syntactic shape of "export" fails OPEN, silently, on
+ * every other shape — proven hole: `export const MosaicProbeZZ = 1;` left the
+ * count unchanged). Forms recognised:
+ *
+ *   - `export { A, B as C } from "…";`        (barrel re-export, value)
+ *   - `export const/let/var NAME = …;`        (local named value export)
+ *   - `export function NAME(...) {…}`         (incl. `async function`)
+ *   - `export class NAME {…}`
+ *   - `export * as NS from "…";`              (namespace re-export — the
+ *                                               binding IS enumerable: `NS`)
+ *
+ * `export type {...}` blocks are excluded (types are not "components").
+ * `export default ...` is excluded (unnamed — not a "named export").
+ *
+ * A BARE `export * from "…";` (no `as NS`) is structurally NOT enumerable
+ * from this file alone — the names it re-exports live in the target module,
+ * which this function does not resolve/parse. Per derive-never-type +
+ * measurement-integrity ("non-red-is-not-green"), silently skipping it would
+ * recreate the exact hole this function was extended to close. It FAILS LOUD
+ * instead, naming the exact source line, so a human resolves the target
+ * module rather than the count silently under-reporting.
+ *
  * @param {string} indexSource
  * @returns {Set<string>}
  */
 export function extractRealExports(indexSource) {
   const names = new Set();
+
+  // Bare `export * from "…";` — reject BEFORE consuming `export * as NS`
+  // below (that form is legitimate and handled separately). A negative
+  // lookahead excludes `as` so this only fires on the truly-unenumerable
+  // bare wildcard form.
+  const bareStarRe = /^[ \t]*export\s*\*\s*(?!as\b)from\s*"[^"]+";?[ \t]*$/gm;
+  const bareStarMatch = bareStarRe.exec(indexSource);
+  if (bareStarMatch) {
+    const line = lineNumberAt(indexSource, bareStarMatch.index);
+    throw new Error(
+      `extractRealExports: bare "export * from ...;" at src/index.ts:${line} (${bareStarMatch[0].trim()}) re-exports an unknown set of names — this function cannot enumerate them without resolving the target module, and silently skipping it would under-count. Use a named barrel \`export { A, B } from "...";\` or a namespaced \`export * as NS from "...";\` instead, or extend extractRealExports to resolve the target.`,
+    );
+  }
+
+  // Barrel form: `export { … } from "…";` (value or type).
   const exportBlockRe = /export(?:\s+type)?\s*\{([^}]*)\}\s*from\s*"[^"]+";/gs;
   let match;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
@@ -48,6 +87,23 @@ export function extractRealExports(indexSource) {
       names.add(asParts[asParts.length - 1].trim());
     }
   }
+
+  // Local declaration form: `export const/let/var/function/class NAME`.
+  const declarationRe =
+    /export\s+(?:const|let|var)\s+(\w+)|export\s+(?:async\s+)?function\s*\*?\s+(\w+)|export\s+class\s+(\w+)/g;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((match = declarationRe.exec(indexSource))) {
+    const name = match[1] ?? match[2] ?? match[3];
+    if (name) names.add(name);
+  }
+
+  // Namespaced re-export: `export * as NS from "…";` — NS is enumerable.
+  const namespaceStarRe = /export\s*\*\s*as\s+(\w+)\s*from\s*"[^"]+";/g;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((match = namespaceStarRe.exec(indexSource))) {
+    names.add(match[1]);
+  }
+
   return names;
 }
 
