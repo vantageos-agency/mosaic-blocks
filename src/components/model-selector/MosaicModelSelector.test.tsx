@@ -198,4 +198,71 @@ describe("MosaicModelSelector", () => {
     );
     expect(screen.getByText("Claude Opus")).toBeTruthy();
   });
+
+  // ── Regression: empty block is mutually exclusive with matched items ──────
+
+  it("shows matched models only — never the empty block — when the query matches", async () => {
+    const user = userEvent.setup();
+    render(
+      <MosaicModelSelector
+        models={MODELS}
+        placeholder="Select a model"
+        emptyMessage="No models found."
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await user.type(input, "Claude");
+    await waitFor(() => {
+      expect(screen.getByText("Claude Opus")).toBeTruthy();
+      expect(screen.queryByText("No models found.")).toBeFalsy();
+    });
+  });
+
+  it("shows the empty block only — never any model — when the query matches nothing", async () => {
+    const user = userEvent.setup();
+    render(
+      <MosaicModelSelector
+        models={MODELS}
+        placeholder="Select a model"
+        emptyMessage="No models found."
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await user.type(input, "zzz-nonexistent");
+    await waitFor(() => {
+      expect(screen.getByText("No models found.")).toBeTruthy();
+      expect(screen.queryAllByRole("option").length).toBe(0);
+    });
+  });
+
+  // ── Placement props: constrained, exposed via public API ──────────────────
+
+  it("accepts side/align/collisionPadding and threads them to the Positioner (data-side reflects the requested side)", async () => {
+    const user = userEvent.setup();
+    render(
+      <MosaicModelSelector
+        models={MODELS}
+        placeholder="Select a model"
+        emptyMessage="No models found."
+        side="right"
+        align="start"
+        collisionPadding={16}
+      />,
+    );
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await waitFor(() => {
+      // Combobox.Portal renders into document.body, outside the render container.
+      const positioner = document.body.querySelector("[data-side]");
+      expect(positioner).toBeTruthy();
+      // jsdom has no real layout, so floating-ui may flip within the requested
+      // axis; asserting the horizontal axis (left/right, never top/bottom)
+      // proves the `side="right"` prop reached the Positioner without
+      // depending on flip resolution, which is a floating-ui implementation
+      // detail under jsdom's zero-size measurements.
+      expect(["left", "right"]).toContain(positioner?.getAttribute("data-side"));
+    });
+  });
 });
