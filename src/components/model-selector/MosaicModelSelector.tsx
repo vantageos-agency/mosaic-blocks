@@ -30,6 +30,14 @@ import {
   modelSelectorTriggerVariants,
 } from "./model-selector-variants.js";
 
+// Positioner placement types, derived from the public Combobox.Positioner
+// props contract (no private subpath import — `@base-ui/react` exports no
+// `./utils` entry point).
+type PositionerSide = NonNullable<Combobox.Positioner.Props["side"]>;
+type PositionerAlign = NonNullable<Combobox.Positioner.Props["align"]>;
+type PositionerCollisionBoundary = Combobox.Positioner.Props["collisionBoundary"];
+type PositionerCollisionPadding = Combobox.Positioner.Props["collisionPadding"];
+
 // ── Utility ──────────────────────────────────────────────────────────────────
 
 function cn(...classes: (string | undefined | null | false)[]): string {
@@ -73,6 +81,27 @@ export interface MosaicModelSelectorProps {
   disabled?: boolean;
   name?: string;
   className?: string;
+  /**
+   * Which side of the trigger the popup opens against. Base UI may still
+   * auto-flip to avoid a collision unless `collisionAvoidance` disables it.
+   * @default 'bottom'
+   */
+  side?: PositionerSide;
+  /**
+   * How the popup aligns relative to the requested side.
+   * @default 'center'
+   */
+  align?: PositionerAlign;
+  /**
+   * Element/rect the popup is confined to.
+   * @default 'clipping-ancestors'
+   */
+  collisionBoundary?: PositionerCollisionBoundary;
+  /**
+   * Space to keep between the popup and the edge of the collision boundary.
+   * @default 5
+   */
+  collisionPadding?: PositionerCollisionPadding;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -103,6 +132,10 @@ export function MosaicModelSelector({
   disabled,
   name,
   className,
+  side,
+  align,
+  collisionBoundary,
+  collisionPadding,
 }: MosaicModelSelectorProps) {
   const [inputValue, setInputValue] = React.useState("");
 
@@ -150,7 +183,13 @@ export function MosaicModelSelector({
         )}
 
         <Combobox.Portal>
-          <Combobox.Positioner sideOffset={4}>
+          <Combobox.Positioner
+            sideOffset={4}
+            side={side}
+            align={align}
+            collisionBoundary={collisionBoundary}
+            collisionPadding={collisionPadding}
+          >
             <Combobox.Popup
               className={cn(
                 "z-50 min-w-[16rem] overflow-hidden rounded-md border border-border",
@@ -163,32 +202,35 @@ export function MosaicModelSelector({
               )}
             >
               <Combobox.List>
-                {filteredModels.map((model) => (
-                  <Combobox.Item
-                    key={model.value}
-                    value={model.value}
-                    disabled={model.disabled}
-                    className={modelSelectorItemVariants({ className: undefined })}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{model.label}</span>
-                      {model.badge && (
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
-                          {model.badge}
-                        </span>
+                {filteredModels.length === 0 ? (
+                  <Combobox.Empty className="py-2 text-center text-sm text-muted-foreground">
+                    {emptyMessage}
+                  </Combobox.Empty>
+                ) : (
+                  filteredModels.map((model) => (
+                    <Combobox.Item
+                      key={model.value}
+                      value={model.value}
+                      disabled={model.disabled}
+                      className={modelSelectorItemVariants({ className: undefined })}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{model.label}</span>
+                        {model.badge && (
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+                            {model.badge}
+                          </span>
+                        )}
+                      </div>
+                      {model.description && (
+                        <span className="text-xs text-muted-foreground">{model.description}</span>
                       )}
-                    </div>
-                    {model.description && (
-                      <span className="text-xs text-muted-foreground">{model.description}</span>
-                    )}
-                    {model.meta && (
-                      <span className="text-xs text-muted-foreground">{model.meta}</span>
-                    )}
-                  </Combobox.Item>
-                ))}
-                <Combobox.Empty className="py-2 text-center text-sm text-muted-foreground">
-                  {emptyMessage}
-                </Combobox.Empty>
+                      {model.meta && (
+                        <span className="text-xs text-muted-foreground">{model.meta}</span>
+                      )}
+                    </Combobox.Item>
+                  ))
+                )}
               </Combobox.List>
             </Combobox.Popup>
           </Combobox.Positioner>

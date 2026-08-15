@@ -15,6 +15,14 @@
 import { Combobox } from "@base-ui/react/combobox";
 import * as React from "react";
 
+// Positioner placement types, derived from the public Combobox.Positioner
+// props contract (no private subpath import — `@base-ui/react` exports no
+// `./utils` entry point).
+type PositionerSide = NonNullable<Combobox.Positioner.Props["side"]>;
+type PositionerAlign = NonNullable<Combobox.Positioner.Props["align"]>;
+type PositionerCollisionBoundary = Combobox.Positioner.Props["collisionBoundary"];
+type PositionerCollisionPadding = Combobox.Positioner.Props["collisionPadding"];
+
 // ── Utility ──────────────────────────────────────────────────────────────────
 
 function cn(...classes: (string | undefined | null | false)[]): string {
@@ -48,6 +56,27 @@ export interface MosaicComboboxProps {
    */
   emptyMessage: string;
   className?: string;
+  /**
+   * Which side of the input the popup opens against. Base UI may still
+   * auto-flip to avoid a collision unless `collisionAvoidance` disables it.
+   * @default 'bottom'
+   */
+  side?: PositionerSide;
+  /**
+   * How the popup aligns relative to the requested side.
+   * @default 'center'
+   */
+  align?: PositionerAlign;
+  /**
+   * Element/rect the popup is confined to.
+   * @default 'clipping-ancestors'
+   */
+  collisionBoundary?: PositionerCollisionBoundary;
+  /**
+   * Space to keep between the popup and the edge of the collision boundary.
+   * @default 5
+   */
+  collisionPadding?: PositionerCollisionPadding;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -77,6 +106,10 @@ export function MosaicCombobox({
   name,
   emptyMessage,
   className,
+  side,
+  align,
+  collisionBoundary,
+  collisionPadding,
 }: MosaicComboboxProps) {
   const [inputValue, setInputValue] = React.useState("");
 
@@ -110,7 +143,13 @@ export function MosaicCombobox({
         />
 
         <Combobox.Portal>
-          <Combobox.Positioner sideOffset={4}>
+          <Combobox.Positioner
+            sideOffset={4}
+            side={side}
+            align={align}
+            collisionBoundary={collisionBoundary}
+            collisionPadding={collisionPadding}
+          >
             <Combobox.Popup
               className={cn(
                 "z-50 min-w-[8rem] overflow-hidden rounded-md border border-border",
@@ -123,25 +162,28 @@ export function MosaicCombobox({
               )}
             >
               <Combobox.List>
-                {filteredItems.map((item) => (
-                  <Combobox.Item
-                    key={item.value}
-                    value={item.value}
-                    disabled={item.disabled}
-                    className={cn(
-                      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5",
-                      "text-sm text-popover-foreground outline-none",
-                      "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                      "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
-                      "data-[selected]:font-medium",
-                    )}
-                  >
-                    {item.label}
-                  </Combobox.Item>
-                ))}
-                <Combobox.Empty className="py-2 text-center text-sm text-muted-foreground">
-                  {emptyMessage}
-                </Combobox.Empty>
+                {filteredItems.length === 0 ? (
+                  <Combobox.Empty className="py-2 text-center text-sm text-muted-foreground">
+                    {emptyMessage}
+                  </Combobox.Empty>
+                ) : (
+                  filteredItems.map((item) => (
+                    <Combobox.Item
+                      key={item.value}
+                      value={item.value}
+                      disabled={item.disabled}
+                      className={cn(
+                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5",
+                        "text-sm text-popover-foreground outline-none",
+                        "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                        "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
+                        "data-[selected]:font-medium",
+                      )}
+                    >
+                      {item.label}
+                    </Combobox.Item>
+                  ))
+                )}
               </Combobox.List>
             </Combobox.Popup>
           </Combobox.Positioner>
