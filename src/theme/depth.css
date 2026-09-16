@@ -1,0 +1,120 @@
+/*
+ * @vantageos/mosaic-blocks — depth theme: relief + motion, defined once, as data.
+ *
+ * Context (mission k57b7whw6p3zkvnqb9pqhyyf2n8egy4e, T1): three HeroUI
+ * theming trials were judged "flat, a mockup, no relief, no animation". This
+ * file is where relief (surface ladder + elevation) and motion are defined a
+ * single time, as CSS custom properties, so every consumer inherits the same
+ * depth vocabulary instead of each block reinventing its own shadow/timing
+ * literals. Imported by ../styles.css; see docs/adr/0002-heroui-v3-finished-blocks.md
+ * for the OKLCH token-mapping rationale.
+ *
+ * Naming convention mirrors @vantageos/mosaic-tokens: --mosaic-<category>-<key>.
+ * Values here are new local data (surface ladder, elevation, motion presets)
+ * — NOT duplicated from mosaic-tokens. Where a mosaic-tokens primitive already
+ * exists (durations, easings), this file references it via var(), never a
+ * copied literal.
+ */
+
+/* ── Surface ladder — four luminance steps, same relative order both modes ──
+ * Order (darkest → lightest as an elevation concept, NOT raw L order):
+ *   well (deepest recess) < sidebar (recessed rail) < ground (page bg) < card (raised)
+ * This is the standard dark-theme convention too: a raised surface gets
+ * LIGHTER (catches more light), a recessed one gets DARKER — in both modes.
+ * ---------------------------------------------------------------------------*/
+:root {
+  --mosaic-surface-well: oklch(0.88 0.004 250);
+  --mosaic-surface-sidebar: oklch(0.94 0.004 250);
+  --mosaic-surface-ground: oklch(0.97 0.003 250);
+  --mosaic-surface-card: oklch(1 0 0);
+}
+
+[data-theme="dark"] {
+  --mosaic-surface-well: oklch(0.08 0.004 250);
+  --mosaic-surface-sidebar: oklch(0.12 0.004 250);
+  --mosaic-surface-ground: oklch(0.16 0.003 250);
+  --mosaic-surface-card: oklch(0.22 0.004 250);
+}
+
+/* ── Elevation — three levels, each a shadow + a highlight edge ─────────────
+ * The highlight edge is a thin inset line that catches light at the top of a
+ * raised surface — the detail the operator named as "relief" and the flat
+ * trials lacked. Mode-independent by design: readable on both surface
+ * ladders because it is expressed relative to the surface it sits on.
+ * ---------------------------------------------------------------------------*/
+:root {
+  --mosaic-elevation-1-shadow: 0 1px 2px 0 oklch(0.04 0 0 / 0.06);
+  --mosaic-elevation-1-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.5);
+
+  --mosaic-elevation-2-shadow: 0 4px 8px -2px oklch(0.04 0 0 / 0.12), 0 2px 4px -2px
+    oklch(0.04 0 0 / 0.08);
+  --mosaic-elevation-2-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.65);
+
+  --mosaic-elevation-3-shadow: 0 12px 24px -6px oklch(0.04 0 0 / 0.18), 0 6px 12px -6px
+    oklch(0.04 0 0 / 0.1);
+  --mosaic-elevation-3-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.8);
+}
+
+[data-theme="dark"] {
+  --mosaic-elevation-1-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
+  --mosaic-elevation-2-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.09);
+  --mosaic-elevation-3-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.12);
+}
+
+/* ── Motion — durations, easings, entry preset, hover-lift preset ───────────
+ * Durations/easings reference mosaic-tokens canonical primitives (imported
+ * above this file by ../styles.css) rather than new literals — reuse over
+ * reinvention. Reduced-motion zeroes the durations AND disables the presets:
+ * belt and suspenders, both forms asserted by the guard test.
+ * ---------------------------------------------------------------------------*/
+:root {
+  --mosaic-motion-duration-entry: var(--mosaic-duration-slower);
+  --mosaic-motion-duration-hover: var(--mosaic-duration-fast);
+  --mosaic-motion-easing-entry: var(--mosaic-easing-out-expo);
+  --mosaic-motion-easing-hover: var(--mosaic-easing-out);
+}
+
+@keyframes mosaic-depth-entry {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mosaic-motion-entry {
+  animation: mosaic-depth-entry var(--mosaic-motion-duration-entry)
+    var(--mosaic-motion-easing-entry);
+}
+
+.mosaic-motion-hover-lift {
+  transition: transform var(--mosaic-motion-duration-hover) var(--mosaic-motion-easing-hover),
+    box-shadow var(--mosaic-motion-duration-hover) var(--mosaic-motion-easing-hover);
+}
+
+.mosaic-motion-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mosaic-elevation-3-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mosaic-motion-duration-entry: 0ms;
+    --mosaic-motion-duration-hover: 0ms;
+  }
+
+  .mosaic-motion-entry {
+    animation: none;
+  }
+
+  .mosaic-motion-hover-lift {
+    transition: none;
+  }
+
+  .mosaic-motion-hover-lift:hover {
+    transform: none;
+  }
+}

@@ -4,6 +4,10 @@
 @import "@vantageos/mosaic-tokens/css";
 @import "@vantageos/mosaic-tokens/css/aliases";
 
+/* Relief + motion — surface ladder, elevation, motion presets. Defined once
+   as data; see ./theme/depth.css and docs/adr/0002-heroui-v3-finished-blocks.md */
+@import "./theme/depth.css";
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,6 +51,14 @@
   --color-warning-50: var(--mosaic-color-warning-50);
   --color-warning-500: var(--mosaic-color-warning-500);
   --color-warning-700: var(--mosaic-color-warning-700);
+
+  /* Danger status triad — the mosaic-tokens canonical values already existed
+     (--mosaic-color-danger-*) but were never wired into a consumer-facing
+     utility here, unlike success/warning above. T1 (theme-depth) closes that
+     gap: bg-danger-500 etc. are now available alongside bg-destructive. */
+  --color-danger-50: var(--mosaic-color-danger-50);
+  --color-danger-500: var(--mosaic-color-danger-500);
+  --color-danger-700: var(--mosaic-color-danger-700);
 }
 
 /* ── MosaicLogosGrid stagger animation ────────────────────────────────────── */
