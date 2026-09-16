@@ -226,4 +226,74 @@ describe("MosaicAppSidebar", () => {
       value: original,
     });
   });
+
+  it("marks the active item with aria-current='page' plus an accent pill", () => {
+    render(
+      <Wrapper>
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          activePath="/agents"
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
+        />
+      </Wrapper>,
+    );
+    const activeButton = screen.getByText("Agents").closest("button");
+    expect(activeButton?.getAttribute("aria-current")).toBe("page");
+    const pill = activeButton?.querySelector('[data-slot="app-sidebar-active-pill"]');
+    expect(pill).toBeTruthy();
+    expect(pill?.className).toContain("bg-accent");
+  });
+
+  it("does not render the accent pill on inactive items", () => {
+    render(
+      <Wrapper>
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          activePath="/agents"
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
+        />
+      </Wrapper>,
+    );
+    const inactiveButton = screen.getByText("Home").closest("button");
+    expect(inactiveButton?.getAttribute("aria-current")).toBeNull();
+    expect(inactiveButton?.querySelector('[data-slot="app-sidebar-active-pill"]')).toBeNull();
+  });
+
+  it("wires nav item transitions to the shared token-driven motion vars — no hardcoded ms duration", () => {
+    const { container } = render(
+      <Wrapper>
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
+        />
+      </Wrapper>,
+    );
+    const root = container.querySelector('[data-slot="app-sidebar"]') as HTMLElement;
+    // The width-collapse transition must reference the shared
+    // --mosaic-motion-duration-* token (zeroed under prefers-reduced-motion
+    // in depth.css), never a component-local hardcoded ms value.
+    expect(root.style.transition).toContain("var(--mosaic-motion-duration-");
+    expect(root.style.transition).not.toMatch(/\d+ms/);
+  });
 });

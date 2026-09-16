@@ -333,6 +333,24 @@ export type {
   MosaicSidebarFooterStatus,
 } from "./components/app-sidebar/MosaicAppSidebar.js";
 
+// TopBar — Wave-1 T5 BLOCK 1, finished app-shell header (pairs with MosaicAppSidebar)
+export { MosaicTopBar } from "./components/top-bar/MosaicTopBar.js";
+export type { MosaicTopBarProps } from "./components/top-bar/MosaicTopBar.js";
+
+// KpiTile — Wave-1 T5 BLOCK 2, finished elevated stat tile
+export { MosaicKpiTile } from "./components/kpi-tile/MosaicKpiTile.js";
+export type {
+  MosaicKpiTileProps,
+  MosaicKpiTileTrend,
+} from "./components/kpi-tile/MosaicKpiTile.js";
+
+// StageChart — Wave-1 T5 BLOCK 3, finished pipeline-stage bar chart
+export { MosaicStageChart } from "./components/stage-chart/MosaicStageChart.js";
+export type {
+  MosaicStageChartProps,
+  MosaicStageChartStage,
+} from "./components/stage-chart/MosaicStageChart.js";
+
 // QuickActionCard (PC-07) — 6-accent action grid
 export { MosaicQuickActionCard } from "./components/quick-action-card/MosaicQuickActionCard.js";
 export type {

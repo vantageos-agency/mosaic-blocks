@@ -31,6 +31,11 @@ const MISSION_BLOCKS: Array<{ name: string; storyPath: string }> = [
   { name: "MosaicCard", storyPath: "../components/card/MosaicCard.stories.tsx" },
   { name: "MosaicEmptyState", storyPath: "../components/empty-state/MosaicEmptyState.stories.tsx" },
   { name: "MosaicSkeleton", storyPath: "../components/skeleton/MosaicSkeleton.stories.tsx" },
+  // Wave-1 T5 — finished blocks fixing the "flat, a mockup, no relief, no
+  // animation" operator verdict (docs/adr/0002-heroui-v3-finished-blocks.md).
+  { name: "MosaicTopBar", storyPath: "../components/top-bar/MosaicTopBar.stories.tsx" },
+  { name: "MosaicKpiTile", storyPath: "../components/kpi-tile/MosaicKpiTile.stories.tsx" },
+  { name: "MosaicStageChart", storyPath: "../components/stage-chart/MosaicStageChart.stories.tsx" },
 ];
 
 // ── Populated-content detector ────────────────────────────────────────────

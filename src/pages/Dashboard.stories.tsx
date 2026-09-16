@@ -1,16 +1,24 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import * as Recharts from "recharts";
 
 import { MosaicAppSidebar } from "../components/app-sidebar/MosaicAppSidebar.js";
-import { MosaicArtifactChart } from "../components/artifact-chart/MosaicArtifactChart.js";
 import { MosaicDataTable } from "../components/data-table/MosaicDataTable.js";
-import { MosaicDeviceProvider } from "../components/device-provider/MosaicDeviceProvider.js";
-import { MosaicStatsGrid } from "../components/stats-grid/MosaicStatsGrid.js";
+import {
+  MosaicDeviceProvider,
+  useDevice,
+} from "../components/device-provider/MosaicDeviceProvider.js";
+import { MosaicKpiTile } from "../components/kpi-tile/MosaicKpiTile.js";
+import { MosaicStageChart } from "../components/stage-chart/MosaicStageChart.js";
+import { MosaicThemeToggle } from "../components/theme-toggle/MosaicThemeToggle.js";
+import { MosaicTopBar } from "../components/top-bar/MosaicTopBar.js";
 
 /**
  * "Pages/Dashboard" — composed page (mission k57b7whw6p3zkvnqb9pqhyyf2n8egy4e
- * T2). Sidebar + stats grid + chart + data table assembled together so the
- * operator judges a SCREEN, not a swatch of isolated blocks.
+ * T2, evolved Wave-1 T5). App shell (sidebar + top bar) + a row of 4 KPI
+ * tiles + a pipeline stage chart + the existing tenant table, assembled
+ * together so the operator judges a SCREEN, not a swatch of isolated
+ * blocks — the same discipline that produced this story originally,
+ * extended with the finished BLOCK 1/2/3 that fix the "flat, a mockup, no
+ * relief, no animation" verdict.
  */
 
 interface Locataire {
@@ -68,18 +76,102 @@ const sidebarLabels = {
   expandSidebarAriaLabel: "Ouvrir la barre latérale",
 };
 
-const chartLabels = {
-  typeBadgeLabel: (type: "bar" | "line" | "pie") =>
-    ({ bar: "Barres", line: "Courbe", pie: "Camembert" })[type],
-  pointsLabel: (count: number) => `${count} points`,
-  unsupportedTypeMessage: (type: string) => `Type de graphique non pris en charge : ${type}`,
-  unavailableMessage: "Graphiques indisponibles",
-};
-
-function DashboardPage() {
+function BuildingIcon() {
   return (
-    <MosaicDeviceProvider>
-      <div style={{ display: "flex", height: "100vh" }}>
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 21h18" />
+      <path d="M6 21V7l6-4 6 4v14" />
+    </svg>
+  );
+}
+
+function EuroIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 10h12M4 14h9" />
+      <path d="M19 6a7.6 7.6 0 1 0 0 12" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
+/**
+ * The app shell is deliberately mobile-aware: MosaicAppSidebar renders at
+ * `width: 100%` on mobile (its own off-canvas-drawer contract — see
+ * MosaicAppSidebar.tsx `sidebarWidth`), which is correct for a toggled
+ * drawer but breaks a permanently-mounted flex-row shell (the sidebar
+ * would eat the full viewport width and push every other block off-screen).
+ * At `<768px` this story simply does not mount the sidebar inline — a real
+ * consumer wires MosaicAppSidebar into an off-canvas drawer at that
+ * breakpoint (MosaicDeviceProvider + a hamburger trigger own that wiring;
+ * out of scope for this composed-page story).
+ */
+function DashboardShell() {
+  const { isMobile } = useDevice();
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {!isMobile && (
         <MosaicAppSidebar
           isCollapsed={false}
           onToggleCollapse={() => {}}
@@ -88,36 +180,114 @@ function DashboardPage() {
           onNavigate={() => {}}
           {...sidebarLabels}
         />
-        <main style={{ flex: 1, overflow: "auto", padding: 24 }}>
-          <MosaicStatsGrid
-            heading="Portefeuille immobilier — vue d'ensemble"
-            subtext="Chiffres consolidés au 1er septembre 2026"
-            stats={[
-              { value: "127", label: "Biens gérés" },
-              { value: "98,4 %", label: "Taux d'occupation" },
-              { value: "42", label: "Baux signés ce mois" },
-              { value: "1,24 M€", label: "Loyers encaissés (YTD)" },
+      )}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+          padding: isMobile ? 12 : 20,
+          background: "var(--mosaic-surface-ground)",
+        }}
+      >
+        <MosaicTopBar
+          titleSlot={<h1 style={{ fontSize: 18, fontWeight: 600 }}>Tableau de bord</h1>}
+          searchSlot={
+            <input
+              aria-label="Rechercher"
+              placeholder="Rechercher…"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+              }}
+            />
+          }
+          themeControlSlot={
+            <MosaicThemeToggle
+              switchToLightLabel="Passer au thème clair"
+              switchToDarkLabel="Passer au thème sombre"
+            />
+          }
+          languageControlSlot={
+            <button type="button" style={{ padding: "6px 10px" }}>
+              FR
+            </button>
+          }
+        />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 16,
+          }}
+        >
+          <MosaicKpiTile
+            label="Biens gérés"
+            value="127"
+            icon={<BuildingIcon />}
+            trend={{ direction: "up", label: "+3" }}
+            sparklineData={[110, 114, 118, 120, 123, 125, 127]}
+          />
+          <MosaicKpiTile
+            label="Taux d'occupation"
+            value="98,4 %"
+            icon={<UsersIcon />}
+            trend={{ direction: "up", label: "+1,1 pt" }}
+            sparklineData={[95.2, 96.1, 96.8, 97.3, 97.9, 98.1, 98.4]}
+          />
+          <MosaicKpiTile
+            label="Loyers encaissés (YTD)"
+            value="1,24 M€"
+            icon={<EuroIcon />}
+            trend={{ direction: "up", label: "+8,4%" }}
+            sparklineData={[900, 950, 980, 1020, 1080, 1150, 1240]}
+          />
+          <MosaicKpiTile
+            label="Taux d'impayés"
+            value="3,1%"
+            icon={<AlertIcon />}
+            trend={{ direction: "down", label: "-1,2%" }}
+            sparklineData={[5.1, 4.8, 4.2, 4.0, 3.6, 3.4, 3.1]}
+          />
+        </div>
+
+        <div
+          className="rounded-xl p-5"
+          style={{
+            background: "var(--mosaic-surface-card)",
+            boxShadow: "var(--mosaic-elevation-1-highlight), var(--mosaic-elevation-1-shadow)",
+          }}
+        >
+          <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Pipeline commercial</h2>
+          <MosaicStageChart
+            tableCaption="Répartition des dossiers par étape du pipeline commercial"
+            stageColumnLabel="Étape"
+            valueColumnLabel="Dossiers"
+            valueLabel={(value) => `${value} dossiers`}
+            stages={[
+              { id: "prospect", label: "Prospect", value: 42 },
+              { id: "qualifie", label: "Qualifié", value: 28 },
+              { id: "proposition", label: "Proposition", value: 17 },
+              { id: "negociation", label: "Négociation", value: 9 },
+              { id: "gagne", label: "Gagné", value: 6, kind: "won" },
+              { id: "perdu", label: "Perdu", value: 11, kind: "lost" },
             ]}
           />
-          <div style={{ height: 320, marginBottom: 32 }}>
-            <MosaicArtifactChart
-              data={{
-                title: "Revenus locatifs 2026",
-                type: "bar",
-                data: [
-                  { mois: "Avr", loyers: 98200 },
-                  { mois: "Mai", loyers: 101450 },
-                  { mois: "Juin", loyers: 104300 },
-                  { mois: "Juil", loyers: 99800 },
-                  { mois: "Août", loyers: 107600 },
-                  { mois: "Sept", loyers: 112900 },
-                ],
-                config: { xAxis: "mois", legend: true, grid: true },
-              }}
-              labels={chartLabels}
-              recharts={Recharts}
-            />
-          </div>
+        </div>
+
+        <div
+          className="rounded-xl p-1"
+          style={{
+            background: "var(--mosaic-surface-card)",
+            boxShadow: "var(--mosaic-elevation-1-highlight), var(--mosaic-elevation-1-shadow)",
+          }}
+        >
           <MosaicDataTable<Locataire>
             columns={[
               { key: "nom", header: "Locataire", sortable: true },
@@ -129,8 +299,16 @@ function DashboardPage() {
             getRowKey={(row) => row.id}
             emptyMessage="Aucun locataire."
           />
-        </main>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function DashboardPage() {
+  return (
+    <MosaicDeviceProvider>
+      <DashboardShell />
     </MosaicDeviceProvider>
   );
 }

@@ -52,11 +52,13 @@ function injectStyles() {
       to   { opacity: 1; max-height: 400px; }
     }
     .mosaic-sidebar-label-in {
-      animation: mosaic-sidebar-fade-in 200ms ease-out forwards;
+      animation: mosaic-sidebar-fade-in var(--mosaic-motion-duration-hover)
+        var(--mosaic-motion-easing-hover) forwards;
     }
     .mosaic-sidebar-submenu {
       overflow: hidden;
-      animation: mosaic-submenu-in 200ms ease-out forwards;
+      animation: mosaic-submenu-in var(--mosaic-motion-duration-hover)
+        var(--mosaic-motion-easing-hover) forwards;
     }
     @media (prefers-reduced-motion: reduce) {
       .mosaic-sidebar-label-in,
@@ -212,7 +214,8 @@ function ChevronDownIcon({ rotated }: { rotated: boolean }) {
       aria-hidden="true"
       style={{
         transform: rotated ? "rotate(180deg)" : "rotate(0deg)",
-        transition: "transform 200ms ease-out",
+        transition:
+          "transform var(--mosaic-motion-duration-hover) var(--mosaic-motion-easing-hover)",
       }}
     >
       <polyline points="6 9 12 15 18 9" />
@@ -352,7 +355,7 @@ export function MosaicAppSidebar({
       )}
       style={{
         width: sidebarWidth,
-        transition: "width 280ms ease-in-out",
+        transition: "width var(--mosaic-motion-duration-entry) var(--mosaic-motion-easing-entry)",
         overflow: "hidden",
       }}
       aria-label={sidebarAriaLabel}
@@ -396,13 +399,20 @@ export function MosaicAppSidebar({
                       aria-current={isActive ? "page" : undefined}
                       aria-expanded={hasSubmenu && !isCollapsed ? isExpanded : undefined}
                       className={cn(
-                        "group flex w-full min-h-[44px] items-center rounded-lg p-3 transition-colors",
+                        "group relative flex w-full min-h-[44px] items-center rounded-lg p-3 transition-colors",
                         "hover:bg-sidebar-accent",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         (isActive || isSubmenuActive) && "bg-sidebar-accent",
                         isCollapsed ? "justify-center" : "justify-between",
                       )}
                     >
+                      {isActive && (
+                        <span
+                          aria-hidden="true"
+                          data-slot="app-sidebar-active-pill"
+                          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent"
+                        />
+                      )}
                       {isCollapsed ? (
                         <span className="text-sidebar-foreground" title={item.label}>
                           {item.icon ?? (
@@ -572,13 +582,20 @@ export function MosaicAppSidebar({
                     onClick={() => handleNavClick(item.href)}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group flex w-full min-h-[44px] items-center rounded-lg p-3 transition-colors",
+                      "group relative flex w-full min-h-[44px] items-center rounded-lg p-3 transition-colors",
                       "hover:bg-sidebar-accent",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       isActive && "bg-sidebar-accent",
                       isCollapsed ? "justify-center" : "justify-start gap-3",
                     )}
                   >
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        data-slot="app-sidebar-active-pill"
+                        className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent"
+                      />
+                    )}
                     {isCollapsed ? (
                       <span className="text-sidebar-foreground" title={item.label}>
                         {item.icon ?? (
