@@ -1,0 +1,35 @@
+/* .storybook/preview.css — the Storybook-only theme entry.
+ *
+ * Consumers of @vantageos/mosaic-blocks import their OWN "tailwindcss" before
+ * src/styles.css (see src/styles.css header comment); Storybook IS a
+ * consumer, so it follows the exact same documented contract here — this is
+ * what src/styles.css assumed a host build always did, and what the
+ * predecessor Storybook never wired.
+ *
+ * `@source` tells the Tailwind v4 Vite plugin where to scan for utility
+ * classes: this file lives in .storybook/, but every className that actually
+ * needs generating lives under ../src (component source + stories).
+ */
+@import "tailwindcss";
+@import "../src/styles.css";
+
+@source "../src/**/*.{ts,tsx}";
+
+/* Map the theme's own font token onto Tailwind's `--font-sans` theme key, so
+ * both the `font-sans` utility AND Tailwind's preflight default body font
+ * resolve to the mosaic-tokens font stack instead of Tailwind's own default
+ * ui-sans-serif stack. */
+@theme {
+  --font-sans: var(--mosaic-font-sans);
+}
+
+/* The Storybook iframe body is the showcase's own "page" — wire it to the
+ * theme root surface/text/font tokens explicitly (belt and suspenders on top
+ * of the @theme mapping above), so the operator's very first visual read
+ * (body background + text + font) is themed even before any component
+ * mounts. */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
