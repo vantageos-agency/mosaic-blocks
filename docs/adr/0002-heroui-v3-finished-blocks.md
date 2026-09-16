@@ -2,9 +2,9 @@
 
 | Field       | Value                                            |
 |-------------|---------------------------------------------------|
-| **Status**  | Accepted                                           |
+| **Status**  | Proposed — pending Eta review and the operator showcase gate |
 | **Date**    | 2026-09-16                                         |
-| **Deciders**| Gamma (orchestrator), Laurent Perello (pilot)      |
+| **Deciders**| Proposed by Gamma (mission pilot); decided at the operator showcase gate |
 | **Branch**  | `feat/heroui-theme-depth`                          |
 | **Supersedes / extends** | [`0001-base-ui-vs-radix.md`](./0001-base-ui-vs-radix.md) — does NOT replace it |
 
