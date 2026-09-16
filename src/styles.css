@@ -52,13 +52,12 @@
   --color-warning-500: var(--mosaic-color-warning-500);
   --color-warning-700: var(--mosaic-color-warning-700);
 
-  /* Danger status triad — the mosaic-tokens canonical values already existed
-     (--mosaic-color-danger-*) but were never wired into a consumer-facing
-     utility here, unlike success/warning above. T1 (theme-depth) closes that
-     gap: bg-danger-500 etc. are now available alongside bg-destructive. */
-  --color-danger-50: var(--mosaic-color-danger-50);
+  /* Danger status — wired as a consumer-facing utility like success/warning.
+     Only the 500 step is declared: it is the one a block consumes. The 50/700
+     steps are NOT declared until a block consumes them (a declared-but-unused
+     row is a stale promise, refused by theme-tokens-declared-guard). */
+  /* allow-stale-theme-token: consumed by MosaicKpiTile (text-danger-500, trend down) and MosaicStageChart (bg-danger-500, lost stage) in T3, task k17azmye0qjkqjeywvf3wkknn98eha9k, PR #170 — stacked after this PR */
   --color-danger-500: var(--mosaic-color-danger-500);
-  --color-danger-700: var(--mosaic-color-danger-700);
 }
 
 /* ── MosaicLogosGrid stagger animation ────────────────────────────────────── */
