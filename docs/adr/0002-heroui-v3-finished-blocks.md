@@ -2,7 +2,7 @@
 
 | Field       | Value                                            |
 |-------------|---------------------------------------------------|
-| **Status**  | Proposed — pending Eta review and the operator showcase gate |
+| **Status**  | Proposed (amended 2026-09-16 on the HeroUI scope ruling) — pending Eta review and the operator showcase gate |
 | **Date**    | 2026-09-16                                         |
 | **Deciders**| Proposed by Gamma (mission pilot); decided at the operator showcase gate |
 | **Branch**  | `feat/heroui-theme-depth`                          |
@@ -25,83 +25,74 @@ Both trials prove the same thing from two directions: **depth and motion were be
 
 ## Decision
 
-1. **Relief and motion are defined once**, as CSS custom-property DATA in `@vantageos/mosaic-blocks` (`src/theme/depth.css`, imported by `src/styles.css`) — never as a per-component literal, never re-invented per consuming app. This ADR's companion change (T1) ships that data: a 4-step surface ladder, 3 elevation levels (shadow + highlight edge each), motion tokens (durations, easings, an entry preset, a hover-lift preset — all disabled under `prefers-reduced-motion`), and the previously-missing `danger` semantic triad wired alongside the existing `success`/`warning`.
-2. **Finished, ship-ready composed blocks move onto `@heroui/react@3.2.5`** where HeroUI supplies meaningfully more than `@base-ui/react` does today — specifically, complex composed interaction patterns (data table, calendar/date-range, command palette, rich autocomplete/combobox with async loading) that `@base-ui/react` leaves fully unstyled and uncomposed.
-3. **`@base-ui/react` remains the headless primitive layer for atoms** (ADR-0001 stands, unchanged). HeroUI is adopted as a second, narrower layer ABOVE it for a specific class of composed blocks — not a replacement.
+**Amended 2026-09-16 on the coordinator's ruling (task `k17284qvsrzpjdpgj3h3nw1hk58egc8g`, re-pin):** the operator's decision is "use HeroUI" for **finished blocks** — not "HeroUI for the data table only", which is what the first draft of this ADR narrowed it to. That narrowing is why the first T3 blocks imported zero HeroUI and still read flat.
 
-This ADR does **not** itself add `@heroui/react` as a dependency of `@vantageos/mosaic-blocks` (per task scope) — it defines the theme data both layers will draw from and the per-primitive boundary, so the first real HeroU-based block (a follow-up task) has an unambiguous contract to build against.
-
----
-
-## Per-primitive table — stays on @base-ui/react vs. moves to @heroui/react
-
-| Primitive class | Examples | Stays on `@base-ui/react` | Moves to `@heroui/react` | Why |
-|---|---|:---:|:---:|---|
-| Simple interactive atoms | Button, Input, Select, Switch, Field, Avatar, Badge, InputGroup, Card | **STAYS** | | ADR-0001 fully covers these; near-zero porting cost from `heyfabrika/styleui`; no HeroUI advantage for a single-role primitive |
-| Overlay/menu primitives | DropdownMenu, Combobox (single-select, sync options) | **STAYS** | | `@base-ui/react/menu` and `@base-ui/react/combobox` are complete and already ported; HeroUI's menu/autocomplete duplicate this with no net gain |
-| Composed data table | sortable/filterable table with row selection | | **MOVES** | No `@base-ui/react` primitive exists; hand-rolling ARIA grid semantics (row/column navigation, selection announcements) is exactly the class of work `react-aria` (HeroUI's foundation) is built to close correctly on the first try |
-| Calendar / date range picker | single date, range, presets | | **MOVES** | Same reasoning — `react-aria`'s `useCalendar`/`useDateRangePicker` implement locale-aware keyboard/screen-reader behavior that would otherwise be a multi-cycle port; no existing atom covers this at all |
-| Command palette | `Cmd+K` fuzzy launcher | | **MOVES** | Composed pattern (search + virtualized list + keyboard nav + portal) with no `@base-ui/react` equivalent; HeroUI ships it complete |
-| Async/virtualized autocomplete | remote-search combobox, large option sets | | **MOVES** | `@base-ui/react/combobox` handles the sync case; virtualization + async loading states are additive complexity HeroUI already solves |
-| Drawer / side sheet | `MosaicDrawer` (`@base-ui/react/dialog`) — also the host of the T4 document side panel | **STAYS** | | Modal focus trap, scroll lock and portal are complete in `@base-ui/react/dialog`; the `pujol-reporting` #25 trial rebuilt it on HeroUI for looks only — relief and slide-in motion come from the depth tokens, not from swapping the primitive |
-| Tabs | `MosaicTabs` (`@base-ui/react/tabs`) — Bail / Ligne / Comparer in the T4 panel | **STAYS** | | Roving tabindex and `aria-selected` already correct; #25 used HeroUI Tabs for styling, which the tokens now provide |
-| Tooltip | `MosaicTooltip` (`@base-ui/react/tooltip`) | **STAYS** | | Single-role primitive, fully covered; no composed behaviour HeroUI would add |
-| Popover | `MosaicPopover` (`@base-ui/react/popover`) | **STAYS** | | Positioning + dismissal complete in base-ui; #25's HeroUI Popover was a styling choice only |
-| Alert dialog | `MosaicAlertDialog` (`@base-ui/react/alert-dialog`) | **STAYS** | | `role="alertdialog"` semantics and initial-focus rules already implemented; nothing to gain from a second authority |
-| Landing / utility blocks (Batch A/B) | Navbar, HeroSplit, StatsGrid, Counter, ThemeToggle | **STAYS (unaffected)** | | Purely compositional, props-driven; no headless primitive underneath either way — this ADR does not touch them |
-
-**Rule going forward:** a primitive moves to HeroUI only when no `@base-ui/react` export covers it (mirrors ADR-0001's own per-primitive availability check) AND the interaction pattern is genuinely composed (multi-part ARIA choreography), not merely "would be faster to reuse than to port." A single-role primitive (button, input, switch) never moves — that would fragment the `data-slot` convention (ADR-0001) across two unrelated attribute vocabularies for no behavioral gain.
+1. **Relief and motion are defined once**, as CSS custom-property DATA in `@vantageos/mosaic-blocks` (`src/theme/depth.css`, imported by `src/styles.css`) — never as a per-component literal, never re-invented per consuming app: a 4-step surface ladder, 3 elevation levels (shadow + highlight edge), motion tokens (durations, easings, entry and hover-lift presets, all zeroed under `prefers-reduced-motion`), and the `danger` status utility next to `success`/`warning`.
+2. **`@heroui/react` v3 is a real dependency of the package.** Every finished block is **composed from HeroUI components** (Card, Chip, Table, Drawer, Tabs, Button, Tooltip, ListBox, Toolbar, SearchField, Meter, Skeleton, Avatar…), themed through the token bridge below. A block never hand-rolls a replacement for a component HeroUI provides.
+3. **`@base-ui/react` stays only for atoms HeroUI does not provide**, and for the existing 132 components until each is replaced by a HeroUI-composed finished block. ADR-0001 stands for that remaining scope.
+4. **Where HeroUI provides nothing, the gap is named, not papered over.** Read from the published package (`@heroui/react@3.2.5`, `ls dist/components` -> 88 components): there is **no navbar, no sidebar, no chart, no PDF viewer and no splitter**. The app shell is composed from Surface + ListBox + Link + Tooltip + Button + Avatar (sidebar) and Toolbar + SearchField + Button + Dropdown (top bar); only SVG chart geometry, `MosaicPdfViewer` and `MosaicResizableSplitPane` remain ours.
+5. **Landing order.** This PR carries the decision and the token data only. The `@heroui/react` dependency, its stylesheet and the token-bridge CSS land with the first blocks that import it (the T3 rebuild), then T4 — one PR in gate at a time.
 
 ---
 
-## OKLCH token mapping — one authority per primitive
+## Per-block composition — which HeroUI components each finished block uses
 
-The trials showed the failure mode to avoid: `vantageos-crm` PR #172 redeclared HeroUI's own `--background`/`--foreground`/`--accent`/`--danger`/`--success`/`--warning` base names locally, per-app, to point at the app's existing palette. That pattern works exactly once, per app, and produces zero shared vocabulary. `@vantageos/mosaic-blocks` fixes the authority question centrally instead: **HeroUI's theme variables are mapped from the package's own `--mosaic-*` / semantic tokens, at the package level, so a HeroUI-based block and a `@base-ui/react`-based block read the identical values — one primitive never has two authorities.**
+| Finished block | Composed from (`@heroui/react`) | Stays ours | Why |
+|---|---|---|---|
+| App shell — sidebar | Surface, ListBox / ListBoxItem (single selection = active item), Link, Tooltip (collapsed labels), Button (collapse), Avatar (brand mark), Separator | — | HeroUI ships no sidebar; ListBox gives the selection + keyboard semantics a hand-rolled nav list would re-implement |
+| App shell — top bar | Toolbar, SearchField, Button (theme toggle), Dropdown (language), Avatar (user) | — | HeroUI ships no navbar; Toolbar gives the grouped, arrow-key-navigable bar |
+| KPI tile | Card (Header / Content / Footer), Chip (trend; « Non raccordé » state), Skeleton (loading), Tooltip | SVG sparkline geometry | No HeroUI chart primitive |
+| Stage chart | Card, Meter (one per stage, accessible value), Chip (Gagné / Perdu), Tooltip; Table for the accessible fallback | — | Meter carries `role="meter"` semantics a div bar lacks |
+| Data table | Table (Root, ScrollContainer for sticky header, Header, SortableColumnHeader, Body, Row with react-aria selection, Cell, ColumnResizer), Chip (Statut), Checkbox, Pagination | — | react-aria grid semantics (row/column navigation, selection announcements) |
+| Document side panel | Drawer (Content, Header, Heading, Body, Footer, CloseTrigger), Tabs (Bail / Ligne / Comparer), ButtonGroup + Button (« Comparer », « Ouvrir dans Drive »), Separator | `MosaicPdfViewer`, `MosaicResizableSplitPane` (compare mode) | HeroUI ships no PDF viewer and no splitter |
+| Simple atoms not yet superseded | — | Existing `@base-ui/react` components (Button, Input, Select, Switch, Field, DropdownMenu, Combobox, Tooltip, Popover, AlertDialog, Drawer, Tabs) | Kept until a finished block replaces each; a new finished block uses the HeroUI component, never the base-ui one |
+
+**Rule going forward:** a new finished block imports the HeroUI component for every part HeroUI provides. A part may stay hand-built only when the published HeroUI package has no component for it, and that absence is written in this table.
+
+---
+
+## Token bridge — one authority per value
+
+The trials showed the failure mode to avoid: `vantageos-crm` PR #172 redeclared HeroUI's own base variables locally, per app. `@vantageos/mosaic-blocks` fixes the authority centrally: **HeroUI's theme variables are mapped from this package's tokens at the package level**, so a HeroUI block and any remaining base-ui atom read identical values. Variable names below are read from `@heroui/styles` `dist/heroui.min.css`, not recalled.
 
 | HeroUI theme variable | Mosaic source (this package) | Notes |
 |---|---|---|
-| `--background` | `var(--mosaic-surface-ground)` | page ground, new T1 surface-ladder token |
-| `--foreground` | `var(--foreground)` (existing alias → `--mosaic-color-foreground`) | unchanged, already OKLCH |
-| `--surface` | `var(--mosaic-surface-card)` | HeroUI's "surface" concept = this package's "card" step |
-| `--surface-secondary` | `var(--mosaic-surface-sidebar)` | HeroUI has no native "sidebar" concept; sidebar step reused here |
-| `--overlay` | `var(--mosaic-surface-well)` | HeroUI's popover/menu backdrop = the most-recessed step (nested well) |
-| `--accent` | `var(--accent)` (existing alias → `--mosaic-color-accent`) | unchanged |
-| `--danger` | `var(--color-danger-500)` (T1-added, was the missing triad) | now wired, mirrors success/warning |
-| `--success` | `var(--color-success-500)` | already wired (pre-T1) |
-| `--warning` | `var(--color-warning-500)` | already wired (pre-T1) |
-| `--border` | `var(--border)` (existing alias) | unchanged |
-| `--focus` | `var(--ring)` (existing alias) | unchanged |
-| HeroUI elevation/shadow utilities | `var(--mosaic-elevation-{1,2,3}-shadow)` / `-highlight` | T1-added; a HeroUI block requesting elevation reads the SAME three levels a `@base-ui/react` block would |
-| HeroUI transition/animation durations | `var(--mosaic-motion-duration-entry)` / `-hover`, `var(--mosaic-motion-easing-entry)` / `-hover` | T1-added; both layers honor the same `prefers-reduced-motion` zeroing, defined once |
+| `--background` | `var(--mosaic-surface-ground)` | page ground, step 1 of the ladder |
+| `--foreground` | `var(--foreground)` | unchanged |
+| `--surface` | `var(--mosaic-surface-card)` | cards, KPI tiles, table |
+| `--surface-secondary` | `var(--mosaic-surface-sidebar)` | sidebar step |
+| `--surface-tertiary` | `var(--mosaic-surface-well)` | nested wells (icon wells, table header band) |
+| `--surface-shadow` | `var(--mosaic-elevation-1-shadow)`, `var(--mosaic-elevation-1-highlight)` | resting cards |
+| `--overlay` / `--overlay-shadow` | `var(--mosaic-surface-card)` / `var(--mosaic-elevation-3-shadow)` | drawer, popover, dropdown |
+| `--accent` / `--accent-soft` / `--accent-soft-foreground` | `var(--accent)` and its soft pair | selected table row = accent-soft surface + accent-soft-foreground text, contrast >= 4.5:1 asserted in both modes |
+| `--success*` / `--danger*` / `--warning*` | `var(--color-success-500)` / `var(--color-danger-500)` / `var(--color-warning-500)` | soft variants derived by HeroUI for chips |
+| `--border` / `--separator` / `--focus` | `var(--border)` / `var(--border)` / `var(--ring)` | unchanged |
+| `--default-transition-duration` / `--default-transition-timing-function` | `var(--mosaic-motion-duration-hover)` / `var(--mosaic-motion-easing-hover)` | zeroed under `prefers-reduced-motion` by the same rule as the depth tokens |
+| `--radius` / `--radius-xl` | `var(--radius)` | unchanged |
 
-`--*-hover` / `--*-soft` / derived HeroUI tokens are left to HeroUI's own `color-mix()` computation (as PR #172 already did correctly) — only the base tokens above need an explicit mosaic mapping; the derived ones recompute automatically once the base is set.
+`--*-hover` / `--*-soft-hover` variants are left to HeroUI's own derivation once the base is set.
 
-**A HeroUI-based block never declares its own `--background`/`--accent`/etc. locally.** It consumes the mapping above, in a package-level HeroUI theme wiring layer (to be added at the point the first HeroUI block ships) — never in the app, never per-block. This is the structural fix for the exact drift the two trials each demonstrated independently.
+**A block never declares a HeroUI base variable locally.** The bridge lives once, in the package, shipped with the first HeroUI-importing blocks.
 
 ---
 
 ## Consequences
 
 ### Positive
-- Relief (surface ladder + elevation) and motion (durations, easings, presets, reduced-motion contract) exist ONCE, tested (`src/__tests__/theme-depth.test.ts`), and are available to every future block regardless of which primitive layer it is built on.
-- The `danger` semantic gap (present in `@vantageos/mosaic-tokens` canonical values since the package's inception, never wired into this package's consumer-facing `@theme inline` layer) is closed as a byproduct — `bg-danger-500` etc. now exist alongside `bg-success-500` / `bg-warning-500`.
-- HeroUI is scoped narrowly (composed patterns with no `@base-ui/react` equivalent), so ADR-0001's `data-slot` convention and near-zero-porting-cost rationale for the existing 132 components is entirely undisturbed.
-- The OKLCH mapping table gives the first HeroUI-block implementer an unambiguous contract instead of a third independent app-local reinvention.
+- Relief and motion exist once, tested (`src/__tests__/theme-depth.test.ts`), for every block.
+- Finished blocks inherit HeroUI's react-aria behaviour (selection, keyboard, focus, overlays) instead of re-implementing it, and the operator's "flat mockup" verdict is answered by composed components on shared depth tokens rather than per-screen styling.
+- The token bridge gives every HeroUI block one contract; no app re-declares HeroUI variables.
 
 ### Negative / accepted trade-offs
-- `@heroui/react` is NOT added as a dependency by this task — the mapping is defined ahead of the first consumer, which carries a small risk the mapping needs adjustment once real HeroUI component CSS is wired against it. Accepted: cheaper to adjust a documented table than to have let a third app invent its own local theme.
-- Two headless-primitive layers now coexist in one package (`@base-ui/react` + eventually `@heroui/react`). Mitigated by the per-primitive table above being the single decision authority — a contributor does not choose per-component, they look up the class.
-- `react-aria` (HeroUI's foundation) is a materially larger dependency than `@base-ui/react` for the primitives it will cover; acceptable because it is scoped to primitives that would otherwise require hand-built ARIA choreography of comparable or greater cost.
+- Two component layers coexist until the existing base-ui components are superseded. Mitigated by the per-block table being the decision authority: a new finished block always uses HeroUI for parts HeroUI provides.
+- `@heroui/react` pulls react-aria, react-aria-components and `@heroui/styles` (peer and direct dependencies read from its package.json), materially larger than base-ui alone. Accepted by the operator's decision.
+- The bridge is specified here before the first HeroUI block exists; adjustments may follow when real component CSS is wired. It is adjusted in this table, never locally.
 
 ### Risks
 
-**R1 — theme mapping drift.** If a future HeroUI block bypasses the mapping table and redeclares a base token locally (the exact failure both trials exhibited), the "one authority per primitive" guarantee breaks silently.
-*Mitigation:* the mapping table above is the referenced source for the eventual package-level HeroUI wiring layer; a future guard test (out of scope here) can assert no `.stories.tsx` or component file under HeroUI-block paths declares `--background`/`--accent`/etc. locally.
-*Residual risk:* MEDIUM until that guard exists — tracked as follow-up, not blocking this ADR.
+**R1 — bridge bypass.** A block redeclaring a HeroUI base variable locally breaks the single authority silently. *Mitigation:* a guard asserting no component or story under `src/components` declares `--background`, `--surface*`, `--accent*`, `--overlay*`, `--danger*`, `--success*` or `--warning*` ships with the bridge.
 
-**R2 — bundle size.** `react-aria`/`react-stately` add meaningfully to bundle size versus `@base-ui/react` alone.
-*Mitigation:* HeroUI adoption is scoped to the composed-block class only (per the table); simple atoms never pull it in. Consumers who need zero HeroUI-block usage incur zero additional bytes (tree-shaken, per ADR-0001 R3 precedent).
-*Residual risk:* LOW — scoping is the mitigation, and it is structural (the per-primitive table), not a promise.
+**R2 — hand-rolled parts creeping back.** A block re-implements something HeroUI provides. *Mitigation:* each finished block file must import `@heroui/react` (task verification: `git grep "@heroui/react"` non-empty per block file), and any hand-built part must appear in the "Stays ours" column above.
 
 ---
 
