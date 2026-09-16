@@ -61,10 +61,16 @@ const locataires: Locataire[] = [
 ];
 
 const navItems = [
-  { id: "nav-dashboard", href: "/dashboard", label: "Tableau de bord", isActive: true },
-  { id: "nav-baux", href: "/baux", label: "Baux" },
-  { id: "nav-locataires", href: "/locataires", label: "Locataires" },
-  { id: "nav-documents", href: "/documents", label: "Documents" },
+  {
+    id: "nav-dashboard",
+    href: "/dashboard",
+    label: "Tableau de bord",
+    isActive: true,
+    icon: <HomeIcon />,
+  },
+  { id: "nav-baux", href: "/baux", label: "Baux", icon: <FileTextIcon /> },
+  { id: "nav-locataires", href: "/locataires", label: "Locataires", icon: <UsersIcon /> },
+  { id: "nav-documents", href: "/documents", label: "Documents", icon: <FileTextIcon /> },
 ];
 
 const sidebarLabels = {
@@ -155,6 +161,63 @@ function AlertIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M9 22V12h6v10" />
+    </svg>
+  );
+}
+
+function FileTextIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
 /**
  * The app shell is deliberately mobile-aware: MosaicAppSidebar renders at
  * `width: 100%` on mobile (its own off-canvas-drawer contract — see
@@ -196,16 +259,41 @@ function DashboardShell() {
         <MosaicTopBar
           titleSlot={<h1 style={{ fontSize: 18, fontWeight: 600 }}>Tableau de bord</h1>}
           searchSlot={
-            <input
-              aria-label="Rechercher"
-              placeholder="Rechercher…"
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-              }}
-            />
+            isMobile ? (
+              // Wave-1 T5 reopen defect 4: a full-width text input truncates
+              // its own placeholder ("Reche…") at 390px next to the title +
+              // theme + language controls. Below the app-shell's mobile
+              // breakpoint, collapse to an icon-only trigger instead of
+              // shrinking a text field past legibility.
+              <button
+                type="button"
+                aria-label="Rechercher"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                  background: "transparent",
+                  color: "var(--foreground)",
+                }}
+              >
+                <SearchIcon />
+              </button>
+            ) : (
+              <input
+                aria-label="Rechercher"
+                placeholder="Rechercher…"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                }}
+              />
+            )
           }
           themeControlSlot={
             <MosaicThemeToggle

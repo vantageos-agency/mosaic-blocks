@@ -12,11 +12,19 @@
  * Won/lost stages are colored via the shared success/danger token classes
  * (bg-success-500 / bg-danger-500) — never an inline literal — and carry a
  * `data-kind` attribute so a consumer or test can target them without
- * depending on the class string. The grow-in entry animation references the
- * shared T1 motion tokens (`--mosaic-motion-duration-entry` /
- * `-easing-entry`, `src/theme/depth.css`) — zeroed under
- * `prefers-reduced-motion: reduce` by depth.css itself, never a
- * component-local hardcoded duration.
+ * depending on the class string. In-progress stages (no `kind`) use the
+ * `--mosaic-accent-vivid` token (bg-accent-vivid, `src/theme/depth.css`) —
+ * NOT `bg-accent`, which resolves to the same luminance as the card surface
+ * it sits on and renders invisible (Wave-1 T5 reopen defect 1). The grow-in
+ * entry animation references the shared T1 motion tokens
+ * (`--mosaic-motion-duration-entry` / `-easing-entry`, `src/theme/depth.css`)
+ * — zeroed under `prefers-reduced-motion: reduce` by depth.css itself, never
+ * a component-local hardcoded duration.
+ *
+ * Every bar also shows its own value as VISIBLE text (Wave-1 T5 reopen
+ * defect 1: bars showed no value) — the same `valueLabel` formatter used by
+ * the accessible table fallback, so the visible number and the sr-only
+ * number can never drift apart.
  *
  * Accessibility: the bars are decorative (aria-hidden); the SAME numbers are
  * always exposed via a visually-hidden (`sr-only`) `<table>` with a required
@@ -91,7 +99,7 @@ export interface MosaicStageChartProps {
 const KIND_CLASS: Record<"won" | "lost" | "default", string> = {
   won: "bg-success-500",
   lost: "bg-danger-500",
-  default: "bg-accent",
+  default: "bg-accent-vivid",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -137,9 +145,15 @@ export function MosaicStageChart({
           return (
             <div
               key={stage.id}
-              className="flex flex-1 flex-col items-center gap-2"
+              className="flex flex-1 flex-col items-center gap-1"
               style={{ height: "100%", justifyContent: "flex-end" }}
             >
+              <span
+                data-slot="stage-chart-bar-value"
+                className="max-w-full truncate text-xs font-semibold text-foreground"
+              >
+                {valueLabel(stage.value)}
+              </span>
               <div
                 data-slot="stage-chart-bar"
                 data-kind={kind}

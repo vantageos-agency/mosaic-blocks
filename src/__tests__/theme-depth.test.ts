@@ -198,6 +198,18 @@ describe("surface ladder — page ground / sidebar / card / nested well", () => 
       rank(light),
     );
   });
+
+  // ── Wave-1 T5 reopen defect 4 ────────────────────────────────────────────
+  // "distinct" alone let ground/card sit only 0.06 apart in dark mode — the
+  // pilot's screenshot showed cards "barely separating from the page
+  // ground". A dark-mode box-shadow barely reads on a dark background, so
+  // the ground↔card luminance gap itself has to carry more of the relief.
+
+  it("keeps a real (not just technically-distinct) luminance gap between dark-mode ground and card", () => {
+    const dark = readSurfaceLuminances(darkBlock, 'dark ([data-theme="dark"])');
+    const gap = dark["--mosaic-surface-card"] - dark["--mosaic-surface-ground"];
+    expect(gap, `ground/card gap too small to read as relief: ${gap}`).toBeGreaterThanOrEqual(0.08);
+  });
 });
 
 // ── (ii) elevation — three levels, each shadow + highlight edge ────────────

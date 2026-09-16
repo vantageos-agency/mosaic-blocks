@@ -410,11 +410,14 @@ export function MosaicAppSidebar({
                         <span
                           aria-hidden="true"
                           data-slot="app-sidebar-active-pill"
-                          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent"
+                          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent-vivid"
                         />
                       )}
                       {isCollapsed ? (
-                        <span className="text-sidebar-foreground" title={item.label}>
+                        <span
+                          className={cn(isActive ? "text-accent-vivid" : "text-sidebar-foreground")}
+                          title={item.label}
+                        >
                           {item.icon ?? (
                             <span className="text-xs font-bold">{item.label.charAt(0)}</span>
                           )}
@@ -423,9 +426,20 @@ export function MosaicAppSidebar({
                         <div className="flex w-full items-center justify-between">
                           <div className="flex items-center gap-3">
                             {item.icon && (
-                              <span className="text-sidebar-foreground">{item.icon}</span>
+                              <span
+                                className={cn(
+                                  isActive ? "text-accent-vivid" : "text-sidebar-foreground",
+                                )}
+                              >
+                                {item.icon}
+                              </span>
                             )}
-                            <span className="mosaic-sidebar-label-in text-sm font-medium text-sidebar-foreground">
+                            <span
+                              className={cn(
+                                "mosaic-sidebar-label-in text-sm font-medium",
+                                isActive ? "text-accent-vivid" : "text-sidebar-foreground",
+                              )}
+                            >
                               {item.label}
                             </span>
                           </div>
@@ -593,7 +607,7 @@ export function MosaicAppSidebar({
                       <span
                         aria-hidden="true"
                         data-slot="app-sidebar-active-pill"
-                        className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent"
+                        className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-accent-vivid"
                       />
                     )}
                     {isCollapsed ? (

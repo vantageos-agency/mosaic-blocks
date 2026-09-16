@@ -273,6 +273,61 @@ describe("MosaicAppSidebar", () => {
     expect(inactiveButton?.querySelector('[data-slot="app-sidebar-active-pill"]')).toBeNull();
   });
 
+  // ── Wave-1 T5 reopen defect 2 ──────────────────────────────────────────
+  // The active-item pill must use the VIVID accent token — plain `bg-accent`
+  // resolves to the same luminance as `bg-sidebar-accent` (the active row's
+  // own background) and renders invisible.
+
+  it("colors the active-item pill with the vivid accent token, not the invisible bg-accent alone", () => {
+    render(
+      <Wrapper>
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={navItems}
+          activePath="/agents"
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
+        />
+      </Wrapper>,
+    );
+    const activeButton = screen.getByText("Agents").closest("button");
+    const pill = activeButton?.querySelector('[data-slot="app-sidebar-active-pill"]');
+    expect(pill?.className).toContain("accent-vivid");
+  });
+
+  // ── Wave-1 T5 reopen defect 2 ──────────────────────────────────────────
+  // Items render their caller-supplied icon (the Dashboard composition had
+  // none wired, so the sidebar showed no icons at all).
+
+  it("renders each item's icon when provided", () => {
+    const itemsWithIcons = [
+      { id: "home", label: "Home", href: "/", icon: <svg data-testid="icon-home" /> },
+      { id: "agents", label: "Agents", href: "/agents", icon: <svg data-testid="icon-agents" /> },
+    ];
+    render(
+      <Wrapper>
+        <MosaicAppSidebar
+          isCollapsed={false}
+          onToggleCollapse={() => {}}
+          navItems={itemsWithIcons}
+          sidebarAriaLabel="Application sidebar"
+          mainNavAriaLabel="Main navigation"
+          quickActionsHeading="Quick Actions"
+          recentHeading="Recent"
+          collapseSidebarAriaLabel="Collapse sidebar"
+          expandSidebarAriaLabel="Expand sidebar"
+        />
+      </Wrapper>,
+    );
+    expect(screen.getByTestId("icon-home")).toBeTruthy();
+    expect(screen.getByTestId("icon-agents")).toBeTruthy();
+  });
+
   it("wires nav item transitions to the shared token-driven motion vars — no hardcoded ms duration", () => {
     const { container } = render(
       <Wrapper>

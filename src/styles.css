@@ -23,6 +23,13 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+
+  /* Vivid accent — see src/theme/depth.css for the reopen-defect rationale.
+     Reuses --mosaic-color-info-500/-50 under an accent-named utility so a
+     "pop" moment (active nav pill, in-progress chart bar) is never confused
+     with the muted --accent hover-tint slot above. */
+  --color-accent-vivid: var(--mosaic-accent-vivid);
+  --color-accent-vivid-foreground: var(--mosaic-accent-vivid-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);

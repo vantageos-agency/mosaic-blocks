@@ -120,4 +120,50 @@ describe("MosaicStageChart", () => {
     const bar = container.querySelector('[data-slot="stage-chart-bar"]');
     expect(bar?.className).toContain("mosaic-stage-chart-bar-grow");
   });
+
+  // ── Wave-1 T5 reopen defect 1 ────────────────────────────────────────────
+  // In-progress bars (won/lost keep success/danger) must use a token with
+  // REAL contrast against the card surface, never `bg-accent` — that token
+  // resolves to the same luminance as the card/sidebar-accent surfaces it
+  // sits on and renders invisible.
+
+  it("colors in-progress (default-kind) bars with the vivid accent token, not the invisible bg-accent slot", () => {
+    const { container } = render(
+      <MosaicStageChart
+        stages={stages}
+        tableCaption="Pipeline"
+        valueLabel={valueLabel}
+        {...columnLabels}
+      />,
+    );
+    const inProgressBars = container.querySelectorAll(
+      '[data-slot="stage-chart-bar"][data-kind="default"]',
+    );
+    expect(inProgressBars.length).toBeGreaterThan(0);
+    for (const bar of inProgressBars) {
+      expect(bar.className).toContain("accent-vivid");
+    }
+  });
+
+  // ── Wave-1 T5 reopen defect 1 ────────────────────────────────────────────
+  // Every bar must show its value as VISIBLE text (not only inside the
+  // sr-only accessible table) — the operator's screenshot showed bars with
+  // no value at all.
+
+  it("shows a VISIBLE value label on every bar, matching the sr-only table's numbers", () => {
+    const { container } = render(
+      <MosaicStageChart
+        stages={stages}
+        tableCaption="Pipeline"
+        valueLabel={valueLabel}
+        {...columnLabels}
+      />,
+    );
+    const visibleValues = container.querySelectorAll('[data-slot="stage-chart-bar-value"]');
+    expect(visibleValues.length).toBe(stages.length);
+    const texts = Array.from(visibleValues).map((el) => el.textContent);
+    for (const stage of stages) {
+      expect(texts).toContain(valueLabel(stage.value));
+    }
+  });
 });

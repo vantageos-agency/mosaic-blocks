@@ -29,11 +29,16 @@
   --mosaic-surface-card: oklch(1 0 0);
 }
 
+/* Dark mode: widened relative to the original pass (ground 0.16→0.13,
+ * card 0.22→0.25) — Wave-1 T5 reopen defect 4: cards "barely separate from
+ * the page ground" in dark. Same relative order (well < sidebar < ground <
+ * card) preserved, just a bigger perceptual gap; theme-depth.test.ts still
+ * asserts 4 distinct values + matching order, not the exact numbers. */
 [data-theme="dark"] {
-  --mosaic-surface-well: oklch(0.08 0.004 250);
-  --mosaic-surface-sidebar: oklch(0.12 0.004 250);
-  --mosaic-surface-ground: oklch(0.16 0.003 250);
-  --mosaic-surface-card: oklch(0.22 0.004 250);
+  --mosaic-surface-well: oklch(0.07 0.004 250);
+  --mosaic-surface-sidebar: oklch(0.11 0.004 250);
+  --mosaic-surface-ground: oklch(0.13 0.003 250);
+  --mosaic-surface-card: oklch(0.25 0.004 250);
 }
 
 /* ── Elevation — three levels, each a shadow + a highlight edge ─────────────
@@ -55,10 +60,31 @@
   --mosaic-elevation-3-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.8);
 }
 
+/* Dark mode highlight alpha strengthened (0.06/0.09/0.12 → 0.14/0.18/0.22) —
+ * same reopen defect 4: a black drop-shadow barely reads against a dark
+ * surface, so the highlight EDGE is dark mode's primary relief cue and needed
+ * more contrast to be visible at all, not just present in the DOM. */
 [data-theme="dark"] {
-  --mosaic-elevation-1-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.06);
-  --mosaic-elevation-2-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.09);
-  --mosaic-elevation-3-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.12);
+  --mosaic-elevation-1-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.14);
+  --mosaic-elevation-2-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.18);
+  --mosaic-elevation-3-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.22);
+}
+
+/* ── Accent — a genuinely vivid highlight for active/selected states and
+ * in-progress data series ───────────────────────────────────────────────
+ * Wave-1 T5 reopen defect 1+2: the shadcn `--accent` semantic slot (from
+ * @vantageos/mosaic-tokens) is a muted hover-tint that resolves to the SAME
+ * luminance as `--sidebar-accent` by design — using it for a "pop" moment
+ * (in-progress chart bar, active nav pill) rendered invisible in both modes.
+ * Rather than inventing a new literal colour, this reuses the existing
+ * `--mosaic-color-info-500`/`-50` pair (already shipped by
+ * @vantageos/mosaic-tokens, already consumed elsewhere by MosaicCallout /
+ * MosaicMatchInput, mode-invariant by its own design) under a name that
+ * makes the accent role explicit at the call site.
+ * --------------------------------------------------------------------------*/
+:root {
+  --mosaic-accent-vivid: var(--mosaic-color-info-500);
+  --mosaic-accent-vivid-foreground: var(--mosaic-color-info-50);
 }
 
 /* ── Motion — durations, easings, entry preset, hover-lift preset ───────────
