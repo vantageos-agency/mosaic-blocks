@@ -126,7 +126,7 @@ export interface MosaicAdminOnlyGuardBaseProps {
  */
 export type MosaicAdminOnlyGuardExitProps =
   | {
-      /** Invoked by the exit button, and once automatically when a non-admin's permissions finish loading. */
+      /** Invoked only by the exit button's click on the denied state. Never called automatically — not on mount, not when permissions finish loading; the host owns navigation. */
       onExit: () => void;
       /** Visible label on the exit button (e.g. "Back to Dashboard"). Required — the button renders whenever `onExit` is provided. */
       exitLabel: string;
