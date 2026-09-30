@@ -15,11 +15,11 @@ importers:
         specifier: ^7
         version: 7.5.9(next@16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@vantageos/cloud-identity':
-        specifier: ^0.2
+        specifier: '>=0.2.0 <0.8.0'
         version: 0.2.0
       '@vantageos/mosaic-tokens':
-        specifier: ^0.5.0
-        version: 0.5.0(tailwindcss@4.3.1)
+        specifier: ^0.7.0
+        version: 0.7.0(tailwindcss@4.3.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1284,8 +1284,8 @@ packages:
     resolution: {integrity: sha512-SrvIXxgDGtJkp/FdcZ0M+sAEf1dsTua92tPoohFpC7vB5G1pKBklpbscaL5FIJPUmT2fGpcAjqO5hZeZe/FNQQ==}
     engines: {node: '>=20'}
 
-  '@vantageos/mosaic-tokens@0.5.0':
-    resolution: {integrity: sha512-zzQV8dVFoFfVNfHdjg29VlUuemmD8MoHPX+OfdZ3Mt8Nte13dbD/G7utUqpSn0MOyPeGQi07usrcmc1eqImnXQ==}
+  '@vantageos/mosaic-tokens@0.7.0':
+    resolution: {integrity: sha512-eJSTJZPmcGtlsZ2Do/H7Rmw0ruVDMkkfXr12qG3TWQNXIu448KAflrOWjLtCH9DrzzAtxLgTz2ZuFZK8PNakYQ==}
     peerDependencies:
       tailwindcss: ^4.1.0
     peerDependenciesMeta:
@@ -3483,7 +3483,7 @@ snapshots:
     dependencies:
       zod: 4.4.3
 
-  '@vantageos/mosaic-tokens@0.5.0(tailwindcss@4.3.1)':
+  '@vantageos/mosaic-tokens@0.7.0(tailwindcss@4.3.1)':
     optionalDependencies:
       tailwindcss: 4.3.1
 

@@ -70,10 +70,10 @@
   },
   "peerDependencies": {
     "@clerk/nextjs": "^7",
-    "@vantageos/cloud-identity": "^0.2",
+    "@vantageos/cloud-identity": ">=0.2.0 <0.8.0",
     "react": "^19",
     "react-dom": "^19",
-    "recharts": "^2.12.0",
+    "recharts": "^2.12.0 || ^3.0.0",
     "svix": "^1.0.0",
     "tailwindcss": "^4.3.1"
   },
@@ -88,12 +88,13 @@
       "optional": true
     },
     "svix": {
-      "optional": true
+      "optional": true,
+      "reason": "Kept at ^1.0.0 on purpose: svix 2.x Webhook.verify() returns undefined instead of the parsed event, which MosaicClerkWebhookHandler reads as evt.type. Widen only together with that handler."
     }
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
-    "@vantageos/mosaic-tokens": "^0.5.0",
+    "@vantageos/mosaic-tokens": "^0.7.0",
     "class-variance-authority": "^0.7.1"
   },
   "devDependencies": {

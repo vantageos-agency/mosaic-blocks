@@ -107,7 +107,14 @@ Clerk + cloud-identity workspace scope — wrap the entire app.
 ```tsx
 import { ClerkProvider } from "@clerk/nextjs";
 import { MosaicMultiTenantProvider } from "@vantageos/mosaic-blocks";
-import { resolveWorkspaceId } from "@vantageos/cloud-identity";
+import { resolveTenantIdOrAbsent } from "@vantageos/cloud-identity"; // >= 0.6.0
+
+// cloud-identity exports no `resolveWorkspaceId`; adapt its typed result to the
+// (orgId) => string | null shape the prop expects.
+const resolveWorkspaceId = (orgId: string | null) => {
+  const r = resolveTenantIdOrAbsent({ kind: "session", identity: { orgId } });
+  return r.present ? r.tenantId : null;
+};
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -355,7 +362,7 @@ Full documentation in `docs/auth.md`.
 |------|-------------|-------------|-----------------|---------------|------------|
 | `MosaicMultiTenantProvider` | `@vantageos/mosaic-blocks` | ClerkProvider wrapper + `@vantageos/cloud-identity` workspace-scope context; resolves workspace ID per org | No | Yes | `@clerk/nextjs` peer, `@vantageos/cloud-identity` peer |
 | `useMosaicWorkspace` | `@vantageos/mosaic-blocks` | Returns `{ workspaceId: string \| null, isLoading: boolean }` from the nearest provider | — | Yes | `MosaicMultiTenantProvider` |
-| `useEffectiveWorkspaceId` | `@vantageos/mosaic-blocks` | Re-export alias of `useMosaicWorkspace` for cloud-identity consumers | — | Yes | `MosaicMultiTenantProvider` |
+| `useEffectiveWorkspaceId` | `@vantageos/mosaic-blocks` | Re-export alias of `useMosaicWorkspace` | — | Yes | `MosaicMultiTenantProvider` |
 | `MosaicClerkWebhookHandler` | `@vantageos/mosaic-blocks` | Async function for Next.js App Router API routes — verifies Clerk webhook via svix, routes `organization.created` / `organizationMembership.created` / `organizationMembership.deleted` | — | Yes | `svix` (install separately) |
 
 ---

@@ -27,7 +27,7 @@ Peer dependency matrix:
 | Package | Required when | Version |
 |---------|--------------|---------|
 | `@clerk/nextjs` | Any auth component | `^7` |
-| `@vantageos/cloud-identity` | `MosaicMultiTenantProvider`, `useEffectiveWorkspaceId` | `^0.2` |
+| `@vantageos/cloud-identity` | `MosaicMultiTenantProvider`, `useEffectiveWorkspaceId` | `>=0.2.0 <0.8.0` |
 | `svix` | `MosaicClerkWebhookHandler` only | `^1.0.0` |
 
 ---
@@ -42,7 +42,14 @@ Peer dependency matrix:
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { MosaicMultiTenantProvider } from "@vantageos/mosaic-blocks";
-import { resolveWorkspaceId } from "@vantageos/cloud-identity";
+import { resolveTenantIdOrAbsent } from "@vantageos/cloud-identity"; // >= 0.6.0
+
+// cloud-identity exports no `resolveWorkspaceId`; adapt its typed result to the
+// (orgId) => string | null shape the prop expects.
+const resolveWorkspaceId = (orgId: string | null) => {
+  const r = resolveTenantIdOrAbsent({ kind: "session", identity: { orgId } });
+  return r.present ? r.tenantId : null;
+};
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -301,7 +308,7 @@ interface MosaicOrgProfilePageProps {
 
 `MosaicMultiTenantProvider` composes:
 1. **Clerk** (`ClerkProvider`) — handles authentication, sessions, org membership
-2. **`@vantageos/cloud-identity` 0.2.0** — provides workspace scope-filter primitives; the `resolveWorkspaceId` prop maps a Clerk org ID to an internal workspace ID
+2. **`@vantageos/cloud-identity`** — provides the tenant-resolution and scope-filter primitives; the `resolveWorkspaceId` prop maps a Clerk org ID to an internal workspace ID (build it on `resolveTenantIdOrAbsent`, available from 0.6.0)
 
 The provider resolves the effective workspace ID and exposes it via React context.
 
@@ -321,7 +328,7 @@ interface MosaicMultiTenantProviderProps {
   }>;
   publishableKey?: string;
   /**
-   * Workspace ID resolver from @vantageos/cloud-identity.
+   * Workspace ID resolver, typically built on `resolveTenantIdOrAbsent` from @vantageos/cloud-identity.
    * Called with the current Clerk org ID (null = personal workspace).
    * Defaults to identity pass-through when not provided.
    */
@@ -353,7 +360,7 @@ function ConvexQueryWrapper() {
 
 ### useEffectiveWorkspaceId
 
-`useEffectiveWorkspaceId` is a re-export alias of `useMosaicWorkspace` for consumers who prefer the cloud-identity naming convention. Behaviour is identical.
+`useEffectiveWorkspaceId` is a re-export alias of `useMosaicWorkspace`. Behaviour is identical. It is not a cloud-identity symbol (cloud-identity names its equivalent `getEffectiveTenantId`).
 
 ```tsx
 import { useEffectiveWorkspaceId } from "@vantageos/mosaic-blocks";
@@ -458,7 +465,7 @@ The auth components in `@vantageos/mosaic-blocks` were ported from the `any-deba
 | `DeviceProvider` (internal, debate-specific) | `MosaicDeviceProvider` (generic, exported) |
 | `contexts/DeviceProvider.tsx` | `@vantageos/mosaic-blocks` (named import) |
 | Hardcoded Clerk `publishableKey` | Injected via `MosaicMultiTenantProvider` props |
-| Internal `workspaceId` resolution | Delegates to `@vantageos/cloud-identity` 0.2.0 `resolveWorkspaceId` |
+| Internal `workspaceId` resolution | Resolved through the `resolveWorkspaceId` prop, built on `@vantageos/cloud-identity` `resolveTenantIdOrAbsent` |
 | `OrganizationSwitcher` (Clerk direct) | `MosaicClerkOrgSwitcher` (Clerk injected as prop) |
 | Webhook handler in `/api/webhooks/clerk/route.ts` | `MosaicClerkWebhookHandler` (importable function) |
 | `svix` bundled transitively | `svix` must be installed explicitly (optional peer dep `^1.0.0`) — throws an explicit Error with install instructions if absent |
