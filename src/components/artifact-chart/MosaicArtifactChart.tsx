@@ -52,12 +52,17 @@ function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
+// No hex fallbacks on purpose: --color-chart-N is declared by src/styles.css
+// from the tokens package (light + dark sets). A hardcoded fallback would win
+// silently whenever that declaration went missing and paint the same colours in
+// both themes — the defect this replaced. A host that skips styles.css sees the
+// missing series at once instead of a plausible-looking wrong palette.
 const CHART_COLORS = [
-  "var(--color-chart-1, #8884d8)",
-  "var(--color-chart-2, #82ca9d)",
-  "var(--color-chart-3, #ffc658)",
-  "var(--color-chart-4, #ff7300)",
-  "var(--color-chart-5, #00c2ff)",
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
 ];
 
 // ── Data shape ────────────────────────────────────────────────────────────────

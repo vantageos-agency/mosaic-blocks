@@ -49,6 +49,24 @@
   --color-warning-700: var(--mosaic-color-warning-700);
 }
 
+/* Chart series palette — consumed by MosaicArtifactChart as `var(--color-chart-N)`
+   from JS (recharts fill/stroke), never through a Tailwind utility.
+   Values come from @vantageos/mosaic-tokens (--mosaic-color-chart-*, a distinct
+   set in light and in dark); none is chosen here.
+   Why `static`: Tailwind v4 emits a plain `@theme` variable only when a utility
+   uses it, so a JS-only reference would stay undeclared. Why not import
+   @vantageos/mosaic-tokens/theme.css wholesale: it maps every --color-* token
+   (measured: it adds danger-*, neutral-* and info-700 utilities this package
+   does not expose, and still leaves the chart variables undeclared when no
+   `bg-chart-*` utility is present). These five are the only ones needed. */
+@theme static {
+  --color-chart-1: var(--mosaic-color-chart-1);
+  --color-chart-2: var(--mosaic-color-chart-2);
+  --color-chart-3: var(--mosaic-color-chart-3);
+  --color-chart-4: var(--mosaic-color-chart-4);
+  --color-chart-5: var(--mosaic-color-chart-5);
+}
+
 /* ── MosaicLogosGrid stagger animation ────────────────────────────────────── */
 
 @keyframes mosaic-logo-in {
