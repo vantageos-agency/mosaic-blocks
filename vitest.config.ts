@@ -6,6 +6,14 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    // Declared, not inherited: vitest's implicit 5000 ms default is a number nobody
+    // chose here. Under host load (a run at load 24 failed 1 test with no record of
+    // which) a jsdom render test crossing it fails non-deterministically and looks
+    // like a real regression. 15000 ms = ~10x the slowest test measured in a full
+    // verbose run (1422 ms, MosaicSelect "opens popup on click"): headroom for load,
+    // still tight enough that a genuinely slow test surfaces rather than hides.
+    testTimeout: 15000,
+    hookTimeout: 15000,
     setupFiles: ["./src/test-setup.ts"],
     // `src/__tests__/derived/` asserts that the DERIVED docs (README + catalog
     // counts) match src/index.ts. Those docs are regenerated on `main` after a
