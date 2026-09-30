@@ -45,7 +45,11 @@ describe("MosaicThemeToggle", () => {
     // bare `bg-foreground` token (which would make the icon invisible on
     // its own background).
     expect(classes).not.toMatch(/bg-foreground\b/);
-    expect(classes).toMatch(/bg-(secondary|muted|card|accent)\b/);
+    // Anchored so `hover:bg-accent` (always shipped) cannot satisfy it.
+    expect(classes).toMatch(/(?:^|\s)bg-(secondary|muted|card|accent)(?=\s|$)/);
+    // Catches an arbitrary Tailwind value such as `bg-[var(--x)]` or
+    // `bg-[oklch(...)]` -- the defect shape this change exists to close.
+    expect(classes).not.toMatch(/bg-\[/);
   });
 
   it("never ships a literal/arbitrary OKLCH color value in its className", () => {

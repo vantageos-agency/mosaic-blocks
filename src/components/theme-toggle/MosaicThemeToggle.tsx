@@ -10,7 +10,7 @@
  * (Tailwind utilities wired from @vantageos/mosaic-tokens / mosaic-blocks
  * styles.css) — never an inline literal OKLCH value.
  *
- * Wave-1 T5 reopen defect 3: the previous build used an arbitrary
+ * Earlier defect fixed here: the previous build used an arbitrary
  * `bg-[oklch(var(--mosaic-surface,1_0_0))]` value. `--mosaic-surface` (bare,
  * no suffix) is not a real token anywhere in this package — the fallback
  * `1 0 0` (solid white) always won, so the button rendered a white disc in
