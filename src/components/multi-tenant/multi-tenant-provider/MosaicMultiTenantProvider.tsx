@@ -9,10 +9,19 @@
  *
  * @example
  * import { ClerkProvider } from "@clerk/nextjs"
- * import { getEffectiveWorkspaceId } from "@vantageos/cloud-identity"
+ * import { resolveTenantIdOrAbsent } from "@vantageos/cloud-identity" // >= 0.6.0
+ *
+ * // Adapts cloud-identity's typed result to the (orgId) => string | null shape
+ * // of the `resolveWorkspaceId` prop. cloud-identity names this "tenant".
+ * const resolveWorkspaceId = (orgId: string | null) => {
+ *   const r = resolveTenantIdOrAbsent({ kind: "session", identity: { orgId } })
+ *   return r.present ? r.tenantId : null
+ * }
+ *
  * <MosaicMultiTenantProvider
  *   clerkProvider={ClerkProvider}
  *   publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+ *   resolveWorkspaceId={resolveWorkspaceId}
  * >
  *   {children}
  * </MosaicMultiTenantProvider>
@@ -51,7 +60,9 @@ export interface MosaicMultiTenantProviderProps {
   /** Clerk publishable key */
   publishableKey?: string;
   /**
-   * Optional workspace-ID resolver from @vantageos/cloud-identity.
+   * Optional workspace-ID resolver, typically built on
+   * `resolveTenantIdOrAbsent` from @vantageos/cloud-identity (see the example
+   * above). cloud-identity exports no function of this exact shape.
    * Called with the current Clerk org ID (or null for personal workspace).
    * Defaults to identity pass-through when not provided.
    */

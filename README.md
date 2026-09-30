@@ -54,7 +54,7 @@ pnpm add @vantageos/mosaic-blocks
 | `tailwindcss` | `^4.3.1` | Always |
 | `@base-ui/react` | `^1.5.0` | Auto-installed (direct dep) |
 | `@clerk/nextjs` | `^7` | Using any auth component |
-| `@vantageos/cloud-identity` | `^0.2` | `MosaicMultiTenantProvider` |
+| `@vantageos/cloud-identity` | `>=0.2.0 <0.8.0` | `MosaicMultiTenantProvider` |
 | `svix` | `^1.0.0` | `MosaicClerkWebhookHandler` only |
 
 ```bash
