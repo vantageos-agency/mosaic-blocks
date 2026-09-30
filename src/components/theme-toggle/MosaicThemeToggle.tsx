@@ -6,7 +6,18 @@
  * Ported from heyfabrika/styleui components/theme-toggle (MIT).
  * Flips `data-theme` attribute on document.documentElement.
  * Theme-reactive: reads current state from DOM on mount.
- * No hardcoded branding — icon is a pure SVG, all color via OKLCH CSS vars.
+ * No hardcoded branding — icon is a pure SVG, all color via theme tokens
+ * (Tailwind utilities wired from @vantageos/mosaic-tokens / mosaic-blocks
+ * styles.css) — never an inline literal OKLCH value.
+ *
+ * Wave-1 T5 reopen defect 3: the previous build used an arbitrary
+ * `bg-[oklch(var(--mosaic-surface,1_0_0))]` value. `--mosaic-surface` (bare,
+ * no suffix) is not a real token anywhere in this package — the fallback
+ * `1 0 0` (solid white) always won, so the button rendered a white disc in
+ * BOTH themes, and its `currentColor` icon (white foreground in dark mode)
+ * disappeared into it. Fixed by using the real wired tokens: `bg-secondary`
+ * (a neutral/ghost surface, distinct in both modes) + `text-foreground`
+ * (explicit icon colour) + `hover:bg-accent` for the ghost hover state.
  */
 
 import * as React from "react";
@@ -99,7 +110,9 @@ export function MosaicThemeToggle({
       aria-pressed={isDark}
       onClick={handleToggle}
       className={cn(
-        "inline-flex size-9 items-center justify-center rounded-full border border-[oklch(0.9_0.005_250)] bg-[oklch(var(--mosaic-surface,1_0_0))] transition-colors hover:bg-[oklch(0.95_0.005_250)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[oklch(0.5_0.15_250)]",
+        "inline-flex size-9 items-center justify-center rounded-full border border-border",
+        "bg-secondary text-foreground transition-colors hover:bg-accent",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className,
       )}
     >
