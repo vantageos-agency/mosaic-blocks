@@ -699,7 +699,7 @@ export type {
   MosaicWorkspaceContext,
 } from "./components/multi-tenant/multi-tenant-provider/MosaicMultiTenantProvider.js";
 
-// useEffectiveWorkspaceId — re-exposes cloud-identity workspace resolver hook
+// useEffectiveWorkspaceId — local alias of useMosaicWorkspace (not a cloud-identity symbol)
 export { useEffectiveWorkspaceId } from "./components/multi-tenant/multi-tenant-provider/useEffectiveWorkspaceId.js";
 
 // MosaicClerkWebhookHandler — Clerk → Convex sync (organization events)

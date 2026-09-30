@@ -57,6 +57,7 @@
     "build": "tsup && node scripts/prepend-use-client.mjs && node scripts/copy-assets.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "biome check .",
+    "check:recharts-peer": "bash scripts/check-recharts-peer.sh",
     "test": "vitest run",
     "test:browser": "playwright test",
     "sandbox:build": "cd sandbox && pnpm build",
