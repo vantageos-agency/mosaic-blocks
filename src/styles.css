@@ -60,15 +60,10 @@
    does not expose, and still leaves the chart variables undeclared when no
    `bg-chart-*` utility is present). These five are the only ones needed. */
 @theme static {
-  /* allow-stale-theme-token: consumed by MosaicArtifactChart as var(--color-chart-1) in a JS string (recharts fill/stroke), which the utility-class scanner cannot see. */
   --color-chart-1: var(--mosaic-color-chart-1);
-  /* allow-stale-theme-token: consumed by MosaicArtifactChart as var(--color-chart-2) in a JS string (recharts fill/stroke), which the utility-class scanner cannot see. */
   --color-chart-2: var(--mosaic-color-chart-2);
-  /* allow-stale-theme-token: consumed by MosaicArtifactChart as var(--color-chart-3) in a JS string (recharts fill/stroke), which the utility-class scanner cannot see. */
   --color-chart-3: var(--mosaic-color-chart-3);
-  /* allow-stale-theme-token: consumed by MosaicArtifactChart as var(--color-chart-4) in a JS string (recharts fill/stroke), which the utility-class scanner cannot see. */
   --color-chart-4: var(--mosaic-color-chart-4);
-  /* allow-stale-theme-token: consumed by MosaicArtifactChart as var(--color-chart-5) in a JS string (recharts fill/stroke), which the utility-class scanner cannot see. */
   --color-chart-5: var(--mosaic-color-chart-5);
 }
 

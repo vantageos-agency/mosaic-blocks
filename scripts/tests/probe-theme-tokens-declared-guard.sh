@@ -456,6 +456,80 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# FORM 2 — `var(--color-<token>)` read from a JS string (how MosaicArtifactChart
+# hands colours to recharts). Domain of consumption forms: (1) utility class,
+# (2) var() reference in a string literal. Each case seeds its OWN fixture.
+#
+# Near-misses chosen from the guard's own logic (what must NOT count as
+# consumption):
+#   - `var(--probe-series)` — no `--color-` prefix. The guard's namespace is
+#     the `--color-<token>` row Tailwind reads; the raw variable is a
+#     different property, and referencing it leaves the theme row unused.
+#   - the token inside a COMMENT only (`//` and `/* */`) — prose is not
+#     consumption; the guard scans string literals with comments skipped.
+#   - `var(--color-probe-${i})` — a run-time-built name: unreadable
+#     statically, so it must not silently count (loud STALE, stated in the
+#     guard header as a deliberate non-coverage).
+# ---------------------------------------------------------------------------
+write_var_fixture() { # $1 dir  $2 component body  $3.. declared tokens
+  local dir="$1" body="$2"; shift 2
+  mkdir -p "$dir/src/components/probe"
+  printf '%s\n' "$body" > "$dir/src/components/probe/ProbeFixture.tsx"
+  { echo "@theme inline {"; for t in "$@"; do echo "  --color-$t: var(--$t);"; done; echo "}"; echo ":root {"; for t in "$@"; do echo "  --$t: oklch(0.5 0.1 250);"; done; echo "}"; } > "$dir/src/styles.css"
+}
+
+expect() { # $1 kind(MUST_PASS|MUST_BLOCK) $2 label $3 dir $4 needle-or-empty
+  local kind="$1" label="$2" dir="$3" needle="$4" out st
+  set +e
+  out="$(run_guard "$dir/src" "$dir/src/styles.css" 2>&1)"; st=$?
+  set -e
+  if [ "$kind" = MUST_PASS ]; then
+    MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+    if [ "$st" -eq 0 ]; then MUST_PASS_PASS=$((MUST_PASS_PASS + 1)); log MUST_PASS "PASS — $label — exit 0"
+    else FAILURES+=("MUST_PASS $label — exit=$st, output:\n$out"); log MUST_PASS "FAIL — $label — exit=$st"; fi
+  else
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+    if [ "$st" -eq 1 ] && echo "$out" | grep -qF -- "$needle"; then MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1)); log MUST_BLOCK "PASS — $label — guard named $needle, exit 1"
+    else FAILURES+=("MUST_BLOCK $label — exit=$st, output:\n$out"); log MUST_BLOCK "FAIL — $label — exit=$st"; fi
+  fi
+}
+
+V1="$SCRATCH/var-pass"
+write_var_fixture "$V1" 'const SERIES = ["var(--color-probe-dq)", '"'var(--color-probe-sq, #fff)'"', `var(--color-probe-tpl)`, "var( --color-probe-ws )"];
+export function ProbeFixture() { return <div>{SERIES.length}</div>; }' probe-dq probe-sq probe-tpl probe-ws
+assert_landed "$V1/src/components/probe/ProbeFixture.tsx" "var(--color-probe-sq, #fff)" "FORM 2 pass injection"
+expect MUST_PASS "FORM 2 — tokens declared and referenced ONLY as var(--color-<token>) in JS strings (dq, sq+fallback, template, spaced)" "$V1" ""
+
+V2="$SCRATCH/var-stale"
+write_var_fixture "$V2" 'export function ProbeFixture() { return <div>nothing uses the token</div>; }' probe-nowhere
+assert_landed "$V2/src/styles.css" "--color-probe-nowhere" "FORM 2 stale injection"
+expect MUST_BLOCK "FORM 2 — declared token referenced in NO form is still STALE" "$V2" "--color-probe-nowhere"
+
+V3="$SCRATCH/var-undeclared"
+write_var_fixture "$V3" 'const C = ["var(--color-probe-declared)", "var(--color-probe-phantom)"];
+export function ProbeFixture() { return <div>{C.length}</div>; }' probe-declared
+assert_landed "$V3/src/components/probe/ProbeFixture.tsx" "var(--color-probe-phantom)" "FORM 2 undeclared injection"
+expect MUST_BLOCK "FORM 2 — var(--color-<token>) to a token styles.css does not declare" "$V3" "--color-probe-phantom"
+
+V4="$SCRATCH/var-noprefix"
+write_var_fixture "$V4" 'const C = ["var(--probe-series)"];
+export function ProbeFixture() { return <div>{C.length}</div>; }' probe-series
+assert_landed "$V4/src/components/probe/ProbeFixture.tsx" "var(--probe-series)" "near-miss no-prefix injection"
+expect MUST_BLOCK "near-miss — var(--probe-series) without --color- prefix is not consumption" "$V4" "--color-probe-series"
+
+V5="$SCRATCH/var-comment"
+write_var_fixture "$V5" '// uses var(--color-probe-series) someday
+/* also var(--color-probe-series) and probe-series */
+export function ProbeFixture() { return <div>comment only</div>; }' probe-series
+assert_landed "$V5/src/components/probe/ProbeFixture.tsx" "var(--color-probe-series)" "near-miss comment injection"
+expect MUST_BLOCK "near-miss — token named in comments only (// and /* */) is not consumption" "$V5" "--color-probe-series"
+
+V6="$SCRATCH/var-dynamic"
+write_var_fixture "$V6" 'export function ProbeFixture({ i }: { i: number }) { return <div style={{ color: `var(--color-probe-dyn-${i})` }} />; }' probe-dyn-1
+assert_landed "$V6/src/components/probe/ProbeFixture.tsx" 'var(--color-probe-dyn-${i})' "near-miss dynamic injection"
+expect MUST_BLOCK "near-miss — run-time-built var(--color-probe-dyn-\${i}) does not silently count" "$V6" "--color-probe-dyn-1"
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 echo
