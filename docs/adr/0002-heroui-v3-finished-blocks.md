@@ -5,7 +5,7 @@
 | **Status**  | Proposed (amended 2026-09-16 on the HeroUI scope ruling) — pending Eta review and the operator showcase gate |
 | **Date**    | 2026-09-16                                         |
 | **Deciders**| Proposed by Gamma (mission pilot); decided at the operator showcase gate |
-| **Branch**  | `feat/heroui-theme-depth`                          |
+| **Branch**  | `gamma/adr-0002-heroui-scope-ruling` (the original `feat/heroui-theme-depth` was deleted in the branch sweep of 2026-09-30; its commits remain at `refs/pull/168/head`) |
 | **Supersedes / extends** | [`0001-base-ui-vs-radix.md`](./0001-base-ui-vs-radix.md) — does NOT replace it |
 
 ---
