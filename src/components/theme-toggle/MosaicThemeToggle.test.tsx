@@ -1,7 +1,7 @@
 /**
  * MosaicThemeToggle — unit tests (vitest + @testing-library/react)
  *
- * Wave-1 T5 reopen defect 3: the toggle used an arbitrary
+ * Earlier defect fixed here: the toggle used an arbitrary
  * `bg-[oklch(var(--mosaic-surface,1_0_0))]` value. `--mosaic-surface` (bare,
  * no suffix) is not a declared token anywhere in this package, so the
  * fallback `1 0 0` (solid white) always won — the button rendered a white
