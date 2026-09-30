@@ -3,7 +3,8 @@
  *
  * Handles: organization.created, organizationMembership.created,
  * organizationMembership.deleted events and routes them through
- * the cloud-identity primitive to sync with Convex.
+ * your callbacks (this handler imports nothing from cloud-identity; any sync to
+ * Convex happens inside the callbacks you provide).
  *
  * Usage: import and call in your Next.js App Router API route:
  *
