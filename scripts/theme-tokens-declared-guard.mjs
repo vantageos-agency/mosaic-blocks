@@ -680,7 +680,19 @@ function extractStringLiteralsSkippingComments(text) {
 // terminated by `,` or `)` (after optional whitespace): a dynamic name
 // (`--color-chart-${i}`) or an uppercase placeholder (`chart-N`) therefore
 // yields NO token rather than a truncated wrong one.
-const VAR_COLOR_REF_RE = /var\(\s*--color-([a-z0-9]+(?:-[a-z0-9]+)*)\s*[,)]/g;
+//
+// DETECTION is case-INSENSITIVE (`i` flag): CSS function names are
+// case-insensitive, so `VAR(--color-chart-3)` IS a valid consumption and must
+// count (else its declared row reads STALE — an over-block). The token is
+// captured in ANY case for the opposite reason: custom properties are
+// case-SENSITIVE, so `--color-Primary` is a DIFFERENT property from the
+// declared `--color-primary` and paints nothing. The capture must therefore
+// keep its case, and the lookup (`declared.has(token)` /
+// `resolvableCustomProps.has(...)` in the judging block) compares it EXACTLY
+// as written, so a mixed-case reference is NAMED undeclared. NEVER lowercase
+// the token before comparing: that would accept a reference that resolves to
+// nothing — the under-block this regex exists to close.
+const VAR_COLOR_REF_RE = /var\(\s*--color-([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)\s*[,)]/gi;
 
 /** Tailwind built-in colour name (never needs a `--color-*` declaration here). */
 function isBuiltinColorName(name, builtinFamilies) {

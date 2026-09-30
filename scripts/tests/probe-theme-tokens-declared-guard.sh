@@ -530,6 +530,61 @@ assert_landed "$V6/src/components/probe/ProbeFixture.tsx" 'var(--color-probe-dyn
 expect MUST_BLOCK "near-miss — run-time-built var(--color-probe-dyn-\${i}) does not silently count" "$V6" "--color-probe-dyn-1"
 
 # ---------------------------------------------------------------------------
+# CASE — `var(...)` detection is case-INSENSITIVE, the declared-token lookup is
+# case-SENSITIVE. The one regex (VAR_COLOR_REF_RE) had both faces wrong:
+#   - `VAR(--color-chart-3)` (valid CSS: function names are case-insensitive)
+#     was invisible, so its declared row read STALE            (over-block)
+#   - `var(--color-Primary)` (custom properties are case-SENSITIVE, so this is
+#     NOT the declared `--color-primary` and paints nothing) was invisible, so
+#     the guard exited 0                                        (under-block)
+#
+# Per guard-formulation-census, these poles are NOT written in a shape the
+# matcher already knows on a fixture this probe authors. Each is injected into
+# a COPY of a REAL source file from this repo's own src/ tree, against this
+# repo's real src/styles.css:
+#   MUST_PASS  <- src/components/artifact-chart/MosaicArtifactChart.tsx, the
+#                 ONLY consumer of `--color-chart-3` (line "var(--color-chart-3)"
+#                 rewritten to "VAR(--color-chart-3)")
+#   MUST_BLOCK <- src/components/toast/MosaicToast.tsx, with a mixed-case
+#                 reference appended while `--color-primary` IS declared in the
+#                 real styles.css (so a lowercased comparison would wrongly pass)
+# Each injection is grep-asserted to have landed before the verdict is read,
+# and the real tree is proven untouched (copies only).
+# ---------------------------------------------------------------------------
+REAL_SRC_REL="src"
+make_real_copy() { # $1 dest
+  mkdir -p "$1"
+  cp -R "$REPO_ROOT/src" "$1/src"
+}
+REAL_STYLES_DECLARES_PRIMARY="$(grep -cE '^[[:space:]]*--color-primary:' "$REPO_ROOT/src/styles.css" || true)"
+if [ "$REAL_STYLES_DECLARES_PRIMARY" -lt 1 ]; then
+  echo "probe: real src/styles.css no longer declares --color-primary — the case-sensitivity pole has lost its anchor; re-pick a declared token." >&2
+  exit 1
+fi
+
+# Baseline on the untouched real copy: must be clean, else the poles below
+# would be judged against an already-dirty tree.
+CASE_BASE="$SCRATCH/case-base"
+make_real_copy "$CASE_BASE"
+expect MUST_PASS "CASE baseline — unmutated copy of the real src/ tree is clean" "$CASE_BASE" ""
+
+CASE_UPPER="$SCRATCH/case-upper-var"
+make_real_copy "$CASE_UPPER"
+CHART_REAL="$CASE_UPPER/src/components/artifact-chart/MosaicArtifactChart.tsx"
+grep -qF -- '"var(--color-chart-3)"' "$CHART_REAL" || { echo "probe: real MosaicArtifactChart.tsx no longer has the anchor \"var(--color-chart-3)\" — re-pick a real consumer." >&2; exit 1; }
+sed -i 's/"var(--color-chart-3)"/"VAR(--color-chart-3)"/' "$CHART_REAL"
+assert_landed "$CHART_REAL" 'VAR(--color-chart-3)' "CASE upper-VAR injection (MosaicArtifactChart.tsx)"
+if grep -qF -- '"var(--color-chart-3)"' "$CHART_REAL"; then echo "probe: lowercase original survived the rewrite — another consumer exists, pole invalid." >&2; exit 1; fi
+expect MUST_PASS "CASE — uppercase VAR(--color-chart-3) (real MosaicArtifactChart.tsx) still counts as consumption, NOT reported STALE" "$CASE_UPPER" ""
+
+CASE_MIXED="$SCRATCH/case-mixed-token"
+make_real_copy "$CASE_MIXED"
+TOAST_REAL="$CASE_MIXED/src/components/toast/MosaicToast.tsx"
+printf '\nconst __probeMixedCase = "var(--color-Primary)";\nvoid __probeMixedCase;\n' >> "$TOAST_REAL"
+assert_landed "$TOAST_REAL" 'var(--color-Primary)' "CASE mixed-case injection (MosaicToast.tsx)"
+expect MUST_BLOCK "CASE — var(--color-Primary) (real MosaicToast.tsx) is a DIFFERENT property from declared --color-primary, NAMED undeclared" "$CASE_MIXED" "--color-Primary"
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 echo
