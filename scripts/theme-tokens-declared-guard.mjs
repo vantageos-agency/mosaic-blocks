@@ -681,18 +681,29 @@ function extractStringLiteralsSkippingComments(text) {
 // (`--color-chart-${i}`) or an uppercase placeholder (`chart-N`) therefore
 // yields NO token rather than a truncated wrong one.
 //
-// DETECTION is case-INSENSITIVE (`i` flag): CSS function names are
-// case-insensitive, so `VAR(--color-chart-3)` IS a valid consumption and must
-// count (else its declared row reads STALE — an over-block). The token is
-// captured in ANY case for the opposite reason: custom properties are
-// case-SENSITIVE, so `--color-Primary` is a DIFFERENT property from the
-// declared `--color-primary` and paints nothing. The capture must therefore
-// keep its case, and the lookup (`declared.has(token)` /
-// `resolvableCustomProps.has(...)` in the judging block) compares it EXACTLY
-// as written, so a mixed-case reference is NAMED undeclared. NEVER lowercase
-// the token before comparing: that would accept a reference that resolves to
-// nothing — the under-block this regex exists to close.
-const VAR_COLOR_REF_RE = /var\(\s*--color-([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)\s*[,)]/gi;
+// DETECTION is case-insensitive ONLY for the function name: CSS function names
+// are case-insensitive, so `VAR(--color-chart-3)` IS a valid consumption and
+// must count (else its declared row reads STALE — an over-block). That is why
+// the name is spelled `[vV][aA][rR]`. The pattern has NO `i` flag, and must
+// never get one: the `--color-` prefix is judged EXACTLY because a custom
+// property is case-SENSITIVE, prefix included. The prefix is CAPTURED (group 1,
+// any case) so a mis-cased one is still SEEN and NAMED undeclared by the loop
+// below, instead of being invisible; only the exact `color` is ever treated as
+// a consumption of a declared row. `--COLOR-chart-1` is a different
+// property from `--color-chart-1` and resolves to nothing. An `i` flag on the
+// whole pattern (a tempting simplification) reads it as a consumption of the
+// declared token — an under-block for the undeclared reference, and a hidden
+// STALE for a token consumed only in that form.
+// The token is captured in ANY case for the same reason: `--color-Primary` is
+// a DIFFERENT property from the declared `--color-primary` and paints nothing.
+// The capture must therefore keep its case, and the lookup
+// (`declared.has(token)` / `resolvableCustomProps.has(...)` in the judging
+// block) compares it EXACTLY as written, so a mixed-case reference is NAMED
+// undeclared. NEVER lowercase the token before comparing: that would accept a
+// reference that resolves to nothing — the under-block this regex exists to
+// close.
+const VAR_COLOR_REF_RE =
+  /[vV][aA][rR]\(\s*--([cC][oO][lL][oO][rR])-([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)\s*[,)]/g;
 
 /** Tailwind built-in colour name (never needs a `--color-*` declaration here). */
 function isBuiltinColorName(name, builtinFamilies) {
@@ -854,6 +865,7 @@ function main() {
   // ---- Consumed custom tokens (scan src/**) ----
   const consumedTokenSites = new Map(); // token -> [{file, line}]
   const varRefSites = new Map(); // token -> [{file, line}] — FORM 2 (var(--color-<token>) in string literals)
+  const miscasedPrefixSites = new Map(); // `--COLOR-x` (full name) -> [{file, line}] — FORM 2, prefix not exactly `color`
   const escapedConsumedSites = new Set(); // "token" entries fully covered by escape marker (informational only)
 
   for (const file of sourceFiles) {
@@ -902,12 +914,22 @@ function main() {
     for (const { text: seg, index } of extractStringLiteralsSkippingComments(text)) {
       VAR_COLOR_REF_RE.lastIndex = 0;
       for (let vm = VAR_COLOR_REF_RE.exec(seg); vm !== null; vm = VAR_COLOR_REF_RE.exec(seg)) {
-        const token = vm[1];
-        if (isBuiltinColorName(token, builtinFamilies)) continue;
+        const prefix = vm[1];
+        const token = vm[2];
+        // `--COLOR-x` is NOT `--color-x` (custom properties are case-sensitive,
+        // prefix included): it is judged undeclared, never a consumption.
+        const miscased = prefix !== "color";
+        if (!miscased && isBuiltinColorName(token, builtinFamilies)) continue;
         const line = lineForIndex(text, index + 1 + vm.index);
         const windowStart = Math.max(0, line - 4);
         if (lines.slice(windowStart, line - 1).some((l) => ESCAPE_MARKER_RE.test(l))) {
-          escapedConsumedSites.add(token);
+          if (!miscased) escapedConsumedSites.add(token);
+          continue;
+        }
+        if (miscased) {
+          const name = `--${prefix}-${token}`;
+          if (!miscasedPrefixSites.has(name)) miscasedPrefixSites.set(name, []);
+          miscasedPrefixSites.get(name).push({ file: relative(REPO_ROOT, file), line });
           continue;
         }
         if (!varRefSites.has(token)) varRefSites.set(token, []);
@@ -928,6 +950,10 @@ function main() {
     const existing = undeclared.find((u) => u.token === token);
     if (existing) existing.sites.push(...sites);
     else undeclared.push({ token, sites });
+  }
+  // A mis-cased prefix is a different, never-declared property: always named.
+  for (const [name, sites] of miscasedPrefixSites) {
+    undeclared.push({ token: name.replace(/^--[^-]+-/, ""), name, sites });
   }
 
   // ---- Direction 2: declared but never consumed ----
@@ -965,9 +991,9 @@ function main() {
   }
   if (undeclared.length > 0) {
     const details = undeclared
-      .map(({ token, sites }) => {
+      .map(({ token, name, sites }) => {
         const siteList = sites.map((s) => `      ${s.file}:${s.line}`).join("\n");
-        return `  - --color-${token} — consumed but never declared in ${relative(REPO_ROOT, STYLES_PATH)}:\n${siteList}`;
+        return `  - ${name ?? `--color-${token}`} — consumed but never declared in ${relative(REPO_ROOT, STYLES_PATH)}:\n${siteList}`;
       })
       .join("\n");
     sections.push(

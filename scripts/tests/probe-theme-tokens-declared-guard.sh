@@ -585,6 +585,39 @@ assert_landed "$TOAST_REAL" 'var(--color-Primary)' "CASE mixed-case injection (M
 expect MUST_BLOCK "CASE — var(--color-Primary) (real MosaicToast.tsx) is a DIFFERENT property from declared --color-primary, NAMED undeclared" "$CASE_MIXED" "--color-Primary"
 
 # ---------------------------------------------------------------------------
+# CASE, prefix half — the `--color-` PREFIX is case-sensitive too. A custom
+# property is case-SENSITIVE prefix included, so `--COLOR-chart-1` is a
+# different property from the declared `--color-chart-1` and resolves to
+# nothing. A detector that is case-insensitive over the WHOLE pattern reads it
+# as the declared one: an under-block (F6) and a hidden STALE (F7). Both are
+# injected into a copy of a REAL file; the premise (nothing declares the
+# uppercase form) is asserted, not assumed.
+# ---------------------------------------------------------------------------
+if grep -qF -- '--COLOR-' "$REPO_ROOT/src/styles.css"; then
+  echo "probe: real src/styles.css now declares an uppercase --COLOR- property — F6/F7 premise lost." >&2
+  exit 1
+fi
+
+# F6 MUST_BLOCK — origin file: src/components/toast/MosaicToast.tsx
+CASE_F6="$SCRATCH/case-f6-upper-prefix"
+make_real_copy "$CASE_F6"
+F6_FILE="$CASE_F6/src/components/toast/MosaicToast.tsx"
+printf '\nconst __probeF6 = "var(--COLOR-chart-1)";\nvoid __probeF6;\n' >> "$F6_FILE"
+assert_landed "$F6_FILE" 'var(--COLOR-chart-1)' "F6 upper-prefix injection (MosaicToast.tsx)"
+expect MUST_BLOCK "F6 — var(--COLOR-chart-1) (real MosaicToast.tsx) is NOT the declared --color-chart-1, NAMED undeclared" "$CASE_F6" "--COLOR-chart-1"
+
+# F7 MUST_BLOCK — origin file: src/components/artifact-chart/MosaicArtifactChart.tsx,
+# the only consumer of --color-chart-3, rewritten to the upper-prefix form.
+CASE_F7="$SCRATCH/case-f7-upper-prefix-stale"
+make_real_copy "$CASE_F7"
+F7_FILE="$CASE_F7/src/components/artifact-chart/MosaicArtifactChart.tsx"
+grep -qF -- '"var(--color-chart-3)"' "$F7_FILE" || { echo "probe: real MosaicArtifactChart.tsx no longer has the anchor \"var(--color-chart-3)\" — re-pick a real consumer." >&2; exit 1; }
+sed -i 's/"var(--color-chart-3)"/"var(--COLOR-chart-3)"/' "$F7_FILE"
+assert_landed "$F7_FILE" 'var(--COLOR-chart-3)' "F7 upper-prefix injection (MosaicArtifactChart.tsx)"
+if grep -qF -- '"var(--color-chart-3)"' "$F7_FILE"; then echo "probe: lowercase original survived the rewrite — another consumer exists, F7 invalid." >&2; exit 1; fi
+expect MUST_BLOCK "F7 — --color-chart-3 consumed ONLY as var(--COLOR-chart-3) (real MosaicArtifactChart.tsx) is reported STALE" "$CASE_F7" "--color-chart-3 "
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 echo
