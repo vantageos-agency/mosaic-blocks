@@ -51,8 +51,8 @@
  * detector — a title-shape detector list is exactly the disease this class
  * of guard exists to close (a title-shape nobody enumerated reopens the
  * hole). Instead it derives CLAIMED and ACTUAL as two plain sets and asks
- * one question, uniformly, regardless of how the title is phrased: does the
- * claimed set intersect the actual set?
+ * one question, uniformly, regardless of how the title is phrased: is the
+ * claimed set a SUBSET of the actual set (every claimed name really touched)?
  *
  * THE ONE DECLARED EXEMPTION (decided from the DIFF, never from the title —
  * per guard-formulation-census.md rule 3): a commit whose diff touches ZERO
@@ -74,7 +74,7 @@
  * mismatch against a diff the author never lied about. Every other branch
  * (non-empty claim vs the diff's real components) still fails closed: an
  * empty ACTUAL set (diff touches zero components) is handled by the ONE
- * declared exemption above, and a non-empty CLAIM that fails to intersect
+ * declared exemption above, and a non-empty CLAIM that is not a subset of
  * the ACTUAL set is always BLOCKED.
  *
  * WRITTEN ESCAPE HATCH (rare, anchored, never a silent skip): a HEAD commit
@@ -362,10 +362,19 @@ function main() {
   // its own — this branch is only reached when the subject carries at least
   // one literal Mosaic<Name> token.
   const scopeCorroborates = scope != null && actual.has(`Mosaic${toPascalCase(scope)}`);
-  const matched = [...claimed].some((c) => actual.has(c)) || scopeCorroborates;
+  // The claimed set must be a SUBSET of the actual set: every component the
+  // title names must be one the diff really touches. A claim absent from the
+  // diff is a phantom, and each phantom is named in the verdict. (Intersection
+  // semantics — `.some()` — let one real name launder any number of phantoms.)
+  //
+  // KNOWN GAP, tracked in task k177cprjy05d7q7vqgnvkt82j98c5763 (G4), NOT
+  // closed here: `|| scopeCorroborates` still pardons a phantom whenever the
+  // conventional-commit scope matches a diffed directory.
+  const phantoms = [...claimed].filter((c) => !actual.has(c)).sort();
+  const matched = phantoms.length === 0 || scopeCorroborates;
   if (!matched) {
     console.error(
-      `pr-title-matches-diff-guard: BLOCKED — title claims [${[...claimed].sort().join(", ")}]${scope ? ` (scope "${scope}")` : ""}, but this diff (${BASE_REF}...${HEAD_REF}) really adds/touches [${[...actual].sort().join(", ") || "none derivable"}] in director(y/ies) ${[...dirs].sort().join(", ")}.\nTitle: "${subject}"\nFix: correct the title to name a component this diff really contains, or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine, declared exception.`,
+      `pr-title-matches-diff-guard: BLOCKED — title claims [${[...claimed].sort().join(", ")}]${scope ? ` (scope "${scope}")` : ""}, but ${phantoms.length} claimed component(s) are absent from this diff (phantom: ${phantoms.join(", ")}); the diff (${BASE_REF}...${HEAD_REF}) really adds/touches [${[...actual].sort().join(", ") || "none derivable"}] in director(y/ies) ${[...dirs].sort().join(", ")}.\nTitle: "${subject}"\nFix: remove each phantom from the title (name only components this diff really contains), or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine, declared exception.`,
     );
     process.exitCode = 1;
     return;

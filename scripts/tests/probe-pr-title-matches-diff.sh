@@ -891,6 +891,70 @@ else
   fi
 fi
 
+
+# ===========================================================================
+# SUBSET RULE (task G3): the claimed set must be a SUBSET of the diff's real
+# component set — `.some()` (intersection) let one real name launder any
+# phantom. Every case replays a REAL historical diff under a title that was
+# not that commit's own, with the landing asserted before the verdict is read.
+#   dd69dca  diff touches exactly ONE component (alert-dialog)
+#   a307e19  diff touches TWO components (feature-3col, logos-grid)
+# ===========================================================================
+KNOWN_GAP_G4_TOTAL=0
+KNOWN_GAP_G4_REPRODUCED=0
+subset_case() {
+  # $1 sha  $2 landing path substring  $3 title  $4 expect: block|pass  $5 label  $6 optional must-contain text
+  local sha="$1" landing="$2" title="$3" expect="$4" label="$5" needle="${6:-}"
+  local parent branch="probe-subset-${5// /-}" output status ok=0
+  parent="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
+  case "$expect" in block) MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1)) ;; pass) MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1)) ;; gap) KNOWN_GAP_G4_TOTAL=$((KNOWN_GAP_G4_TOTAL + 1)) ;; esac
+  if [ -z "$parent" ]; then
+    FAILURES+=("SUBSET $label — could not resolve parent of $sha — probe invalid"); log SUBSET "FAIL — $label — no parent"; return 0
+  fi
+  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
+  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "$landing"); then
+    FAILURES+=("SUBSET $label — mutation did NOT land ($landing absent) — probe invalid"); log SUBSET "FAIL — $label — did not land"
+    cleanup_branch "$branch" "$parent"; return 0
+  fi
+  (cd "$CLONE" && git add -A && git commit --quiet -m "$title")
+  set +e; output="$(run_guard "$parent" 2>&1)"; status=$?; set -e
+  if [ "$expect" = block ]; then
+    if [ "$status" -eq 1 ] && echo "$output" | grep -qF "BLOCKED" && echo "$output" | grep -qF -- "$needle"; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1)); ok=1
+    fi
+  elif [ "$expect" = gap ]; then
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then KNOWN_GAP_G4_REPRODUCED=$((KNOWN_GAP_G4_REPRODUCED + 1)); ok=1; fi
+  else
+    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then MUST_PASS_PASS=$((MUST_PASS_PASS + 1)); ok=1; fi
+  fi
+  if [ "$ok" -eq 1 ]; then log SUBSET "PASS — $label — exit=$status"; else
+    FAILURES+=("SUBSET $label — expected $expect${needle:+ naming '$needle'}, got exit=$status output=$output"); log SUBSET "FAIL — $label — exit=$status output=$output"
+  fi
+  cleanup_branch "$branch" "$parent"
+}
+
+# MUST_BLOCK: a phantom beside a real component; the verdict names the phantom.
+subset_case dd69dcaf8b91716f1b41ebbda66a837172487630 "alert-dialog/MosaicAlertDialog.test.tsx" \
+  "fix: MosaicAlertDialog + MosaicPhantomWidget focus test" block "real+phantom" "phantom: MosaicPhantomWidget"
+# MUST_BLOCK: two phantoms are both named.
+subset_case dd69dcaf8b91716f1b41ebbda66a837172487630 "alert-dialog/MosaicAlertDialog.test.tsx" \
+  "fix: MosaicAlertDialog + MosaicGhostA + MosaicGhostB" block "real+two-phantoms" "phantom: MosaicGhostA, MosaicGhostB"
+# MUST_PASS: a single-component title fully covered by the diff.
+subset_case dd69dcaf8b91716f1b41ebbda66a837172487630 "alert-dialog/MosaicAlertDialog.test.tsx" \
+  "fix: MosaicAlertDialog focus test" pass "single-covered"
+# MUST_PASS: a multi-component title fully covered by a two-component diff.
+subset_case a307e1932290b80158b4d46f2b8b299f1bcc8418 "feature-3col/MosaicFeature3Col.tsx" \
+  "feat: MosaicFeature3Col + MosaicLogosGrid" pass "multi-covered"
+
+# KNOWN GAP, task k177cprjy05d7q7vqgnvkt82j98c5763 (G4) — NOT a pass of the
+# subset rule: a phantom pardoned by a scope that matches a diffed directory
+# still exits 0 (`|| scopeCorroborates`). Asserted AS THE CURRENT BEHAVIOUR so
+# the gap stays reproducible and visible; when G4 lands this case must flip to
+# MUST_BLOCK (it fails loudly the moment the pardon closes, never silently).
+subset_case dd69dcaf8b91716f1b41ebbda66a837172487630 "alert-dialog/MosaicAlertDialog.test.tsx" \
+  "test(alert-dialog): MosaicAlertDialog + MosaicPhantomWidget focus test" gap "KNOWN-GAP-G4-scope-pardon"
+echo "KNOWN_GAP_G4 (reproduced, exit 0 by design until G4): $KNOWN_GAP_G4_REPRODUCED/$KNOWN_GAP_G4_TOTAL"
 (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet "$BASE" 2>/dev/null || true)
 
 # Leave the clone on a clean, detached-free state before restoration check
@@ -908,6 +972,7 @@ echo "==================== PROBE SUMMARY ===================="
 echo "MUST_BLOCK:  $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
 echo "MUST_PASS:   $MUST_PASS_PASS/$MUST_PASS_TOTAL"
 echo "MUST_REFUSE: $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL"
+echo "KNOWN_GAP_G4 (task k177cprjy05d7q7vqgnvkt82j98c5763, reproduced): $KNOWN_GAP_G4_REPRODUCED/$KNOWN_GAP_G4_TOTAL"
 if [ "$MUST_REFUSE_PASS" -ne "$MUST_REFUSE_TOTAL" ]; then
   FAILURES+=("MUST_REFUSE sweep — $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL — not all cases refused correctly")
 fi
