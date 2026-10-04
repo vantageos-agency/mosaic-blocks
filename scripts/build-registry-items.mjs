@@ -15,23 +15,24 @@
  *   node scripts/build-registry-items.mjs mosaic-accordion [more-name ...]
  *
  * Fails loudly (non-zero exit, named item + path) on any unreadable or
- * empty source file, or an item with no files[]. Never silently skips.
+ * empty source file, an item with no files[], or a relative import that
+ * would not resolve once installed. Never silently skips.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, join, posix } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
 const registryPath = join(repoRoot, "registry.json");
 const outDir = join(repoRoot, "r");
 
-function deriveTarget(sourcePath) {
+export function deriveTarget(sourcePath) {
   return `components/ui/${basename(sourcePath)}`;
 }
 
-function loadRegistry() {
+export function loadRegistry() {
   if (!existsSync(registryPath)) {
     throw new Error(`registry.json not found at ${registryPath}`);
   }
@@ -48,19 +49,71 @@ function loadRegistry() {
   return parsed.items;
 }
 
-function buildItem(item) {
+// Relative-import contract (decision: REFUSE, do not derive).
+//
+// Every file is flattened to `components/ui/<basename>`, so the only relative
+// specifier that still resolves after install is a same-directory `./<name>`.
+// A `../x/Y` specifier is broken by the flattening itself, whether or not the
+// target is also a registry item: deriving `registryDependencies` from it would
+// advertise an item as installable while the installed file still fails to
+// resolve. So the generator does not derive; it refuses what it cannot make
+// installable, naming the item, the file and the import.
+//   - specifier not of the form `./<name>`            -> refused (path does not survive flattening)
+//   - `./<name>` resolving to no registry file         -> refused (not shipped)
+//   - `./<name>` resolving to ANOTHER item's file      -> allowed only when that item
+//     is declared in the item's registryDependencies in registry.json
+const RELATIVE_IMPORT_RE =
+  /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["'](\.\.?\/[^"']*|\.\.?)["']/g;
+
+export function findRelativeImports(source) {
+  return [...source.matchAll(RELATIVE_IMPORT_RE)].map((m) => m[1]);
+}
+
+function resolveToRegistryPath(fromPath, spec, pathToItem) {
+  const base = posix.join(posix.dirname(fromPath), spec);
+  const stem = base.replace(/\.(m|c)?jsx?$/, "");
+  const candidates = [base, `${stem}.tsx`, `${stem}.ts`, `${base}.tsx`, `${base}.ts`];
+  return candidates.find((c) => pathToItem.has(c));
+}
+
+export function buildPathIndex(items) {
+  const pathToItem = new Map();
+  for (const it of items) for (const f of it.files ?? []) pathToItem.set(f.path, it.name);
+  return pathToItem;
+}
+
+export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}) {
   if (!Array.isArray(item.files) || item.files.length === 0) {
     throw new Error(`item "${item.name}" has no files[] — cannot generate inline content`);
   }
+  const declared = new Set(item.registryDependencies ?? []);
 
   const files = item.files.map((file) => {
-    const absPath = join(repoRoot, file.path);
+    const absPath = join(root, file.path);
     if (!existsSync(absPath)) {
       throw new Error(`item "${item.name}": source file not found on disk: ${file.path}`);
     }
     const content = readFileSync(absPath, "utf8");
     if (content.length === 0) {
       throw new Error(`item "${item.name}": source file is empty: ${file.path}`);
+    }
+    for (const spec of findRelativeImports(content)) {
+      const where = `item "${item.name}": ${file.path} imports "${spec}"`;
+      if (!/^\.\/[^/]+$/.test(spec)) {
+        throw new Error(
+          `${where} — not a same-directory "./<name>" import; files are flattened to components/ui/, so it will not resolve once installed`,
+        );
+      }
+      const hit = resolveToRegistryPath(file.path, spec, pathToItem);
+      if (hit === undefined) {
+        throw new Error(`${where} — resolves to no registry file, so it is not shipped`);
+      }
+      const owner = pathToItem.get(hit);
+      if (owner !== item.name && !declared.has(owner)) {
+        throw new Error(
+          `${where} — belongs to item "${owner}", which is not declared in registryDependencies`,
+        );
+      }
     }
     return {
       ...file,
@@ -82,9 +135,14 @@ function buildItem(item) {
   };
 }
 
+export function serializeItem(built) {
+  return `${JSON.stringify(built, null, 2)}\n`;
+}
+
 function main() {
   const filters = process.argv.slice(2);
   const items = loadRegistry();
+  const pathToItem = buildPathIndex(items);
 
   const selected = filters.length > 0 ? items.filter((i) => filters.includes(i.name)) : items;
 
@@ -95,24 +153,37 @@ function main() {
     }
   }
 
+  // All-or-nothing: build and validate every selected item first, write only
+  // when none was refused, so a refusal never leaves a half-regenerated r/.
+  const built = [];
+  const refusals = [];
+  for (const item of selected) {
+    try {
+      built.push([item.name, buildItem(item, { pathToItem })]);
+    } catch (err) {
+      refusals.push(err.message);
+    }
+  }
+  if (refusals.length > 0) {
+    for (const r of refusals) console.error(`build-registry-items: REFUSED — ${r}`);
+    throw new Error(`${refusals.length} of ${selected.length} item(s) refused, nothing written`);
+  }
+
   if (!existsSync(outDir)) {
     mkdirSync(outDir, { recursive: true });
   }
-
-  let written = 0;
-  for (const item of selected) {
-    const built = buildItem(item);
-    const outPath = join(outDir, `${item.name}.json`);
-    writeFileSync(outPath, `${JSON.stringify(built, null, 2)}\n`, "utf8");
-    written += 1;
+  for (const [name, item] of built) {
+    writeFileSync(join(outDir, `${name}.json`), serializeItem(item), "utf8");
   }
 
-  console.log(`build-registry-items: wrote ${written} item(s) to ${outDir}/`);
+  console.log(`build-registry-items: wrote ${built.length} item(s) to ${outDir}/`);
 }
 
-try {
-  main();
-} catch (err) {
-  console.error(`build-registry-items: FAILED — ${err.message}`);
-  process.exit(1);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  try {
+    main();
+  } catch (err) {
+    console.error(`build-registry-items: FAILED — ${err.message}`);
+    process.exit(1);
+  }
 }
