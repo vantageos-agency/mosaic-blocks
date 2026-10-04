@@ -108,6 +108,176 @@ export function extractRealExports(indexSource) {
 }
 
 /**
+ * Replace comments and string/template-literal CONTENT with spaces (newlines
+ * kept), so statement scanning sees code only and line numbers stay exact.
+ * Quote characters themselves are kept so a module specifier stays visible
+ * as `"   "`-shaped spans; the specifier text is recovered from the original.
+ * @param {string} src
+ * @param {boolean} keepStrings keep string content (comments are always masked)
+ * @returns {string}
+ */
+export function maskCommentsAndStrings(src, keepStrings = false) {
+  let out = "";
+  let i = 0;
+  const blank = (ch) => (ch === "\n" ? "\n" : " ");
+  while (i < src.length) {
+    const ch = src[i];
+    const next = src[i + 1];
+    if (ch === "/" && next === "/") {
+      while (i < src.length && src[i] !== "\n") out += blank(src[i++]);
+    } else if (ch === "/" && next === "*") {
+      out += "  ";
+      i += 2;
+      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) out += blank(src[i++]);
+      out += "  ";
+      i += 2;
+    } else if (ch === '"' || ch === "'" || ch === "`") {
+      out += ch;
+      i++;
+      while (i < src.length && src[i] !== ch) {
+        if (src[i] === "\\") out += keepStrings ? src[i++] : blank(src[i++]);
+        out += keepStrings ? src[i++] : blank(src[i++]);
+      }
+      out += ch;
+      i++;
+    } else {
+      out += ch;
+      i++;
+    }
+  }
+  return out;
+}
+
+/**
+ * Enumerate EVERY `export` statement of an ES module source and classify it.
+ * This is the shared export-DOMAIN census (derived from the ES/TypeScript
+ * export grammar) that any guard reading src/index.ts must cover entirely:
+ *
+ *   kind               form
+ *   -----------------  ------------------------------------------------
+ *   named-reexport     export [type] { A, B as C } from "…";
+ *   named-local        export [type] { a, b as c };         (no `from`)
+ *   star               export [type] * from "…";            (unenumerable)
+ *   star-as            export [type] * as NS from "…";
+ *   declaration        export [declare] const|let|var|function|async function|
+ *                      class|abstract class|interface|type|enum|const enum|
+ *                      namespace|module NAME …
+ *   default            export default …
+ *
+ * FAIL-CLOSED: an `export` token that no form above explains makes this
+ * function throw, naming the line — it never skips. A final census
+ * (every `export` word in code == every statement parsed) catches an
+ * `export` hidden mid-line.
+ *
+ * @param {string} indexSource
+ * @returns {Array<{ kind: string, line: number, text: string, isType: boolean,
+ *   source: string|null, specifiers: Array<{ local: string, exported: string, inlineType: boolean }>,
+ *   name: string|null, keyword: string|null }>}
+ */
+export function scanExportStatements(indexSource) {
+  const masked = maskCommentsAndStrings(indexSource);
+  // Comments masked, string contents kept: specifier text is read from here.
+  const codeOnly = maskCommentsAndStrings(indexSource, true);
+  const statements = [];
+  const startRe = /^[ \t]*export\b/gm;
+  let m;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((m = startRe.exec(masked))) {
+    const start = m.index + m[0].indexOf("export");
+    const line = lineNumberAt(indexSource, start);
+    // Comment-free text from `export` onward; each form is matched at its head.
+    const orig = codeOnly.slice(start, start + 4000);
+    const unreadable = (why) =>
+      new Error(
+        `scanExportStatements: cannot read the \`export\` statement at src/index.ts:${line} (${orig.split("\n")[0].trim()}) — ${why}. Refusing to skip it silently; extend scanExportStatements to cover this form.`,
+      );
+
+    let r = /^export\s+(type\s+)?\{([^}]*)\}\s*(?:from\s*(["'])([^"']+)\3)?\s*;?/.exec(orig);
+    if (r) {
+      const specifiers = r[2]
+        .split(",")
+        .map((raw) => raw.trim())
+        .filter(Boolean)
+        .map((raw) => {
+          const inlineType = /^type\s+\w/.test(raw);
+          const body = inlineType ? raw.replace(/^type\s+/, "") : raw;
+          const parts = body.split(/\s+as\s+/);
+          return {
+            local: parts[0].trim(),
+            exported: parts[parts.length - 1].trim(),
+            inlineType,
+          };
+        });
+      statements.push({
+        kind: r[4] === undefined ? "named-local" : "named-reexport",
+        line,
+        text: r[0],
+        isType: Boolean(r[1]),
+        source: r[4] ?? null,
+        specifiers,
+        name: null,
+        keyword: null,
+      });
+      continue;
+    }
+    r = /^export\s+(type\s+)?\*\s*(?:as\s+(\w+)\s+)?from\s*(["'])([^"']+)\3/.exec(orig);
+    if (r) {
+      statements.push({
+        kind: r[2] ? "star-as" : "star",
+        line,
+        text: r[0],
+        isType: Boolean(r[1]),
+        source: r[4],
+        specifiers: [],
+        name: r[2] ?? null,
+        keyword: null,
+      });
+      continue;
+    }
+    r = /^export\s+default\b/.exec(orig);
+    if (r) {
+      statements.push({
+        kind: "default",
+        line,
+        text: r[0],
+        isType: false,
+        source: null,
+        specifiers: [],
+        name: null,
+        keyword: null,
+      });
+      continue;
+    }
+    r =
+      /^export\s+(?:declare\s+)?(const\s+enum|const|let|var|async\s+function|function|abstract\s+class|class|interface|type|enum|namespace|module)\s*\*?\s*(\w+)/.exec(
+        orig,
+      );
+    if (r) {
+      statements.push({
+        kind: "declaration",
+        line,
+        text: r[0],
+        isType: ["interface", "type"].includes(r[1]),
+        source: null,
+        specifiers: [],
+        name: r[2],
+        keyword: r[1].replace(/\s+/g, " "),
+      });
+      continue;
+    }
+    throw unreadable("no known export form matches");
+  }
+
+  const exportWords = (masked.match(/\bexport\b/g) ?? []).length;
+  if (exportWords !== statements.length) {
+    throw new Error(
+      `scanExportStatements: census mismatch — ${exportWords} \`export\` token(s) in code but only ${statements.length} line-leading export statement(s) parsed; an \`export\` sits mid-line or inside a form this scanner cannot see. Refusing to continue.`,
+    );
+  }
+  return statements;
+}
+
+/**
  * Extract every named TYPE-ONLY export from src/index.ts (`export type {...}`
  * blocks) — legitimate real API surface, just not a component/value.
  * @param {string} indexSource

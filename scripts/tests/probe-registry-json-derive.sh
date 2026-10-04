@@ -29,7 +29,7 @@ log() { echo "[$1] $2"; }
 PRE_PROBE_DIFF="$(git diff --stat -- registry.json)"
 
 restore_registry() {
-  git checkout -- registry.json
+  git checkout -- registry.json src/index.ts
 }
 trap restore_registry EXIT
 
@@ -155,6 +155,61 @@ elif [ "$PRE_PROBE_DIFF" != "$POST_PROBE_DIFF" ]; then
     FAILURES+=("restoration: registry.json not restored")
   fi
 fi
+
+# ---------------------------------------------------------------------------
+# MUST_BLOCK per EXPORT FORM — parseBarrelExports once read only
+# `export { … } from "./components/…"`; every other export form in
+# src/index.ts was invisible and --check stayed green. The census below is the
+# export grammar (see scanExportStatements in scripts/docs-counts-shared.mjs).
+# Each form is appended to the REAL src/index.ts, its landing is grep-asserted
+# BEFORE the verdict, and --check must exit non-zero naming the form. The real
+# file is restored after every mutation (git diff --quiet -- src).
+# ---------------------------------------------------------------------------
+FORMS=(
+  'export { ZedA } from "./zed.js";|NON_REGISTRY_SOURCES'
+  'export { ZedA as ZedB } from "./zed.js";|NON_REGISTRY_SOURCES'
+  'export type { ZedT } from "./zed.js";|NON_REGISTRY_SOURCES'
+  'export * from "./zed.js";|unreadable export form `star`'
+  'export * as ZedNS from "./zed.js";|unreadable export form `star-as`'
+  'export const ZedC = 1;|declaration const'
+  'export let ZedL = 1;|declaration let'
+  'export var ZedV = 1;|declaration var'
+  'export function zedFn() {}|declaration function'
+  'export async function zedAsync() {}|declaration async function'
+  'export class ZedK {}|declaration class'
+  'export default 1;|unreadable export form `default`'
+  'export { zedLocal };|unreadable export form `named-local`'
+  'export interface ZedI {}|declaration interface'
+  'export type ZedTA = string;|declaration type'
+  'export enum ZedE { A }|declaration enum'
+)
+for entry in "${FORMS[@]}"; do
+  FORM_LINE="${entry%%|*}"
+  FORM_EXPECT="${entry##*|}"
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  printf '\n%s\n' "$FORM_LINE" >> src/index.ts
+  if [ "$(grep -cF -- "$FORM_LINE" src/index.ts)" -ne 1 ]; then
+    log FAIL "MUST_BLOCK form [$FORM_LINE]: mutation did not land"
+    FAILURES+=("MUST_BLOCK form setup: [$FORM_LINE] did not land")
+  else
+    set +e
+    OUT="$(node scripts/registry-json-derive.mjs --check 2>&1)"
+    CODE=$?
+    set -e
+    if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -qF -- "$FORM_EXPECT"; then
+      log PASS "MUST_BLOCK form [$FORM_LINE]: exit $CODE, naming '$FORM_EXPECT'"
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    else
+      log FAIL "MUST_BLOCK form [$FORM_LINE]: expected non-zero exit naming '$FORM_EXPECT', got exit=$CODE"
+      FAILURES+=("MUST_BLOCK form [$FORM_LINE]: not blocked")
+    fi
+  fi
+  git checkout -- src/index.ts
+  if ! git diff --quiet -- src; then
+    log FAIL "restoration: src/ not restored after form [$FORM_LINE]"
+    FAILURES+=("restoration: src/index.ts not restored")
+  fi
+done
 
 echo "---"
 echo "MUST_BLOCK: ${MUST_BLOCK_PASS}/${MUST_BLOCK_TOTAL}"

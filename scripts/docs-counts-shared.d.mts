@@ -15,6 +15,18 @@
 export type VersionTableRowStatus = "Current" | "Historical" | "unclassified";
 
 export function extractRealExports(indexSource: string): Set<string>;
+export function maskCommentsAndStrings(src: string, keepStrings?: boolean): string;
+export interface ExportStatement {
+  kind: "named-reexport" | "named-local" | "star" | "star-as" | "declaration" | "default";
+  line: number;
+  text: string;
+  isType: boolean;
+  source: string | null;
+  specifiers: Array<{ local: string; exported: string; inlineType: boolean }>;
+  name: string | null;
+  keyword: string | null;
+}
+export function scanExportStatements(indexSource: string): ExportStatement[];
 export function extractRealTypeExports(indexSource: string): Set<string>;
 export function extractCitedMosaicTokens(doc: string): string[];
 export function extractCatalogDocumentedMosaicNames(catalog: string): Set<string>;
