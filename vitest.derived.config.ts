@@ -5,10 +5,10 @@ import { defineConfig } from "vitest/config";
  * The DERIVED-docs suite, and why it needs a config of its own.
  *
  * `src/__tests__/derived/` asserts that README + catalog counts match
- * src/index.ts. Those docs are regenerated on `main` after a merge, never inside
- * a component PR — so the main config EXCLUDES this directory, otherwise every
- * PR that adds an export is unmergeable (the release-artifacts guard forbids
- * touching the counts; this suite demanded they be touched).
+ * src/index.ts. The release-artifacts guard forbids a PR from hand-editing those
+ * counts — so the main config EXCLUDES this directory, otherwise every PR that
+ * adds an export is unmergeable (the guard forbids touching the counts; this
+ * suite demanded they be touched).
  *
  * But an exclusion in the shared config also silences the suite when you ask for
  * it BY NAME: `vitest run src/__tests__/derived` collected ZERO tests and exited
@@ -16,7 +16,8 @@ import { defineConfig } from "vitest/config";
  * it is a guard nobody will question.
  *
  * Hence a dedicated config: it INCLUDES only this directory and excludes nothing
- * of it. The CI job that runs it also asserts the collected count is non-zero.
+ * of it. The ci.yml step that runs it (executed locally by `pnpm gate:local`, since
+ * GitHub Actions is off) also asserts the collected count is non-zero.
  */
 export default defineConfig({
   plugins: [react()],

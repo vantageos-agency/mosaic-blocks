@@ -21,6 +21,14 @@
  *   pnpm gate:local                        run every runnable step of ci.yml
  *   pnpm gate:local --list                 print the plan (run/skip per step), run nothing
  *   pnpm gate:local --workflow <file>      use another workflow file (fixtures, tests)
+ *   pnpm gate:local --base <ref>           base for the PR/push gates (default origin/main)
+ *   pnpm gate:local --install-browsers     opt in: run the Playwright install step WITHOUT --with-deps
+ *
+ * EVENT EMULATION: ci.yml conditions some steps on the CI event (`if: github.event_name
+ * == 'pull_request'`) only because CI needs a base ref and the PR's real head/title.
+ * Locally the base is `--base` (origin/main), the head is HEAD and the title is HEAD's
+ * subject. EVENT_EMULATION below is the ONE table of what is supplied; a step whose
+ * needs are not in it stays skipped, with its reason.
  *
  * NOTE: a run executes the steps for real, including `pnpm build`, and writes the
  * same files CI would (dist/, .next/ in sandbox/). Run it on a clean worktree.
@@ -62,9 +70,10 @@ const STEP_KEYS = new Set([
 ]);
 
 // ── SKIP_RULES — the single place that decides what cannot run locally. ──────
-// First matching rule wins. `test` receives { job, step, run, text } where `text`
-// is the step's run script plus its env values (the surface a rule can inspect).
-const CTX_EXPR = /\$\{\{[^}]*\b(github|secrets|steps|needs|runner|matrix|vars|inputs)\./;
+// First matching rule wins. `test` receives { job, step, run, text, yamlText, opts }
+// where `text` is the step's run script plus its env values (the surface a rule can
+// inspect). Event-conditional steps are NOT skipped here: they are evaluated against
+// EVENT_EMULATION below, and only skipped when that table cannot satisfy them.
 export const SKIP_RULES = [
   {
     id: "uses-action",
@@ -72,14 +81,10 @@ export const SKIP_RULES = [
     test: (c) => typeof c.step.uses === "string",
   },
   {
-    id: "job-event-conditional",
-    reason: (c) => `job \`if: ${c.job.if}\` — runs only on a CI event (writes/derives on main)`,
-    test: (c) => typeof c.job.if === "string" && CTX_EXPR.test(`\${{ ${c.job.if} }}`),
-  },
-  {
-    id: "step-event-conditional",
-    reason: (c) => `step \`if: ${c.step.if}\` — conditional on a CI event context`,
-    test: (c) => typeof c.step.if === "string" && CTX_EXPR.test(`\${{ ${c.step.if} }}`),
+    id: "step-output-producer",
+    reason: (c) =>
+      `produces step output \`${c.step.id}\` consumed only by CI-only steps (\`steps.${c.step.id}.*\`)`,
+    test: (c) => typeof c.step.id === "string" && c.yamlText.includes(`steps.${c.step.id}.`),
   },
   {
     id: "secrets",
@@ -87,9 +92,13 @@ export const SKIP_RULES = [
     test: (c) => /\$\{\{[^}]*\bsecrets\./.test(c.text),
   },
   {
-    id: "ci-context",
-    reason: () => "reads a CI-only context (`${{ github.* }}`, `steps.*`, `needs.*`, ...)",
-    test: (c) => CTX_EXPR.test(c.text),
+    id: "writes-derived-files",
+    reason: () =>
+      "writes tracked derived files (docs:counts / registry:derive without --check); its --check form runs as its own step",
+    test: (c) =>
+      c.run
+        .split("\n")
+        .some((l) => /\bpnpm\s+(docs:counts|registry:derive)\b/.test(l) && !/--check\b/.test(l)),
   },
   {
     id: "publish",
@@ -102,9 +111,92 @@ export const SKIP_RULES = [
   {
     id: "os-install",
     reason: () => "OS-level install (needs root / apt) — provision the host once, by hand",
-    test: (c) => /--with-deps\b|\bapt(-get)?\s+install\b|\bsudo\b/.test(c.run),
+    // `--install-browsers` opts into running the browser install WITHOUT `--with-deps`
+    // (no root needed); `rewrite` is the declared transformation. apt/sudo is never run.
+    test: (c) =>
+      /\bapt(-get)?\s+install\b|\bsudo\b/.test(c.run) ||
+      (/--with-deps\b/.test(c.run) && !c.opts.installBrowsers),
+    rewrite: (c) => (c.opts.installBrowsers ? c.run.replace(/\s--with-deps\b/g, "") : c.run),
   },
 ];
+
+// ── EVENT_EMULATION — the single table of what a local run supplies for CI's events.
+// A local run is the SUPERSET of CI's events: a step runs when its `if:` holds under
+// ANY emulated event. `contexts(env)` returns one flat `${{ ... }}` map per event;
+// BASE_ENV names the env vars the guard scripts read for their base ref when the
+// workflow does not pass one (a step's own `env:` always wins).
+export const EVENT_EMULATION = {
+  contexts: ({ base, headSha, baseSha, subject, branch }) => [
+    {
+      "github.event_name": "pull_request",
+      "github.ref": `refs/heads/${branch}`,
+      "github.sha": headSha,
+      "github.event.pull_request.head.sha": headSha,
+      "github.event.pull_request.base.sha": baseSha,
+      "github.event.pull_request.title": subject,
+      "github.base_ref": base,
+    },
+    // push:main — the merge-commit guard compares HEAD's subject with HEAD's own diff.
+    { "github.event_name": "push", "github.ref": "refs/heads/main", "github.sha": headSha },
+  ],
+  BASE_ENV: ["RELEASE_ARTIFACTS_BASE_REF", "SKILLS_GUARD_BASE_REF", "PR_TITLE_GUARD_BASE_REF"],
+};
+
+const git = (args, root) => {
+  const r = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  if (r.status !== 0) {
+    throw new GateLocalError(`git ${args.join(" ")} failed: ${(r.stderr || "").trim()}`);
+  }
+  return r.stdout.trim();
+};
+
+/** Derive the emulated event contexts from the repository: head=HEAD, base=--base. */
+export function emulatedEvents({ base = "origin/main", root = REPO_ROOT } = {}) {
+  const baseSha = git(["rev-parse", "--verify", base], root);
+  return {
+    base,
+    contexts: EVENT_EMULATION.contexts({
+      base,
+      baseSha,
+      headSha: git(["rev-parse", "HEAD"], root),
+      subject: git(["log", "-1", "--format=%s"], root),
+      branch: git(["rev-parse", "--abbrev-ref", "HEAD"], root),
+    }),
+  };
+}
+
+class Unresolvable extends Error {}
+
+function lookup(ctx, path) {
+  if (!(path in ctx)) throw new Unresolvable(`\`${path}\``);
+  return ctx[path];
+}
+
+/** Evaluate an `if:` expression (==, !=, &&, ||, 'literals', context paths) in ctx. */
+function evalCondition(expr, ctx) {
+  const operand = (tok) => {
+    const t = tok.trim();
+    const lit = /^'([^']*)'$/.exec(t);
+    if (lit) return lit[1];
+    if (/^[A-Za-z_][\w.-]*$/.test(t)) return lookup(ctx, t);
+    throw new GateLocalError(`\`if: ${expr}\` has an operand this runner cannot interpret: ${t}`);
+  };
+  const atom = (a) => {
+    const m = /^(.+?)\s*(==|!=)\s*(.+)$/.exec(a.trim());
+    if (!m) return Boolean(operand(a));
+    const eq = operand(m[1]) === operand(m[3]);
+    return m[2] === "==" ? eq : !eq;
+  };
+  return expr
+    .replace(/^\$\{\{\s*|\s*\}\}$/g, "")
+    .split("||")
+    .some((conj) => conj.split("&&").every(atom));
+}
+
+/** Substitute `${{ path }}` in text from ctx; any other expression is unresolvable. */
+function substitute(text, ctx) {
+  return text.replace(/\$\{\{\s*([^}]*?)\s*\}\}/g, (_, path) => String(lookup(ctx, path)));
+}
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 
@@ -125,7 +217,11 @@ function envOf(raw, where) {
 }
 
 /** Parse workflow YAML text into an ordered plan: [{ jobId, jobName, steps: [...] }]. */
-export function buildPlan(yamlText) {
+export function buildPlan(yamlText, opts = {}) {
+  const contexts = opts.contexts ?? [];
+  const baseEnv = Object.fromEntries(
+    EVENT_EMULATION.BASE_ENV.map((k) => [k, opts.base ?? "origin/main"]),
+  );
   const doc = parse(yamlText);
   if (!isObject(doc)) throw new GateLocalError("workflow: top level is not a mapping");
   assertKnownKeys(doc, WORKFLOW_KEYS, "workflow");
@@ -184,19 +280,50 @@ export function buildPlan(yamlText) {
       const env = { ...jobEnv, ...envOf(step.env, where) };
       const run = step.run ?? "";
       const text = `${run}\n${Object.values(env).join("\n")}`;
-      const ctx = { job, step, run, text };
-      const rule = SKIP_RULES.find((r) => r.test(ctx));
-      // An `if:` the rules did not classify is a construct we cannot honour: fail loud.
-      if (!rule && step.if !== undefined) {
-        throw new GateLocalError(`${where}: \`if: ${step.if}\` cannot be evaluated locally`);
+      const rctx = { job, step, run, text, yamlText, opts };
+      const rule = SKIP_RULES.find((r) => r.test(rctx));
+      let skip = rule ? { rule: rule.id, reason: rule.reason(rctx) } : null;
+      let finalRun = skip
+        ? run
+        : SKIP_RULES.reduce((r, rl) => (rl.rewrite ? rl.rewrite({ ...rctx, run: r }) : r), run);
+      let finalEnv = env;
+      if (!skip) {
+        // Evaluate job `if` and step `if` under each emulated event; first event that
+        // satisfies both supplies the `${{ }}` values for this step.
+        const conds = [job.if, step.if].filter((c) => c !== undefined).map(String);
+        try {
+          let ctx = contexts[0] ?? {};
+          if (conds.length > 0) {
+            if (contexts.length === 0) throw new Unresolvable("an emulated event (none supplied)");
+            ctx = contexts.find((c) => conds.every((cond) => evalCondition(cond, c)));
+            if (!ctx) {
+              skip = {
+                rule: "event-conditional",
+                reason: `\`if: ${conds.join(" && ")}\` false under every emulated event (${contexts.map((c) => c["github.event_name"]).join(", ")})`,
+              };
+            }
+          }
+          if (!skip) {
+            finalRun = substitute(finalRun, ctx);
+            finalEnv = Object.fromEntries(
+              Object.entries(env).map(([k, v]) => [k, substitute(v, ctx)]),
+            );
+          }
+        } catch (err) {
+          if (!(err instanceof Unresolvable)) throw err;
+          skip = {
+            rule: "ci-context",
+            reason: `needs ${err.message}, which the local event emulation does not supply`,
+          };
+        }
       }
       return {
         index: i + 1,
         name: String(step.name ?? run.split("\n")[0] ?? step.uses),
-        run,
-        env,
+        run: finalRun,
+        env: { ...baseEnv, ...finalEnv },
         cwd: step["working-directory"] ?? defaults["working-directory"] ?? ".",
-        skip: rule ? { rule: rule.id, reason: rule.reason(ctx) } : null,
+        skip,
       };
     });
     plan.push({ jobId, jobName: String(job.name ?? jobId), steps });
@@ -248,18 +375,29 @@ export function summarize(results) {
 }
 
 function main(argv) {
-  const wfIdx = argv.indexOf("--workflow");
-  const file = resolve(REPO_ROOT, wfIdx === -1 ? DEFAULT_WORKFLOW : (argv[wfIdx + 1] ?? ""));
-  const unknown = argv.filter(
-    (a, i) => !["--list", "--workflow"].includes(a) && argv[i - 1] !== "--workflow",
-  );
+  const value = (flag) => {
+    const i = argv.indexOf(flag);
+    if (i === -1) return undefined;
+    if (!argv[i + 1] || argv[i + 1].startsWith("--"))
+      throw new GateLocalError(`${flag} needs a value`);
+    return argv[i + 1];
+  };
+  const known = new Set(["--list", "--workflow", "--base", "--install-browsers"]);
+  const flagValues = new Set([value("--workflow"), value("--base")]);
+  const unknown = argv.filter((a) => !known.has(a) && !flagValues.has(a));
   if (unknown.length > 0) throw new GateLocalError(`unknown argument(s): ${unknown.join(" ")}`);
-  const plan = buildPlan(readFileSync(file, "utf8"));
-  const exec = argv.includes("--list") ? () => 0 : defaultExec;
-  const log = argv.includes("--list")
+  const file = resolve(REPO_ROOT, value("--workflow") ?? DEFAULT_WORKFLOW);
+  const { base, contexts } = emulatedEvents({ base: value("--base") ?? "origin/main" });
+  const plan = buildPlan(readFileSync(file, "utf8"), {
+    contexts,
+    base,
+    installBrowsers: argv.includes("--install-browsers"),
+  });
+  const list = argv.includes("--list");
+  const log = list
     ? (m) => console.log(String(m).replace(/^--- RUN /, "--- WOULD RUN "))
     : console.log;
-  const { text, failed } = summarize(runPlan(plan, { exec, log }));
+  const { text, failed } = summarize(runPlan(plan, { exec: list ? () => 0 : defaultExec, log }));
   console.log(`\n${text}`);
   return failed > 0 ? 1 : 0;
 }

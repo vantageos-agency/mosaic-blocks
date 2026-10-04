@@ -277,6 +277,83 @@ fi
 (cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-block-prose)
 
 # ---------------------------------------------------------------------------
+# registry.json — a PR may carry it ONLY when it is byte-identical to the
+# deriver's output from that PR's own src/ (Actions is off: the delivering PR
+# derives it). Two cases on a REAL component addition:
+#   MUST_PASS  — a new exported component + registry.json produced by
+#                `registry-json-derive.mjs` itself (a derived change).
+#   MUST_BLOCK — the same commit, then registry.json hand-edited afterwards.
+# Both assert the mutation LANDED before reading any verdict. The deriver is OUR
+# tool (installed in the clone like the guard), never the material under test.
+# ---------------------------------------------------------------------------
+reg_tools_install() {
+  cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  cp "$REPO_ROOT/scripts/registry-json-derive.mjs" "$CLONE/scripts/registry-json-derive.mjs"
+}
+reg_tools_reset() {
+  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared registry-json-derive; do
+    git checkout -- "scripts/$f.mjs" 2>/dev/null || rm -f "scripts/$f.mjs"
+  done; git clean -fdq)
+}
+
+reg_tools_reset
+(cd "$CLONE" && git checkout --quiet -b probe-registry-derived "$base")
+reg_tools_install
+mkdir -p "$CLONE/src/components/probe-widget"
+printf '%s\n' '/** MosaicProbeWidget — probe-only component. */' 'export function MosaicProbeWidget() {' '  return null;' '}' > "$CLONE/src/components/probe-widget/MosaicProbeWidget.tsx"
+printf '\nexport { MosaicProbeWidget } from "./components/probe-widget/MosaicProbeWidget.js";\n' >> "$CLONE/src/index.ts"
+(cd "$CLONE" && node scripts/registry-json-derive.mjs >/dev/null)
+
+# --- MUST_PASS: derived registry.json change -------------------------------
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+if ! grep -q '"mosaic-probe-widget"' "$CLONE/registry.json"; then
+  FAILURES+=("MUST_PASS registry-derived — mutation did NOT land (deriver did not add mosaic-probe-widget) — probe invalid")
+else
+  # Only the PR's own files are committed; the tools under test stay untracked/modified.
+  (cd "$CLONE" && git add -- src/components/probe-widget src/index.ts registry.json && git commit --quiet -m "feat(probe): new component with its derived registry.json")
+  set +e
+  output="$(cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base" node scripts/release-artifacts-guard.mjs 2>&1)"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+    log MUST_PASS "PASS — registry.json equal to its derivation — guard exited 0"
+  else
+    FAILURES+=("MUST_PASS registry-derived — guard exited $status (expected 0) — output: $output")
+    log MUST_PASS "FAIL — derived registry.json refused — exit=$status output=$output"
+  fi
+
+  # --- MUST_BLOCK: the same registry.json, hand-edited ---------------------
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  node -e '
+    const fs = require("fs");
+    const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const it = r.items.find((x) => x.name === "mosaic-probe-widget");
+    it.files[0].path = "src/components/probe-widget/HandTyped.tsx";
+    fs.writeFileSync(process.argv[1], JSON.stringify(r, null, 2) + "\n");
+  ' "$CLONE/registry.json"
+  if ! grep -q 'HandTyped.tsx' "$CLONE/registry.json"; then
+    FAILURES+=("MUST_BLOCK registry-hand-edit — mutation did NOT land — probe invalid")
+  else
+    (cd "$CLONE" && git add -- registry.json && git commit --quiet -m "probe: hand-edit registry.json")
+    set +e
+    output="$(cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base" node scripts/release-artifacts-guard.mjs 2>&1)"
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$output" | grep -qF "registry.json"; then
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — hand-edited registry.json refused — guard exited $status, named registry.json"
+    else
+      FAILURES+=("MUST_BLOCK registry-hand-edit — guard exited $status (expected non-zero) or did not name registry.json — output: $output")
+      log MUST_BLOCK "FAIL — hand-edited registry.json — exit=$status output=$output"
+    fi
+  fi
+fi
+reg_tools_reset
+(cd "$CLONE" && git checkout --quiet "$base" && git branch -D --quiet probe-registry-derived)
+
+# ---------------------------------------------------------------------------
 # Restoration proof — the INVOKING worktree (not the scratch clone) must be
 # untouched by this probe.
 # ---------------------------------------------------------------------------

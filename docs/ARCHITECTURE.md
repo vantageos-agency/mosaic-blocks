@@ -58,4 +58,4 @@ The library does **not** ship a `ThemeProvider` component or impose a runtime th
 
 ## Quality gates
 
-Seven hard-failing CI gates (no `continue-on-error`): lint (Biome) · typecheck · tests (Vitest) · parse-guard (TS compiler API) · build (tsup) · sandbox build (Next.js, Rule #19) · react-doctor@0.2.11 (Dimension 12). See [CONTRIBUTING.md](./CONTRIBUTING.md).
+Seven hard-failing gates, defined in `.github/workflows/ci.yml` and run locally by `pnpm gate:local` (GitHub Actions is off; no `continue-on-error`): lint (Biome) · typecheck · tests (Vitest) · parse-guard (TS compiler API) · build (tsup) · sandbox build (Next.js, Rule #19) · react-doctor@0.2.11 (Dimension 12). See [CONTRIBUTING.md](./CONTRIBUTING.md).

@@ -67,7 +67,7 @@ describe("gate-local buildPlan", () => {
 
   it("merges workflow, job and step env and honours working-directory", () => {
     const multi = byName(plan, "Multi");
-    expect(multi.env).toEqual({ WF: "wf", JOB: "job", STEP: "step" });
+    expect(multi.env).toMatchObject({ WF: "wf", JOB: "job", STEP: "step" });
     expect(multi.cwd).toBe("sub");
   });
 
@@ -100,9 +100,84 @@ describe("gate-local fails loud on constructs it cannot interpret", () => {
     const y = wrap("    steps:\n      - run: echo\n        shell: pwsh\n");
     expect(() => buildPlan(y)).toThrow(/shell `pwsh` unsupported/);
   });
-  it("an `if:` it cannot classify", () => {
+  it("an `if:` it cannot interpret", () => {
     const y = wrap("    steps:\n      - run: echo\n        if: always()\n");
-    expect(() => buildPlan(y)).toThrow(/cannot be evaluated locally/);
+    expect(() => buildPlan(y, { contexts: [{ "github.event_name": "push" }] })).toThrow(
+      /cannot interpret/,
+    );
+  });
+});
+
+describe("gate-local event emulation", () => {
+  const PR = {
+    "github.event_name": "pull_request",
+    "github.event.pull_request.head.sha": "abc123",
+    "github.event.pull_request.title": "feat(x): y",
+  };
+  const PUSH = { "github.event_name": "push", "github.ref": "refs/heads/main" };
+  const y = `
+jobs:
+  j:
+    steps:
+      - name: pr-only
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD: \${{ github.event.pull_request.head.sha }}
+          TITLE: \${{ github.event.pull_request.title }}
+        run: echo "$HEAD $TITLE"
+      - name: push-main-only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: echo main
+      - name: never
+        if: github.event_name == 'schedule'
+        run: echo never
+      - name: unknown-ctx
+        run: echo "\${{ github.run_id }}"
+`;
+  const step = (plan, n) => plan[0].steps.find((s) => s.name === n);
+
+  it("runs an event-conditional step and supplies head/title from the emulated context", () => {
+    const plan = buildPlan(y, { contexts: [PR, PUSH], base: "origin/main" });
+    const pr = step(plan, "pr-only");
+    expect(pr.skip).toBeNull();
+    expect(pr.env.HEAD).toBe("abc123");
+    expect(pr.env.TITLE).toBe("feat(x): y");
+    expect(step(plan, "push-main-only").skip).toBeNull();
+  });
+
+  it("supplies the base ref to the guards' base-ref env vars, step env winning", () => {
+    const plan = buildPlan(y, { contexts: [PR, PUSH], base: "origin/dev" });
+    expect(step(plan, "pr-only").env.RELEASE_ARTIFACTS_BASE_REF).toBe("origin/dev");
+    expect(step(plan, "pr-only").env.PR_TITLE_GUARD_BASE_REF).toBe("origin/dev");
+  });
+
+  it("skips with a reason when no emulated event satisfies the condition", () => {
+    const plan = buildPlan(y, { contexts: [PR, PUSH] });
+    expect(step(plan, "never").skip.rule).toBe("event-conditional");
+  });
+
+  it("skips (never silently) a step whose context the emulation does not supply", () => {
+    const plan = buildPlan(y, { contexts: [PR, PUSH] });
+    const s = step(plan, "unknown-ctx").skip;
+    expect(s.rule).toBe("ci-context");
+    expect(s.reason).toContain("github.run_id");
+  });
+
+  it("skips writing derive steps but keeps their --check form", () => {
+    const plan = buildPlan(
+      "jobs:\n  j:\n    steps:\n      - name: w\n        run: pnpm registry:derive\n      - name: c\n        run: pnpm registry:derive --check\n",
+    );
+    expect(plan[0].steps[0].skip.rule).toBe("writes-derived-files");
+    expect(plan[0].steps[1].skip).toBeNull();
+  });
+
+  it("--install-browsers drops --with-deps; without it the step stays skipped", () => {
+    const wf =
+      "jobs:\n  j:\n    steps:\n      - run: npx playwright install chromium --with-deps\n";
+    expect(buildPlan(wf)[0].steps[0].skip.rule).toBe("os-install");
+    const on = buildPlan(wf, { installBrowsers: true })[0].steps[0];
+    expect(on.skip).toBeNull();
+    expect(on.run).toBe("npx playwright install chromium");
   });
 });
 
