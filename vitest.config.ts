@@ -16,16 +16,14 @@ export default defineConfig({
     hookTimeout: 15000,
     setupFiles: ["./src/test-setup.ts"],
     // `src/__tests__/derived/` asserts that the DERIVED docs (README + catalog
-    // counts) match src/index.ts. Those docs are regenerated on `main` after a
-    // merge, never inside a component PR — a PR that adds an export therefore
-    // has legitimately stale counts, and running this suite there made every
-    // such PR unmergeable: the release-artifacts guard forbids touching the
-    // counts, and this suite demanded they be touched. A deadlock, and it was
-    // mine.
+    // counts) match src/index.ts. The release-artifacts guard forbids a PR from
+    // hand-editing those counts, so running this suite inside the plain
+    // `pnpm test` made every export-adding PR unmergeable (the guard forbids
+    // touching the counts, the suite demands they be touched).
     //
-    // The suite is NOT dropped — it runs on `main`, inside the derive job, on
-    // the freshly regenerated docs, where its verdict actually means something.
-    // See ci.yml, job `derive-release-artifacts`.
+    // The suite is NOT dropped — it has its own config (vitest.derived.config.ts)
+    // and `pnpm gate:local` runs it through the derive-release-artifacts job's
+    // check steps in ci.yml (GitHub Actions is off, so nothing runs it in CI).
     // `e2e/**` holds real-browser Playwright specs (playwright.config.ts),
     // deliberately outside jsdom/src/test-setup.ts — see e2e/selector-modal.spec.ts.
     // Vitest's default glob (**/*.spec.ts) would otherwise pick these up and

@@ -73,6 +73,15 @@ const REGISTRY_JSON = join(ROOT, "registry.json");
 const COMPONENTS_DIR = join(ROOT, "src/components");
 
 const CHECK = process.argv.includes("--check");
+// `--stdout`: print the derived registry.json to stdout, write NOTHING. It lets a
+// caller compare the derivation with the committed file (`cmp registry.json
+// <(node scripts/registry-json-derive.mjs --stdout)`) without copying files around;
+// the release-artifacts guard uses it to accept a registry.json that IS the derivation.
+const STDOUT = process.argv.includes("--stdout");
+if (CHECK && STDOUT) {
+  console.error("registry-json-derive: --check and --stdout are mutually exclusive.");
+  process.exit(2);
+}
 
 // Known peer/runtime dependencies a component's own `import` lines may
 // reference. Anything else stays out of `dependencies` (workspace-relative
@@ -474,6 +483,10 @@ function main() {
     homepage: existing.homepage,
     items: derivedItems,
   };
+  if (STDOUT) {
+    process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+    return;
+  }
   writeFileSync(REGISTRY_JSON, `${JSON.stringify(out, null, 2)}\n`, "utf8");
   console.log(
     `registry-json-derive: wrote registry.json — ${derivedItems.length} item(s) (was ${existing.items.length}). ${missing.length} newly added: ${missing.join(", ") || "(none)"}.`,

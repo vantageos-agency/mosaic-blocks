@@ -1,7 +1,7 @@
 # @vantageos/mosaic-blocks
 
 [![npm version](https://img.shields.io/npm/v/@vantageos/mosaic-blocks)](https://www.npmjs.com/package/@vantageos/mosaic-blocks)
-[![CI](https://github.com/vantageos-agency/mosaic-blocks/actions/workflows/ci.yml/badge.svg)](https://github.com/vantageos-agency/mosaic-blocks/actions/workflows/ci.yml)
+[![Gate: pnpm gate:local](https://img.shields.io/badge/gate-pnpm%20gate%3Alocal-blue)](docs/CONTRIBUTING.md#delivering-a-pr-with-actions-off)
 [![License: FSL-1.1-Apache-2.0](https://img.shields.io/badge/license-FSL--1.1--Apache--2.0-blue)](LICENSE)
 
 **Production-ready composed UI blocks for VantageOS products.** Built on React 19 + Tailwind v4 + `@base-ui/react`. Ships mobile-first, multi-tenant auth, OKLCH theming, and full bilingual (FR+EN) out of the box.
@@ -503,12 +503,12 @@ Quick summary:
 1. Fork and clone the repo
 2. `pnpm install` at repo root
 3. `pnpm build` — compiles the package
-4. `pnpm test` — runs vitest suite (557+ tests; exact count grows with every PR, see CI output)
+4. `pnpm test` — runs vitest suite (557+ tests; exact count grows with every PR, run `pnpm test` for the live count)
 5. `pnpm lint` — biome check
 6. `pnpm storybook` — component sandbox at localhost:6006
-7. Open a PR — CI gate has 7 required checks (Lint, Typecheck, Test, Parse guard, Build, Sandbox build, React-doctor — see `.github/workflows/ci.yml`)
+7. Run `pnpm gate:local` (it runs every step of `.github/workflows/ci.yml` locally and prints an `N run / M total` summary), then open a PR with that summary line in the body
 
-All PRs require a passing CI and a review. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design and [docs/adr/](docs/adr/) for architecture decisions.
+GitHub Actions is off on this repository: a PR is gated by the author's `pnpm gate:local` run plus the reviewer's fresh-clone rerun (see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md#delivering-a-pr-with-actions-off)), never by a CI status. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design and [docs/adr/](docs/adr/) for architecture decisions.
 
 ---
 

@@ -11,10 +11,16 @@
  * copied a value a tool could read (`.claude/rules/derive-never-type.md`).
  *
  * The fix is a SPLIT, not a stronger check:
- *   - a component PR's diff carries NEITHER the version NOR a count claim
- *     (THIS script, wired on `pull_request` only)
- *   - `main` derives both, once, after every PR that touches them has
- *     already merged (`derive-release-artifacts` CI job, `push: main` only)
+ *   - a component PR's diff never hand-types the version or a count claim
+ *     (THIS script; `pnpm gate:local` runs it against origin/main...HEAD)
+ *   - a count claim is accepted only when it equals `docs-counts.mjs`'s derivation
+ *     of the PR's own src/index.ts (`--check --json`, writes nothing); the version
+ *     is never typed in a PR
+ *
+ * registry.json is the exception to "carries nothing": with GitHub Actions off,
+ * no job derives it after the merge, so the delivering PR commits it — and this
+ * guard accepts that ONLY when the file is byte-identical to the deriver's own
+ * output (`registry-json-derive.mjs --stdout`). A hand edit is still refused.
  *
  * This script does NOT reimplement the count-claim anchors — that would be
  * exactly the "two sources of truth" defect scripts/docs-counts-shared.mjs's
@@ -36,8 +42,9 @@
  *   Compares origin/main...HEAD (or BASE_REF...HEAD if BASE_REF is set).
  */
 
-import { execFileSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { execFileSync, spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isCountShaped, mosaicCountPatterns, totalExportsPatterns } from "./docs-counts-shared.mjs";
 
@@ -62,9 +69,11 @@ const GUARDED_COUNT_FILES = ["README.md", "docs/components-catalog.md"];
 const GUARDED_VERSION_FILES = ["package.json", "src/version.ts"];
 // `registry.json`'s item list is DERIVED from src/index.ts by
 // `scripts/registry-json-derive.mjs` (mirrors the docs-counts split above —
-// see that script's header for the full "why"). A component PR must never
-// hand-edit it: the post-merge `derive-release-artifacts` job on main is the
-// only legitimate writer.
+// see that script's header for the full "why"). A PR may carry a change to it
+// ONLY when the committed file is byte-identical to what that deriver produces
+// from this PR's own src/ (GitHub Actions is off: nothing derives it after the
+// merge, so the delivering PR carries it). A hand edit differs from the
+// derivation and is refused.
 const GUARDED_WHOLE_FILES = ["registry.json"];
 
 /**
@@ -162,6 +171,55 @@ function addedLines(diffText) {
 }
 
 /**
+ * Byte-compare the on-disk registry.json with the deriver's own output
+ * (`registry-json-derive.mjs --stdout`, which writes nothing). A deriver that
+ * cannot run is a LOUD failure, never a pass.
+ * @returns {{ equal: boolean }}
+ */
+function registryJsonEqualsDerivation() {
+  let derived;
+  try {
+    derived = execFileSync("node", ["scripts/registry-json-derive.mjs", "--stdout"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch (err) {
+    const stderr = err && typeof err === "object" && "stderr" in err ? String(err.stderr) : "";
+    throw new Error(
+      `release-artifacts-guard: could not derive registry.json (\`node scripts/registry-json-derive.mjs --stdout\` failed) — refusing to judge. stderr: ${stderr || err.message}`,
+    );
+  }
+  return { equal: readFileSync(resolve(ROOT, "registry.json"), "utf8") === derived };
+}
+
+let derivedCountDrift;
+/**
+ * The count claims in README/catalog that DIFFER from `scripts/docs-counts.mjs`'s
+ * derivation of this PR's src/index.ts (`--check --json`: reads, writes nothing).
+ * Cached. A deriver that cannot run is a LOUD failure, never a pass.
+ * @returns {Array<{file:string,line:number,found:string,expected:string,snippet:string}>}
+ */
+function countDrift() {
+  if (derivedCountDrift) return derivedCountDrift;
+  const r = spawnSync("node", ["scripts/docs-counts.mjs", "--check", "--json"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  let parsed;
+  try {
+    parsed = JSON.parse(r.stdout);
+  } catch {
+    throw new Error(
+      `release-artifacts-guard: could not derive the doc counts (\`node scripts/docs-counts.mjs --check --json\` exit ${r.status}) — refusing to judge. stderr: ${r.stderr || "(none)"}`,
+    );
+  }
+  derivedCountDrift = parsed.drift.map((d) => ({ ...d, file: relative(ROOT, resolve(d.file)) }));
+  return derivedCountDrift;
+}
+
+/**
  * @param {string} text
  * @returns {boolean} true if any shared count-claim pattern matches
  */
@@ -206,13 +264,14 @@ function main() {
   const violations = [];
 
   for (const path of changed) {
-    if (GUARDED_WHOLE_FILES.includes(path)) {
+    if (GUARDED_WHOLE_FILES.includes(path) && !registryJsonEqualsDerivation().equal) {
       violations.push({
         file: path,
         line: 0,
         reason:
-          "hand-edits registry.json — its item list is DERIVED from src/index.ts by scripts/registry-json-derive.mjs, never hand-typed",
-        snippet: "(whole-file guard: any diff to this path is refused, not just specific lines)",
+          "registry.json differs from what scripts/registry-json-derive.mjs derives from this PR's src/index.ts — it is DERIVED, never hand-typed",
+        snippet:
+          "(whole-file guard: a change is allowed only when `cmp registry.json <(node scripts/registry-json-derive.mjs --stdout)` is equal; run `pnpm registry:derive`)",
       });
     }
 
@@ -242,13 +301,18 @@ function main() {
       const diffText = diffFor(path);
       const additions = addedLines(diffText);
       for (const { line, text } of additions) {
+        // A count claim is allowed when it EQUALS what docs-counts derives from this
+        // PR's src/index.ts; one that differs (a hand-typed number) is refused, naming it.
         if (matchesAnyCountPattern(text)) {
-          violations.push({
-            file: path,
-            line,
-            reason: "changes a Mosaic*/total-exports count claim",
-            snippet: text.trim().slice(0, 160),
-          });
+          const drift = countDrift().find((d) => d.file === path && d.line === line);
+          if (drift) {
+            violations.push({
+              file: path,
+              line,
+              reason: `hand-typed count claim: found ${drift.found}, docs-counts derives ${drift.expected} from src/index.ts`,
+              snippet: text.trim().slice(0, 160),
+            });
+          }
         }
       }
     }
@@ -259,7 +323,7 @@ function main() {
       .map((v) => `  - ${v.file}:${v.line} — ${v.reason}\n      "${v.snippet}"`)
       .join("\n");
     console.error(
-      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version + counts are DERIVED on main after merge, never typed in a component PR):\n${details}\n\nFix: revert these lines — \`main\`'s post-merge job (derive-release-artifacts) will compute the correct version and counts once this PR is merged. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
+      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version is never typed, counts and registry.json only when equal to their derivation):\n${details}\n\nFix: revert the version line; for counts and registry.json run \`pnpm docs:counts\` / \`pnpm registry:derive\` and commit their output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
     );
     process.exitCode = 1;
     return;
