@@ -11,10 +11,11 @@
  * copied a value a tool could read (`.claude/rules/derive-never-type.md`).
  *
  * The fix is a SPLIT, not a stronger check:
- *   - a component PR's diff carries NEITHER the version NOR a count claim
+ *   - a component PR's diff never hand-types the version or a count claim
  *     (THIS script; `pnpm gate:local` runs it against origin/main...HEAD)
- *   - the version and counts are derived once, outside the component PR
- *     (`derive-release-artifacts` job in ci.yml)
+ *   - a count claim is accepted only when it equals `docs-counts.mjs`'s derivation
+ *     of the PR's own src/index.ts (`--check --json`, writes nothing); the version
+ *     is never typed in a PR
  *
  * registry.json is the exception to "carries nothing": with GitHub Actions off,
  * no job derives it after the merge, so the delivering PR commits it — and this
@@ -322,7 +323,7 @@ function main() {
       .map((v) => `  - ${v.file}:${v.line} — ${v.reason}\n      "${v.snippet}"`)
       .join("\n");
     console.error(
-      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version + counts are never typed in a component PR):\n${details}\n\nFix: revert the version/count lines; for registry.json run \`pnpm registry:derive\` and commit its output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
+      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version is never typed, counts and registry.json only when equal to their derivation):\n${details}\n\nFix: revert the version/count lines; for registry.json run \`pnpm registry:derive\` and commit its output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
     );
     process.exitCode = 1;
     return;
