@@ -34,14 +34,14 @@ const outDir = join(repoRoot, "r");
 // stories included (registry-json-derive.mjs filters `.test.tsx?` only), and
 // this script used to inline each listed file verbatim. The exclusion is
 // derived from the repo's own conventions, never typed:
-//   - test files:   vitest's own default `include` glob (vitest/config
-//                   configDefaults.include) — the runner `pnpm test` uses,
-//                   vitest.config.ts declares no `include` of its own;
+//   - test files:   the `include` globs of tsconfig.test.json, the repo's own
+//                   declaration of its test-file set (vitest.config.ts
+//                   declares no `include`; importing vitest/config here is not
+//                   an option, it loads esbuild, which fails under jsdom);
 //   - story files:  the `stories` glob of .storybook/main.ts, read at run time;
 //   - `__tests__/`: the repo's test directory (vitest.config.ts excludes
 //                   `src/__tests__/derived/**`; tests live under `__tests__`).
 // Anything this script cannot read or translate fails loud, never skips.
-const { configDefaults } = await import("vitest/config");
 
 /** Glob -> RegExp for the constructs the sources above use; throws on any other. */
 export function globToRegExp(glob) {
@@ -80,6 +80,18 @@ export function globToRegExp(glob) {
   return new RegExp(`^${out}$`);
 }
 
+function readTestGlobs() {
+  const cfgPath = join(repoRoot, "tsconfig.test.json");
+  if (!existsSync(cfgPath)) {
+    throw new Error(`${cfgPath} not found — cannot derive the test-file exclusion`);
+  }
+  const include = JSON.parse(readFileSync(cfgPath, "utf8")).include;
+  if (!Array.isArray(include) || include.length === 0) {
+    throw new Error(`${cfgPath} has no include[] — cannot derive the test-file exclusion`);
+  }
+  return include;
+}
+
 function readStoriesGlobs() {
   const mainPath = join(repoRoot, ".storybook", "main.ts");
   if (!existsSync(mainPath)) {
@@ -95,9 +107,7 @@ function readStoriesGlobs() {
   return globs.map((g) => posix.normalize(posix.join(".storybook", g)));
 }
 
-export const NON_SHIPPED_MATCHERS = [...configDefaults.include, ...readStoriesGlobs()].map(
-  globToRegExp,
-);
+export const NON_SHIPPED_MATCHERS = [...readTestGlobs(), ...readStoriesGlobs()].map(globToRegExp);
 
 export function isShipped(sourcePath) {
   if (sourcePath.split("/").includes("__tests__")) return false;
