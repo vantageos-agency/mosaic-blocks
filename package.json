@@ -66,6 +66,7 @@
     "docs:counts": "node scripts/docs-counts.mjs",
     "registry:derive": "node scripts/registry-json-derive.mjs",
     "build:registry-items": "node scripts/build-registry-items.mjs",
+    "check:registry-items-drift": "node scripts/check-registry-items-drift.mjs",
     "parse-guard": "node scripts/parse-guard.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
