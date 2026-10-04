@@ -7,6 +7,7 @@ import {
   buildItem,
   buildPathIndex,
   findRelativeImports,
+  isShipped,
   loadRegistry,
   serializeItem,
 } from "../../scripts/build-registry-items.mjs";
@@ -111,6 +112,38 @@ describe("build-registry-items: refusals", () => {
       'export * from "./re";',
     ].join("\n");
     expect(findRelativeImports(src)).toEqual(["../x/A.js", "./side", "../lazy/L.js", "./re"]);
+  });
+
+  it("does not refuse over, nor ship, a story/test file importing ../x", () => {
+    const withStory = {
+      ...item,
+      files: [
+        { path: "src/a/A.tsx", type: "registry:ui" },
+        { path: "src/a/A.stories.tsx", type: "registry:ui" },
+        { path: "src/a/A.test.tsx", type: "registry:ui" },
+      ],
+    };
+    const f = fixture(
+      {
+        "src/a/A.tsx": "export const A = 1;\n",
+        "src/a/A.stories.tsx": 'import { X } from "../b/B.js";\nexport default X;\n',
+        "src/a/A.test.tsx": 'import { X } from "../b/B.js";\nexport default X;\n',
+      },
+      [withStory],
+    );
+    const built = buildItem(withStory as never, { root: f.root, pathToItem: f.pathToItem }) as {
+      files: Array<{ path: string }>;
+    };
+    expect(built.files.map((x) => x.path)).toEqual(["src/a/A.tsx"]);
+  });
+
+  it("derives the non-shipped domain: stories, tests, specs, __tests__ out; sources in", () => {
+    expect(isShipped("src/components/a/A.stories.tsx")).toBe(false);
+    expect(isShipped("src/components/a/A.test.tsx")).toBe(false);
+    expect(isShipped("src/components/a/A.spec.ts")).toBe(false);
+    expect(isShipped("src/__tests__/x.ts")).toBe(false);
+    expect(isShipped("src/components/a/A.tsx")).toBe(true);
+    expect(isShipped("src/hooks/useX.ts")).toBe(true);
   });
 
   it("fails loud on a missing source file", () => {

@@ -28,6 +28,82 @@ const repoRoot = join(__dirname, "..");
 const registryPath = join(repoRoot, "registry.json");
 const outDir = join(repoRoot, "r");
 
+// Non-shipped files: items carry component sources only.
+//
+// registry.json lists every non-`.test` source of a component directory,
+// stories included (registry-json-derive.mjs filters `.test.tsx?` only), and
+// this script used to inline each listed file verbatim. The exclusion is
+// derived from the repo's own conventions, never typed:
+//   - test files:   vitest's own default `include` glob (vitest/config
+//                   configDefaults.include) — the runner `pnpm test` uses,
+//                   vitest.config.ts declares no `include` of its own;
+//   - story files:  the `stories` glob of .storybook/main.ts, read at run time;
+//   - `__tests__/`: the repo's test directory (vitest.config.ts excludes
+//                   `src/__tests__/derived/**`; tests live under `__tests__`).
+// Anything this script cannot read or translate fails loud, never skips.
+const { configDefaults } = await import("vitest/config");
+
+/** Glob -> RegExp for the constructs the sources above use; throws on any other. */
+export function globToRegExp(glob) {
+  let out = "";
+  const closers = [];
+  for (let i = 0; i < glob.length; i += 1) {
+    const c = glob[i];
+    const two = glob.slice(i, i + 2);
+    if (glob.slice(i, i + 3) === "**/") {
+      out += "(?:.*/)?";
+      i += 2;
+    } else if (c === "*") out += "[^/]*";
+    else if ((two === "?(" || two === "@(") && /[?@]/.test(c)) {
+      out += "(?:";
+      closers.push(two === "?(" ? ")?" : ")");
+      i += 1;
+    } else if (c === "{") {
+      out += "(?:";
+      closers.push(")");
+    } else if (c === "(") {
+      throw new Error(`unsupported glob construct "(" in "${glob}"`);
+    } else if ((c === ")" || c === "}") && closers.length > 0) out += closers.pop();
+    else if (c === "," && closers.length > 0) out += "|";
+    else if (c === "|" && closers.length > 0) out += "|";
+    else if (c === "[") {
+      const end = glob.indexOf("]", i);
+      if (end < 0) throw new Error(`unterminated "[" in glob "${glob}"`);
+      out += glob.slice(i, end + 1);
+      i = end;
+    } else if (c === "?") out += "[^/]";
+    else if (/[!+]/.test(c) && glob[i + 1] === "(") {
+      throw new Error(`unsupported glob construct "${two}" in "${glob}"`);
+    } else out += c.replace(/[.^$|\\)]/g, "\\$&");
+  }
+  if (closers.length > 0) throw new Error(`unbalanced group in glob "${glob}"`);
+  return new RegExp(`^${out}$`);
+}
+
+function readStoriesGlobs() {
+  const mainPath = join(repoRoot, ".storybook", "main.ts");
+  if (!existsSync(mainPath)) {
+    throw new Error(
+      `storybook config not found at ${mainPath} — cannot derive the stories exclusion`,
+    );
+  }
+  const m = readFileSync(mainPath, "utf8").match(/\bstories:\s*\[([^\]]*)\]/);
+  const globs = m ? [...m[1].matchAll(/["']([^"']+)["']/g)].map((g) => g[1]) : [];
+  if (globs.length === 0) {
+    throw new Error(`no stories glob found in ${mainPath} — cannot derive the stories exclusion`);
+  }
+  return globs.map((g) => posix.normalize(posix.join(".storybook", g)));
+}
+
+export const NON_SHIPPED_MATCHERS = [...configDefaults.include, ...readStoriesGlobs()].map(
+  globToRegExp,
+);
+
+export function isShipped(sourcePath) {
+  if (sourcePath.split("/").includes("__tests__")) return false;
+  return !NON_SHIPPED_MATCHERS.some((re) => re.test(sourcePath));
+}
+
 export function deriveTarget(sourcePath) {
   return `components/ui/${basename(sourcePath)}`;
 }
@@ -78,7 +154,9 @@ function resolveToRegistryPath(fromPath, spec, pathToItem) {
 
 export function buildPathIndex(items) {
   const pathToItem = new Map();
-  for (const it of items) for (const f of it.files ?? []) pathToItem.set(f.path, it.name);
+  for (const it of items)
+    for (const f of (it.files ?? []).filter((x) => isShipped(x.path)))
+      pathToItem.set(f.path, it.name);
   return pathToItem;
 }
 
@@ -88,7 +166,12 @@ export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}
   }
   const declared = new Set(item.registryDependencies ?? []);
 
-  const files = item.files.map((file) => {
+  const shipped = item.files.filter((file) => isShipped(file.path));
+  if (shipped.length === 0) {
+    throw new Error(`item "${item.name}" has no shippable source file (only stories/tests listed)`);
+  }
+
+  const files = shipped.map((file) => {
     const absPath = join(root, file.path);
     if (!existsSync(absPath)) {
       throw new Error(`item "${item.name}": source file not found on disk: ${file.path}`);

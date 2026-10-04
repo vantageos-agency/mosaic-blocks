@@ -19,3 +19,6 @@ export function buildPathIndex(items: RegistryItemSource[]): Map<string, string>
 export function buildItem(item: RegistryItemSource, ctx?: BuildContext): Record<string, unknown>;
 export function serializeItem(built: Record<string, unknown>): string;
 export function loadRegistry(): RegistryItemSource[];
+export function globToRegExp(glob: string): RegExp;
+export function isShipped(sourcePath: string): boolean;
+export const NON_SHIPPED_MATCHERS: RegExp[];
