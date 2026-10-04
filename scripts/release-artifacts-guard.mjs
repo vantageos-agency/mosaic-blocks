@@ -323,7 +323,7 @@ function main() {
       .map((v) => `  - ${v.file}:${v.line} — ${v.reason}\n      "${v.snippet}"`)
       .join("\n");
     console.error(
-      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version is never typed, counts and registry.json only when equal to their derivation):\n${details}\n\nFix: revert the version/count lines; for registry.json run \`pnpm registry:derive\` and commit its output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
+      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version is never typed, counts and registry.json only when equal to their derivation):\n${details}\n\nFix: revert the version line; for counts and registry.json run \`pnpm docs:counts\` / \`pnpm registry:derive\` and commit their output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
     );
     process.exitCode = 1;
     return;
