@@ -64,6 +64,7 @@
     "prebuild": "rimraf dist",
     "sync-versions": "node scripts/sync-versions.mjs",
     "docs:counts": "node scripts/docs-counts.mjs",
+    "gate:local": "node scripts/gate-local.mjs",
     "registry:derive": "node scripts/registry-json-derive.mjs",
     "build:registry-items": "node scripts/build-registry-items.mjs",
     "check:registry-items-drift": "node scripts/check-registry-items-drift.mjs",
@@ -124,6 +125,7 @@
     "tailwindcss": "^4.3.1",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.3"
+    "vitest": "^3.2.3",
+    "yaml": "^2.9.1"
   }
 }
