@@ -60,6 +60,11 @@
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  extractRealExports,
+  maskCommentsAndStrings,
+  scanExportStatements,
+} from "./docs-counts-shared.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -99,27 +104,84 @@ function readFileOrThrow(path) {
 }
 
 /**
- * Parses every `export { Name } from "./components/<dir>/<File>.js"` (and
- * `export type { ... }`) statement out of src/index.ts.
+ * DECLARED DIVERGENCE (never silent): re-exports from these module paths are
+ * real public API but are NOT shadcn registry items (the registry mirrors
+ * component directories under src/components/). They are accepted by name
+ * here, where the next reader sees it. Any OTHER non-component source makes
+ * the derivation fail loud — a new path is a decision, never a silent skip.
+ * @type {ReadonlySet<string>}
+ */
+const NON_REGISTRY_SOURCES = new Set([
+  "./version.js",
+  "./placeholder.js",
+  "./hooks/useMediaQuery.js",
+]);
+
+/**
+ * Parses src/index.ts's FULL export domain (census = `scanExportStatements`,
+ * shared with docs-counts-shared.mjs). Every export statement is either
+ * read into a registry export, accepted as a declared non-registry
+ * re-export, or makes this function THROW naming the line: there is no
+ * `continue` / `return []` on an unrecognised form.
+ *
+ * Covered: `export [type] { A, B as C } from "./components/<dir>/<File>.js"`
+ * (-> registry exports), the same from a NON_REGISTRY_SOURCES path
+ * (declared, skipped). Loud failure: bare `export *`, `export * as NS`,
+ * local `export const/let/var/function/class/interface/type/enum/...`,
+ * `export default`, `export { local }` with no `from`, an undeclared source
+ * path, a component-path source without the `.js` suffix, an inline `type`
+ * specifier modifier, and a value `as` alias in a component barrel.
+ * @param {string} [src] defaults to the real src/index.ts
  * @returns {Array<{ name: string, dir: string, file: string, isType: boolean }>}
  */
-function parseBarrelExports() {
-  const src = readFileOrThrow(INDEX_TS);
-  const re = /export\s+(type\s+)?\{([^}]+)\}\s+from\s+["']\.\/components\/([^"']+)\.js["']/g;
+export function parseBarrelExports(src = readFileOrThrow(INDEX_TS)) {
   const out = [];
-  let m = re.exec(src);
-  while (m !== null) {
-    const [, isTypeKw, namesBlock, relPath] = m;
+  const valueNames = new Set();
+  for (const st of scanExportStatements(src)) {
+    const where = `src/index.ts:${st.line} (${st.text.replace(/\s+/g, " ").trim()})`;
+    if (st.kind !== "named-reexport") {
+      throw new Error(
+        `registry-json-derive: unreadable export form \`${st.kind}${st.keyword ? ` ${st.keyword}` : ""}\` at ${where} — it cannot be mapped to a component directory, so the derived registry.json would silently omit it. Re-export it from a \`./components/<dir>/<File>.js\` barrel, or extend this script (and declare it) to cover the form.`,
+      );
+    }
+    const comp = /^\.\/components\/(.+)\.js$/.exec(st.source);
+    if (!comp && !NON_REGISTRY_SOURCES.has(st.source)) {
+      throw new Error(
+        `registry-json-derive: export source \`${st.source}\` at ${where} is neither a \`./components/<dir>/<File>.js\` barrel nor a declared NON_REGISTRY_SOURCES path — refusing to ignore it silently.`,
+      );
+    }
+    for (const sp of st.specifiers) {
+      if (sp.inlineType) {
+        throw new Error(
+          `registry-json-derive: inline \`type\` specifier modifier on \`${sp.local}\` at ${where} is not read by this script — use \`export type { ... }\` instead.`,
+        );
+      }
+      if (!st.isType && sp.local !== sp.exported && comp) {
+        throw new Error(
+          `registry-json-derive: value alias \`${sp.local} as ${sp.exported}\` at ${where} — the registry slug is derived from the export name and an alias would make it ambiguous. Declare and handle the alias, or drop it.`,
+        );
+      }
+      if (!st.isType) valueNames.add(sp.exported);
+    }
+    if (!comp) continue; // declared non-registry re-export (checked above)
+    const relPath = comp[1];
     const dir = dirname(relPath);
     const file = relPath.slice(dir.length + 1);
-    const names = namesBlock
-      .split(",")
-      .map((n) => n.trim())
-      .filter(Boolean);
-    for (const name of names) {
-      out.push({ name, dir, file, isType: Boolean(isTypeKw) });
+    for (const sp of st.specifiers) {
+      out.push({ name: sp.exported, dir, file, isType: st.isType });
     }
-    m = re.exec(src);
+  }
+  // Cross-check against the SINGLE shared definition of "named value export"
+  // (G1's extractRealExports): every value name it counts must have been
+  // accounted for above — a second, independent reading of the same file.
+  // Comments/strings masked first so prose mentioning `export` is not counted.
+  const shared = extractRealExports(maskCommentsAndStrings(src));
+  const unaccounted = [...shared].filter((n) => !valueNames.has(n));
+  const phantom = [...valueNames].filter((n) => !shared.has(n));
+  if (unaccounted.length > 0 || phantom.length > 0) {
+    throw new Error(
+      `registry-json-derive: census mismatch against docs-counts-shared extractRealExports — value exports it counts but this parse did not account for: [${unaccounted.join(", ")}]; accounted here but not counted there: [${phantom.join(", ")}].`,
+    );
   }
   if (out.length === 0) {
     throw new Error(
@@ -418,4 +480,7 @@ function main() {
   );
 }
 
-main();
+// Run only when invoked directly, so tests can import `parseBarrelExports`.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}
