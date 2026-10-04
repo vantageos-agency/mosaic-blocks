@@ -41,9 +41,9 @@
  *   Compares origin/main...HEAD (or BASE_REF...HEAD if BASE_REF is set).
  */
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isCountShaped, mosaicCountPatterns, totalExportsPatterns } from "./docs-counts-shared.mjs";
 
@@ -192,6 +192,32 @@ function registryJsonEqualsDerivation() {
   return { equal: readFileSync(resolve(ROOT, "registry.json"), "utf8") === derived };
 }
 
+let derivedCountDrift;
+/**
+ * The count claims in README/catalog that DIFFER from `scripts/docs-counts.mjs`'s
+ * derivation of this PR's src/index.ts (`--check --json`: reads, writes nothing).
+ * Cached. A deriver that cannot run is a LOUD failure, never a pass.
+ * @returns {Array<{file:string,line:number,found:string,expected:string,snippet:string}>}
+ */
+function countDrift() {
+  if (derivedCountDrift) return derivedCountDrift;
+  const r = spawnSync("node", ["scripts/docs-counts.mjs", "--check", "--json"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  let parsed;
+  try {
+    parsed = JSON.parse(r.stdout);
+  } catch {
+    throw new Error(
+      `release-artifacts-guard: could not derive the doc counts (\`node scripts/docs-counts.mjs --check --json\` exit ${r.status}) — refusing to judge. stderr: ${r.stderr || "(none)"}`,
+    );
+  }
+  derivedCountDrift = parsed.drift.map((d) => ({ ...d, file: relative(ROOT, resolve(d.file)) }));
+  return derivedCountDrift;
+}
+
 /**
  * @param {string} text
  * @returns {boolean} true if any shared count-claim pattern matches
@@ -274,13 +300,18 @@ function main() {
       const diffText = diffFor(path);
       const additions = addedLines(diffText);
       for (const { line, text } of additions) {
+        // A count claim is allowed when it EQUALS what docs-counts derives from this
+        // PR's src/index.ts; one that differs (a hand-typed number) is refused, naming it.
         if (matchesAnyCountPattern(text)) {
-          violations.push({
-            file: path,
-            line,
-            reason: "changes a Mosaic*/total-exports count claim",
-            snippet: text.trim().slice(0, 160),
-          });
+          const drift = countDrift().find((d) => d.file === path && d.line === line);
+          if (drift) {
+            violations.push({
+              file: path,
+              line,
+              reason: `hand-typed count claim: found ${drift.found}, docs-counts derives ${drift.expected} from src/index.ts`,
+              snippet: text.trim().slice(0, 160),
+            });
+          }
         }
       }
     }

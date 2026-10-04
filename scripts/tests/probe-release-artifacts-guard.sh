@@ -129,6 +129,7 @@ run_guard() {
   # tool, re-copied every switch so a `git checkout` between cases cannot leave
   # the clone with a stale copy the guard's imports no longer resolve against).
   cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  cp "$REPO_ROOT/scripts/docs-counts.mjs" "$CLONE/scripts/docs-counts.mjs"
   (cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base_ref" node scripts/release-artifacts-guard.mjs)
 }
 
@@ -138,10 +139,11 @@ run_guard() {
 # diff" is byte-for-byte the real hunk from the real train.
 # ---------------------------------------------------------------------------
 # format: commit sha : file : grep-anchor-that-must-land
+# (README/catalog count hunks are NOT replayed from history: a count equal to the
+# derivation is now allowed, so their MUST_BLOCK is the off-by-one case below, built
+# on the current tree.)
 BLOCK_CASES=(
-  "2016375:README.md:It provides 135 opinionated"
   "00ea886:package.json:0.5.16-alpha"
-  "13b7e14:docs/components-catalog.md:**137** \`Mosaic*\` components and **170** total"
   "bc79eda:src/version.ts:0.5.18-alpha"
 )
 
@@ -150,7 +152,7 @@ for case in "${BLOCK_CASES[@]}"; do
   MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
   parent="$(cd "$CLONE" && git rev-parse "${sha}^")"
   branch="probe-block-${sha}"
-  (cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet -b "$branch" "$parent")
+  (cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet -b "$branch" "$parent")
   # Apply ONLY this file's hunk from the real historical commit — this is
   # foreign material: the exact bytes a real component PR shipped.
   (cd "$CLONE" && git diff "${parent}" "${sha}" -- "$file" | git apply -)
@@ -173,7 +175,7 @@ for case in "${BLOCK_CASES[@]}"; do
     fi
   fi
 
-  (cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet "$parent" && git branch -D --quiet "$branch")
+  (cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet "$parent" && git branch -D --quiet "$branch")
 done
 
 # ---------------------------------------------------------------------------
@@ -198,7 +200,7 @@ if [ -z "$base" ]; then
   echo "probe: and a setup failure must never be read as a pass." >&2
   exit 1
 fi
-(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet -b probe-pass-clean "$base")
+(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet -b probe-pass-clean "$base")
 echo "// probe: harmless new file, no release artifact touched" > "$CLONE/src/probe-harmless.ts"
 (cd "$CLONE" && git add -- src/probe-harmless.ts && git commit --quiet -m "feat(probe): harmless component-only change")
 if ! grep -qF "probe: harmless" "$CLONE/src/probe-harmless.ts"; then
@@ -216,14 +218,14 @@ else
     log MUST_PASS "FAIL — clean component diff — exit=$status output=$output"
   fi
 fi
-(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-pass-clean)
+(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-pass-clean)
 
 # ---------------------------------------------------------------------------
 # MUST_PASS #2 — a genuine release PR: touches version, BUT carries the
 # written escape-hatch marker on HEAD's commit message.
 # ---------------------------------------------------------------------------
 MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
-(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet -b probe-pass-release "$base")
+(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet -b probe-pass-release "$base")
 sed -i 's/"version": "[^"]*"/"version": "9.9.9-alpha"/' "$CLONE/package.json"
 (cd "$CLONE" && git add -- package.json && git commit --quiet -m "$(printf 'chore(release): bump to 9.9.9-alpha\n\n// allow-release-artifacts: probe MUST_PASS release marker case')")
 if ! grep -qF '9.9.9-alpha' "$CLONE/package.json"; then
@@ -241,7 +243,7 @@ else
     log MUST_PASS "FAIL — release-marker case — exit=$status output=$output"
   fi
 fi
-(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-pass-release)
+(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-pass-release)
 
 # ---------------------------------------------------------------------------
 # MUST_BLOCK #5 — the marker MENTIONED IN PROSE must NOT disable the guard.
@@ -256,7 +258,7 @@ fi
 # probe and protects nothing.
 # ---------------------------------------------------------------------------
 MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
-(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet -b probe-block-prose "$base")
+(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet -b probe-block-prose "$base")
 sed -i 's/"version": "[^"]*"/"version": "9.9.9-alpha"/' "$CLONE/package.json"
 (cd "$CLONE" && git add -- package.json && git commit --quiet -m "$(printf 'feat(x): a component PR whose message merely DESCRIBES the escape hatch\n\nThe escape hatch is a written // allow-release-artifacts: <reason> line in the\nHEAD commit — quoting it here, in prose, must not disable anything.')")
 if ! grep -qF '9.9.9-alpha' "$CLONE/package.json"; then
@@ -274,7 +276,7 @@ else
     log MUST_BLOCK "FAIL — prose-quoted marker DISABLED the guard — exit=$status output=$output"
   fi
 fi
-(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-block-prose)
+(cd "$CLONE" && git checkout -- scripts/release-artifacts-guard.mjs 2>/dev/null || rm -f scripts/release-artifacts-guard.mjs; git checkout -- scripts/docs-counts-shared.mjs 2>/dev/null || rm -f scripts/docs-counts-shared.mjs; git checkout -- scripts/docs-counts.mjs 2>/dev/null || rm -f scripts/docs-counts.mjs; git clean -fdq && git checkout --quiet "$base" && git branch -D --quiet probe-block-prose)
 
 # ---------------------------------------------------------------------------
 # registry.json — a PR may carry it ONLY when it is byte-identical to the
@@ -290,9 +292,10 @@ reg_tools_install() {
   cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
   cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
   cp "$REPO_ROOT/scripts/registry-json-derive.mjs" "$CLONE/scripts/registry-json-derive.mjs"
+  cp "$REPO_ROOT/scripts/docs-counts.mjs" "$CLONE/scripts/docs-counts.mjs"
 }
 reg_tools_reset() {
-  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared registry-json-derive; do
+  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared registry-json-derive docs-counts; do
     git checkout -- "scripts/$f.mjs" 2>/dev/null || rm -f "scripts/$f.mjs"
   done; git clean -fdq)
 }
@@ -303,22 +306,23 @@ reg_tools_install
 mkdir -p "$CLONE/src/components/probe-widget"
 printf '%s\n' '/** MosaicProbeWidget — probe-only component. */' 'export function MosaicProbeWidget() {' '  return null;' '}' > "$CLONE/src/components/probe-widget/MosaicProbeWidget.tsx"
 printf '\nexport { MosaicProbeWidget } from "./components/probe-widget/MosaicProbeWidget.js";\n' >> "$CLONE/src/index.ts"
-(cd "$CLONE" && node scripts/registry-json-derive.mjs >/dev/null)
+(cd "$CLONE" && node scripts/registry-json-derive.mjs >/dev/null && node scripts/docs-counts.mjs >/dev/null)
 
 # --- MUST_PASS: derived registry.json change -------------------------------
 MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
-if ! grep -q '"mosaic-probe-widget"' "$CLONE/registry.json"; then
+if ! grep -q '"mosaic-probe-widget"' "$CLONE/registry.json" || (cd "$CLONE" && git diff --quiet -- README.md docs/components-catalog.md); then
   FAILURES+=("MUST_PASS registry-derived — mutation did NOT land (deriver did not add mosaic-probe-widget) — probe invalid")
 else
   # Only the PR's own files are committed; the tools under test stay untracked/modified.
-  (cd "$CLONE" && git add -- src/components/probe-widget src/index.ts registry.json && git commit --quiet -m "feat(probe): new component with its derived registry.json")
+  (cd "$CLONE" && git add -- src/components/probe-widget src/index.ts registry.json README.md docs/components-catalog.md && git commit --quiet -m "feat(probe): new component with its derived registry.json + counts")
+  derived_sha="$(cd "$CLONE" && git rev-parse HEAD)"
   set +e
   output="$(cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base" node scripts/release-artifacts-guard.mjs 2>&1)"
   status=$?
   set -e
   if [ "$status" -eq 0 ]; then
     MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
-    log MUST_PASS "PASS — registry.json equal to its derivation — guard exited 0"
+    log MUST_PASS "PASS — registry.json + README/catalog counts equal to their derivation — guard exited 0"
   else
     FAILURES+=("MUST_PASS registry-derived — guard exited $status (expected 0) — output: $output")
     log MUST_PASS "FAIL — derived registry.json refused — exit=$status output=$output"
@@ -349,6 +353,56 @@ else
       log MUST_BLOCK "FAIL — hand-edited registry.json — exit=$status output=$output"
     fi
   fi
+  # --- counts: the SAME commit also carries the README/catalog counts written by
+  # `docs-counts.mjs` (MUST_PASS above already covers them: the guard exited 0 with
+  # README.md + docs/components-catalog.md changed). Now one count hand-typed off by
+  # one, per file, on top of that derived commit.
+  for countfile in README.md docs/components-catalog.md; do
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+    (cd "$CLONE" && git reset -q --hard "$derived_sha")
+    reg_tools_install
+    set +e
+    landed="$(cd "$CLONE" && node --input-type=module -e '
+      import { readFileSync, writeFileSync } from "node:fs";
+      import { mosaicCountPatterns, extractVersionTableRowStatusByLine } from "./scripts/docs-counts-shared.mjs";
+      const f = process.argv[1];
+      const src = readFileSync(f, "utf8");
+      const hist = f === "README.md" ? extractVersionTableRowStatusByLine(src) : new Map();
+      let done = null;
+      for (const re of mosaicCountPatterns()) {
+        re.lastIndex = 0;
+        for (const m of src.matchAll(re)) {
+          const line = src.slice(0, m.index).split("\n").length;
+          if (hist.get(line) === "Historical") continue;
+          const at = m.index + m[0].indexOf(m[1]);
+          done = src.slice(0, at) + String(Number(m[1]) + 1) + src.slice(at + m[1].length);
+          break;
+        }
+        if (done) break;
+      }
+      if (!done) { console.error("no live count anchor found"); process.exit(3); }
+      writeFileSync(f, done);
+      console.log("landed");
+    ' "$countfile" 2>&1)"
+    set -e
+    drift_json="$(cd "$CLONE" && node scripts/docs-counts.mjs --check --json 2>/dev/null || true)"
+    if [ "$landed" != "landed" ] || ! echo "$drift_json" | grep -q "\"file\":\"[^\"]*$countfile\""; then
+      FAILURES+=("MUST_BLOCK count-off-by-one $countfile — mutation did NOT land (deriver sees no drift in it) — probe invalid: $landed")
+    else
+      (cd "$CLONE" && git add -- "$countfile" && git commit --quiet -m "probe: hand-type one count off by one in $countfile")
+      set +e
+      output="$(cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base" node scripts/release-artifacts-guard.mjs 2>&1)"
+      status=$?
+      set -e
+      if [ "$status" -ne 0 ] && echo "$output" | grep -qF "$countfile" && echo "$output" | grep -qF "hand-typed count"; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — off-by-one count in $countfile refused — guard exited $status, named it"
+      else
+        FAILURES+=("MUST_BLOCK count-off-by-one $countfile — guard exited $status or did not name it — output: $output")
+        log MUST_BLOCK "FAIL — off-by-one count in $countfile — exit=$status output=$output"
+      fi
+    fi
+  done
 fi
 reg_tools_reset
 (cd "$CLONE" && git checkout --quiet "$base" && git branch -D --quiet probe-registry-derived)

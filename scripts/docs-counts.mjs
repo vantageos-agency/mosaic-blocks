@@ -151,6 +151,14 @@ const README_PATH = resolve(ROOT, "README.md");
 const CATALOG_PATH = resolve(ROOT, "docs", "components-catalog.md");
 
 const CHECK_MODE = process.argv.includes("--check");
+// `--check --json`: print { expected, drift } as JSON on stdout (machine-readable, writes
+// nothing); exit code is unchanged (1 on drift). The release-artifacts guard reads it to
+// accept a count-anchor edit ONLY when it equals this deriver's output.
+const JSON_MODE = process.argv.includes("--json");
+if (JSON_MODE && !CHECK_MODE) {
+  console.error("docs-counts: --json is only valid together with --check.");
+  process.exit(2);
+}
 
 // ---------------------------------------------------------------------------
 // 1. Derive the canonical counts from src/index.ts.
@@ -272,6 +280,12 @@ function main() {
   const catalogResult = processDoc(CATALOG_PATH, catalogSrc, expected, new Map());
 
   const allDrift = [...readmeResult.drift, ...catalogResult.drift];
+
+  if (CHECK_MODE && JSON_MODE) {
+    console.log(JSON.stringify({ expected, drift: allDrift }));
+    if (allDrift.length > 0) process.exitCode = 1;
+    return;
+  }
 
   if (CHECK_MODE) {
     if (allDrift.length > 0) {
