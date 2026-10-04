@@ -456,6 +456,168 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# FORM 2 — `var(--color-<token>)` read from a JS string (how MosaicArtifactChart
+# hands colours to recharts). Domain of consumption forms: (1) utility class,
+# (2) var() reference in a string literal. Each case seeds its OWN fixture.
+#
+# Near-misses chosen from the guard's own logic (what must NOT count as
+# consumption):
+#   - `var(--probe-series)` — no `--color-` prefix. The guard's namespace is
+#     the `--color-<token>` row Tailwind reads; the raw variable is a
+#     different property, and referencing it leaves the theme row unused.
+#   - the token inside a COMMENT only (`//` and `/* */`) — prose is not
+#     consumption; the guard scans string literals with comments skipped.
+#   - `var(--color-probe-${i})` — a run-time-built name: unreadable
+#     statically, so it must not silently count (loud STALE, stated in the
+#     guard header as a deliberate non-coverage).
+# ---------------------------------------------------------------------------
+write_var_fixture() { # $1 dir  $2 component body  $3.. declared tokens
+  local dir="$1" body="$2"; shift 2
+  mkdir -p "$dir/src/components/probe"
+  printf '%s\n' "$body" > "$dir/src/components/probe/ProbeFixture.tsx"
+  { echo "@theme inline {"; for t in "$@"; do echo "  --color-$t: var(--$t);"; done; echo "}"; echo ":root {"; for t in "$@"; do echo "  --$t: oklch(0.5 0.1 250);"; done; echo "}"; } > "$dir/src/styles.css"
+}
+
+expect() { # $1 kind(MUST_PASS|MUST_BLOCK) $2 label $3 dir $4 needle-or-empty
+  local kind="$1" label="$2" dir="$3" needle="$4" out st
+  set +e
+  out="$(run_guard "$dir/src" "$dir/src/styles.css" 2>&1)"; st=$?
+  set -e
+  if [ "$kind" = MUST_PASS ]; then
+    MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+    if [ "$st" -eq 0 ]; then MUST_PASS_PASS=$((MUST_PASS_PASS + 1)); log MUST_PASS "PASS — $label — exit 0"
+    else FAILURES+=("MUST_PASS $label — exit=$st, output:\n$out"); log MUST_PASS "FAIL — $label — exit=$st"; fi
+  else
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+    if [ "$st" -eq 1 ] && echo "$out" | grep -qF -- "$needle"; then MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1)); log MUST_BLOCK "PASS — $label — guard named $needle, exit 1"
+    else FAILURES+=("MUST_BLOCK $label — exit=$st, output:\n$out"); log MUST_BLOCK "FAIL — $label — exit=$st"; fi
+  fi
+}
+
+V1="$SCRATCH/var-pass"
+write_var_fixture "$V1" 'const SERIES = ["var(--color-probe-dq)", '"'var(--color-probe-sq, #fff)'"', `var(--color-probe-tpl)`, "var( --color-probe-ws )"];
+export function ProbeFixture() { return <div>{SERIES.length}</div>; }' probe-dq probe-sq probe-tpl probe-ws
+assert_landed "$V1/src/components/probe/ProbeFixture.tsx" "var(--color-probe-sq, #fff)" "FORM 2 pass injection"
+expect MUST_PASS "FORM 2 — tokens declared and referenced ONLY as var(--color-<token>) in JS strings (dq, sq+fallback, template, spaced)" "$V1" ""
+
+V2="$SCRATCH/var-stale"
+write_var_fixture "$V2" 'export function ProbeFixture() { return <div>nothing uses the token</div>; }' probe-nowhere
+assert_landed "$V2/src/styles.css" "--color-probe-nowhere" "FORM 2 stale injection"
+expect MUST_BLOCK "FORM 2 — declared token referenced in NO form is still STALE" "$V2" "--color-probe-nowhere"
+
+V3="$SCRATCH/var-undeclared"
+write_var_fixture "$V3" 'const C = ["var(--color-probe-declared)", "var(--color-probe-phantom)"];
+export function ProbeFixture() { return <div>{C.length}</div>; }' probe-declared
+assert_landed "$V3/src/components/probe/ProbeFixture.tsx" "var(--color-probe-phantom)" "FORM 2 undeclared injection"
+expect MUST_BLOCK "FORM 2 — var(--color-<token>) to a token styles.css does not declare" "$V3" "--color-probe-phantom"
+
+V4="$SCRATCH/var-noprefix"
+write_var_fixture "$V4" 'const C = ["var(--probe-series)"];
+export function ProbeFixture() { return <div>{C.length}</div>; }' probe-series
+assert_landed "$V4/src/components/probe/ProbeFixture.tsx" "var(--probe-series)" "near-miss no-prefix injection"
+expect MUST_BLOCK "near-miss — var(--probe-series) without --color- prefix is not consumption" "$V4" "--color-probe-series"
+
+V5="$SCRATCH/var-comment"
+write_var_fixture "$V5" '// uses var(--color-probe-series) someday
+/* also var(--color-probe-series) and probe-series */
+export function ProbeFixture() { return <div>comment only</div>; }' probe-series
+assert_landed "$V5/src/components/probe/ProbeFixture.tsx" "var(--color-probe-series)" "near-miss comment injection"
+expect MUST_BLOCK "near-miss — token named in comments only (// and /* */) is not consumption" "$V5" "--color-probe-series"
+
+V6="$SCRATCH/var-dynamic"
+write_var_fixture "$V6" 'export function ProbeFixture({ i }: { i: number }) { return <div style={{ color: `var(--color-probe-dyn-${i})` }} />; }' probe-dyn-1
+assert_landed "$V6/src/components/probe/ProbeFixture.tsx" 'var(--color-probe-dyn-${i})' "near-miss dynamic injection"
+expect MUST_BLOCK "near-miss — run-time-built var(--color-probe-dyn-\${i}) does not silently count" "$V6" "--color-probe-dyn-1"
+
+# ---------------------------------------------------------------------------
+# CASE — `var(...)` detection is case-INSENSITIVE, the declared-token lookup is
+# case-SENSITIVE. The one regex (VAR_COLOR_REF_RE) had both faces wrong:
+#   - `VAR(--color-chart-3)` (valid CSS: function names are case-insensitive)
+#     was invisible, so its declared row read STALE            (over-block)
+#   - `var(--color-Primary)` (custom properties are case-SENSITIVE, so this is
+#     NOT the declared `--color-primary` and paints nothing) was invisible, so
+#     the guard exited 0                                        (under-block)
+#
+# Per guard-formulation-census, these poles are NOT written in a shape the
+# matcher already knows on a fixture this probe authors. Each is injected into
+# a COPY of a REAL source file from this repo's own src/ tree, against this
+# repo's real src/styles.css:
+#   MUST_PASS  <- src/components/artifact-chart/MosaicArtifactChart.tsx, the
+#                 ONLY consumer of `--color-chart-3` (line "var(--color-chart-3)"
+#                 rewritten to "VAR(--color-chart-3)")
+#   MUST_BLOCK <- src/components/toast/MosaicToast.tsx, with a mixed-case
+#                 reference appended while `--color-primary` IS declared in the
+#                 real styles.css (so a lowercased comparison would wrongly pass)
+# Each injection is grep-asserted to have landed before the verdict is read,
+# and the real tree is proven untouched (copies only).
+# ---------------------------------------------------------------------------
+REAL_SRC_REL="src"
+make_real_copy() { # $1 dest
+  mkdir -p "$1"
+  cp -R "$REPO_ROOT/src" "$1/src"
+}
+REAL_STYLES_DECLARES_PRIMARY="$(grep -cE '^[[:space:]]*--color-primary:' "$REPO_ROOT/src/styles.css" || true)"
+if [ "$REAL_STYLES_DECLARES_PRIMARY" -lt 1 ]; then
+  echo "probe: real src/styles.css no longer declares --color-primary — the case-sensitivity pole has lost its anchor; re-pick a declared token." >&2
+  exit 1
+fi
+
+# Baseline on the untouched real copy: must be clean, else the poles below
+# would be judged against an already-dirty tree.
+CASE_BASE="$SCRATCH/case-base"
+make_real_copy "$CASE_BASE"
+expect MUST_PASS "CASE baseline — unmutated copy of the real src/ tree is clean" "$CASE_BASE" ""
+
+CASE_UPPER="$SCRATCH/case-upper-var"
+make_real_copy "$CASE_UPPER"
+CHART_REAL="$CASE_UPPER/src/components/artifact-chart/MosaicArtifactChart.tsx"
+grep -qF -- '"var(--color-chart-3)"' "$CHART_REAL" || { echo "probe: real MosaicArtifactChart.tsx no longer has the anchor \"var(--color-chart-3)\" — re-pick a real consumer." >&2; exit 1; }
+sed -i 's/"var(--color-chart-3)"/"VAR(--color-chart-3)"/' "$CHART_REAL"
+assert_landed "$CHART_REAL" 'VAR(--color-chart-3)' "CASE upper-VAR injection (MosaicArtifactChart.tsx)"
+if grep -qF -- '"var(--color-chart-3)"' "$CHART_REAL"; then echo "probe: lowercase original survived the rewrite — another consumer exists, pole invalid." >&2; exit 1; fi
+expect MUST_PASS "CASE — uppercase VAR(--color-chart-3) (real MosaicArtifactChart.tsx) still counts as consumption, NOT reported STALE" "$CASE_UPPER" ""
+
+CASE_MIXED="$SCRATCH/case-mixed-token"
+make_real_copy "$CASE_MIXED"
+TOAST_REAL="$CASE_MIXED/src/components/toast/MosaicToast.tsx"
+printf '\nconst __probeMixedCase = "var(--color-Primary)";\nvoid __probeMixedCase;\n' >> "$TOAST_REAL"
+assert_landed "$TOAST_REAL" 'var(--color-Primary)' "CASE mixed-case injection (MosaicToast.tsx)"
+expect MUST_BLOCK "CASE — var(--color-Primary) (real MosaicToast.tsx) is a DIFFERENT property from declared --color-primary, NAMED undeclared" "$CASE_MIXED" "--color-Primary"
+
+# ---------------------------------------------------------------------------
+# CASE, prefix half — the `--color-` PREFIX is case-sensitive too. A custom
+# property is case-SENSITIVE prefix included, so `--COLOR-chart-1` is a
+# different property from the declared `--color-chart-1` and resolves to
+# nothing. A detector that is case-insensitive over the WHOLE pattern reads it
+# as the declared one: an under-block (F6) and a hidden STALE (F7). Both are
+# injected into a copy of a REAL file; the premise (nothing declares the
+# uppercase form) is asserted, not assumed.
+# ---------------------------------------------------------------------------
+if grep -qF -- '--COLOR-' "$REPO_ROOT/src/styles.css"; then
+  echo "probe: real src/styles.css now declares an uppercase --COLOR- property — F6/F7 premise lost." >&2
+  exit 1
+fi
+
+# F6 MUST_BLOCK — origin file: src/components/toast/MosaicToast.tsx
+CASE_F6="$SCRATCH/case-f6-upper-prefix"
+make_real_copy "$CASE_F6"
+F6_FILE="$CASE_F6/src/components/toast/MosaicToast.tsx"
+printf '\nconst __probeF6 = "var(--COLOR-chart-1)";\nvoid __probeF6;\n' >> "$F6_FILE"
+assert_landed "$F6_FILE" 'var(--COLOR-chart-1)' "F6 upper-prefix injection (MosaicToast.tsx)"
+expect MUST_BLOCK "F6 — var(--COLOR-chart-1) (real MosaicToast.tsx) is NOT the declared --color-chart-1, NAMED undeclared" "$CASE_F6" "--COLOR-chart-1"
+
+# F7 MUST_BLOCK — origin file: src/components/artifact-chart/MosaicArtifactChart.tsx,
+# the only consumer of --color-chart-3, rewritten to the upper-prefix form.
+CASE_F7="$SCRATCH/case-f7-upper-prefix-stale"
+make_real_copy "$CASE_F7"
+F7_FILE="$CASE_F7/src/components/artifact-chart/MosaicArtifactChart.tsx"
+grep -qF -- '"var(--color-chart-3)"' "$F7_FILE" || { echo "probe: real MosaicArtifactChart.tsx no longer has the anchor \"var(--color-chart-3)\" — re-pick a real consumer." >&2; exit 1; }
+sed -i 's/"var(--color-chart-3)"/"var(--COLOR-chart-3)"/' "$F7_FILE"
+assert_landed "$F7_FILE" 'var(--COLOR-chart-3)' "F7 upper-prefix injection (MosaicArtifactChart.tsx)"
+if grep -qF -- '"var(--color-chart-3)"' "$F7_FILE"; then echo "probe: lowercase original survived the rewrite — another consumer exists, F7 invalid." >&2; exit 1; fi
+expect MUST_BLOCK "F7 — --color-chart-3 consumed ONLY as var(--COLOR-chart-3) (real MosaicArtifactChart.tsx) is reported STALE" "$CASE_F7" "--color-chart-3 "
+
+# ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 echo

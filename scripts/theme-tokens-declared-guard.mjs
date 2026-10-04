@@ -75,6 +75,35 @@
  *       own three-state handling in .github/workflows/ci.yml for why this
  *       distinction is load-bearing).
  *
+ * TWO FORMS OF CONSUMPTION (the domain of "consumed", derived from how a
+ * `--color-<token>` variable can actually be READ — not from one author's
+ * memory of how it usually is):
+ *   FORM 1 — a Tailwind color UTILITY class (`bg-foo`, `ring-offset-foo`…),
+ *     classified by the prefix logic above.
+ *   FORM 2 — a direct CSS custom-property reference, `var(--color-<token>)`
+ *     or `var(--color-<token>, <fallback>)`, inside a STRING LITERAL ('…',
+ *     "…", `…`) of a non-test `src/**` .ts/.tsx file — the way
+ *     `MosaicArtifactChart` hands colours to recharts. Utilities never see
+ *     it, so before this form existed every such declaration needed an
+ *     `allow-stale-theme-token` marker whose only reason was the guard's
+ *     own blindness.
+ *   COVERED for form 2: single/double/backtick literals incl. static text of
+ *     template literals and literals nested inside `${…}`; optional
+ *     whitespace inside `var( … )`; with or without a fallback.
+ *   DELIBERATELY NOT covered (written here, where a reader will see it):
+ *     (a) a reference inside a COMMENT — a comment is not consumption, so a
+ *         token mentioned only in prose stays STALE; (b) a name assembled at
+ *         run time (`var(--color-chart-${i})`) — the token is unreadable
+ *         statically, so it counts for nothing and the guard errs toward a
+ *         loud STALE block, never a silent pass; (c) `var(--chart-1)` with no
+ *         `--color-` prefix, a different variable that declares nothing in
+ *         this namespace; (d) references in `.css` files or test files.
+ *   Direction effects: a form-2 reference marks its token CONSUMED (stale
+ *   direction only) AND is itself judged in the undeclared direction — a
+ *   `var(--color-x)` whose token is neither declared in styles.css (nor by
+ *   an @import, nor a Tailwind built-in) BLOCKS exactly like an undeclared
+ *   utility, and honours the same `// allow-undeclared-theme-token:` marker.
+ *
  * WRITTEN ESCAPE HATCH (rare, per-token, anchored — same shape as SIN-01's
  * `// allow-hardcoded-word:`): `// allow-undeclared-theme-token: <reason>`
  * on its own line immediately preceding the utility's usage in SOURCE, OR
@@ -581,6 +610,108 @@ function extractClassStringCandidates(text) {
   return matches;
 }
 
+/**
+ * FORM 2 scanner. Walks the source as JS/TSX and returns the content of every
+ * string literal, SKIPPING comments (a `var(--color-x)` in a comment is not
+ * consumption). Template literals yield their static text; `${…}` bodies are
+ * scanned recursively, so a literal nested inside one is still seen.
+ * Heuristics, stated: a ' or " literal that hits a newline before closing is
+ * treated as a stray apostrophe (JSX text), not a string; regex literals are
+ * not parsed. A mis-read can only drop or add a literal locally.
+ */
+function extractStringLiteralsSkippingComments(text) {
+  const out = [];
+  function scan(from, inExpr) {
+    let i = from;
+    let depth = 0;
+    while (i < text.length) {
+      const c = text[i];
+      const n = text[i + 1];
+      if (c === "/" && n === "/") {
+        while (i < text.length && text[i] !== "\n") i++;
+      } else if (c === "/" && n === "*") {
+        const end = text.indexOf("*/", i + 2);
+        i = end === -1 ? text.length : end + 2;
+      } else if (c === '"' || c === "'") {
+        let j = i + 1;
+        while (j < text.length && text[j] !== c && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1;
+        if (text[j] === c) {
+          out.push({ text: text.slice(i + 1, j), index: i });
+          i = j + 1;
+        } else {
+          i += 1; // stray apostrophe / quote in JSX text
+        }
+      } else if (c === "`") {
+        let j = i + 1;
+        let buf = "";
+        let start = i + 1;
+        while (j < text.length && text[j] !== "`") {
+          if (text[j] === "\\") {
+            j += 2;
+          } else if (text[j] === "$" && text[j + 1] === "{") {
+            buf += `${text.slice(start, j)}\u0000`;
+            j = scan(j + 2, true);
+            start = j;
+          } else {
+            j += 1;
+          }
+        }
+        buf += text.slice(start, j);
+        out.push({ text: buf, index: i });
+        i = j + 1;
+      } else if (inExpr && c === "{") {
+        depth++;
+        i++;
+      } else if (inExpr && c === "}") {
+        if (depth === 0) return i + 1;
+        depth--;
+        i++;
+      } else {
+        i++;
+      }
+    }
+    return i;
+  }
+  scan(0, false);
+  return out;
+}
+
+// `var(--color-<token>)` / `var(--color-<token>, fallback)`. The token must be
+// terminated by `,` or `)` (after optional whitespace): a dynamic name
+// (`--color-chart-${i}`) or an uppercase placeholder (`chart-N`) therefore
+// yields NO token rather than a truncated wrong one.
+//
+// DETECTION is case-insensitive ONLY for the function name: CSS function names
+// are case-insensitive, so `VAR(--color-chart-3)` IS a valid consumption and
+// must count (else its declared row reads STALE — an over-block). That is why
+// the name is spelled `[vV][aA][rR]`. The pattern has NO `i` flag, and must
+// never get one: the `--color-` prefix is judged EXACTLY because a custom
+// property is case-SENSITIVE, prefix included. The prefix is CAPTURED (group 1,
+// any case) so a mis-cased one is still SEEN and NAMED undeclared by the loop
+// below, instead of being invisible; only the exact `color` is ever treated as
+// a consumption of a declared row. `--COLOR-chart-1` is a different
+// property from `--color-chart-1` and resolves to nothing. An `i` flag on the
+// whole pattern (a tempting simplification) reads it as a consumption of the
+// declared token — an under-block for the undeclared reference, and a hidden
+// STALE for a token consumed only in that form.
+// The token is captured in ANY case for the same reason: `--color-Primary` is
+// a DIFFERENT property from the declared `--color-primary` and paints nothing.
+// The capture must therefore keep its case, and the lookup
+// (`declared.has(token)` / `resolvableCustomProps.has(...)` in the judging
+// block) compares it EXACTLY as written, so a mixed-case reference is NAMED
+// undeclared. NEVER lowercase the token before comparing: that would accept a
+// reference that resolves to nothing — the under-block this regex exists to
+// close.
+const VAR_COLOR_REF_RE =
+  /[vV][aA][rR]\(\s*--([cC][oO][lL][oO][rR])-([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)\s*[,)]/g;
+
+/** Tailwind built-in colour name (never needs a `--color-*` declaration here). */
+function isBuiltinColorName(name, builtinFamilies) {
+  if (builtinFamilies.has(name)) return true;
+  const shade = name.match(/^([a-z]+(?:-[a-z]+)*)-(\d{2,3})$/);
+  return Boolean(shade && builtinFamilies.has(shade[1]));
+}
+
 function lineForIndex(text, index) {
   return text.slice(0, index).split("\n").length;
 }
@@ -733,6 +864,8 @@ function main() {
 
   // ---- Consumed custom tokens (scan src/**) ----
   const consumedTokenSites = new Map(); // token -> [{file, line}]
+  const varRefSites = new Map(); // token -> [{file, line}] — FORM 2 (var(--color-<token>) in string literals)
+  const miscasedPrefixSites = new Map(); // `--COLOR-x` (full name) -> [{file, line}] — FORM 2, prefix not exactly `color`
   const escapedConsumedSites = new Set(); // "token" entries fully covered by escape marker (informational only)
 
   for (const file of sourceFiles) {
@@ -776,6 +909,33 @@ function main() {
         consumedTokenSites.get(classification.token).push({ file: relFile, line });
       }
     }
+
+    // FORM 2: var(--color-<token>) inside a string literal (comments skipped).
+    for (const { text: seg, index } of extractStringLiteralsSkippingComments(text)) {
+      VAR_COLOR_REF_RE.lastIndex = 0;
+      for (let vm = VAR_COLOR_REF_RE.exec(seg); vm !== null; vm = VAR_COLOR_REF_RE.exec(seg)) {
+        const prefix = vm[1];
+        const token = vm[2];
+        // `--COLOR-x` is NOT `--color-x` (custom properties are case-sensitive,
+        // prefix included): it is judged undeclared, never a consumption.
+        const miscased = prefix !== "color";
+        if (!miscased && isBuiltinColorName(token, builtinFamilies)) continue;
+        const line = lineForIndex(text, index + 1 + vm.index);
+        const windowStart = Math.max(0, line - 4);
+        if (lines.slice(windowStart, line - 1).some((l) => ESCAPE_MARKER_RE.test(l))) {
+          if (!miscased) escapedConsumedSites.add(token);
+          continue;
+        }
+        if (miscased) {
+          const name = `--${prefix}-${token}`;
+          if (!miscasedPrefixSites.has(name)) miscasedPrefixSites.set(name, []);
+          miscasedPrefixSites.get(name).push({ file: relative(REPO_ROOT, file), line });
+          continue;
+        }
+        if (!varRefSites.has(token)) varRefSites.set(token, []);
+        varRefSites.get(token).push({ file: relative(REPO_ROOT, file), line });
+      }
+    }
   }
 
   // ---- Direction 1: consumed but undeclared ----
@@ -783,12 +943,25 @@ function main() {
   for (const [token, sites] of consumedTokenSites) {
     if (!declared.has(token)) undeclared.push({ token, sites });
   }
+  // FORM 2 is judged in this direction too: a var(--color-x) whose token is
+  // declared nowhere (styles.css, its @imports) is as undeclared as a utility.
+  for (const [token, sites] of varRefSites) {
+    if (declared.has(token) || resolvableCustomProps.has(`color-${token}`)) continue;
+    const existing = undeclared.find((u) => u.token === token);
+    if (existing) existing.sites.push(...sites);
+    else undeclared.push({ token, sites });
+  }
+  // A mis-cased prefix is a different, never-declared property: always named.
+  for (const [name, sites] of miscasedPrefixSites) {
+    undeclared.push({ token: name.replace(/^--[^-]+-/, ""), name, sites });
+  }
 
   // ---- Direction 2: declared but never consumed ----
   const stylesLines = stylesText.split("\n");
   const stale = [];
   for (const [token, line] of declared) {
-    if (consumedTokenSites.has(token) || escapedConsumedSites.has(token)) continue;
+    if (consumedTokenSites.has(token) || varRefSites.has(token) || escapedConsumedSites.has(token))
+      continue;
     const precedingLine = stylesLines[line - 2] ?? "";
     if (STALE_ESCAPE_MARKER_RE.test(precedingLine)) continue;
     stale.push({ token, line });
@@ -818,9 +991,9 @@ function main() {
   }
   if (undeclared.length > 0) {
     const details = undeclared
-      .map(({ token, sites }) => {
+      .map(({ token, name, sites }) => {
         const siteList = sites.map((s) => `      ${s.file}:${s.line}`).join("\n");
-        return `  - --color-${token} — consumed but never declared in ${relative(REPO_ROOT, STYLES_PATH)}:\n${siteList}`;
+        return `  - ${name ?? `--color-${token}`} — consumed but never declared in ${relative(REPO_ROOT, STYLES_PATH)}:\n${siteList}`;
       })
       .join("\n");
     sections.push(
@@ -831,11 +1004,11 @@ function main() {
     const details = stale
       .map(
         ({ token, line }) =>
-          `  - --color-${token} (${relative(REPO_ROOT, STYLES_PATH)}:${line}) — declared but consumed nowhere in ${relative(REPO_ROOT, SRC_DIR)}/**`,
+          `  - --color-${token} (${relative(REPO_ROOT, STYLES_PATH)}:${line}) — declared but consumed nowhere in ${relative(REPO_ROOT, SRC_DIR)}/** (no utility, no var(--color-<token>) string reference)`,
       )
       .join("\n");
     sections.push(
-      `STALE theme token(s) (${stale.length}) — declared in ${relative(REPO_ROOT, STYLES_PATH)} but no utility anywhere in ${relative(REPO_ROOT, SRC_DIR)}/** resolves to it, a promise this library no longer keeps (or never needed):\n${details}\n\nFix: remove the row, or if it is a deliberately reserved rebrand hook, mark it with \`/* allow-stale-theme-token: <reason> */\` immediately above the declaration.`,
+      `STALE theme token(s) (${stale.length}) — declared in ${relative(REPO_ROOT, STYLES_PATH)} but no utility, and no \`var(--color-<token>)\` string reference, anywhere in ${relative(REPO_ROOT, SRC_DIR)}/** resolves to it, a promise this library no longer keeps (or never needed):\n${details}\n\nFix: remove the row, or if it is a deliberately reserved rebrand hook, mark it with \`/* allow-stale-theme-token: <reason> */\` immediately above the declaration.`,
     );
   }
 
