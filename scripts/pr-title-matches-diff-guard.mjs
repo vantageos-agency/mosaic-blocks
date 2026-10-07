@@ -357,24 +357,19 @@ function main() {
     return;
   }
 
-  // The scope may CORROBORATE agreement (a scope matching a diffed
-  // directory confirms the literal claim) but it never manufactures one on
-  // its own — this branch is only reached when the subject carries at least
-  // one literal Mosaic<Name> token.
+  // The conventional-commit scope is informational only: it may corroborate a
+  // claim in the verdict text, but it NEVER pardons a phantom. Every claimed
+  // Mosaic<Name> must be in the diff whatever the scope says. (Task G4,
+  // k177cprjy05d7q7vqgnvkt82j98c5763 — the former `|| scopeCorroborates`
+  // let `fix(drawer): MosaicDrawer and MosaicGammaPhantom` through.)
+  // The claimed set must be a SUBSET of the actual set: a claim absent from
+  // the diff is a phantom, and each phantom is named in the verdict.
   const scopeCorroborates = scope != null && actual.has(`Mosaic${toPascalCase(scope)}`);
-  // The claimed set must be a SUBSET of the actual set: every component the
-  // title names must be one the diff really touches. A claim absent from the
-  // diff is a phantom, and each phantom is named in the verdict. (Intersection
-  // semantics — `.some()` — let one real name launder any number of phantoms.)
-  //
-  // KNOWN GAP, tracked in task k177cprjy05d7q7vqgnvkt82j98c5763 (G4), NOT
-  // closed here: `|| scopeCorroborates` still pardons a phantom whenever the
-  // conventional-commit scope matches a diffed directory.
   const phantoms = [...claimed].filter((c) => !actual.has(c)).sort();
-  const matched = phantoms.length === 0 || scopeCorroborates;
+  const matched = phantoms.length === 0;
   if (!matched) {
     console.error(
-      `pr-title-matches-diff-guard: BLOCKED — title claims [${[...claimed].sort().join(", ")}]${scope ? ` (scope "${scope}")` : ""}, but ${phantoms.length} claimed component(s) are absent from this diff (phantom: ${phantoms.join(", ")}); the diff (${BASE_REF}...${HEAD_REF}) really adds/touches [${[...actual].sort().join(", ") || "none derivable"}] in director(y/ies) ${[...dirs].sort().join(", ")}.\nTitle: "${subject}"\nFix: remove each phantom from the title (name only components this diff really contains), or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine, declared exception.`,
+      `pr-title-matches-diff-guard: BLOCKED — title claims [${[...claimed].sort().join(", ")}]${scope ? ` (scope "${scope}"${scopeCorroborates ? ", corroborated by the diff but it never pardons a phantom" : ""})` : ""}, but ${phantoms.length} claimed component(s) are absent from this diff (phantom: ${phantoms.join(", ")}); the diff (${BASE_REF}...${HEAD_REF}) really adds/touches [${[...actual].sort().join(", ") || "none derivable"}] in director(y/ies) ${[...dirs].sort().join(", ")}.\nTitle: "${subject}"\nFix: remove each phantom from the title (name only components this diff really contains), or add // allow-title-diff-mismatch: <reason> to the HEAD commit message if this is a genuine, declared exception.`,
     );
     process.exitCode = 1;
     return;
