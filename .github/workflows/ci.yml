@@ -370,6 +370,19 @@ jobs:
       - name: Verify derived registry.json
         run: pnpm registry:derive --check
 
+      # ── Regenerate r/ (producer, no --check: WRITES) ───────────────────────
+      #    r/*.json embed the package version in their pinned registryDependencies
+      #    URLs, so they MUST be regenerated AFTER the version bump above, in the
+      #    same derivation: otherwise every bump leaves them pointing at a version
+      #    that will never contain r/. Same split as registry.json: a component PR
+      #    may carry r/ only when equal to the generator output (release-artifacts-
+      #    guard), so main is the only writer that moves the pinned version.
+      - name: Regenerate r/ items (pinned to the new package.json version)
+        run: pnpm build:registry-items
+
+      - name: Verify derived r/ items
+        run: pnpm check:registry-items-drift
+
       # The dedicated config is not a detail: the shared config EXCLUDES this
       # directory (a PR must not be forced to touch derived counts), and that
       # exclusion also silenced the suite when asked for BY NAME — it collected
@@ -453,12 +466,12 @@ jobs:
           # built main HEAD every run, then the commit + force-with-lease
           # push carries the new artifacts on top.
           git checkout -B "$BRANCH"
-          git add package.json src/version.ts README.md docs/components-catalog.md registry.json
-          git commit -m "chore(release): derive version ${VERSION} + docs counts + registry.json
+          git add package.json src/version.ts README.md docs/components-catalog.md registry.json r
+          git commit -m "chore(release): derive version ${VERSION} + docs counts + registry.json + r/
 
           Derived from the artifact, never hand-typed: version from the npm
           registry, counts from src/index.ts, registry.json from the exported
-          component directories.
+          component directories, r/ regenerated at the new version.
 
           // allow-release-artifacts: this is the derive commit — it is the one
           commit that is SUPPOSED to carry version, counts and registry.json,
@@ -477,7 +490,7 @@ jobs:
           # (bad token, network, branch protection, etc.) stays fatal.
           set +e
           CREATE_OUTPUT=$(gh pr create --base main --head "$BRANCH" \
-            --title "chore(release): derive version ${VERSION} + docs counts + registry.json" \
+            --title "chore(release): derive version ${VERSION} + docs counts + registry.json + r/" \
             --body "Derived on main after merge, by the bot. Version read from the npm registry, counts from \`src/index.ts\`, \`registry.json\` from the exported component directories — nothing hand-typed. Needs one human \"Approve and run\" click on the Gates check (bot-opened PR, see workflow comment above)." 2>&1)
           CREATE_RC=$?
           set -e

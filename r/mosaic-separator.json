@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-separator",
+  "title": "MosaicSeparator",
+  "description": "MosaicSeparator — @base-ui/react Separator primitive",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/separator/MosaicSeparator.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicSeparator — @base-ui/react Separator primitive\n *\n * A visual and semantic divider. Supports horizontal (default) and vertical orientations.\n * role=separator and aria attributes managed by the primitive automatically.\n *\n * data-slot=\"separator\" on the rendered element.\n * Styling: Tailwind v4 semantic tokens only.\n */\n\nimport { Separator } from \"@base-ui/react/separator\";\nimport type * as React from \"react\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Props ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicSeparatorProps extends Separator.Props {\n  className?: string;\n  ref?: React.Ref<HTMLDivElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicSeparator — production Separator atom for @vantageos/mosaic-blocks.\n *\n * Built on @base-ui/react/separator. Accessible separator with role=\"separator\".\n * Supports horizontal and vertical orientations.\n *\n * @example\n * <MosaicSeparator />\n * <MosaicSeparator orientation=\"vertical\" className=\"h-8\" />\n */\nexport function MosaicSeparator({\n  className,\n  orientation = \"horizontal\",\n  ref,\n  ...props\n}: MosaicSeparatorProps) {\n  return (\n    <Separator\n      ref={ref}\n      data-slot=\"separator\"\n      orientation={orientation}\n      className={cn(\n        \"shrink-0 bg-border\",\n        orientation === \"vertical\" ? \"h-full w-px\" : \"h-px w-full\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nMosaicSeparator.displayName = \"MosaicSeparator\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

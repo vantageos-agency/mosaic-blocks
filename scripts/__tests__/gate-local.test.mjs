@@ -171,6 +171,14 @@ jobs:
     expect(plan[0].steps[1].skip).toBeNull();
   });
 
+  it("skips the r/ generator (writes tracked files) but keeps the r/ drift check", () => {
+    const plan = buildPlan(
+      "jobs:\n  j:\n    steps:\n      - name: w\n        run: pnpm build:registry-items\n      - name: c\n        run: pnpm check:registry-items-drift\n",
+    );
+    expect(plan[0].steps[0].skip.rule).toBe("writes-derived-files");
+    expect(plan[0].steps[1].skip).toBeNull();
+  });
+
   it("--install-browsers drops --with-deps; without it the step stays skipped", () => {
     const wf =
       "jobs:\n  j:\n    steps:\n      - run: npx playwright install chromium --with-deps\n";

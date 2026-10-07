@@ -94,11 +94,15 @@ export const SKIP_RULES = [
   {
     id: "writes-derived-files",
     reason: () =>
-      "writes tracked derived files (docs:counts / registry:derive without --check); its --check form runs as its own step",
+      "writes tracked derived files (docs:counts / registry:derive / build:registry-items without --check); its --check form runs as its own step",
     test: (c) =>
       c.run
         .split("\n")
-        .some((l) => /\bpnpm\s+(docs:counts|registry:derive)\b/.test(l) && !/--check\b/.test(l)),
+        .some(
+          (l) =>
+            /\bpnpm\s+(docs:counts|registry:derive|build:registry-items)\b/.test(l) &&
+            !/--check\b/.test(l),
+        ),
   },
   {
     id: "publish",

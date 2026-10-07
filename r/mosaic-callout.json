@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-callout",
+  "title": "MosaicCallout",
+  "description": "MosaicCallout — inline bordered notice",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/callout/MosaicCallout.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicCallout — inline bordered notice\n *\n * Style-only component: a bordered box carrying a required title and\n * optional children/icon, supplied entirely by the host.\n *\n * variant=\"info\"    -> role=\"status\"  (non-urgent, ambient notice)\n * variant=\"warning\" -> role=\"alert\"   (urgent, must be announced)\n *\n * data-slot=\"callout\" for composability.\n * Design tokens: Tailwind v4 semantic classes only. No hardcoded colors.\n */\n\nimport type { VariantProps } from \"class-variance-authority\";\nimport type * as React from \"react\";\nimport { calloutVariants } from \"./callout-variants.js\";\n\n// ── Utility ───────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Types ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicCalloutProps\n  extends Omit<React.HTMLAttributes<HTMLDivElement>, \"title\">,\n    VariantProps<typeof calloutVariants> {\n  /** Required — the host owns the copy, no default text is generated. */\n  title: string;\n  children?: React.ReactNode;\n  /** Host-supplied icon, rendered as-is. */\n  icon?: React.ReactNode;\n  className?: string;\n  ref?: React.Ref<HTMLDivElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicCallout — inline notice with a semantic role driven by variant.\n *\n * @example\n * <MosaicCallout variant=\"info\" title=\"Heads up\">\n *   Optional supporting copy supplied by the host.\n * </MosaicCallout>\n * <MosaicCallout variant=\"warning\" title=\"Action required\" icon={<WarnIcon />} />\n */\nexport function MosaicCallout({\n  variant = \"info\",\n  title,\n  children,\n  icon,\n  className,\n  ref,\n  ...props\n}: MosaicCalloutProps) {\n  const role = variant === \"warning\" ? \"alert\" : \"status\";\n\n  return (\n    <div\n      ref={ref}\n      role={role}\n      data-slot=\"callout\"\n      className={cn(calloutVariants({ variant }), className)}\n      {...props}\n    >\n      {icon ? (\n        <span aria-hidden=\"true\" className=\"mt-0.5 shrink-0\">\n          {icon}\n        </span>\n      ) : null}\n      <div className=\"flex flex-col gap-0.5\">\n        <p className=\"font-medium\">{title}</p>\n        {children ? <div className=\"text-muted-foreground\">{children}</div> : null}\n      </div>\n    </div>\n  );\n}\n\nMosaicCallout.displayName = \"MosaicCallout\";\n"
+    },
+    {
+      "path": "src/components/callout/callout-variants.ts",
+      "type": "registry:ui",
+      "content": "/**\n * calloutVariants — pure CVA variant function for MosaicCallout.\n *\n * Isolated in its own module so it can be re-exported from the\n * `@vantageos/mosaic-blocks/server` subpath without pulling in React.\n *\n * Zero browser / React runtime dependencies — safe in RSC / Node.js.\n */\n\nimport { cva } from \"class-variance-authority\";\n\nexport const calloutVariants = cva(\n  [\"flex items-start gap-2.5\", \"rounded-md border\", \"px-3 py-2.5\", \"text-sm\"],\n  {\n    variants: {\n      variant: {\n        info: \"border-info-500/30 bg-info-50 text-foreground\",\n        warning: \"border-warning-500/30 bg-warning-50 text-foreground\",\n      },\n    },\n    defaultVariants: {\n      variant: \"info\",\n    },\n  },\n);\n"
+    }
+  ],
+  "type": "registry:ui"
+}

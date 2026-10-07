@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-textarea",
+  "title": "MosaicTextarea",
+  "description": "MosaicTextarea — native <textarea> styled atom",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/textarea/MosaicTextarea.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicTextarea — native <textarea> styled atom\n *\n * No @base-ui/react primitive for textarea — uses the native HTML element.\n * Consistent token vocabulary with MosaicInput.\n *\n * data-slot=\"textarea\" on the rendered <textarea>.\n * Styling: Tailwind v4 semantic tokens only.\n */\n\nimport type * as React from \"react\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Props ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {\n  className?: string;\n  ref?: React.Ref<HTMLTextAreaElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicTextarea — production Textarea atom for @vantageos/mosaic-blocks.\n *\n * Styled native <textarea>. Matches MosaicInput visual vocabulary.\n * Resize: vertical only by default.\n *\n * @example\n * <MosaicTextarea placeholder=\"Describe your idea…\" rows={4} />\n * <MosaicTextarea disabled value=\"Read-only text\" readOnly />\n */\nexport function MosaicTextarea({ className, ref, ...props }: MosaicTextareaProps) {\n  return (\n    <textarea\n      ref={ref}\n      data-slot=\"textarea\"\n      className={cn(\n        \"flex min-h-[80px] w-full resize-y\",\n        \"rounded-md border border-border bg-background px-3 py-2\",\n        \"text-sm text-foreground shadow-xs\",\n        \"placeholder:text-muted-foreground\",\n        \"outline-none transition-colors\",\n        \"focus-visible:ring-ring focus-visible:ring-[3px]\",\n        \"disabled:cursor-not-allowed disabled:opacity-50\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nMosaicTextarea.displayName = \"MosaicTextarea\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

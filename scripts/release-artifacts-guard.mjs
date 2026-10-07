@@ -22,6 +22,13 @@
  * guard accepts that ONLY when the file is byte-identical to the deriver's own
  * output (`registry-json-derive.mjs --stdout`). A hand edit is still refused.
  *
+ * r/<item>.json (the shadcn-installable items) follows the same whole-file
+ * pattern: they embed the package version in their pinned registryDependencies
+ * URLs, so they are DERIVED too. A change to one is allowed ONLY when the file
+ * is byte-identical to the generator's output (`check-registry-items-drift.mjs`
+ * `checkDrift`, which calls the generator's own buildItem/serializeItem — never
+ * a second implementation). A hand edit differs and is refused, naming the file.
+ *
  * This script does NOT reimplement the count-claim anchors — that would be
  * exactly the "two sources of truth" defect scripts/docs-counts-shared.mjs's
  * own header comment warns about. It imports the SAME shared module the
@@ -75,6 +82,8 @@ const GUARDED_VERSION_FILES = ["package.json", "src/version.ts"];
 // merge, so the delivering PR carries it). A hand edit differs from the
 // derivation and is refused.
 const GUARDED_WHOLE_FILES = ["registry.json"];
+// r/<item>.json: derived by scripts/build-registry-items.mjs (see the header).
+const R_ITEM_RE = /^r\/[^/]+\.json$/;
 
 /**
  * Run a git command, exit-code-checked. NEVER swallow a non-zero exit —
@@ -193,6 +202,26 @@ function registryJsonEqualsDerivation() {
   return { equal: readFileSync(resolve(ROOT, "registry.json"), "utf8") === derived };
 }
 
+let rItemDrift;
+/**
+ * The r/*.json problems reported by the generator-backed drift check, loaded
+ * lazily (only a PR that touches r/ pays for it, and an older tree without the
+ * generator never imports it). A check that cannot run is a LOUD failure.
+ * @returns {Promise<{ checked: number, problems: string[] }>}
+ */
+async function rItemProblems() {
+  if (rItemDrift) return rItemDrift;
+  try {
+    const { checkDrift } = await import("./check-registry-items-drift.mjs");
+    rItemDrift = checkDrift({ root: ROOT });
+  } catch (err) {
+    throw new Error(
+      `release-artifacts-guard: could not derive r/*.json (scripts/check-registry-items-drift.mjs failed) — refusing to judge. ${err.message}`,
+    );
+  }
+  return rItemDrift;
+}
+
 let derivedCountDrift;
 /**
  * The count claims in README/catalog that DIFFER from `scripts/docs-counts.mjs`'s
@@ -250,7 +279,7 @@ function matchesPackageJsonVersionField(text) {
   return /^\s*"version"\s*:\s*"[^"]+"\s*,?\s*$/.test(text);
 }
 
-function main() {
+async function main() {
   const message = headCommitMessage();
   const markerMatch = MARKER_RE.exec(message);
   if (markerMatch) {
@@ -273,6 +302,21 @@ function main() {
         snippet:
           "(whole-file guard: a change is allowed only when `cmp registry.json <(node scripts/registry-json-derive.mjs --stdout)` is equal; run `pnpm registry:derive`)",
       });
+    }
+
+    if (R_ITEM_RE.test(path)) {
+      const { checked, problems } = await rItemProblems();
+      const file = path.slice("r/".length);
+      const hit = problems.find((p) => p.startsWith(`${file}:`) || p.startsWith(`${path}:`));
+      if (checked === 0 || hit) {
+        violations.push({
+          file: path,
+          line: 0,
+          reason:
+            "r/*.json differs from what scripts/build-registry-items.mjs derives from registry.json + sources + package.json version — it is DERIVED, never hand-typed",
+          snippet: `(whole-file guard: a change is allowed only when it equals the generator output; run \`pnpm build:registry-items\`) ${hit ?? "nothing was compared"}`,
+        });
+      }
     }
 
     if (GUARDED_VERSION_FILES.includes(path)) {
@@ -323,7 +367,7 @@ function main() {
       .map((v) => `  - ${v.file}:${v.line} — ${v.reason}\n      "${v.snippet}"`)
       .join("\n");
     console.error(
-      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version is never typed, counts and registry.json only when equal to their derivation):\n${details}\n\nFix: revert the version line; for counts and registry.json run \`pnpm docs:counts\` / \`pnpm registry:derive\` and commit their output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
+      `release-artifacts-guard: BLOCKED — this PR's diff (${BASE_REF}...HEAD) touches release artifacts a component PR must never hand-edit (version is never typed, counts, registry.json and r/*.json only when equal to their derivation):\n${details}\n\nFix: revert the version line; for counts, registry.json and r/ run \`pnpm docs:counts\` / \`pnpm registry:derive\` / \`pnpm build:registry-items\` and commit their output. If this genuinely IS a release PR, add \`// allow-release-artifacts: <reason>\` to the HEAD commit message.`,
     );
     process.exitCode = 1;
     return;
@@ -334,4 +378,4 @@ function main() {
   );
 }
 
-main();
+await main();

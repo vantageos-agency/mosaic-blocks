@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-switch",
+  "title": "MosaicSwitch",
+  "description": "Toggle switch built on @base-ui/react/switch. Controlled + uncontrolled, role=switch, keyboard accessible. data-slot=\"switch\".",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/switch/MosaicSwitch.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicSwitch — @base-ui/react Switch primitive\n *\n * Builds on Switch.Root + Switch.Thumb.\n * Supports controlled (checked + onCheckedChange) and uncontrolled (defaultChecked).\n * role=switch and aria-checked are managed by the primitive automatically.\n *\n * data-slot=\"switch\" on Root, data-slot=\"switch-thumb\" on Thumb.\n * Styling: Tailwind v4 semantic tokens only.\n */\n\nimport { Switch } from \"@base-ui/react/switch\";\nimport type * as React from \"react\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Props ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicSwitchProps extends React.ComponentPropsWithoutRef<typeof Switch.Root> {\n  className?: string;\n  ref?: React.Ref<HTMLElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicSwitch — production Switch atom for @vantageos/mosaic-blocks.\n *\n * Built on @base-ui/react/switch. Supports controlled + uncontrolled modes.\n * role=switch + aria-checked managed automatically by the primitive.\n *\n * @example\n * // Uncontrolled\n * <MosaicSwitch aria-label=\"Dark mode\" defaultChecked />\n *\n * // Controlled\n * <MosaicSwitch checked={enabled} onCheckedChange={setEnabled} aria-label=\"Notifications\" />\n */\nexport function MosaicSwitch({ className, ref, ...props }: MosaicSwitchProps) {\n  return (\n    <Switch.Root\n      ref={ref}\n      data-slot=\"switch\"\n      className={cn(\n        // Track\n        \"relative inline-flex h-6 w-10 shrink-0 cursor-pointer items-center\",\n        \"rounded-full border-2 border-transparent outline-none\",\n        \"bg-muted transition-colors\",\n        // Checked state — bg-foreground when on\n        \"data-[checked]:bg-foreground\",\n        // Focus ring\n        \"focus-visible:ring-ring focus-visible:ring-[3px]\",\n        // Disabled\n        \"data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50\",\n        className,\n      )}\n      {...props}\n    >\n      <Switch.Thumb\n        data-slot=\"switch-thumb\"\n        className={cn(\n          \"pointer-events-none block h-4 w-4 rounded-full\",\n          \"bg-background shadow-sm\",\n          \"translate-x-0 transition-transform\",\n          \"data-[checked]:translate-x-5\",\n        )}\n      />\n    </Switch.Root>\n  );\n}\n\nMosaicSwitch.displayName = \"MosaicSwitch\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

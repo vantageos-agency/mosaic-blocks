@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-user-button",
+  "title": "MosaicUserButton",
+  "description": "Clerk <UserButton> with OKLCH-token appearance. Avatar + popover themed to mosaic tokens. Clerk injected as peer prop.",
+  "dependencies": [
+    "@clerk/nextjs"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/auth/user-button/MosaicUserButton.tsx",
+      "type": "registry:ui",
+      "content": "\"use client\";\n\n/**\n * MosaicUserButton — Clerk <UserButton> with OKLCH-token appearance.\n *\n * Wraps @clerk/nextjs <UserButton>. Clerk is injected as a peer prop so\n * mosaic-blocks does not bundle @clerk/nextjs directly.\n *\n * @example\n * import { UserButton } from \"@clerk/nextjs\"\n * <MosaicUserButton clerkUserButton={UserButton} />\n */\n\nimport type * as React from \"react\";\n\n// ── Types ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicUserButtonProps {\n  /** Clerk <UserButton> component — injected by caller to avoid bundling Clerk */\n  clerkUserButton: React.ComponentType<{\n    appearance?: Record<string, unknown>;\n    afterSignOutUrl?: string;\n    showName?: boolean;\n    [key: string]: unknown;\n  }>;\n  /** URL to redirect after sign-out */\n  afterSignOutUrl?: string;\n  /** Show the user's name next to avatar */\n  showName?: boolean;\n  className?: string;\n}\n\n// ── Clerk OKLCH appearance tokens ─────────────────────────────────────────────\n\nconst clerkAppearance = {\n  variables: {\n    colorPrimary: \"var(--primary)\",\n    colorBackground: \"var(--popover)\",\n    colorText: \"var(--foreground)\",\n    colorTextSecondary: \"var(--muted-foreground)\",\n    colorNeutral: \"var(--foreground)\",\n    borderRadius: \"0.375rem\",\n  },\n  elements: {\n    avatarBox: \"ring-2 ring-border\",\n    userButtonPopoverCard: \"border border-border bg-popover shadow-md\",\n    userButtonPopoverActions: \"border-t border-border\",\n    userButtonPopoverActionButton:\n      \"text-foreground hover:bg-accent hover:text-accent-foreground text-sm\",\n    userButtonPopoverActionButtonText: \"text-foreground\",\n    userButtonPopoverFooter: \"border-t border-border\",\n    userPreviewMainIdentifier: \"text-foreground font-medium\",\n    userPreviewSecondaryIdentifier: \"text-muted-foreground text-xs\",\n  },\n};\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\nexport function MosaicUserButton({\n  clerkUserButton: ClerkUserButton,\n  afterSignOutUrl = \"/\",\n  showName = false,\n  className,\n}: MosaicUserButtonProps) {\n  return (\n    <div data-slot=\"user-button\" className={className}>\n      <ClerkUserButton\n        appearance={clerkAppearance}\n        afterSignOutUrl={afterSignOutUrl}\n        showName={showName}\n      />\n    </div>\n  );\n}\n\nMosaicUserButton.displayName = \"MosaicUserButton\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

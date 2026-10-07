@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-slider",
+  "title": "MosaicSlider",
+  "description": "MosaicSlider — @base-ui/react Slider primitive",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/slider/MosaicSlider.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicSlider — @base-ui/react Slider primitive\n *\n * Builds on Slider.Root + Slider.Control + Slider.Track +\n * Slider.Indicator + Slider.Thumb.\n * Supports single value and range (array) values.\n * role=slider and aria-valuenow managed by the primitive automatically.\n *\n * data-slot=\"slider\" on Root, \"slider-track\" on Track,\n * \"slider-indicator\" on Indicator, \"slider-thumb\" on Thumb.\n * Styling: Tailwind v4 semantic tokens only.\n */\n\nimport { Slider } from \"@base-ui/react/slider\";\nimport type * as React from \"react\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Props ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicSliderProps extends Slider.Root.Props {\n  className?: string;\n  ref?: React.Ref<HTMLDivElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicSlider — production Slider atom for @vantageos/mosaic-blocks.\n *\n * Built on @base-ui/react/slider. Supports single value + range (array).\n * Keyboard accessible: arrow keys, Home, End.\n *\n * @example\n * <MosaicSlider defaultValue={50} aria-label=\"Volume\" />\n * <MosaicSlider defaultValue={[20, 80]} aria-label=\"Price range\" />\n */\nexport function MosaicSlider({ className, ref, ...props }: MosaicSliderProps) {\n  const isRange = Array.isArray(props.defaultValue ?? props.value);\n  const thumbCount = isRange ? ((props.defaultValue ?? props.value) as number[]).length : 1;\n\n  return (\n    <Slider.Root\n      ref={ref}\n      data-slot=\"slider\"\n      className={cn(\"w-full touch-none select-none\", className)}\n      {...props}\n    >\n      <Slider.Control className=\"flex items-center\">\n        <Slider.Track\n          data-slot=\"slider-track\"\n          className=\"relative h-2 w-full grow rounded-full bg-secondary\"\n        >\n          <Slider.Indicator\n            data-slot=\"slider-indicator\"\n            className=\"absolute h-full rounded-full bg-foreground\"\n          />\n          {Array.from({ length: thumbCount }).map((_, i) => (\n            <Slider.Thumb\n              // biome-ignore lint/suspicious/noArrayIndexKey: slider thumbs have stable positional identity\n              key={i}\n              data-slot=\"slider-thumb\"\n              className={cn(\n                \"block size-5 rounded-full\",\n                \"border-2 border-foreground bg-background\",\n                \"shadow-sm outline-none transition-colors\",\n                \"focus-visible:ring-ring focus-visible:ring-[3px]\",\n                \"data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50\",\n              )}\n            />\n          ))}\n        </Slider.Track>\n      </Slider.Control>\n    </Slider.Root>\n  );\n}\n\nMosaicSlider.displayName = \"MosaicSlider\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

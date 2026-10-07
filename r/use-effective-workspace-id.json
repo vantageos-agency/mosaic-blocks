@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "use-effective-workspace-id",
+  "title": "useEffectiveWorkspaceId",
+  "description": "Re-exposes cloud-identity workspace resolver as a typed React hook. Reads from MosaicMultiTenantProvider context.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-multi-tenant-provider.json"
+  ],
+  "files": [
+    {
+      "path": "src/components/multi-tenant/multi-tenant-provider/useEffectiveWorkspaceId.ts",
+      "type": "registry:hook",
+      "content": "/**\n * useEffectiveWorkspaceId — alias of `useMosaicWorkspace`: reads the workspace\n * id the provider resolved.\n *\n * The hook reads from MosaicMultiTenantProvider's context. If used outside that\n * provider it returns `{ workspaceId: null, isLoading: false }`.\n *\n * It does NOT import from @vantageos/cloud-identity, and cloud-identity exports\n * no symbol of this name (its equivalent is called `getEffectiveTenantId`). The\n * provider's `resolveWorkspaceId` prop is the integration point.\n *\n * @example\n * const { workspaceId } = useEffectiveWorkspaceId();\n * // workspaceId: string | null\n */\n\nexport { useMosaicWorkspace as useEffectiveWorkspaceId } from \"./MosaicMultiTenantProvider.js\";\nexport type { MosaicWorkspaceContext } from \"./MosaicMultiTenantProvider.js\";\n"
+    }
+  ],
+  "type": "registry:hook"
+}

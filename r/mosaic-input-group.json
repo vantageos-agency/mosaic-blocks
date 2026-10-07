@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-input-group",
+  "title": "MosaicInputGroup",
+  "description": "Composition wrapper laying out prefix/suffix addons around an input. data-slot=\"input-group\".",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/input-group/MosaicInputGroup.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicInputGroup — composition wrapper for MosaicInput with addons\n *\n * Lays out an optional prefix addon + children (MosaicInput) + optional suffix\n * horizontally. Plain <div> wrapper — no base-ui primitive needed.\n * data-slot=\"input-group\".\n *\n * Design tokens: Tailwind v4 semantic classes only.\n */\n\nimport type * as React from \"react\";\n\n// ── Utility ───────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n// Omit 'prefix' from HTMLAttributes because the DOM attribute is `string | undefined`\n// but our `prefix` prop accepts any ReactNode.\nexport interface MosaicInputGroupProps\n  extends Omit<React.HTMLAttributes<HTMLDivElement>, \"prefix\"> {\n  /** Element rendered before the input (icon, text addon, etc.) */\n  prefix?: React.ReactNode;\n  /** Element rendered after the input (icon, text addon, etc.) */\n  suffix?: React.ReactNode;\n  className?: string;\n  children: React.ReactNode;\n  ref?: React.Ref<HTMLDivElement>;\n}\n\n/**\n * MosaicInputGroup — wraps MosaicInput with optional prefix/suffix addons.\n *\n * @example\n * <MosaicInputGroup prefix={<SearchIcon />}>\n *   <MosaicInput placeholder=\"Search…\" />\n * </MosaicInputGroup>\n *\n * <MosaicInputGroup\n *   prefix={<span>https://</span>}\n *   suffix={<span>.com</span>}\n * >\n *   <MosaicInput placeholder=\"yoursite\" />\n * </MosaicInputGroup>\n */\nexport function MosaicInputGroup({\n  prefix,\n  suffix,\n  className,\n  children,\n  ref,\n  ...props\n}: MosaicInputGroupProps) {\n  return (\n    <div\n      ref={ref}\n      data-slot=\"input-group\"\n      className={cn(\"flex items-center\", className)}\n      {...props}\n    >\n      {prefix ? (\n        <div\n          data-slot=\"input-group-prefix\"\n          className=\"flex shrink-0 items-center text-sm text-muted-foreground\"\n        >\n          {prefix}\n        </div>\n      ) : null}\n      <div className=\"min-w-0 flex-1\">{children}</div>\n      {suffix ? (\n        <div\n          data-slot=\"input-group-suffix\"\n          className=\"flex shrink-0 items-center text-sm text-muted-foreground\"\n        >\n          {suffix}\n        </div>\n      ) : null}\n    </div>\n  );\n}\n\nMosaicInputGroup.displayName = \"MosaicInputGroup\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

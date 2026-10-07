@@ -11,6 +11,7 @@
  *     without a regeneration, or the file was hand-edited);
  *   - a committed r/*.json has no item in registry.json;
  *   - the item cannot be built at all (missing/empty source, refused import).
+ *   - a registry item has no committed r/<name>.json (every item ships).
  * Exit 1 also when r/ holds no item: a check that compared nothing is not a pass.
  *
  * Usage: node scripts/check-registry-items-drift.mjs
@@ -53,6 +54,14 @@ export function checkDrift({
     if (readFileSync(join(outDir, file), "utf8") !== expected) {
       problems.push(
         `${file}: differs from its source — run \`pnpm build:registry-items ${name}\` and commit the result`,
+      );
+    }
+  }
+  const present = new Set(committed.map((f) => f.slice(0, -".json".length)));
+  for (const item of items) {
+    if (!present.has(item.name)) {
+      problems.push(
+        `r/${item.name}.json: missing — run \`pnpm build:registry-items\` and commit the result`,
       );
     }
   }

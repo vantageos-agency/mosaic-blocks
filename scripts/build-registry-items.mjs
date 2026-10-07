@@ -8,7 +8,11 @@
  * registry.json entries carry only {path, type} pointers per file. The
  * shadcn CLI installs from a per-item JSON that carries file CONTENT inline.
  * This script reads each cited source file from disk and emits that inline
- * form, adding `content` (file text) and `target` (derived install path).
+ * form, adding `content` (file text). No `target` is emitted: for registry:ui,
+ * registry:hook and registry:lib the shadcn CLI then installs into the
+ * consumer's components.json alias (ui / hooks / lib) and rewrites imports;
+ * an explicit `target` would bypass both. `target` is only required by the
+ * schema for registry:file / registry:page, which no item uses.
  *
  * Usage:
  *   node scripts/build-registry-items.mjs                # all items
@@ -22,96 +26,36 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, posix } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { NON_SHIPPED_MATCHERS, globToRegExp, isShipped } from "./non-shipped.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
 const registryPath = join(repoRoot, "registry.json");
 const outDir = join(repoRoot, "r");
 
-// Non-shipped files: items carry component sources only.
-//
-// registry.json lists every non-`.test` source of a component directory,
-// stories included (registry-json-derive.mjs filters `.test.tsx?` only), and
-// this script used to inline each listed file verbatim. The exclusion is
-// derived from the repo's own conventions, never typed:
-//   - test files:   the `include` globs of tsconfig.test.json, the repo's own
-//                   declaration of its test-file set (vitest.config.ts
-//                   declares no `include`; importing vitest/config here is not
-//                   an option, it loads esbuild, which fails under jsdom);
-//   - story files:  the `stories` glob of .storybook/main.ts, read at run time;
-//   - `__tests__/`: the repo's test directory (vitest.config.ts excludes
-//                   `src/__tests__/derived/**`; tests live under `__tests__`).
-// Anything this script cannot read or translate fails loud, never skips.
+// Non-shipped files (tests, stories): the exclusion lives in non-shipped.mjs,
+// shared with registry-json-derive.mjs so there is exactly one copy.
+export { NON_SHIPPED_MATCHERS, globToRegExp, isShipped };
 
-/** Glob -> RegExp for the constructs the sources above use; throws on any other. */
-export function globToRegExp(glob) {
-  let out = "";
-  const closers = [];
-  for (let i = 0; i < glob.length; i += 1) {
-    const c = glob[i];
-    const two = glob.slice(i, i + 2);
-    if (glob.slice(i, i + 3) === "**/") {
-      out += "(?:.*/)?";
-      i += 2;
-    } else if (c === "*") out += "[^/]*";
-    else if ((two === "?(" || two === "@(") && /[?@]/.test(c)) {
-      out += "(?:";
-      closers.push(two === "?(" ? ")?" : ")");
-      i += 1;
-    } else if (c === "{") {
-      out += "(?:";
-      closers.push(")");
-    } else if (c === "(") {
-      throw new Error(`unsupported glob construct "(" in "${glob}"`);
-    } else if ((c === ")" || c === "}") && closers.length > 0) out += closers.pop();
-    else if (c === "," && closers.length > 0) out += "|";
-    else if (c === "|" && closers.length > 0) out += "|";
-    else if (c === "[") {
-      const end = glob.indexOf("]", i);
-      if (end < 0) throw new Error(`unterminated "[" in glob "${glob}"`);
-      out += glob.slice(i, end + 1);
-      i = end;
-    } else if (c === "?") out += "[^/]";
-    else if (/[!+]/.test(c) && glob[i + 1] === "(") {
-      throw new Error(`unsupported glob construct "${two}" in "${glob}"`);
-    } else out += c.replace(/[.^$|\\)]/g, "\\$&");
-  }
-  if (closers.length > 0) throw new Error(`unbalanced group in glob "${glob}"`);
-  return new RegExp(`^${out}$`);
-}
-
-function readTestGlobs() {
-  const cfgPath = join(repoRoot, "tsconfig.test.json");
-  if (!existsSync(cfgPath)) {
-    throw new Error(`${cfgPath} not found — cannot derive the test-file exclusion`);
-  }
-  const include = JSON.parse(readFileSync(cfgPath, "utf8")).include;
-  if (!Array.isArray(include) || include.length === 0) {
-    throw new Error(`${cfgPath} has no include[] — cannot derive the test-file exclusion`);
-  }
-  return include;
-}
-
-function readStoriesGlobs() {
-  const mainPath = join(repoRoot, ".storybook", "main.ts");
-  if (!existsSync(mainPath)) {
+// Package identity (name + version) is READ from package.json, never typed:
+// the pinned registryDependencies URL below is derived from it, so a release
+// bump moves every URL with it and the committed r/ drifts until regenerated.
+export function readPackageIdentity(root = repoRoot) {
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  if (!pkg.name || !pkg.version) {
     throw new Error(
-      `storybook config not found at ${mainPath} — cannot derive the stories exclusion`,
+      `package.json at ${root} has no name/version — cannot pin registryDependencies`,
     );
   }
-  const m = readFileSync(mainPath, "utf8").match(/\bstories:\s*\[([^\]]*)\]/);
-  const globs = m ? [...m[1].matchAll(/["']([^"']+)["']/g)].map((g) => g[1]) : [];
-  if (globs.length === 0) {
-    throw new Error(`no stories glob found in ${mainPath} — cannot derive the stories exclusion`);
-  }
-  return globs.map((g) => posix.normalize(posix.join(".storybook", g)));
+  return { name: pkg.name, version: pkg.version };
 }
 
-export const NON_SHIPPED_MATCHERS = [...readTestGlobs(), ...readStoriesGlobs()].map(globToRegExp);
-
-export function isShipped(sourcePath) {
-  if (sourcePath.split("/").includes("__tests__")) return false;
-  return !NON_SHIPPED_MATCHERS.some((re) => re.test(sourcePath));
+// A cross-item registryDependency is a VERSION-PINNED jsdelivr URL of the
+// sibling item's r/ file inside the published npm package, so the shadcn CLI
+// resolves it without any registry host of ours and never floats to a newer
+// version than the one the item was generated with.
+export function pinnedItemUrl(itemName, { name, version }) {
+  return `https://cdn.jsdelivr.net/npm/${name}@${version}/r/${itemName}.json`;
 }
 
 export function deriveTarget(sourcePath) {
@@ -135,19 +79,26 @@ export function loadRegistry() {
   return parsed.items;
 }
 
-// Relative-import contract (decision: REFUSE, do not derive).
+// Relative-import contract (decision: REWRITE to the registry alias, derive
+// the dependency, refuse what cannot be mapped).
 //
-// Every file is flattened to `components/ui/<basename>`, so the only relative
-// specifier that still resolves after install is a same-directory `./<name>`.
-// A `../x/Y` specifier is broken by the flattening itself, whether or not the
-// target is also a registry item: deriving `registryDependencies` from it would
-// advertise an item as installable while the installed file still fails to
-// resolve. So the generator does not derive; it refuses what it cannot make
-// installable, naming the item, the file and the import.
-//   - specifier not of the form `./<name>`            -> refused (path does not survive flattening)
-//   - `./<name>` resolving to no registry file         -> refused (not shipped)
-//   - `./<name>` resolving to ANOTHER item's file      -> allowed only when that item
-//     is declared in the item's registryDependencies in registry.json
+// Every file is flattened to `components/ui/<basename>`, so a specifier that
+// crosses item directories (`../device-provider/X.js`) cannot resolve once
+// installed. Files carry no `target`, so the CLI flattens them into the consumer's
+// ui alias and the consumer's components.json aliases remain authoritative.
+// Instead the generator rewrites each cross-item import to the alias form the
+// shadcn CLI itself rewrites to the consumer's `aliases.ui`:
+//   `@/components/ui/<Basename>`  (CLI: transformImport, `^@/components/ui` -> aliases.ui)
+// and adds the imported item to `registryDependencies`, DERIVED from the import
+// graph (path -> owning item), never from a hand list. Extension is dropped
+// (`X.js` -> `X`) so resolution never depends on a `.js` -> `.tsx` mapping.
+//   - `./<name>` resolving to a file of the SAME item       -> left as is
+//   - `./<name>` resolving to ANOTHER item's file           -> left as is (same
+//     directory survives flattening); owner added to registryDependencies
+//   - `../<dir>/<name>` resolving to a shipped registry file -> rewritten to the
+//     alias; owner added to registryDependencies (own item: rewritten, no dep)
+//   - anything else (resolves to no shipped registry file, deeper/odd paths,
+//     basename shared by another shipped file)               -> REFUSED by name
 const RELATIVE_IMPORT_RE =
   /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["'](\.\.?\/[^"']*|\.\.?)["']/g;
 
@@ -170,11 +121,14 @@ export function buildPathIndex(items) {
   return pathToItem;
 }
 
-export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}) {
+export function buildItem(
+  item,
+  { root = repoRoot, pathToItem = new Map(), pkg = readPackageIdentity(root) } = {},
+) {
   if (!Array.isArray(item.files) || item.files.length === 0) {
     throw new Error(`item "${item.name}" has no files[] — cannot generate inline content`);
   }
-  const declared = new Set(item.registryDependencies ?? []);
+  const derived = new Set();
 
   const shipped = item.files.filter((file) => isShipped(file.path));
   if (shipped.length === 0) {
@@ -190,30 +144,46 @@ export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}
     if (content.length === 0) {
       throw new Error(`item "${item.name}": source file is empty: ${file.path}`);
     }
-    for (const spec of findRelativeImports(content)) {
+    const rewritten = content.replace(RELATIVE_IMPORT_RE, (whole, spec) => {
       const where = `item "${item.name}": ${file.path} imports "${spec}"`;
-      if (!/^\.\/[^/]+$/.test(spec)) {
-        throw new Error(
-          `${where} — not a same-directory "./<name>" import; files are flattened to components/ui/, so it will not resolve once installed`,
-        );
-      }
-      const hit = resolveToRegistryPath(file.path, spec, pathToItem);
+      const hit = /^\.{1,2}\/[^"']+$/.test(spec)
+        ? resolveToRegistryPath(file.path, spec, pathToItem)
+        : undefined;
       if (hit === undefined) {
-        throw new Error(`${where} — resolves to no registry file, so it is not shipped`);
+        throw new Error(
+          `${where} — resolves to no shipped registry file, cannot map it to an alias`,
+        );
       }
       const owner = pathToItem.get(hit);
-      if (owner !== item.name && !declared.has(owner)) {
+      if (owner !== item.name) derived.add(owner);
+      if (/^\.\/[^/]+$/.test(spec)) return whole;
+      if (!/^\.\.\/[^/.][^/]*\/[^/]+$/.test(spec)) {
         throw new Error(
-          `${where} — belongs to item "${owner}", which is not declared in registryDependencies`,
+          `${where} — not a "./<name>" or "../<dir>/<name>" import, cannot map it to an alias`,
         );
       }
-    }
+      const flat = basename(hit);
+      const clash = [...pathToItem.keys()].filter((p) => p !== hit && basename(p) === flat);
+      if (clash.length > 0) {
+        throw new Error(
+          `${where} — basename "${flat}" is shared with ${clash.join(", ")}; the flat alias would be ambiguous`,
+        );
+      }
+      const alias = `@/${deriveTarget(hit).replace(/\.[^/.]+$/, "")}`;
+      return whole.replace(spec, alias);
+    });
     return {
       ...file,
-      content,
-      target: deriveTarget(file.path),
+      content: rewritten,
     };
   });
+
+  // Cross-item dependencies (names owned by a registry item) become pinned
+  // URLs; anything else a hand-declared dependency names is kept verbatim.
+  const itemNames = new Set(pathToItem.values());
+  const registryDependencies = [
+    ...new Set([...(item.registryDependencies ?? []), ...[...derived].sort()]),
+  ].map((dep) => (itemNames.has(dep) ? pinnedItemUrl(dep, pkg) : dep));
 
   return {
     $schema: "https://ui.shadcn.com/schema/registry-item.json",
@@ -221,7 +191,7 @@ export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}
     title: item.title,
     description: item.description,
     dependencies: item.dependencies ?? [],
-    registryDependencies: item.registryDependencies ?? [],
+    registryDependencies,
     files,
     type: item.type,
     ...(item.categories ? { categories: item.categories } : {}),

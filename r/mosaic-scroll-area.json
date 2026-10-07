@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-scroll-area",
+  "title": "MosaicScrollArea",
+  "description": "MosaicScrollArea — @base-ui/react ScrollArea primitive",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/scroll-area/MosaicScrollArea.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicScrollArea — @base-ui/react ScrollArea primitive\n *\n * Builds on ScrollArea.Root + ScrollArea.Viewport + ScrollArea.Content +\n * ScrollArea.Scrollbar + ScrollArea.Thumb + ScrollArea.Corner.\n * Custom scrollbar styling that matches design tokens.\n * Native scroll behavior with custom scrollbar overlay.\n *\n * data-slot=\"scroll-area\" on Root, \"scroll-area-viewport\" on Viewport,\n * \"scroll-area-scrollbar\" on Scrollbar, \"scroll-area-thumb\" on Thumb.\n * Styling: Tailwind v4 semantic tokens only.\n */\n\nimport { ScrollArea } from \"@base-ui/react/scroll-area\";\nimport type * as React from \"react\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Props ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicScrollAreaProps extends ScrollArea.Root.Props {\n  className?: string;\n  /** Whether to show horizontal scrollbar. @default false */\n  horizontal?: boolean;\n  ref?: React.Ref<HTMLDivElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicScrollArea — production ScrollArea atom for @vantageos/mosaic-blocks.\n *\n * Built on @base-ui/react/scroll-area. Custom scrollbar with semantic tokens.\n * Shows vertical scrollbar by default; set horizontal to show horizontal bar too.\n *\n * @example\n * <MosaicScrollArea className=\"h-48\">\n *   <div>Long content here…</div>\n * </MosaicScrollArea>\n */\nexport function MosaicScrollArea({\n  className,\n  horizontal = false,\n  children,\n  ref,\n  ...props\n}: MosaicScrollAreaProps) {\n  return (\n    <ScrollArea.Root\n      ref={ref}\n      data-slot=\"scroll-area\"\n      className={cn(\"relative overflow-hidden\", className)}\n      {...props}\n    >\n      <ScrollArea.Viewport data-slot=\"scroll-area-viewport\" className=\"size-full rounded-[inherit]\">\n        <ScrollArea.Content>{children}</ScrollArea.Content>\n      </ScrollArea.Viewport>\n\n      {/* Vertical scrollbar */}\n      <ScrollArea.Scrollbar\n        data-slot=\"scroll-area-scrollbar\"\n        orientation=\"vertical\"\n        className=\"flex w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors\"\n      >\n        <ScrollArea.Thumb className=\"relative flex-1 rounded-full bg-border\" />\n      </ScrollArea.Scrollbar>\n\n      {/* Horizontal scrollbar (opt-in) */}\n      {horizontal && (\n        <ScrollArea.Scrollbar\n          data-slot=\"scroll-area-scrollbar-h\"\n          orientation=\"horizontal\"\n          className=\"flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors\"\n        >\n          <ScrollArea.Thumb className=\"relative flex-1 rounded-full bg-border\" />\n        </ScrollArea.Scrollbar>\n      )}\n\n      <ScrollArea.Corner />\n    </ScrollArea.Root>\n  );\n}\n\nMosaicScrollArea.displayName = \"MosaicScrollArea\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

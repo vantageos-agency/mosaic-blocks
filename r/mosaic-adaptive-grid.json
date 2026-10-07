@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-adaptive-grid",
+  "title": "MosaicAdaptiveGrid",
+  "description": "Device-aware CSS grid wrapper. Reads isMobile/isTablet/isDesktop from MosaicDeviceProvider and applies the correct column count. Props: mobileColumns, tabletColumns, desktopColumns, gap. Uses inline CSS for dynamic columns (no JIT issues).",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-device-provider.json"
+  ],
+  "files": [
+    {
+      "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.tsx",
+      "type": "registry:ui",
+      "content": "\"use client\";\n\n/**\n * MosaicAdaptiveGrid — device-aware CSS grid wrapper (PC-02)\n *\n * Ported (source: private upstream) components/adaptive/AdaptiveGrid.tsx\n *\n * Reads isMobile/isTablet/isDesktop from useDevice() and applies the correct\n * column count via inline CSS variables (avoids Tailwind JIT dynamic class issues).\n * Zero debate coupling. Fully generic.\n *\n * Framer-motion: N/A (layout-only).\n */\n\nimport type * as React from \"react\";\nimport { useDevice } from \"@/components/ui/MosaicDeviceProvider\";\n\n// ── Utility ───────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Types ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicAdaptiveGridProps {\n  children: React.ReactNode;\n  /** Grid columns on mobile (default 1) */\n  mobileColumns?: number;\n  /** Grid columns on tablet (default 2) */\n  tabletColumns?: number;\n  /** Grid columns on desktop (default 3) */\n  desktopColumns?: number;\n  /** Gap between cells (Tailwind gap class, default \"gap-4\") */\n  gap?: string;\n  className?: string;\n  ref?: React.Ref<HTMLDivElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicAdaptiveGrid — responsive grid that switches column count based on\n * the device breakpoint provided by MosaicDeviceProvider.\n *\n * @example\n * <MosaicDeviceProvider>\n *   <MosaicAdaptiveGrid mobileColumns={1} tabletColumns={2} desktopColumns={3}>\n *     <Card />\n *     <Card />\n *     <Card />\n *   </MosaicAdaptiveGrid>\n * </MosaicDeviceProvider>\n */\nexport function MosaicAdaptiveGrid({\n  children,\n  mobileColumns = 1,\n  tabletColumns = 2,\n  desktopColumns = 3,\n  gap = \"gap-4\",\n  className,\n  ref,\n}: MosaicAdaptiveGridProps) {\n  const { isMobile, isTablet } = useDevice();\n\n  const cols = isMobile ? mobileColumns : isTablet ? tabletColumns : desktopColumns;\n\n  return (\n    <div\n      ref={ref}\n      data-slot=\"adaptive-grid\"\n      className={cn(\"grid\", gap, className)}\n      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}\n    >\n      {children}\n    </div>\n  );\n}\n\nMosaicAdaptiveGrid.displayName = \"MosaicAdaptiveGrid\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}
