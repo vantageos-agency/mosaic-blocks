@@ -460,43 +460,6 @@ else
 fi
 
 # ===========================================================================
-# MUST_PASS — form 9: literal Mosaic<Name> token names the WRONG component,
-# but the conventional-commit SCOPE corroborates the real one — the scope is
-# read only as corroboration of an existing claim, never as its own claim,
-# but when it genuinely agrees with the diff it is honored. Built on
-# 2d49c9d's own real diff (add-memory-form), with a scope that matches it.
-# ===========================================================================
-MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
-sha="2d49c9d2caa8b77aecccac6af21282234cfa5962"
-parent="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
-if [ -z "$parent" ]; then
-  FAILURES+=("MUST_PASS scope-corroborates — could not resolve parent — probe invalid")
-  log MUST_PASS "FAIL — scope-corroborates — could not resolve parent"
-else
-  branch="probe-scopecorrob-${sha}"
-  (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet -b "$branch" "$parent")
-  (cd "$CLONE" && git diff "${parent}" "${sha}" | git apply -)
-  if ! (cd "$CLONE" && git status --porcelain -uall | grep -qF "add-memory-form/MosaicAddMemoryForm.tsx"); then
-    FAILURES+=("MUST_PASS scope-corroborates — mutation did NOT land — probe invalid")
-    log MUST_PASS "FAIL — scope-corroborates — mutation did not land"
-  else
-    (cd "$CLONE" && git add -A && git commit --quiet -m "$(printf 'feat(add-memory-form): MosaicThreadView typo in title, scope corroborates real component')")
-    set +e
-    output="$(run_guard "$parent" 2>&1)"
-    status=$?
-    set -e
-    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then
-      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
-      log MUST_PASS "PASS — scope corroborates the real component despite a wrong literal token — exited 0"
-    else
-      FAILURES+=("MUST_PASS scope-corroborates — guard exited $status (expected 0) — output: $output")
-      log MUST_PASS "FAIL — scope-corroborates — exit=$status output=$output"
-    fi
-  fi
-  cleanup_branch "$branch" "$parent"
-fi
-
-# ===========================================================================
 # MUST_PASS — the written escape hatch, ANCHORED at start-of-line, genuinely
 # DOES disable the guard on the same real mismatch material.
 # ===========================================================================
@@ -900,14 +863,12 @@ fi
 #   dd69dca  diff touches exactly ONE component (alert-dialog)
 #   a307e19  diff touches TWO components (feature-3col, logos-grid)
 # ===========================================================================
-KNOWN_GAP_G4_TOTAL=0
-KNOWN_GAP_G4_REPRODUCED=0
 subset_case() {
   # $1 sha  $2 landing path substring  $3 title  $4 expect: block|pass  $5 label  $6 optional must-contain text
   local sha="$1" landing="$2" title="$3" expect="$4" label="$5" needle="${6:-}"
   local parent branch="probe-subset-${5// /-}" output status ok=0
   parent="$(cd "$CLONE" && git rev-parse --verify --quiet "${sha}^" 2>/dev/null || true)"
-  case "$expect" in block) MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1)) ;; pass) MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1)) ;; gap) KNOWN_GAP_G4_TOTAL=$((KNOWN_GAP_G4_TOTAL + 1)) ;; esac
+  case "$expect" in block) MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1)) ;; pass) MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1)) ; ;; esac
   if [ -z "$parent" ]; then
     FAILURES+=("SUBSET $label — could not resolve parent of $sha — probe invalid"); log SUBSET "FAIL — $label — no parent"; return 0
   fi
@@ -923,8 +884,6 @@ subset_case() {
     if [ "$status" -eq 1 ] && echo "$output" | grep -qF "BLOCKED" && echo "$output" | grep -qF -- "$needle"; then
       MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1)); ok=1
     fi
-  elif [ "$expect" = gap ]; then
-    if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then KNOWN_GAP_G4_REPRODUCED=$((KNOWN_GAP_G4_REPRODUCED + 1)); ok=1; fi
   else
     if [ "$status" -eq 0 ] && echo "$output" | grep -qF "OK"; then MUST_PASS_PASS=$((MUST_PASS_PASS + 1)); ok=1; fi
   fi
@@ -947,14 +906,24 @@ subset_case dd69dcaf8b91716f1b41ebbda66a837172487630 "alert-dialog/MosaicAlertDi
 subset_case a307e1932290b80158b4d46f2b8b299f1bcc8418 "feature-3col/MosaicFeature3Col.tsx" \
   "feat: MosaicFeature3Col + MosaicLogosGrid" pass "multi-covered"
 
-# KNOWN GAP, task k177cprjy05d7q7vqgnvkt82j98c5763 (G4) — NOT a pass of the
-# subset rule: a phantom pardoned by a scope that matches a diffed directory
-# still exits 0 (`|| scopeCorroborates`). Asserted AS THE CURRENT BEHAVIOUR so
-# the gap stays reproducible and visible; when G4 lands this case must flip to
-# MUST_BLOCK (it fails loudly the moment the pardon closes, never silently).
-subset_case dd69dcaf8b91716f1b41ebbda66a837172487630 "alert-dialog/MosaicAlertDialog.test.tsx" \
-  "test(alert-dialog): MosaicAlertDialog + MosaicPhantomWidget focus test" gap "KNOWN-GAP-G4-scope-pardon"
-echo "KNOWN_GAP_G4 (reproduced, exit 0 by design until G4): $KNOWN_GAP_G4_REPRODUCED/$KNOWN_GAP_G4_TOTAL"
+# G4 (task k177cprjy05d7q7vqgnvkt82j98c5763): a scope may corroborate, never
+# pardon. A phantom whose scope names a diffed directory MUST still block.
+#   e7f7ff9  Argus's material: combobox + model-selector diff
+#   a754819  the drawer commit (first-parent head of src/components/drawer)
+subset_case e7f7ff9 "combobox/MosaicCombobox.tsx" \
+  "fix(combobox): MosaicCombobox + MosaicGhost tweak" block "scope-corroborated-phantom-combobox" "phantom: MosaicGhost"
+subset_case a754819 "drawer/MosaicDrawer.tsx" \
+  "fix(drawer): MosaicDrawer and MosaicGammaPhantom tweak" block "scope-corroborated-phantom-drawer" "phantom: MosaicGammaPhantom"
+# Form 9 (formerly MUST_PASS "scope-corroborates", which codified the pardon):
+# a wrong literal token under a scope that matches the real component now blocks.
+subset_case 2d49c9d2caa8b77aecccac6af21282234cfa5962 "add-memory-form/MosaicAddMemoryForm.tsx" \
+  "feat(add-memory-form): MosaicThreadView typo in title, scope corroborates real component" block "scope-corroborated-wrong-token" "phantom: MosaicThreadView"
+# MUST_PASS: a legitimate scoped title fully covered by its diff.
+subset_case a754819 "drawer/MosaicDrawer.tsx" \
+  "feat(drawer): MosaicDrawer side panel" pass "scoped-covered"
+# MUST_PASS: scope-only title (no Mosaic token) makes no claim.
+subset_case a754819 "drawer/MosaicDrawer.tsx" \
+  "fix(drawer): tweak" pass "scope-only"
 (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet "$BASE" 2>/dev/null || true)
 
 # Leave the clone on a clean, detached-free state before restoration check
@@ -972,7 +941,6 @@ echo "==================== PROBE SUMMARY ===================="
 echo "MUST_BLOCK:  $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
 echo "MUST_PASS:   $MUST_PASS_PASS/$MUST_PASS_TOTAL"
 echo "MUST_REFUSE: $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL"
-echo "KNOWN_GAP_G4 (task k177cprjy05d7q7vqgnvkt82j98c5763, reproduced): $KNOWN_GAP_G4_REPRODUCED/$KNOWN_GAP_G4_TOTAL"
 if [ "$MUST_REFUSE_PASS" -ne "$MUST_REFUSE_TOTAL" ]; then
   FAILURES+=("MUST_REFUSE sweep — $MUST_REFUSE_PASS/$MUST_REFUSE_TOTAL — not all cases refused correctly")
 fi
