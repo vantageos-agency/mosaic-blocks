@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-avatar",
+  "title": "MosaicAvatar",
+  "description": "Avatar with image + fallback, built on @base-ui/react/avatar. Props: src, alt, fallback. data-slot=\"avatar\".",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/avatar/MosaicAvatar.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicAvatar — built on @base-ui/react/avatar\n *\n * Uses Avatar.Root + Avatar.Image + Avatar.Fallback from @base-ui/react/avatar.\n * Props: src, alt, fallback, className.\n * data-slot attributes on root (\"avatar\"), image (\"avatar-image\"), fallback (\"avatar-fallback\").\n *\n * Design tokens: Tailwind v4 semantic classes (bg-muted, text-muted-foreground).\n */\n\nimport { Avatar } from \"@base-ui/react/avatar\";\nimport type * as React from \"react\";\n\n// ── Utility ───────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\nexport interface MosaicAvatarProps extends Avatar.Root.Props {\n  /** Image source URL */\n  src?: string;\n  /** Alt text for the image */\n  alt?: string;\n  /** Text or node rendered when image is absent or fails to load */\n  fallback: React.ReactNode;\n  className?: string;\n}\n\n/**\n * MosaicAvatar — user avatar with automatic image fallback.\n *\n * @example\n * <MosaicAvatar src=\"/user.png\" alt=\"John\" fallback=\"JD\" />\n * <MosaicAvatar fallback=\"AB\" />\n */\nexport function MosaicAvatar({ src, alt, fallback, className, ref, ...props }: MosaicAvatarProps) {\n  return (\n    <Avatar.Root\n      ref={ref}\n      data-slot=\"avatar\"\n      className={cn(\n        \"relative flex size-10 shrink-0 overflow-hidden rounded-full\",\n        \"bg-muted text-muted-foreground\",\n        className,\n      )}\n      {...props}\n    >\n      <Avatar.Image\n        src={src ?? \"\"}\n        alt={alt ?? \"\"}\n        data-slot=\"avatar-image\"\n        className=\"aspect-square size-full object-cover\"\n      />\n      <Avatar.Fallback\n        data-slot=\"avatar-fallback\"\n        className=\"flex size-full items-center justify-center text-sm font-medium\"\n      >\n        {fallback}\n      </Avatar.Fallback>\n    </Avatar.Root>\n  );\n}\n\nMosaicAvatar.displayName = \"MosaicAvatar\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

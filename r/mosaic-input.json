@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-input",
+  "title": "MosaicInput",
+  "description": "Text input built on @base-ui/react/input. Forwards ref to native input. data-slot=\"input\".",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/input/MosaicInput.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicInput — built on @base-ui/react/input\n *\n * Uses the Input primitive from @base-ui/react/input which renders a native\n * <input> element with Field integration and ref-as-prop (React 19).\n * data-slot=\"input\".\n *\n * Design tokens: Tailwind v4 semantic classes (bg-background, border-border,\n * text-foreground, ring-ring). No hardcoded colors.\n */\n\nimport { Input as InputPrimitive } from \"@base-ui/react/input\";\nimport type * as React from \"react\";\n\n// ── Utility ───────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\nexport interface MosaicInputProps extends InputPrimitive.Props {\n  className?: string;\n}\n\n/**\n * MosaicInput — accessible text input built on @base-ui/react Input.\n *\n * Forwards ref to the underlying <input> element.\n * Accepts all standard input props plus className.\n *\n * @example\n * <MosaicInput placeholder=\"Search…\" />\n * <MosaicInput type=\"email\" value={email} onChange={handleChange} />\n */\nexport function MosaicInput({ className, ref, ...props }: MosaicInputProps) {\n  return (\n    <InputPrimitive\n      ref={ref as React.Ref<HTMLElement>}\n      data-slot=\"input\"\n      className={cn(\n        \"flex h-9 w-full rounded-md border border-border bg-background px-3 py-1\",\n        \"text-sm text-foreground shadow-xs\",\n        \"placeholder:text-muted-foreground\",\n        \"outline-none transition-colors\",\n        \"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20\",\n        \"disabled:cursor-not-allowed disabled:opacity-50\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nMosaicInput.displayName = \"MosaicInput\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-button",
+  "title": "MosaicButton",
+  "description": "Accessible button atom built on @base-ui/react. Variants: default, secondary, ghost, destructive, outline, link. Sizes: default, sm, lg, icon, icon-sm, icon-lg.",
+  "dependencies": [
+    "@base-ui/react",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/button/Button.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicButton — @base-ui/react Button primitive\n *\n * Ported from heyfabrika/styleui (MIT) with namespace and import adaptations.\n * Source: https://github.com/heyfabrika/styleui/blob/main/components/ui/button.tsx\n *\n * Uses @base-ui/react/button as the headless base per ADR-0001.\n * Styling: Tailwind v4 + cva variants. No tailwind-merge needed (single source).\n * API: data-slot=\"button\" attribution, ref as regular prop (React 19).\n */\n\nimport { Button as ButtonPrimitive } from \"@base-ui/react/button\";\nimport type { VariantProps } from \"class-variance-authority\";\nimport type * as React from \"react\";\nimport { buttonVariants } from \"./button-variants.js\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\nexport interface MosaicButtonProps\n  extends Omit<ButtonPrimitive.Props, \"ref\">,\n    VariantProps<typeof buttonVariants> {\n  className?: string;\n  /** ref is typed as HTMLElement to preserve the original public API surface */\n  ref?: React.Ref<HTMLElement>;\n}\n\n/**\n * MosaicButton — production Button atom for @vantageos/mosaic-blocks.\n *\n * Built on @base-ui/react/button (ADR-0001). Headless, accessible by default.\n * Accepts all native button props + variant/size from cva.\n *\n * @example\n * <MosaicButton variant=\"secondary\" size=\"lg\">Save</MosaicButton>\n * <MosaicButton variant=\"destructive\" disabled>Delete</MosaicButton>\n */\nexport function MosaicButton({ className, variant, size, ref, ...props }: MosaicButtonProps) {\n  return (\n    <ButtonPrimitive\n      ref={ref as React.Ref<HTMLButtonElement>}\n      data-slot=\"button\"\n      className={cn(buttonVariants({ variant, size }), className)}\n      {...props}\n    />\n  );\n}\n\nMosaicButton.displayName = \"MosaicButton\";\n\nexport { buttonVariants };\n"
+    },
+    {
+      "path": "src/components/button/button-variants.ts",
+      "type": "registry:ui",
+      "content": "/**\n * buttonVariants — pure CVA variant function for MosaicButton.\n *\n * Isolated in its own module so it can be re-exported from the\n * `@vantageos/mosaic-blocks/server` subpath without pulling in\n * React or @base-ui/react/button (which are in Button.tsx but not here).\n *\n * Zero browser / React runtime dependencies — safe in RSC / Node.js.\n */\n\nimport { cva } from \"class-variance-authority\";\n\nexport const buttonVariants = cva(\n  // Base classes — identical to styleui base (adapted for Tailwind v4)\n  [\n    \"inline-flex items-center justify-center whitespace-nowrap\",\n    \"rounded-md border border-transparent bg-clip-padding\",\n    \"text-sm font-medium select-none\",\n    \"transition-all outline-none\",\n    \"focus-visible:ring-[3px]\",\n    \"disabled:pointer-events-none disabled:opacity-50\",\n    \"[&_svg]:pointer-events-none [&_svg]:shrink-0\",\n    \"[&_svg:not([class*='size-'])]:size-4\",\n    \"group/button shrink-0\",\n  ],\n  {\n    variants: {\n      variant: {\n        default: \"bg-foreground text-primary-foreground hover:bg-foreground/80\",\n        secondary: \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-muted hover:text-foreground\",\n        destructive:\n          \"bg-destructive/10 hover:bg-destructive/20 text-destructive focus-visible:border-destructive/40\",\n        outline: \"border-border bg-background hover:bg-muted hover:text-foreground shadow-xs\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 gap-1.5 px-4\",\n        sm: \"h-8 gap-1 rounded-[10px] px-2.5\",\n        lg: \"h-10 gap-1.5 px-4\",\n        icon: \"size-9\",\n        \"icon-sm\": \"size-8 rounded-[10px]\",\n        \"icon-lg\": \"size-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n"
+    }
+  ],
+  "type": "registry:ui"
+}

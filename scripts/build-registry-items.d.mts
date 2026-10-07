@@ -12,7 +12,14 @@ export interface RegistryItemSource {
 export interface BuildContext {
   root?: string;
   pathToItem?: Map<string, string>;
+  pkg?: PackageIdentity;
 }
+export interface PackageIdentity {
+  name: string;
+  version: string;
+}
+export function readPackageIdentity(root?: string): PackageIdentity;
+export function pinnedItemUrl(itemName: string, pkg: PackageIdentity): string;
 export function deriveTarget(sourcePath: string): string;
 export function findRelativeImports(source: string): string[];
 export function buildPathIndex(items: RegistryItemSource[]): Map<string, string>;

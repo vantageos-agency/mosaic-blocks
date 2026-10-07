@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-theme-provider",
+  "title": "MosaicThemeProvider",
+  "description": "Thin next-themes ThemeProvider wrapper. Generic, zero branding. All ThemeProviderProps forwarded.",
+  "dependencies": [
+    "next-themes"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/theme-provider/MosaicThemeProvider.tsx",
+      "type": "registry:ui",
+      "content": "\"use client\";\n\n/**\n * MosaicThemeProvider — next-themes wrapper (generic)\n *\n * Ported from components/theme-provider.tsx\n *\n * Thin wrapper that accepts next-themes ThemeProvider as a peer dependency.\n * Consumers who use next-themes can pass it directly; otherwise falls back to\n * a plain div wrapper for SSR compatibility.\n *\n * This avoids a hard dep on next-themes in mosaic-blocks itself.\n */\n\nimport type * as React from \"react\";\n\nexport interface MosaicThemeProviderProps {\n  children: React.ReactNode;\n  /** next-themes ThemeProvider component — injected by caller */\n  provider?: React.ComponentType<{ children: React.ReactNode; [key: string]: unknown }>;\n  attribute?: string;\n  defaultTheme?: string;\n  enableSystem?: boolean;\n  disableTransitionOnChange?: boolean;\n  storageKey?: string;\n  themes?: string[];\n  forcedTheme?: string;\n  [key: string]: unknown;\n}\n\n/**\n * MosaicThemeProvider — wraps children with a theme provider.\n *\n * Pass `provider` = ThemeProvider from \"next-themes\" (or any compatible\n * theme provider) to enable full theme switching. If omitted, renders\n * children directly (no theme context).\n *\n * @example\n * import { ThemeProvider } from \"next-themes\"\n * <MosaicThemeProvider provider={ThemeProvider} attribute=\"class\" defaultTheme=\"system\" enableSystem>\n *   {children}\n * </MosaicThemeProvider>\n */\nexport function MosaicThemeProvider({\n  children,\n  provider: Provider,\n  ...props\n}: MosaicThemeProviderProps) {\n  if (Provider) {\n    return (\n      <Provider {...props}>\n        <div data-slot=\"theme-provider\">{children}</div>\n      </Provider>\n    );\n  }\n\n  return <div data-slot=\"theme-provider\">{children}</div>;\n}\n\nMosaicThemeProvider.displayName = \"MosaicThemeProvider\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

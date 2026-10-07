@@ -292,10 +292,12 @@ reg_tools_install() {
   cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
   cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
   cp "$REPO_ROOT/scripts/registry-json-derive.mjs" "$CLONE/scripts/registry-json-derive.mjs"
+  # registry-json-derive.mjs imports ./non-shipped.mjs: install its import closure too.
+  cp "$REPO_ROOT/scripts/non-shipped.mjs" "$CLONE/scripts/non-shipped.mjs"
   cp "$REPO_ROOT/scripts/docs-counts.mjs" "$CLONE/scripts/docs-counts.mjs"
 }
 reg_tools_reset() {
-  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared registry-json-derive docs-counts; do
+  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared registry-json-derive non-shipped docs-counts; do
     git checkout -- "scripts/$f.mjs" 2>/dev/null || rm -f "scripts/$f.mjs"
   done; git clean -fdq)
 }

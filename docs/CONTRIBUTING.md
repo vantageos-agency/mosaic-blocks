@@ -46,9 +46,11 @@ Actions is off, so no check runs on a push and no PR can show "CI green". The fo
 
    The derive job in ci.yml describes the retired CI flow; delivering PRs carry the derivation.
 
+4. **Whoever publishes a version regenerates `r/` at that published version**, in the same commit as the bump: `pnpm build:registry-items` (no args, all items), then `pnpm check:registry-items-drift` must exit 0. `r/*.json` pin their cross-item `registryDependencies` to `@<package.json version>/`, and Actions is off fleet-wide, so no bot does it after the bump. The release-artifacts guard accepts an `r/` change only when it equals the generator output.
+
 **Reviewer, on a fresh clone of the PR head:** rerun `pnpm install --frozen-lockfile`, `pnpm gate:local`, the `cmp` line above (`EQUAL` means the committed file equals the derivation) and `pnpm docs:counts --check`. The author's pasted output is a claim; the reviewer's rerun is the gate.
 
-**"CI green" is never claimed while Actions is off.** Say "`gate:local` N run / M total, F failed" and name what was skipped. The PR-conditioned guards in `ci.yml` (release-artifacts, skills-standard, PR-title, merge-commit title) DO run under `gate:local`: it emulates the CI event with base = `origin/main` (override: `--base <ref>`), head = `HEAD` and title = `git log -1 --format=%s`, from the single `EVENT_EMULATION` table in `scripts/gate-local.mjs`. The derive job's writing steps are skipped (they are the retired flow); its `--check` steps (`pnpm registry:derive --check`, `pnpm docs:counts --check`, the derived-docs suite) run. The Playwright browser install needs `--install-browsers` (opt-in, no `--with-deps`).
+**"CI green" is never claimed while Actions is off.** Say "`gate:local` N run / M total, F failed" and name what was skipped. The PR-conditioned guards in `ci.yml` (release-artifacts, skills-standard, PR-title, merge-commit title) DO run under `gate:local`: it emulates the CI event with base = `origin/main` (override: `--base <ref>`), head = `HEAD` and title = `git log -1 --format=%s`, from the single `EVENT_EMULATION` table in `scripts/gate-local.mjs`. The derive job's writing steps are skipped (they are the retired flow); its `--check` steps (`pnpm registry:derive --check`, `pnpm docs:counts --check`, `pnpm check:registry-items-drift`, the derived-docs suite) run. The Playwright browser install needs `--install-browsers` (opt-in, no `--with-deps`).
 
 ## Conventions
 

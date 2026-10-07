@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -8,6 +8,8 @@ import {
   findRelativeImports,
   isShipped,
   loadRegistry,
+  pinnedItemUrl,
+  readPackageIdentity,
   serializeItem,
 } from "../../scripts/build-registry-items.mjs";
 import { checkDrift } from "../../scripts/check-registry-items-drift.mjs";
@@ -15,11 +17,14 @@ import { checkDrift } from "../../scripts/check-registry-items-drift.mjs";
 const repoRoot = join(__dirname, "..", "..");
 const ACCORDION_SRC = "src/components/accordion/MosaicAccordion.tsx";
 const tmpRoots: string[] = [];
+const FIXTURE_PKG = { name: "@scope/fixture", version: "9.8.7-alpha" };
+const pinned = (name: string) => pinnedItemUrl(name, FIXTURE_PKG);
 
 /** A self-contained fixture root: carries its own sources, registry list and r/. */
 function fixture(files: Record<string, string>, items: Array<Record<string, unknown>>) {
   const root = mkdtempSync(join(tmpdir(), "registry-items-"));
   tmpRoots.push(root);
+  writeFileSync(join(root, "package.json"), JSON.stringify(FIXTURE_PKG), "utf8");
   for (const [rel, text] of Object.entries(files)) {
     const abs = join(root, rel);
     mkdirSync(join(abs, ".."), { recursive: true });
@@ -71,7 +76,7 @@ describe("build-registry-items: refusals", () => {
     expect(built.files[0].content).toBe(
       'import { X } from "@/components/ui/B";\nexport const A = X;\n',
     );
-    expect(built.registryDependencies).toEqual(["b"]);
+    expect(built.registryDependencies).toEqual([pinned("b")]);
   });
 
   it("derives the dependency from the graph, merged with a declared one, never duplicated", () => {
@@ -80,7 +85,7 @@ describe("build-registry-items: refusals", () => {
     const built = buildItem(declared as never, { root: f.root, pathToItem: f.pathToItem }) as {
       registryDependencies: string[];
     };
-    expect(built.registryDependencies).toEqual(["b", "z"]);
+    expect(built.registryDependencies).toEqual([pinned("b"), "z"]);
   });
 
   it("rewrites multi-line, re-export and dynamic cross-item imports too", () => {
@@ -163,7 +168,7 @@ describe("build-registry-items: refusals", () => {
       files: Array<{ content: string }>;
     };
     expect(built.files[0].content).toContain('from "./B"');
-    expect(built.registryDependencies).toEqual(["b"]);
+    expect(built.registryDependencies).toEqual([pinned("b")]);
   });
 
   it("refuses a same-directory import that resolves to no registry file", () => {
@@ -245,6 +250,72 @@ describe("build-registry-items: refusals", () => {
   });
 });
 
+describe("pinned jsdelivr registryDependencies", () => {
+  const pkg = readPackageIdentity(repoRoot);
+  const rDir = join(repoRoot, "r");
+  const urlRe = /^https:\/\/cdn\.jsdelivr\.net\/npm\/(.+)@([^/@]+)\/r\/([^/]+)\.json$/;
+
+  /** Every registryDependency URL in every committed r/*.json, with its file. */
+  function allUrls(dir: string) {
+    return readdirSync(dir)
+      .filter((f) => f.endsWith(".json"))
+      .flatMap((f) =>
+        (JSON.parse(readFileSync(join(dir, f), "utf8")).registryDependencies as string[]).map(
+          (url) => ({ file: f, url }),
+        ),
+      );
+  }
+
+  /** Files whose URL does not carry `@<version>/`; the property under test. */
+  const wrongVersion = (urls: Array<{ file: string; url: string }>, version: string) =>
+    urls.filter((u) => !u.url.includes(`@${version}/`)).map((u) => `${u.file}: ${u.url}`);
+
+  it("builds the URL from package.json name and version, never typed", () => {
+    expect(pinnedItemUrl("mosaic-x", pkg)).toBe(
+      `https://cdn.jsdelivr.net/npm/${pkg.name}@${pkg.version}/r/mosaic-x.json`,
+    );
+  });
+
+  it("every committed r/*.json registryDependency is a URL pinned to package.json's version", () => {
+    const urls = allUrls(rDir);
+    expect(urls.length).toBeGreaterThan(0);
+    expect(wrongVersion(urls, pkg.version)).toEqual([]);
+    for (const { url } of urls) expect(url).toMatch(urlRe);
+  });
+
+  it("every pinned URL names an item that exists in registry.json", () => {
+    const names = new Set(loadRegistry().map((i) => i.name));
+    for (const { file, url } of allUrls(rDir)) {
+      expect(names.has(url.match(urlRe)?.[3] ?? ""), `${file}: ${url}`).toBe(true);
+    }
+  });
+
+  it("positive control: a mutated version string is detected", () => {
+    const good = { file: "x.json", url: pinnedItemUrl("mosaic-y", pkg) };
+    const bad = { file: "z.json", url: good.url.replace(`@${pkg.version}/`, "@0.0.0-mutated/") };
+    expect(bad.url).not.toBe(good.url);
+    expect(wrongVersion([good], pkg.version)).toEqual([]);
+    expect(wrongVersion([good, bad], pkg.version)).toEqual([`z.json: ${bad.url}`]);
+  });
+
+  it("items with no cross-item dependency carry no registryDependencies URL", () => {
+    const acc = JSON.parse(readFileSync(join(rDir, "mosaic-accordion.json"), "utf8"));
+    expect(acc.registryDependencies).toEqual([]);
+  });
+
+  it("external npm dependencies stay in dependencies, not registryDependencies", () => {
+    const f = fixture({ "src/a/A.tsx": "export const A = 1;\n" }, [
+      { name: "a", type: "registry:ui", dependencies: ["clsx"], files: [{ path: "src/a/A.tsx" }] },
+    ]);
+    const built = buildItem(f.items[0], { root: f.root, pathToItem: f.pathToItem }) as {
+      dependencies: string[];
+      registryDependencies: string[];
+    };
+    expect(built.dependencies).toEqual(["clsx"]);
+    expect(built.registryDependencies).toEqual([]);
+  });
+});
+
 describe("check-registry-items-drift", () => {
   const item = { name: "a", type: "registry:ui", files: [{ path: "src/a/A.tsx" }] };
 
@@ -277,6 +348,49 @@ describe("check-registry-items-drift", () => {
     writeFileSync(join(f.root, "r/ghost.json"), "{}\n", "utf8");
     expect(checkDrift({ root: f.root, items: f.items }).problems.join("\n")).toMatch(
       /ghost\.json: no item/,
+    );
+  });
+
+  it("goes red on a registry item with no committed r/ file", () => {
+    const itemB = { name: "b", type: "registry:ui", files: [{ path: "src/a/B.tsx" }] };
+    const f = fixture({ "src/a/A.tsx": "export const A = 1;\n", "src/a/B.tsx": "x\n" }, [
+      item,
+      itemB,
+    ]);
+    mkdirSync(join(f.root, "r"));
+    writeFileSync(
+      join(f.root, "r/a.json"),
+      serializeItem(buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })),
+      "utf8",
+    );
+    expect(checkDrift({ root: f.root, items: f.items }).problems.join("\n")).toMatch(
+      /r\/b\.json: missing/,
+    );
+  });
+
+  it("goes red when a pinned version in a committed file is hand-edited", () => {
+    const itemB = { name: "b", type: "registry:ui", files: [{ path: "src/b/B.tsx" }] };
+    const itemA = { ...item, files: [{ path: "src/a/A.tsx" }] };
+    const f = fixture(
+      {
+        "src/a/A.tsx": 'import { X } from "../b/B.js";\nexport const A = X;\n',
+        "src/b/B.tsx": "export const X = 1;\n",
+      },
+      [itemA, itemB],
+    );
+    mkdirSync(join(f.root, "r"));
+    for (const it of [itemA, itemB]) {
+      writeFileSync(
+        join(f.root, `r/${it.name}.json`),
+        serializeItem(buildItem(it as never, { root: f.root, pathToItem: f.pathToItem })),
+        "utf8",
+      );
+    }
+    expect(checkDrift({ root: f.root, items: f.items }).problems).toEqual([]);
+    const p = join(f.root, "r/a.json");
+    writeFileSync(p, readFileSync(p, "utf8").replace("@9.8.7-alpha/", "@1.0.0/"), "utf8");
+    expect(checkDrift({ root: f.root, items: f.items }).problems.join("\n")).toMatch(
+      /a\.json: differs from its source/,
     );
   });
 

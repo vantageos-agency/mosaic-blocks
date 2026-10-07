@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-badge",
+  "title": "MosaicBadge",
+  "description": "Inline status badge. cva variants: default, secondary, destructive, outline. Style-only span, data-slot=\"badge\".",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/badge/MosaicBadge.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicBadge — style-only badge atom\n *\n * Renders a <span> with cva variants: default, secondary, destructive, outline.\n * data-slot=\"badge\" for composability.\n *\n * Design tokens: Tailwind v4 semantic classes only. No hardcoded colors.\n */\n\nimport type { VariantProps } from \"class-variance-authority\";\nimport type * as React from \"react\";\nimport { badgeVariants } from \"./badge-variants.js\";\n\n// ── Utility ───────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\nexport interface MosaicBadgeProps\n  extends React.HTMLAttributes<HTMLSpanElement>,\n    VariantProps<typeof badgeVariants> {\n  className?: string;\n  ref?: React.Ref<HTMLSpanElement>;\n}\n\n/**\n * MosaicBadge — inline status/label badge.\n *\n * @example\n * <MosaicBadge>New</MosaicBadge>\n * <MosaicBadge variant=\"destructive\">Error</MosaicBadge>\n * <MosaicBadge variant=\"outline\">Beta</MosaicBadge>\n */\nexport function MosaicBadge({ className, variant, ref, ...props }: MosaicBadgeProps) {\n  return (\n    <span\n      ref={ref}\n      data-slot=\"badge\"\n      className={cn(badgeVariants({ variant }), className)}\n      {...props}\n    />\n  );\n}\n\nMosaicBadge.displayName = \"MosaicBadge\";\n\nexport { badgeVariants };\n"
+    },
+    {
+      "path": "src/components/badge/badge-variants.ts",
+      "type": "registry:ui",
+      "content": "/**\n * badgeVariants — pure CVA variant function for MosaicBadge.\n *\n * Isolated in its own module so it can be re-exported from the\n * `@vantageos/mosaic-blocks/server` subpath without pulling in React\n * (which is imported in MosaicBadge.tsx but not here).\n *\n * Zero browser / React runtime dependencies — safe in RSC / Node.js.\n */\n\nimport { cva } from \"class-variance-authority\";\n\nexport const badgeVariants = cva(\n  [\n    \"inline-flex items-center justify-center\",\n    \"rounded-full border border-transparent\",\n    \"px-2.5 py-0.5\",\n    \"text-xs font-semibold\",\n    \"select-none whitespace-nowrap\",\n    \"transition-colors\",\n  ],\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground border-transparent\",\n        secondary: \"bg-secondary text-secondary-foreground border-transparent\",\n        destructive: \"bg-destructive text-destructive-foreground border-transparent\",\n        outline: \"bg-background text-foreground border-border\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  },\n);\n"
+    }
+  ],
+  "type": "registry:ui"
+}

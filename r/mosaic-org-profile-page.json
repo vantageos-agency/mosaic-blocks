@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-org-profile-page",
+  "title": "MosaicOrgProfilePage",
+  "description": "Clerk <OrganizationProfile> for team management with OKLCH appearance. hash/path/virtual routing modes. Clerk injected as peer prop.",
+  "dependencies": [
+    "@clerk/nextjs"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/auth/org-profile-page/MosaicOrgProfilePage.tsx",
+      "type": "registry:ui",
+      "content": "\"use client\";\n\n/**\n * MosaicOrgProfilePage — Clerk <OrganizationProfile> with OKLCH appearance.\n *\n * Wraps @clerk/nextjs <OrganizationProfile> for team management. Clerk is\n * injected as a peer prop so mosaic-blocks does not bundle @clerk/nextjs.\n *\n * @example\n * import { OrganizationProfile } from \"@clerk/nextjs\"\n * <MosaicOrgProfilePage clerkOrgProfile={OrganizationProfile} />\n */\n\nimport type * as React from \"react\";\n\n// ── Types ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicOrgProfilePageProps {\n  /** Clerk <OrganizationProfile> component — injected by caller */\n  clerkOrgProfile: React.ComponentType<{\n    appearance?: Record<string, unknown>;\n    routing?: \"hash\" | \"path\" | \"virtual\";\n    path?: string;\n    [key: string]: unknown;\n  }>;\n  /** Routing mode for Clerk's internal navigation */\n  routing?: \"hash\" | \"path\" | \"virtual\";\n  /** Base path when routing=\"path\" */\n  path?: string;\n  className?: string;\n}\n\n// ── Clerk OKLCH appearance tokens ─────────────────────────────────────────────\n\nconst clerkAppearance = {\n  variables: {\n    colorPrimary: \"var(--primary)\",\n    colorBackground: \"var(--background)\",\n    colorText: \"var(--foreground)\",\n    colorTextSecondary: \"var(--muted-foreground)\",\n    colorInputBackground: \"var(--background)\",\n    colorInputText: \"var(--foreground)\",\n    colorNeutral: \"var(--foreground)\",\n    borderRadius: \"0.5rem\",\n  },\n  elements: {\n    card: \"shadow-none border border-border bg-card\",\n    headerTitle: \"text-foreground font-semibold\",\n    headerSubtitle: \"text-muted-foreground\",\n    navbar: \"border-r border-border bg-background\",\n    navbarButton: \"text-foreground hover:bg-accent hover:text-accent-foreground\",\n    navbarButtonIcon: \"text-muted-foreground\",\n    formButtonPrimary: \"bg-primary text-primary-foreground hover:bg-primary/90 shadow-none\",\n    formButtonReset:\n      \"border border-border text-foreground hover:bg-accent hover:text-accent-foreground\",\n    formFieldInput: \"border-input bg-background text-foreground focus:ring-ring\",\n    badge: \"bg-secondary text-secondary-foreground\",\n    table: \"text-foreground\",\n    tableHead: \"text-muted-foreground text-xs font-medium\",\n    memberListTableRow: \"border-b border-border\",\n  },\n};\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\nexport function MosaicOrgProfilePage({\n  clerkOrgProfile: ClerkOrgProfile,\n  routing = \"hash\",\n  path,\n  className,\n}: MosaicOrgProfilePageProps) {\n  return (\n    <div\n      data-slot=\"org-profile-page\"\n      className={[\"flex min-h-0 flex-1 flex-col bg-background\", className]\n        .filter(Boolean)\n        .join(\" \")}\n    >\n      <ClerkOrgProfile\n        appearance={clerkAppearance}\n        routing={routing}\n        {...(path !== undefined ? { path } : {})}\n      />\n    </div>\n  );\n}\n\nMosaicOrgProfilePage.displayName = \"MosaicOrgProfilePage\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}

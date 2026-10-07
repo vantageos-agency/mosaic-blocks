@@ -37,6 +37,27 @@ const outDir = join(repoRoot, "r");
 // shared with registry-json-derive.mjs so there is exactly one copy.
 export { NON_SHIPPED_MATCHERS, globToRegExp, isShipped };
 
+// Package identity (name + version) is READ from package.json, never typed:
+// the pinned registryDependencies URL below is derived from it, so a release
+// bump moves every URL with it and the committed r/ drifts until regenerated.
+export function readPackageIdentity(root = repoRoot) {
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  if (!pkg.name || !pkg.version) {
+    throw new Error(
+      `package.json at ${root} has no name/version — cannot pin registryDependencies`,
+    );
+  }
+  return { name: pkg.name, version: pkg.version };
+}
+
+// A cross-item registryDependency is a VERSION-PINNED jsdelivr URL of the
+// sibling item's r/ file inside the published npm package, so the shadcn CLI
+// resolves it without any registry host of ours and never floats to a newer
+// version than the one the item was generated with.
+export function pinnedItemUrl(itemName, { name, version }) {
+  return `https://cdn.jsdelivr.net/npm/${name}@${version}/r/${itemName}.json`;
+}
+
 export function deriveTarget(sourcePath) {
   return `components/ui/${basename(sourcePath)}`;
 }
@@ -100,7 +121,10 @@ export function buildPathIndex(items) {
   return pathToItem;
 }
 
-export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}) {
+export function buildItem(
+  item,
+  { root = repoRoot, pathToItem = new Map(), pkg = readPackageIdentity(root) } = {},
+) {
   if (!Array.isArray(item.files) || item.files.length === 0) {
     throw new Error(`item "${item.name}" has no files[] — cannot generate inline content`);
   }
@@ -154,15 +178,20 @@ export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}
     };
   });
 
+  // Cross-item dependencies (names owned by a registry item) become pinned
+  // URLs; anything else a hand-declared dependency names is kept verbatim.
+  const itemNames = new Set(pathToItem.values());
+  const registryDependencies = [
+    ...new Set([...(item.registryDependencies ?? []), ...[...derived].sort()]),
+  ].map((dep) => (itemNames.has(dep) ? pinnedItemUrl(dep, pkg) : dep));
+
   return {
     $schema: "https://ui.shadcn.com/schema/registry-item.json",
     name: item.name,
     title: item.title,
     description: item.description,
     dependencies: item.dependencies ?? [],
-    registryDependencies: [
-      ...new Set([...(item.registryDependencies ?? []), ...[...derived].sort()]),
-    ],
+    registryDependencies,
     files,
     type: item.type,
     ...(item.categories ? { categories: item.categories } : {}),

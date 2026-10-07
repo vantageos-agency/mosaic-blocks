@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "mosaic-checkbox",
+  "title": "MosaicCheckbox",
+  "description": "MosaicCheckbox — @base-ui/react Checkbox primitive",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/checkbox/MosaicCheckbox.tsx",
+      "type": "registry:ui",
+      "content": "/**\n * MosaicCheckbox — @base-ui/react Checkbox primitive\n *\n * Builds on Checkbox.Root + Checkbox.Indicator.\n * Supports controlled (checked + onCheckedChange) and uncontrolled modes.\n * Indeterminate state supported via checked=\"mixed\".\n * role=checkbox and aria-checked managed by the primitive automatically.\n *\n * data-slot=\"checkbox\" on Root, \"checkbox-indicator\" on Indicator.\n * Styling: Tailwind v4 semantic tokens only.\n */\n\nimport { Checkbox } from \"@base-ui/react/checkbox\";\nimport type * as React from \"react\";\n\n// ── Utility ──────────────────────────────────────────────────────────────────\n\nfunction cn(...classes: (string | undefined | null | false)[]): string {\n  return classes.filter(Boolean).join(\" \");\n}\n\n// ── Props ─────────────────────────────────────────────────────────────────────\n\nexport interface MosaicCheckboxProps extends Checkbox.Root.Props {\n  className?: string;\n  ref?: React.Ref<HTMLButtonElement>;\n}\n\n// ── Component ─────────────────────────────────────────────────────────────────\n\n/**\n * MosaicCheckbox — production Checkbox atom for @vantageos/mosaic-blocks.\n *\n * Built on @base-ui/react/checkbox. Supports controlled + uncontrolled + indeterminate.\n * role=checkbox + aria-checked managed automatically by the primitive.\n *\n * @example\n * <MosaicCheckbox aria-label=\"Accept terms\" defaultChecked />\n * <MosaicCheckbox checked={agreed} onCheckedChange={setAgreed} />\n * <MosaicCheckbox checked=\"mixed\" aria-label=\"Select all\" />\n */\nexport function MosaicCheckbox({ className, ref, ...props }: MosaicCheckboxProps) {\n  return (\n    <Checkbox.Root\n      ref={ref}\n      data-slot=\"checkbox\"\n      className={cn(\n        \"peer size-4 shrink-0 cursor-pointer\",\n        \"rounded-sm border border-border bg-background\",\n        \"outline-none transition-colors\",\n        \"focus-visible:ring-ring focus-visible:ring-[3px]\",\n        // Checked state\n        \"data-[checked]:border-foreground data-[checked]:bg-foreground\",\n        // Indeterminate\n        \"data-[indeterminate]:border-foreground data-[indeterminate]:bg-foreground\",\n        // Disabled\n        \"data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50\",\n        className,\n      )}\n      {...props}\n    >\n      <Checkbox.Indicator\n        data-slot=\"checkbox-indicator\"\n        className=\"flex items-center justify-center text-background\"\n      >\n        {/* Checkmark icon */}\n        <svg\n          xmlns=\"http://www.w3.org/2000/svg\"\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          strokeWidth=\"3\"\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n          aria-hidden=\"true\"\n          className=\"size-3\"\n        >\n          <path d=\"M20 6 9 17l-5-5\" />\n        </svg>\n      </Checkbox.Indicator>\n    </Checkbox.Root>\n  );\n}\n\nMosaicCheckbox.displayName = \"MosaicCheckbox\";\n"
+    }
+  ],
+  "type": "registry:ui"
+}
