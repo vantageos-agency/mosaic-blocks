@@ -26,10 +26,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/activity-feed/MosaicActivityFeed.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/activity-feed/MosaicActivityFeed.tsx",
           "type": "registry:ui"
         }
@@ -42,10 +38,6 @@
       "description": "Device-aware CSS grid wrapper. Reads isMobile/isTablet/isDesktop from MosaicDeviceProvider and applies the correct column count. Props: mobileColumns, tabletColumns, desktopColumns, gap. Uses inline CSS for dynamic columns (no JIT issues).",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/adaptive-grid/MosaicAdaptiveGrid.tsx",
           "type": "registry:ui"
@@ -60,10 +52,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/adaptive-modal/MosaicAdaptiveModal.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/adaptive-modal/MosaicAdaptiveModal.tsx",
           "type": "registry:ui"
         }
@@ -76,10 +64,6 @@
       "description": "Step navigation: tab strip on desktop, expandable accordion on mobile. Props: items[] {id, title, duration?, isComplete?, children?}, activeItem, onItemChange, expandedItems, onToggleExpanded. Zero debate coupling; generic items API.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/adaptive-navigation/MosaicAdaptiveNavigation.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/adaptive-navigation/MosaicAdaptiveNavigation.tsx",
           "type": "registry:ui"
@@ -143,10 +127,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/agent-card/MosaicAgentCard.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/agent-card/MosaicAgentCard.tsx",
           "type": "registry:ui"
         }
@@ -176,10 +156,6 @@
       "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type — no domain coupling.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/agent-composer/MosaicAgentComposer.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/agent-composer/MosaicAgentComposer.tsx",
           "type": "registry:ui"
@@ -218,10 +194,6 @@
       "description": "Responsive agent list (responsive-pair). Desktop: filter sidebar + grid. Mobile: stacked + filter sheet.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/agent-list/MosaicAgentList.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/agent-list/MosaicAgentList.tsx",
           "type": "registry:ui"
@@ -301,10 +273,6 @@
       "description": "Collapsible sidebar (64px icon-only / 280px expanded) with nested nav, quick actions, recent items, and footer status slot. Full-width on mobile. Props: navItems[], quickActions[], recentItems[], logoSlot, footerStatus. No hardcoded routes or branding.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/app-sidebar/MosaicAppSidebar.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/app-sidebar/MosaicAppSidebar.tsx",
           "type": "registry:ui"
@@ -598,10 +566,6 @@
       ],
       "files": [
         {
-          "path": "src/components/callout/MosaicCallout.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/callout/MosaicCallout.tsx",
           "type": "registry:ui"
         },
@@ -758,10 +722,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/dashboard-content/MosaicDashboardContent.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/dashboard-content/MosaicDashboardContent.tsx",
           "type": "registry:ui"
         }
@@ -775,10 +735,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/dashboard-header/MosaicDashboardHeader.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/dashboard-header/MosaicDashboardHeader.tsx",
           "type": "registry:ui"
         }
@@ -791,10 +747,6 @@
       "description": "Full-height app shell: sticky header (title, subtitle, breadcrumbs, actions slot), persistent sidebar on desktop, hamburger + AdaptiveModal drawer on mobile. Props: title, subtitle, breadcrumbs[], actions, sidebarProps, renderLink. Zero hardcoded branding.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/dashboard-layout/MosaicDashboardLayout.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/dashboard-layout/MosaicDashboardLayout.tsx",
           "type": "registry:ui"
@@ -824,10 +776,6 @@
       ],
       "files": [
         {
-          "path": "src/components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/delete-confirmation-dialog/MosaicDeleteConfirmationDialog.tsx",
           "type": "registry:ui"
         }
@@ -840,10 +788,6 @@
       "description": "Responsive device context provider. Exposes isMobile/isTablet/isDesktop, sm/md/lg/xl breakpoint flags, orientation, viewport size. Hooks: useDevice, useBreakpoint, useIsMobile, useIsTablet, useIsDesktop, useViewport, useOrientation. SSR-safe. Required by all adaptive components.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/device-provider/MosaicDeviceProvider.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/device-provider/MosaicDeviceProvider.tsx",
           "type": "registry:ui"
@@ -945,10 +889,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/editable-cell/MosaicEditableCell.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/editable-cell/MosaicEditableCell.tsx",
           "type": "registry:ui"
         },
@@ -1045,10 +985,6 @@
       "description": "Generic collapsible filter sidebar. Filter tabs + category list with counts. Reusable across agents/marketplace/templates.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/filter-sidebar/MosaicFilterSidebar.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/filter-sidebar/MosaicFilterSidebar.tsx",
           "type": "registry:ui"
@@ -1160,10 +1096,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/main-nav/MosaicMainNav.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/main-nav/MosaicMainNav.tsx",
           "type": "registry:ui"
         }
@@ -1211,10 +1143,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/marketplace-list/MosaicMarketplaceList.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/marketplace-list/MosaicMarketplaceList.tsx",
           "type": "registry:ui"
         }
@@ -1227,10 +1155,6 @@
       "description": "MosaicMatchInput — autocomplete carrying a match state",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/match-input/MosaicMatchInput.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/match-input/MosaicMatchInput.tsx",
           "type": "registry:ui"
@@ -1351,10 +1275,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/message-card/MosaicMessageCard.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/message-card/MosaicMessageCard.tsx",
           "type": "registry:ui"
         }
@@ -1367,10 +1287,6 @@
       "description": "Responsive message list (responsive-pair). Desktop: sticky header + search. Mobile: compact list.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/message-list/MosaicMessageList.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/message-list/MosaicMessageList.tsx",
           "type": "registry:ui"
@@ -1417,10 +1333,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/module-card/MosaicModuleCard.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/module-card/MosaicModuleCard.tsx",
           "type": "registry:ui"
         }
@@ -1433,10 +1345,6 @@
       "description": "Generic module/library manager (responsive-pair). Includes MosaicModuleForm. Tabs, search, CRUD callbacks.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/module-library/MosaicModuleLibrary.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/module-library/MosaicModuleLibrary.tsx",
           "type": "registry:ui"
@@ -1521,10 +1429,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/org-panel/MosaicOrgPanel.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/org-panel/MosaicOrgPanel.tsx",
           "type": "registry:ui"
         }
@@ -1537,10 +1441,6 @@
       "description": "Presentational org picker dropdown. Current org + avatar in trigger. Pure props — no Clerk. Auth wiring is T1.5.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/org-switcher/MosaicOrgSwitcher.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/org-switcher/MosaicOrgSwitcher.tsx",
           "type": "registry:ui"
@@ -1593,10 +1493,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/preferences-panel/MosaicPreferencesPanel.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/preferences-panel/MosaicPreferencesPanel.tsx",
           "type": "registry:ui"
         }
@@ -1622,10 +1518,6 @@
       "description": "Generic user profile form. Avatar upload slot, field list, security section. Fully controlled via props.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/profile-panel/MosaicProfilePanel.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/profile-panel/MosaicProfilePanel.tsx",
           "type": "registry:ui"
@@ -1655,10 +1547,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/quick-action-card/MosaicQuickActionCard.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/quick-action-card/MosaicQuickActionCard.tsx",
           "type": "registry:ui"
         }
@@ -1672,10 +1560,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/quick-actions-menu/MosaicQuickActionsMenu.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/quick-actions-menu/MosaicQuickActionsMenu.tsx",
           "type": "registry:ui"
         }
@@ -1688,10 +1572,6 @@
       "description": "Compact agent pill picker with desktop dropdown / mobile drawer. Selected agents shown as removable pills.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/quick-agent-selector/MosaicQuickAgentSelector.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/quick-agent-selector/MosaicQuickAgentSelector.tsx",
           "type": "registry:ui"
@@ -1820,10 +1700,6 @@
       "description": "Generic searchable item picker modal. Search bar + category tabs + card grid. Confirm/cancel actions.",
       "dependencies": [],
       "files": [
-        {
-          "path": "src/components/selector-modal/MosaicSelectorModal.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/selector-modal/MosaicSelectorModal.tsx",
           "type": "registry:ui"
@@ -2034,10 +1910,6 @@
       "dependencies": [],
       "files": [
         {
-          "path": "src/components/template-gallery/MosaicTemplateGallery.stories.tsx",
-          "type": "registry:ui"
-        },
-        {
           "path": "src/components/template-gallery/MosaicTemplateGallery.tsx",
           "type": "registry:ui"
         }
@@ -2112,10 +1984,6 @@
         "next-themes"
       ],
       "files": [
-        {
-          "path": "src/components/theme-provider/MosaicThemeProvider.stories.tsx",
-          "type": "registry:ui"
-        },
         {
           "path": "src/components/theme-provider/MosaicThemeProvider.tsx",
           "type": "registry:ui"

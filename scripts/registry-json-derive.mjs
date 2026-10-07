@@ -28,7 +28,7 @@
  *   - `title` — the primary exported component/hook name, verbatim.
  *   - `dependencies` — read from the primary file's own `import` statements
  *     against the known peer-dependency allowlist (never asserted by hand).
- *   - `files` — every non-test source file that actually exists in that
+ *   - `files` — every shipped (non-test, non-story) source file that actually exists in that
  *     component's directory, read from disk.
  *
  * What stays CURATED CONTENT, deliberately NOT overwritten by this script
@@ -65,6 +65,7 @@ import {
   maskCommentsAndStrings,
   scanExportStatements,
 } from "./docs-counts-shared.mjs";
+import { isShipped } from "./non-shipped.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -202,7 +203,7 @@ export function parseBarrelExports(src = readFileOrThrow(INDEX_TS)) {
 
 /**
  * @param {string} dir component directory, relative to src/components
- * @returns {string[]} non-test, non-declaration source files that exist on disk
+ * @returns {string[]} shipped (non-test, non-story), non-declaration source files that exist on disk
  */
 function sourceFilesIn(dir) {
   const abs = join(COMPONENTS_DIR, dir);
@@ -216,7 +217,7 @@ function sourceFilesIn(dir) {
   }
   return entries
     .filter((f) => /\.tsx?$/.test(f))
-    .filter((f) => !/\.test\.tsx?$/.test(f))
+    .filter((f) => isShipped(`src/components/${dir}/${f}`))
     .filter((f) => !f.endsWith(".d.ts"))
     .sort()
     .filter((f) => statSync(join(abs, f)).isFile());

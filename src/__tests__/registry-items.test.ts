@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -57,20 +56,101 @@ describe("build-registry-items: refusals", () => {
     files: [{ path: "src/a/A.tsx", type: "registry:ui" }],
   };
 
-  it("refuses a cross-directory relative import, naming item and import", () => {
+  const itemB = { name: "b", type: "registry:ui", files: [{ path: "src/b/B.tsx" }] };
+  const cross = {
+    "src/a/A.tsx": 'import { X } from "../b/B.js";\nexport const A = X;\n',
+    "src/b/B.tsx": "export const X = 1;\n",
+  };
+
+  it("rewrites a cross-item import to the flat alias and derives the registryDependency", () => {
+    const f = fixture(cross, [item, itemB]);
+    const built = buildItem(item as never, { root: f.root, pathToItem: f.pathToItem }) as {
+      registryDependencies: string[];
+      files: Array<{ content: string }>;
+    };
+    expect(built.files[0].content).toBe(
+      'import { X } from "@/components/ui/B";\nexport const A = X;\n',
+    );
+    expect(built.registryDependencies).toEqual(["b"]);
+  });
+
+  it("derives the dependency from the graph, merged with a declared one, never duplicated", () => {
+    const declared = { ...item, registryDependencies: ["b", "z"] };
+    const f = fixture(cross, [declared, itemB]);
+    const built = buildItem(declared as never, { root: f.root, pathToItem: f.pathToItem }) as {
+      registryDependencies: string[];
+    };
+    expect(built.registryDependencies).toEqual(["b", "z"]);
+  });
+
+  it("rewrites multi-line, re-export and dynamic cross-item imports too", () => {
     const f = fixture(
       {
-        "src/a/A.tsx": 'import { X } from "../b/B.js";\nexport const A = X;\n',
+        "src/a/A.tsx":
+          'import {\n  X,\n} from "../b/B.js";\nexport * from \'../b/B.js\';\nconst m = import("../b/B.js");\n',
         "src/b/B.tsx": "export const X = 1;\n",
       },
-      [item, { name: "b", type: "registry:ui", files: [{ path: "src/b/B.tsx" }] }],
+      [item, itemB],
+    );
+    const built = buildItem(item as never, { root: f.root, pathToItem: f.pathToItem }) as {
+      files: Array<{ content: string }>;
+    };
+    expect(built.files[0].content).not.toMatch(/\.\.\//);
+    expect(
+      built.files[0].content.match(/@\/components\/ui\/B"|@\/components\/ui\/B'/g),
+    ).toHaveLength(3);
+  });
+
+  it("refuses a cross-directory import that resolves to no shipped file, by name", () => {
+    const f = fixture(
+      { "src/a/A.tsx": 'import { X } from "../no-such-item/X.js";\nexport const A = X;\n' },
+      [item],
     );
     expect(() => buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })).toThrow(
-      /item "a".*"\.\.\/b\/B\.js"/,
+      /item "a".*"\.\.\/no-such-item\/X\.js" — resolves to no shipped registry file/,
     );
   });
 
-  it("refuses a same-directory import of another item that is not declared", () => {
+  it("refuses a cross-item import of a story file (it is not shipped)", () => {
+    const f = fixture(
+      {
+        "src/a/A.tsx": 'import { X } from "../b/B.stories.js";\n',
+        "src/b/B.stories.tsx": "export const X = 1;\n",
+      },
+      [item, { name: "b", type: "registry:ui", files: [{ path: "src/b/B.stories.tsx" }] }],
+    );
+    expect(() => buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })).toThrow(
+      /resolves to no shipped registry file/,
+    );
+  });
+
+  it("refuses a deeper path it cannot map to an alias", () => {
+    const f = fixture(
+      {
+        "src/a/A.tsx": 'import { X } from "../b/c/B.js";\n',
+        "src/b/c/B.tsx": "export const X = 1;\n",
+      },
+      [item, { name: "b", type: "registry:ui", files: [{ path: "src/b/c/B.tsx" }] }],
+    );
+    expect(() => buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })).toThrow(
+      /cannot map it to an alias/,
+    );
+  });
+
+  it("refuses when the flat basename is shared by another shipped file", () => {
+    const f = fixture(
+      {
+        ...cross,
+        "src/c/B.tsx": "export const X = 2;\n",
+      },
+      [item, itemB, { name: "c", type: "registry:ui", files: [{ path: "src/c/B.tsx" }] }],
+    );
+    expect(() => buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })).toThrow(
+      /basename "B\.tsx" is shared with src\/c\/B\.tsx/,
+    );
+  });
+
+  it("keeps a same-directory import of another item as is and derives its dependency", () => {
     const f = fixture(
       {
         "src/a/A.tsx": 'import { X } from "./B";\nexport const A = X;\n',
@@ -78,29 +158,18 @@ describe("build-registry-items: refusals", () => {
       },
       [item, { name: "b", type: "registry:ui", files: [{ path: "src/a/B.tsx" }] }],
     );
-    expect(() => buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })).toThrow(
-      /belongs to item "b", which is not declared/,
-    );
-  });
-
-  it("accepts that same import once the dependency is declared", () => {
-    const declared = { ...item, registryDependencies: ["b"] };
-    const f = fixture(
-      {
-        "src/a/A.tsx": 'import { X } from "./B";\nexport const A = X;\n',
-        "src/a/B.tsx": "export const X = 1;\n",
-      },
-      [declared, { name: "b", type: "registry:ui", files: [{ path: "src/a/B.tsx" }] }],
-    );
-    expect(() =>
-      buildItem(declared as never, { root: f.root, pathToItem: f.pathToItem }),
-    ).not.toThrow();
+    const built = buildItem(item as never, { root: f.root, pathToItem: f.pathToItem }) as {
+      registryDependencies: string[];
+      files: Array<{ content: string }>;
+    };
+    expect(built.files[0].content).toContain('from "./B"');
+    expect(built.registryDependencies).toEqual(["b"]);
   });
 
   it("refuses a same-directory import that resolves to no registry file", () => {
     const f = fixture({ "src/a/A.tsx": 'import "./styles.css";\n' }, [item]);
     expect(() => buildItem(item as never, { root: f.root, pathToItem: f.pathToItem })).toThrow(
-      /resolves to no registry file/,
+      /resolves to no shipped registry file/,
     );
   });
 
@@ -164,18 +233,15 @@ describe("build-registry-items: refusals", () => {
     expect(() => buildItem({ name: "z", files: [] } as never)).toThrow(/no files\[\]/);
   });
 
-  it("the CLI exits 1 on the real registry and writes nothing (all-or-nothing)", () => {
-    const run = spawnSync("node", ["scripts/build-registry-items.mjs"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-    });
-    expect(run.status).toBe(1);
-    expect(run.stderr).toMatch(/REFUSED — item "[^"]+": \S+ imports "/);
-    const ls = spawnSync("git", ["status", "--porcelain", "--", "r"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-    });
-    expect(ls.stdout).toBe("");
+  it("builds every real registry item: no refusal, no relative import left that crosses a directory", () => {
+    const items = loadRegistry();
+    const pathToItem = buildPathIndex(items);
+    for (const it of items) {
+      const built = buildItem(it, { pathToItem }) as { files: Array<{ content: string }> };
+      for (const file of built.files) {
+        expect(findRelativeImports(file.content).filter((s) => !/^\.\/[^/]+$/.test(s))).toEqual([]);
+      }
+    }
   });
 });
 
@@ -225,5 +291,18 @@ describe("check-registry-items-drift", () => {
     const { checked, problems } = checkDrift();
     expect(problems).toEqual([]);
     expect(checked).toBeGreaterThan(0);
+  });
+});
+
+describe("registry.json: shipped files only", () => {
+  const items = loadRegistry();
+  const paths = items.flatMap((i) => (i.files ?? []).map((f) => f.path));
+
+  it("lists no story, test or spec file (same exclusion as the generator)", () => {
+    expect(paths.filter((p) => !isShipped(p))).toEqual([]);
+  });
+
+  it("positive control: a known component source is still listed", () => {
+    expect(paths).toContain(ACCORDION_SRC);
   });
 });
