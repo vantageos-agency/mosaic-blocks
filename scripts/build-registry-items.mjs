@@ -8,7 +8,11 @@
  * registry.json entries carry only {path, type} pointers per file. The
  * shadcn CLI installs from a per-item JSON that carries file CONTENT inline.
  * This script reads each cited source file from disk and emits that inline
- * form, adding `content` (file text) and `target` (derived install path).
+ * form, adding `content` (file text). No `target` is emitted: for registry:ui,
+ * registry:hook and registry:lib the shadcn CLI then installs into the
+ * consumer's components.json alias (ui / hooks / lib) and rewrites imports;
+ * an explicit `target` would bypass both. `target` is only required by the
+ * schema for registry:file / registry:page, which no item uses.
  *
  * Usage:
  *   node scripts/build-registry-items.mjs                # all items
@@ -59,8 +63,8 @@ export function loadRegistry() {
 //
 // Every file is flattened to `components/ui/<basename>`, so a specifier that
 // crosses item directories (`../device-provider/X.js`) cannot resolve once
-// installed. The flat `components/ui` target is the shadcn contract and stays:
-// the consumer's layout and components.json aliases remain authoritative.
+// installed. Files carry no `target`, so the CLI flattens them into the consumer's
+// ui alias and the consumer's components.json aliases remain authoritative.
 // Instead the generator rewrites each cross-item import to the alias form the
 // shadcn CLI itself rewrites to the consumer's `aliases.ui`:
 //   `@/components/ui/<Basename>`  (CLI: transformImport, `^@/components/ui` -> aliases.ui)
@@ -147,7 +151,6 @@ export function buildItem(item, { root = repoRoot, pathToItem = new Map() } = {}
     return {
       ...file,
       content: rewritten,
-      target: deriveTarget(file.path),
     };
   });
 

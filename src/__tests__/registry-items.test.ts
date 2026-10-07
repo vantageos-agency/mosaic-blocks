@@ -33,16 +33,16 @@ afterEach(() => {
 });
 
 describe("build-registry-items: clean item", () => {
-  it("output equals source and the committed r/mosaic-accordion.json byte for byte", () => {
+  it("output equals source, carries no target, and equals the committed r/mosaic-accordion.json", () => {
     const items = loadRegistry();
     const item = items.find((i) => i.name === "mosaic-accordion");
     expect(item).toBeDefined();
     const built = buildItem(item as never, { pathToItem: buildPathIndex(items) }) as {
-      files: Array<{ content: string; target: string }>;
+      files: Array<{ content: string; target?: string }>;
     };
     expect(built.files).toHaveLength(1);
     expect(built.files[0].content).toBe(readFileSync(join(repoRoot, ACCORDION_SRC), "utf8"));
-    expect(built.files[0].target).toBe("components/ui/MosaicAccordion.tsx");
+    expect(built.files[0].target).toBeUndefined();
     expect(serializeItem(built)).toBe(
       readFileSync(join(repoRoot, "r/mosaic-accordion.json"), "utf8"),
     );
