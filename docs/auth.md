@@ -27,7 +27,7 @@ Peer dependency matrix:
 | Package | Required when | Version |
 |---------|--------------|---------|
 | `@clerk/nextjs` | Any auth component | `^7` |
-| `@vantageos/cloud-identity` | `MosaicMultiTenantProvider`, `useEffectiveWorkspaceId` | `>=0.2.0 <0.8.0` |
+| `@vantageos/cloud-identity` | `MosaicMultiTenantProvider`, `useEffectiveWorkspaceId` | `>=0.6.0` |
 | `svix` | `MosaicClerkWebhookHandler` only | `^1.0.0` |
 
 ---
