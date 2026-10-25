@@ -124,6 +124,8 @@ MosaicOrgRoleBadge.displayName = "MosaicOrgRoleBadge";
 
 export interface MosaicMultiOrgIndicatorProps {
   orgCount: number;
+  /** Visible org-count text. Receives the count; host owns the unit word. Required, no default. */
+  formatOrgCount: (count: number) => string;
   currentOrgName?: string;
   onSwitchOrg?: () => void;
   className?: string;
@@ -131,6 +133,7 @@ export interface MosaicMultiOrgIndicatorProps {
 
 export function MosaicMultiOrgIndicator({
   orgCount,
+  formatOrgCount,
   currentOrgName,
   onSwitchOrg,
   className,
@@ -164,11 +167,11 @@ export function MosaicMultiOrgIndicator({
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
-          {orgCount} orgs
+          {formatOrgCount(orgCount)}
         </button>
       ) : (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
-          {orgCount} orgs
+          {formatOrgCount(orgCount)}
         </span>
       )}
       {currentOrgName && <span className="text-xs text-muted-foreground">{currentOrgName}</span>}

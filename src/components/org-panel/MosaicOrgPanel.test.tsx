@@ -112,12 +112,14 @@ describe("MosaicOrgRoleBadge", () => {
 
 describe("MosaicMultiOrgIndicator", () => {
   it("renders org count text", () => {
-    render(<MosaicMultiOrgIndicator orgCount={3} />);
+    render(<MosaicMultiOrgIndicator orgCount={3} formatOrgCount={(count) => `${count} orgs`} />);
     expect(screen.getByText("3 orgs")).toBeTruthy();
   });
 
   it("renders nothing when orgCount <= 1", () => {
-    const { container } = render(<MosaicMultiOrgIndicator orgCount={1} />);
+    const { container } = render(
+      <MosaicMultiOrgIndicator orgCount={1} formatOrgCount={(count) => `${count} orgs`} />,
+    );
     expect(container.firstChild).toBeNull();
   });
 });
@@ -356,5 +358,27 @@ describe("MosaicMemberList", () => {
     );
     expect(screen.getByText("Alice")).toBeTruthy();
     expect(screen.getByText("Bob")).toBeTruthy();
+  });
+});
+
+describe("MosaicMultiOrgIndicator formatOrgCount (host-supplied org-count text)", () => {
+  it("renders the host-supplied text, not the English word", () => {
+    render(
+      <MosaicMultiOrgIndicator orgCount={3} formatOrgCount={(count) => `${count} XYZ-OR-probe`} />,
+    );
+    expect(screen.getByText("3 XYZ-OR-probe")).toBeTruthy();
+    expect(screen.queryByText(/\borgs\b/i)).toBeNull();
+  });
+
+  it("renders the host-supplied text in the switch-button variant too", () => {
+    render(
+      <MosaicMultiOrgIndicator
+        orgCount={3}
+        onSwitchOrg={() => {}}
+        formatOrgCount={(count) => `${count} XYZ-OR-probe`}
+      />,
+    );
+    expect(screen.getByRole("button").textContent).toContain("3 XYZ-OR-probe");
+    expect(screen.queryByText(/\borgs\b/i)).toBeNull();
   });
 });

@@ -301,6 +301,7 @@ export function MosaicAgentComposerMobile({
   removeModuleAriaLabel,
   selectModuleAriaLabel,
   changeModuleLabel,
+  formatContextWindow,
 }: MosaicAgentComposerMobileProps) {
   // `labels` is fully required — every field is host-supplied, no default,
   // no fallback. Aliased to `L` only for call-site brevity below.
@@ -429,7 +430,7 @@ export function MosaicAgentComposerMobile({
                     {(selectedModel.contextWindow || selectedModel.pricingLabel) && (
                       <p className="text-xs text-muted-foreground">
                         {selectedModel.contextWindow &&
-                          `${selectedModel.contextWindow.toLocaleString()} context`}
+                          formatContextWindow(selectedModel.contextWindow)}
                         {selectedModel.contextWindow && selectedModel.pricingLabel && " • "}
                         {selectedModel.pricingLabel}
                       </p>

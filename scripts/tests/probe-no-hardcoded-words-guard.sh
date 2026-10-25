@@ -23,6 +23,8 @@
 #      offending statement) must NOT disable the guard — the same class of
 #      self-disabling bug release-artifacts-guard's own probe exists to close.
 #   6-8. ratchet grown / stale / reviewer-reinject — see below.
+#   C1-C5. PASS C rendered-child position, one lowercase word per form (see the
+#      PASS C section), plus its near-miss MUST_PASS and an unwalkable-value MUST_REFUSE.
 #   9. ratchet LOOSE BUDGET — a real BASELINE row's declared `maxCount`
 #      widened above its actual bundle count (8 -> 99 for "Select "), with
 #      ZERO component change. This is the exact hole a reviewer proved by
@@ -317,6 +319,160 @@ BASELINEQ
   fi
 else
   MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 4))
+fi
+
+# ---------------------------------------------------------------------------
+# PASS C — rendered-child POSITION (task k1754vz2awga7e6yt49n1mn5nh8c58p6).
+#
+# Census of the forms a string can take as a rendered child, derived from the
+# value grammar `findRenderedChildLiterals` documents (one mutation per form,
+# each on a foreign, currently-clean component, each a single all-lowercase
+# token that PASS A alone waves through as a "utility token"):
+#   C1 direct literal child          MosaicCallout   <p>zqdirect</p>
+#   C2 array element (text + expr)   MosaicCounter   {display} zqarray
+#   C3 ternary operand inside array  MosaicCallout   {children ? ... : "zqternary"}
+#   C4 `??` operand, non-array value MosaicCardTitle {props.children ?? "zqfallback"}
+#   C5 template-literal child        MosaicCard      {`${props.id} zqtemplate`}
+# MUST_PASS near-misses (same position, not rendered): an array operand
+# (`["zqkey"].map`), an equality operand (`=== "zqeq"`), an optional-chain
+# index access (`?.["zqidx"]`) — together they must add ZERO offenders.
+# ---------------------------------------------------------------------------
+git -C "$CLONE" checkout --quiet -B probe-pass-c-block "$BASE"
+python3 - "$CLONE" <<'PASSCEOF'
+import sys
+root = sys.argv[1]
+def mutate(rel, needle, replacement):
+    path = f"{root}/{rel}"
+    with open(path) as f:
+        text = f.read()
+    if text.count(needle) != 1:
+        raise SystemExit(f"probe: injection anchor not found exactly once in {path}")
+    with open(path, "w") as f:
+        f.write(text.replace(needle, replacement))
+mutate("src/components/callout/MosaicCallout.tsx",
+       '<p className="font-medium">{title}</p>',
+       '<p className="font-medium">zqdirect</p>')
+mutate("src/components/callout/MosaicCallout.tsx",
+       '{children ? <div className="text-muted-foreground">{children}</div> : null}',
+       '{children ? <div className="text-muted-foreground">{children}</div> : "zqternary"}')
+mutate("src/components/counter/MosaicCounter.tsx",
+       "      {display}\n    </span>",
+       "      {display} zqarray\n    </span>")
+mutate("src/components/card/MosaicCard.tsx",
+       '      className={cn("text-lg font-semibold leading-none tracking-tight", className)}\n      {...props}\n    />',
+       '      className={cn("text-lg font-semibold leading-none tracking-tight", className)}\n      {...props}\n    >\n      {props.children ?? "zqfallback"}\n    </h3>')
+mutate("src/components/card/MosaicCard.tsx",
+       '        "bg-card text-card-foreground rounded-xl border border-border shadow-sm",\n        className,\n      )}\n      {...props}\n    />',
+       '        "bg-card text-card-foreground rounded-xl border border-border shadow-sm",\n        className,\n      )}\n      {...props}\n    >\n      {`${props.id} zqtemplate`}\n    </div>')
+PASSCEOF
+PASS_C_FORMS=(
+  "C1 direct literal child|zqdirect|src/components/callout/MosaicCallout.tsx"
+  "C2 array element|zqarray|src/components/counter/MosaicCounter.tsx"
+  "C3 ternary operand inside array|zqternary|src/components/callout/MosaicCallout.tsx"
+  "C4 nullish operand, non-array value|zqfallback|src/components/card/MosaicCard.tsx"
+  "C5 template-literal child|zqtemplate|src/components/card/MosaicCard.tsx"
+)
+PASS_C_LANDED=true
+for case_desc in "${PASS_C_FORMS[@]}"; do
+  IFS='|' read -r _label word rel <<< "$case_desc"
+  if ! grep -qF -- "$word" "$CLONE/$rel"; then
+    FAILURES+=("MUST_BLOCK PASS C injection \"$word\" did NOT land in $rel — probe invalid")
+    PASS_C_LANDED=false
+  fi
+done
+if [ "$PASS_C_LANDED" = true ] && [ -n "$BASELINE_COUNT" ]; then
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: one lowercase rendered-child form per foreign component (PASS C)")
+  log INFO "building PASS C block tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK PASS C build — pnpm build failed on the mutated tree")
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + ${#PASS_C_FORMS[@]}))
+  else
+    for case_desc in "${PASS_C_FORMS[@]}"; do
+      IFS='|' read -r _label word _rel <<< "$case_desc"
+      if ! grep -qF -- "$word" "$CLONE/dist/index.cjs"; then
+        FAILURES+=("MUST_BLOCK PASS C \"$word\" never reached dist/index.cjs — probe invalid")
+      fi
+    done
+    set +e
+    output="$(run_guard 2>&1)"
+    status=$?
+    set -e
+    for case_desc in "${PASS_C_FORMS[@]}"; do
+      IFS='|' read -r label word _rel <<< "$case_desc"
+      MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+      # The offender line names the value; the reason line under it names the pass.
+      if [ "$status" -eq 1 ] && echo "$output" | grep -A1 -F -- "$word" | grep -qF "rendered JSX child"; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — PASS C $label — guard named \"$word\" as a rendered JSX child"
+      else
+        FAILURES+=("MUST_BLOCK PASS C $label — guard exited $status or did not name \"$word\" as a rendered JSX child")
+        log MUST_BLOCK "FAIL — PASS C $label — exit=$status"
+      fi
+    done
+    pass_c_count="$(echo "$output" | grep -c '^  - ' || true)"
+    expected=$((BASELINE_COUNT + ${#PASS_C_FORMS[@]}))
+    if [ "$pass_c_count" -ne "$expected" ]; then
+      FAILURES+=("MUST_BLOCK PASS C — offender count is $pass_c_count, expected exactly $expected (baseline $BASELINE_COUNT + ${#PASS_C_FORMS[@]} forms)")
+    fi
+  fi
+else
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + ${#PASS_C_FORMS[@]}))
+fi
+
+git -C "$CLONE" checkout --quiet -B probe-pass-c-pass "$BASE"
+python3 - "$CLONE" <<'PASSCEOF'
+import sys
+root = sys.argv[1]
+path = f"{root}/src/components/card/MosaicCard.tsx"
+with open(path) as f:
+    text = f.read()
+needle = '      className={cn("flex flex-col gap-1.5 p-6", className)}\n      {...props}\n    />'
+replacement = (
+    '      className={cn("flex flex-col gap-1.5 p-6", className)}\n'
+    '      {...props}\n'
+    '    >\n'
+    '      {["zqkey"].map((k) => (\n'
+    '        <span key={k} />\n'
+    '      ))}\n'
+    '      {props.id === "zqeq" ? null : null}\n'
+    '      {(props.style as Record<string, string> | undefined)?.["zqidx"]}\n'
+    '    </div>'
+)
+if text.count(needle) != 1:
+    raise SystemExit(f"probe: injection anchor not found exactly once in {path}")
+with open(path, "w") as f:
+    f.write(text.replace(needle, replacement))
+PASSCEOF
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+if ! grep -qF 'zqidx' "$CLONE/src/components/card/MosaicCard.tsx"; then
+  FAILURES+=("MUST_PASS PASS C near-miss injection did NOT land — probe invalid")
+elif [ -z "$BASELINE_COUNT" ]; then
+  FAILURES+=("MUST_PASS PASS C near-miss — no baseline count to compare against")
+else
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: rendered-child near-misses (array operand, equality operand, index access)")
+  log INFO "building PASS C near-miss tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_PASS PASS C near-miss build — pnpm build failed")
+  else
+    NEAR_MISS_LANDED=true
+    for word in zqkey zqeq zqidx; do
+      if ! grep -qF -- "\"$word\"" "$CLONE/dist/index.cjs"; then
+        FAILURES+=("MUST_PASS PASS C near-miss \"$word\" never reached the bundle — probe invalid")
+        NEAR_MISS_LANDED=false
+      fi
+    done
+    set +e
+    output="$(run_guard 2>&1)"
+    set -e
+    near_count="$(echo "$output" | grep -c '^  - ' || true)"
+    if [ "$NEAR_MISS_LANDED" = true ] && [ "$near_count" -eq "$BASELINE_COUNT" ] && ! echo "$output" | grep -qE 'zqkey|zqeq|zqidx'; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — PASS C near-misses (array operand, equality operand, ?.[] index) added ZERO offenders (baseline $BASELINE_COUNT, now $near_count)"
+    else
+      FAILURES+=("MUST_PASS PASS C near-miss — offender count $near_count vs baseline $BASELINE_COUNT, or a near-miss was named — output: $output")
+      log MUST_PASS "FAIL — PASS C near-miss — count $near_count vs $BASELINE_COUNT"
+    fi
+  fi
 fi
 
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-forms)
@@ -1062,6 +1218,27 @@ else
       else
         FAILURES+=("MUST_REFUSE empty-artifact — guard exited $REFUSE_STATUS (expected 2, naming 'empty') — output: $REFUSE_OUTPUT")
         log MUST_REFUSE "FAIL — empty-artifact — exit=$REFUSE_STATUS output=$REFUSE_OUTPUT"
+      fi
+    fi
+    restore_real_dist
+
+    # --- MUST_REFUSE (PASS C): a `children:` value the scanner cannot walk to
+    #     its end (an unterminated literal) is named and refused, never
+    #     passed. Appended to the real artifact so every other landmark holds. ---
+    MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    cp "$REAL_DIST_BACKUP" "$REAL_DIST"
+    printf '\nvar zqUnwalkable = { children: "zqunterminated\n};\n' >> "$REAL_DIST"
+    if ! grep -qF 'children: "zqunterminated' "$REAL_DIST"; then
+      FAILURES+=("MUST_REFUSE unwalkable-children — mutation did NOT land — probe invalid")
+      log MUST_REFUSE "FAIL — unwalkable-children — mutation did not land"
+    else
+      run_guard_on_real_dist
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "could not walk"; then
+        MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+        log MUST_REFUSE "PASS — unwalkable children value — exited 2, REFUSED TO JUDGE, named the site"
+      else
+        FAILURES+=("MUST_REFUSE unwalkable-children — guard exited $REFUSE_STATUS (expected 2, naming 'could not walk') — output: $REFUSE_OUTPUT")
+        log MUST_REFUSE "FAIL — unwalkable-children — exit=$REFUSE_STATUS"
       fi
     fi
     restore_real_dist

@@ -188,6 +188,10 @@ export interface MosaicTemplateCardProps {
   previewLabel: string;
   /** Label for the duplicate action button. Required, no default. */
   duplicateLabel: string;
+  /** Badge text for the agent count. Receives the count; host owns the unit word. Required, no default. */
+  formatAgentCount: (count: number) => string;
+  /** Badge text for the usage count. Receives the count; host owns the unit word. Required, no default. */
+  formatUsageCount: (count: number) => string;
 }
 
 export function MosaicTemplateCard({
@@ -200,6 +204,8 @@ export function MosaicTemplateCard({
   compact = false,
   previewLabel,
   duplicateLabel,
+  formatAgentCount,
+  formatUsageCount,
 }: MosaicTemplateCardProps) {
   const isPopular = (template.metadata?.usageCount ?? 0) > 10;
   const isTrending = (template.metadata?.usageCount ?? 0) > 5;
@@ -241,12 +247,12 @@ export function MosaicTemplateCard({
         </span>
         {template.agents && template.agents.length > 0 && (
           <span className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground">
-            {template.agents.length} agents
+            {formatAgentCount(template.agents.length)}
           </span>
         )}
         {(template.metadata?.usageCount ?? 0) > 0 && (
           <span className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground">
-            {template.metadata?.usageCount} uses
+            {formatUsageCount(template.metadata?.usageCount ?? 0)}
           </span>
         )}
         {tags.slice(0, compact ? 1 : 2).map((tag) => (
@@ -612,6 +618,10 @@ export interface MosaicTemplateGalleryProps {
   /** Required host-owned strings forwarded to every MosaicTemplateCard. */
   previewLabel: string;
   duplicateLabel: string;
+  /** Forwarded to every MosaicTemplateCard — required, no default. */
+  formatAgentCount: (count: number) => string;
+  /** Forwarded to every MosaicTemplateCard — required, no default. */
+  formatUsageCount: (count: number) => string;
   className?: string;
 }
 
@@ -640,6 +650,8 @@ function TemplateGalleryContent({
   expandSidebarAriaLabel,
   previewLabel,
   duplicateLabel,
+  formatAgentCount,
+  formatUsageCount,
   isMobile,
 }: MosaicTemplateGalleryProps & { isMobile: boolean }) {
   const [query, setQuery] = React.useState("");
@@ -727,6 +739,8 @@ function TemplateGalleryContent({
               showActions={showActions}
               previewLabel={previewLabel}
               duplicateLabel={duplicateLabel}
+              formatAgentCount={formatAgentCount}
+              formatUsageCount={formatUsageCount}
               compact
             />
           ))}
@@ -783,6 +797,8 @@ function TemplateGalleryContent({
                   showActions={showActions}
                   previewLabel={previewLabel}
                   duplicateLabel={duplicateLabel}
+                  formatAgentCount={formatAgentCount}
+                  formatUsageCount={formatUsageCount}
                 />
               ))}
             </div>

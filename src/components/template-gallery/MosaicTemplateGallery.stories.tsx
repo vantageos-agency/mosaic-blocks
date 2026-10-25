@@ -80,6 +80,8 @@ const requiredGalleryLabels = {
   expandSidebarAriaLabel: "Expand sidebar",
   previewLabel: "Preview",
   duplicateLabel: "Duplicate",
+  formatAgentCount: (count: number) => `${count} agents`,
+  formatUsageCount: (count: number) => `${count} uses`,
 };
 
 export const Default: Story = {

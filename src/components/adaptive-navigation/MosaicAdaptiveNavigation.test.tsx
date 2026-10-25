@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MosaicDeviceProvider } from "../device-provider/MosaicDeviceProvider.js";
 import { MosaicAdaptiveNavigation } from "./MosaicAdaptiveNavigation.js";
@@ -27,6 +27,7 @@ describe("MosaicAdaptiveNavigation", () => {
           tabNavAriaLabel="Tab navigation"
           completeStatusLabel="Complete"
           inProgressStatusLabel="In progress"
+          formatDuration={(seconds) => `${seconds}s`}
         />
       </Wrapper>,
     );
@@ -46,6 +47,7 @@ describe("MosaicAdaptiveNavigation", () => {
           tabNavAriaLabel="Tab navigation"
           completeStatusLabel="Complete"
           inProgressStatusLabel="In progress"
+          formatDuration={(seconds) => `${seconds}s`}
         />
       </Wrapper>,
     );
@@ -78,6 +80,7 @@ describe("MosaicAdaptiveNavigation", () => {
             tabNavAriaLabel="Tab navigation"
             completeStatusLabel="Complete"
             inProgressStatusLabel="In progress"
+            formatDuration={(seconds) => `${seconds}s`}
           />
         </Wrapper>,
       ),
@@ -95,6 +98,7 @@ describe("MosaicAdaptiveNavigation", () => {
           tabNavAriaLabel="Tab navigation"
           completeStatusLabel="Complete"
           inProgressStatusLabel="In progress"
+          formatDuration={(seconds) => `${seconds}s`}
         />
       </Wrapper>,
     );
@@ -117,10 +121,69 @@ describe("MosaicAdaptiveNavigation", () => {
           tabNavAriaLabel="Tab navigation"
           completeStatusLabel="Complete"
           inProgressStatusLabel="In progress"
+          formatDuration={(seconds) => `${seconds}s`}
         />
       </Wrapper>,
     );
     expect(screen.getByText("Step 1")).toBeTruthy();
     expect(screen.getByText("Step 2")).toBeTruthy();
+  });
+});
+
+describe("MosaicAdaptiveNavigation formatDuration (host-supplied duration text)", () => {
+  const timed = [
+    { id: "s1", title: "Step 1", duration: 42 },
+    { id: "s2", title: "Step 2" },
+  ];
+  const originalMatchMedia = window.matchMedia;
+
+  function setViewport(matches: boolean) {
+    window.matchMedia = ((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+  }
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  function renderNav() {
+    return render(
+      <Wrapper>
+        <MosaicAdaptiveNavigation
+          items={timed}
+          activeItem="s2"
+          onItemChange={() => {}}
+          stepNavAriaLabel="Step navigation"
+          tabNavAriaLabel="Tab navigation"
+          completeStatusLabel="Complete"
+          inProgressStatusLabel="In progress"
+          formatDuration={(seconds) => `XYZ-DUR-${seconds}-probe`}
+        />
+      </Wrapper>,
+    );
+  }
+
+  it("mobile accordion: renders the host-supplied duration text, not the trailing 's'", () => {
+    setViewport(false);
+    const { container } = renderNav();
+    expect(container.querySelector("nav[aria-label='Step navigation']")).toBeTruthy();
+    expect(screen.getByText("XYZ-DUR-42-probe")).toBeTruthy();
+    expect(screen.queryByText("42s")).toBeNull();
+  });
+
+  it("desktop tab strip: renders the host-supplied duration text, not the trailing 's'", () => {
+    setViewport(true);
+    const { container } = renderNav();
+    expect(container.querySelector("nav[aria-label='Tab navigation']")).toBeTruthy();
+    expect(screen.getByText("XYZ-DUR-42-probe")).toBeTruthy();
+    expect(screen.queryByText("42s")).toBeNull();
   });
 });

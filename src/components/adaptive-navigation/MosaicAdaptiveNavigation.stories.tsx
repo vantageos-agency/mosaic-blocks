@@ -32,6 +32,7 @@ function NavDemo() {
         tabNavAriaLabel="Tab navigation"
         completeStatusLabel="Complete"
         inProgressStatusLabel="In progress"
+        formatDuration={(seconds) => `${seconds}s`}
       />
     </MosaicDeviceProvider>
   );
@@ -63,6 +64,7 @@ export const Default: Story = {
     tabNavAriaLabel: "Tab navigation",
     completeStatusLabel: "Complete",
     inProgressStatusLabel: "In progress",
+    formatDuration: (seconds: number) => `${seconds}s`,
   },
   render: () => <NavDemo />,
 };
@@ -76,5 +78,6 @@ export const AllComplete: Story = {
     tabNavAriaLabel: "Tab navigation",
     completeStatusLabel: "Complete",
     inProgressStatusLabel: "In progress",
+    formatDuration: (seconds: number) => `${seconds}s`,
   },
 };

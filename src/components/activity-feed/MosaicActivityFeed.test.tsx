@@ -30,6 +30,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -43,6 +44,7 @@ describe("MosaicActivityFeed", () => {
         activities={[]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -55,6 +57,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -69,6 +72,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
         className="my-feed"
       />,
@@ -82,6 +86,7 @@ describe("MosaicActivityFeed", () => {
         activities={activities}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -103,6 +108,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -124,6 +130,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -147,6 +154,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -169,6 +177,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -189,6 +198,7 @@ describe("MosaicActivityFeed", () => {
         activities={[item]}
         heading="Recent Activity"
         emptyMessage="No recent activity"
+        formatMessageCount={(count) => `${count} messages`}
         viewAllLabel="View All"
       />,
     );
@@ -205,9 +215,48 @@ describe("MosaicActivityFeed", () => {
       status: "in_progress", // free string
       excerpt: "Some excerpt",
     };
-    render(<MosaicActivityItem activity={item} />);
+    render(
+      <MosaicActivityItem activity={item} formatMessageCount={(count) => `${count} messages`} />,
+    );
     expect(screen.getByText("Standalone Item")).toBeTruthy();
     expect(screen.getByText("in_progress")).toBeTruthy();
     expect(screen.getByText("Some excerpt")).toBeTruthy();
+  });
+});
+
+describe("formatMessageCount (host-supplied message-count text)", () => {
+  const withMessages = {
+    id: "probe-1",
+    type: "debate",
+    title: "Probe Item",
+    timestamp: new Date().toISOString(),
+    status: "active" as const,
+    participants: ["Alice"],
+    messages: 7,
+  };
+
+  it("MosaicActivityItem renders the host-supplied text, not the English word", () => {
+    render(
+      <MosaicActivityItem
+        activity={withMessages}
+        formatMessageCount={(count) => `${count} XYZ-MS-probe`}
+      />,
+    );
+    expect(screen.getByText("7 XYZ-MS-probe")).toBeTruthy();
+    expect(screen.queryByText(/messages/i)).toBeNull();
+  });
+
+  it("MosaicActivityFeed forwards formatMessageCount to every row", () => {
+    render(
+      <MosaicActivityFeed
+        activities={[withMessages]}
+        heading="Recent"
+        viewAllLabel="All"
+        emptyMessage="None"
+        formatMessageCount={(count) => `${count} XYZ-MS-probe`}
+      />,
+    );
+    expect(screen.getByText("7 XYZ-MS-probe")).toBeTruthy();
+    expect(screen.queryByText(/messages/i)).toBeNull();
   });
 });

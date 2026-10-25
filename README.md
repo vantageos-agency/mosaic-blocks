@@ -365,6 +365,7 @@ export default function DashboardPage() {
             heading="Recent activity"
             viewAllLabel="View all"
             emptyMessage="No activity yet"
+            formatMessageCount={(count) => `${count} messages`}
           />
         </div>
       </MosaicDashboardLayout>

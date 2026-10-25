@@ -50,6 +50,7 @@ export const Default: Story = {
     activities,
     heading: "Recent Activity",
     emptyMessage: "No recent activity",
+    formatMessageCount: (count: number) => `${count} messages`,
     viewAllLabel: "View All",
   },
 };
@@ -59,6 +60,7 @@ export const Empty: Story = {
     activities: [],
     heading: "Recent Activity",
     emptyMessage: "No recent activity",
+    formatMessageCount: (count: number) => `${count} messages`,
     viewAllLabel: "View All",
   },
 };
@@ -68,6 +70,7 @@ export const WithViewAll: Story = {
     activities,
     heading: "Recent Activity",
     emptyMessage: "No recent activity",
+    formatMessageCount: (count: number) => `${count} messages`,
     viewAllHref: "/activity",
     viewAllLabel: "View All",
   },
