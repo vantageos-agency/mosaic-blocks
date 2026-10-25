@@ -836,7 +836,6 @@ function main() {
   // A right-hand name that resolves NOWHERE is a genuine dangle and is
   // intentionally NOT added to `declared`, so it still surfaces as
   // UNDECLARED below, naming it.
-  const declaredTokenRe = /^\s*--color-([a-z0-9-]+):\s*var\(--([a-z0-9-]+)\);\s*$/gm;
   const localCustomProps = new Set();
   for (
     let pm = ANY_CUSTOM_PROPERTY_DECL_RE.exec(stylesText);
@@ -846,20 +845,58 @@ function main() {
     localCustomProps.add(pm[1].slice(2));
   }
   const resolvableCustomProps = new Set([...localCustomProps, ...importedCustomProps]);
+  // The DOMAIN of declarations is every `--color-<name>:` custom-property
+  // declaration in the stylesheet (comments blanked first, line numbers kept),
+  // whatever its value — never only the `var(--x);` idiom. A guard that read
+  // one value form saw a `--color-x: oklch(...)` row as neither declared nor
+  // stale, so a stale literal-value row passed in silence. Value forms:
+  //   - `var(--<name>)` / `var(--<name>, <fallback>)`: declared when <name>
+  //     resolves (token itself, local custom property, @import chain) or a
+  //     fallback is given; otherwise a genuine dangle, named below;
+  //   - `initial` on the namespace reset `--color-*`: declares no token;
+  //   - any other non-empty value (a literal colour): declared;
+  //   - a name that is not lowercase-kebab, an empty value, or a `var(` this
+  //     parser cannot read: REFUSES TO JUDGE (exit 2), naming the line.
+  const stylesNoComments = stylesText.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+  const anyColorDeclRe = /(^|[{;])\s*--color-([^\s:;{}]*)\s*:([^;{}]*)(?=[;}])/gm;
   const declared = new Map(); // token -> line number
   const danglingDeclarations = []; // { token, varName, line } — declared LHS whose var() target resolves nowhere
+  const unreadableDeclarations = []; // { text, line } — a declaration this parser cannot classify
   for (
-    let dm = declaredTokenRe.exec(stylesText);
+    let dm = anyColorDeclRe.exec(stylesNoComments);
     dm !== null;
-    dm = declaredTokenRe.exec(stylesText)
+    dm = anyColorDeclRe.exec(stylesNoComments)
   ) {
-    const [, token, varName] = dm;
-    const line = lineForIndex(stylesText, dm.index);
-    if (varName === token || resolvableCustomProps.has(varName)) {
-      declared.set(token, line);
-    } else {
-      danglingDeclarations.push({ token, varName, line });
+    const [, , token, rawValue] = dm;
+    const value = rawValue.trim();
+    const line = lineForIndex(stylesText, dm.index + dm[0].indexOf("--color-"));
+    if (token === "*" && value === "initial") continue;
+    if (!/^[a-z0-9-]+$/.test(token) || value === "") {
+      unreadableDeclarations.push({ text: `--color-${token}: ${value}`, line });
+      continue;
     }
+    if (/^var\(/i.test(value)) {
+      const vm = /^var\(\s*--([a-z0-9-]+)\s*(?:,\s*([\s\S]*\S))?\s*\)$/.exec(value);
+      if (vm === null) {
+        unreadableDeclarations.push({ text: `--color-${token}: ${value}`, line });
+        continue;
+      }
+      const [, varName, fallback] = vm;
+      if (varName === token || resolvableCustomProps.has(varName) || fallback !== undefined) {
+        declared.set(token, line);
+      } else {
+        danglingDeclarations.push({ token, varName, line });
+      }
+      continue;
+    }
+    declared.set(token, line);
+  }
+  if (unreadableDeclarations.length > 0) {
+    console.error(
+      `theme-tokens-declared-guard: REFUSES TO JUDGE — ${relative(REPO_ROOT, STYLES_PATH)} carries --color-* declaration(s) this guard cannot classify (name not lowercase-kebab, empty value, or an unreadable var()):\n${unreadableDeclarations.map((u) => `  - line ${u.line}: ${u.text}`).join("\n")}`,
+    );
+    process.exitCode = 2;
+    return;
   }
 
   // ---- Consumed custom tokens (scan src/**) ----
