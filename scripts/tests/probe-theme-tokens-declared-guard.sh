@@ -22,6 +22,11 @@
 #   3. REFUSAL PATH (exit 2) — stylesheet path does not exist. The guard
 #      must exit 2, distinguishably from exit 1 (a real violation).
 #
+#   DECL. Declaration value forms (see the DECLARATION VALUE FORMS block):
+#      var() with fallback, literal value, same line as `{`, a copy of the
+#      real src/styles.css -> STALE; mis-cased name, empty value, unreadable
+#      var() -> REFUSE (exit 2).
+#
 # MUST_PASS:
 #   4. Clean fixture tree — declared token consumed exactly once, plus a
 #      spread of Tailwind BUILT-IN utilities (bg-red-500, border-t,
@@ -620,6 +625,105 @@ expect MUST_BLOCK "F7 — --color-chart-3 consumed ONLY as var(--COLOR-chart-3) 
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# DECLARATION VALUE FORMS — the declared side used to read ONE form,
+# `--color-x: var(--y);`. Any other value form was neither declared nor stale,
+# so a stale row in that form passed in silence. Domain (CSS custom-property
+# declaration grammar, as this stylesheet can carry it): var() without and
+# with fallback, a literal value, the namespace reset `--color-*: initial`,
+# a declaration sharing its line with `{`, a commented-out row — and the
+# members the guard cannot classify (mis-cased name, empty value, unreadable
+# var()), which must REFUSE (exit 2), never pass. One case per form.
+# ---------------------------------------------------------------------------
+write_decl_fixture() { # $1 dir  $2 component body  $3 @theme body
+  local dir="$1"
+  mkdir -p "$dir/src/components/probe"
+  printf '%s\n' "$2" > "$dir/src/components/probe/ProbeFixture.tsx"
+  printf '@theme inline {\n%s\n}\n:root {\n  --probe-base: oklch(0.5 0.1 250);\n}\n' "$3" > "$dir/src/styles.css"
+}
+expect_refuse() { # $1 label $2 dir $3 needle
+  local out st
+  set +e
+  out="$(run_guard "$2/src" "$2/src/styles.css" 2>&1)"; st=$?
+  set -e
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  if [ "$st" -eq 2 ] && echo "$out" | grep -qF -- "$3"; then MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1)); log MUST_REFUSE "PASS — $1 — exit 2, named $3"
+  else FAILURES+=("MUST_REFUSE $1 — exit=$st, output:\n$out"); log MUST_REFUSE "FAIL — $1 — exit=$st"; fi
+}
+USE_BASE='export function ProbeFixture() { return <div className="bg-probe-used">x</div>; }'
+BASE_DECL='  --color-probe-used: var(--probe-base);'
+
+D1="$SCRATCH/decl-fallback-stale"
+write_decl_fixture "$D1" "$USE_BASE" "$BASE_DECL
+  --color-probe-fb: var(--probe-nowhere, #fff);"
+assert_landed "$D1/src/styles.css" "--color-probe-fb: var(--probe-nowhere, #fff);" "decl var+fallback"
+expect MUST_BLOCK "DECL — var() with fallback, consumed nowhere, is STALE" "$D1" "--color-probe-fb"
+
+D2="$SCRATCH/decl-literal-stale"
+write_decl_fixture "$D2" "$USE_BASE" "$BASE_DECL
+  --color-probe-lit: oklch(0.6 0.1 30);"
+assert_landed "$D2/src/styles.css" "--color-probe-lit: oklch(0.6 0.1 30);" "decl literal stale"
+expect MUST_BLOCK "DECL — literal value, consumed nowhere, is STALE" "$D2" "--color-probe-lit"
+
+D3="$SCRATCH/decl-literal-used"
+write_decl_fixture "$D3" 'export function ProbeFixture() { return <div className="bg-probe-used text-probe-lit">x</div>; }' "$BASE_DECL
+  --color-probe-lit: #123456;"
+assert_landed "$D3/src/styles.css" "--color-probe-lit: #123456;" "decl literal consumed"
+expect MUST_PASS "DECL — literal value consumed by a utility is declared" "$D3" ""
+
+D4="$SCRATCH/decl-reset"
+write_decl_fixture "$D4" "$USE_BASE" "  --color-*: initial;
+$BASE_DECL"
+assert_landed "$D4/src/styles.css" "--color-*: initial;" "decl namespace reset"
+expect MUST_PASS "DECL — namespace reset --color-*: initial declares no token" "$D4" ""
+
+D5="$SCRATCH/decl-same-line"
+mkdir -p "$D5/src/components/probe"
+printf '%s\n' "$USE_BASE" > "$D5/src/components/probe/ProbeFixture.tsx"
+printf '@theme inline { --color-probe-used: var(--probe-base); --color-probe-inline: red; }\n:root {\n  --probe-base: oklch(0.5 0.1 250);\n}\n' > "$D5/src/styles.css"
+assert_landed "$D5/src/styles.css" "--color-probe-inline: red;" "decl same line as {"
+expect MUST_BLOCK "DECL — declaration sharing its line with { is read, and STALE" "$D5" "--color-probe-inline"
+
+D6="$SCRATCH/decl-commented"
+write_decl_fixture "$D6" "$USE_BASE" "$BASE_DECL
+  /* --color-probe-old: red; */"
+assert_landed "$D6/src/styles.css" "/* --color-probe-old: red; */" "decl commented out"
+expect MUST_PASS "DECL — a commented-out row is not a declaration" "$D6" ""
+
+D7="$SCRATCH/decl-miscased"
+write_decl_fixture "$D7" "$USE_BASE" "$BASE_DECL
+  --color-Probe-Mixed: red;"
+assert_landed "$D7/src/styles.css" "--color-Probe-Mixed: red;" "decl mis-cased"
+expect_refuse "DECL — mis-cased declaration name" "$D7" "--color-Probe-Mixed"
+
+D8="$SCRATCH/decl-empty"
+write_decl_fixture "$D8" "$USE_BASE" "$BASE_DECL
+  --color-probe-empty: ;"
+assert_landed "$D8/src/styles.css" "--color-probe-empty: ;" "decl empty value"
+expect_refuse "DECL — empty value" "$D8" "--color-probe-empty"
+
+D9="$SCRATCH/decl-bad-var"
+write_decl_fixture "$D9" "$USE_BASE" "$BASE_DECL
+  --color-probe-badvar: var(--Probe-Base);"
+assert_landed "$D9/src/styles.css" "--color-probe-badvar: var(--Probe-Base);" "decl unreadable var"
+expect_refuse "DECL — unreadable var() target" "$D9" "--color-probe-badvar"
+
+# Same hole, on the REAL stylesheet: a literal-value stale row appended to a
+# copy of this repo's own src/styles.css @theme inline block.
+DR="$SCRATCH/decl-real"
+make_real_copy "$DR"
+python3 - "$DR/src/styles.css" <<'EOF'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+anchor = "@theme inline {"
+if s.count(anchor) != 1:
+    sys.exit("probe: real styles.css no longer has exactly one '@theme inline {' anchor")
+open(p, "w").write(s.replace(anchor, anchor + "\n  --color-probe-real-stale: oklch(0.6 0.1 30);", 1))
+EOF
+assert_landed "$DR/src/styles.css" "--color-probe-real-stale: oklch(0.6 0.1 30);" "decl real literal stale"
+expect MUST_BLOCK "DECL — literal-value stale row in a copy of the REAL src/styles.css" "$DR" "--color-probe-real-stale"
+
 echo
 echo "===== probe-theme-tokens-declared-guard summary ====="
 echo "MUST_BLOCK: $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"
