@@ -441,7 +441,7 @@ describe("docs-counts-shared.mjs — sharing is PROVEN, not just claimed by comm
     // --- Assertion 2: a GUARD-STYLE generic scan, built from the exact
     // same `mosaicCountPatterns()` export of the SAME patched module (not
     // a re-implementation), also sees it. This mirrors exactly what
-    // src/__tests__/readme-matches-exports.test.ts's extractGenericCountClaims
+    // src/__tests__/derived/readme-matches-exports.test.ts's extractGenericCountClaims
     // does with the real module — run out-of-process (plain `node`, no
     // bundler module graph involved) so this is a genuine re-import of the
     // patched file from disk, not vitest's cached module of the pristine one.
