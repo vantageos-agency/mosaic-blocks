@@ -447,7 +447,7 @@ packages:
     resolution: {directory: .., type: directory}
     peerDependencies:
       '@clerk/nextjs': ^7
-      '@vantageos/cloud-identity': '>=0.2.0 <0.8.0'
+      '@vantageos/cloud-identity': '>=0.6.0'
       react: ^19
       react-dom: ^19
       recharts: ^2.12.0 || ^3.0.0
