@@ -96,6 +96,7 @@ import { MosaicDeviceProvider, MosaicAgentComposer } from "@vantageos/mosaic-blo
     onSave={handleSave}
     onCancel={handleCancel}
     isEditMode={false}
+    formatContextWindow={(tokens) => `${tokens} context`} // host-owned unit word, required
   />
 </MosaicDeviceProvider>
 ```

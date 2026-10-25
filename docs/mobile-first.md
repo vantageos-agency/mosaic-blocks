@@ -284,6 +284,7 @@ const composerProps: MosaicAgentComposerProps = {
   onSave: handleSave,
   onCancel: handleCancel,
   isEditMode: false,
+  formatContextWindow: (tokens) => `${tokens} context`, // host-owned unit word, required
 };
 
 export function AgentBuilderPage() {
