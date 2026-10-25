@@ -3,7 +3,7 @@
  *
  * The shared module is plain JavaScript (it must be `node`-runnable with no
  * build step, since scripts/docs-counts.mjs invokes it directly at runtime).
- * This declaration file gives `src/__tests__/readme-matches-exports.test.ts`
+ * This declaration file gives `src/__tests__/derived/readme-matches-exports.test.ts`
  * (compiled under tsconfig.test.json, `strict: true`) real types for every
  * export, instead of turning on `allowJs` project-wide or falling back to
  * implicit `any`. Keep this file's signatures in lockstep with the JSDoc

@@ -6,7 +6,7 @@
  *
  * Imported by BOTH:
  *   - scripts/docs-counts.mjs               (the PRODUCER — derives + rewrites)
- *   - src/__tests__/readme-matches-exports.test.ts  (the GUARD — verifies)
+ *   - src/__tests__/derived/readme-matches-exports.test.ts  (the GUARD — verifies)
  *
  * Why this file exists (Day 129 follow-up, coordinator review): a prior
  * version of scripts/docs-counts.mjs re-implemented its own copy of the

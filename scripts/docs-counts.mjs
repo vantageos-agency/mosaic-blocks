@@ -5,7 +5,7 @@
  * count claims of `README.md` and `docs/components-catalog.md`.
  *
  * Why this exists (Day 129 doctrine — "dériver, jamais taper"):
- *   `src/__tests__/readme-matches-exports.test.ts` already VERIFIES these
+ *   `src/__tests__/derived/readme-matches-exports.test.ts` already VERIFIES these
  *   counts against src/index.ts, but nothing PRODUCED them — a human typed
  *   the number, and a CI guard scoped to a single branch cannot see an
  *   inconsistency that only exists after two branches are composed (two PRs
@@ -16,7 +16,7 @@
  *
  * Counting definition AND every count-claim anchor regex: imported from
  * `scripts/docs-counts-shared.mjs`, the SINGLE shared module also imported
- * by `src/__tests__/readme-matches-exports.test.ts`. This file defines and
+ * by `src/__tests__/derived/readme-matches-exports.test.ts`. This file defines and
  * maintains NO regex of its own for detecting a count claim — a second,
  * drifting definition of "what counts as a count claim" is exactly the
  * defect this script exists to close (see docs-counts-shared.mjs's header
