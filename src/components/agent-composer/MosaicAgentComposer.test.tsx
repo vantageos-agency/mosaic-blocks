@@ -47,6 +47,7 @@ const baseProps = {
   removeModuleAriaLabel: (label: string) => `XYZ-REMOVE-${label}`,
   selectModuleAriaLabel: (label: string) => `XYZ-SELECT-${label}`,
   changeModuleLabel: (label: string) => `XYZ-CHANGE-${label}`,
+  formatContextWindow: (tokens: number) => `XYZ-TOKENS-${tokens}`,
   labels: {
     role: "Role",
     persona: "Persona",
@@ -219,5 +220,36 @@ describe("MosaicAgentComposer", () => {
     );
     expect(screen.getByText("XYZ-CHANGE-Model")).toBeTruthy();
     expect(screen.queryByText(/^change /i)).toBeNull();
+  });
+});
+
+describe("formatContextWindow (host-supplied context-window text)", () => {
+  const model = { name: "Test Model", contextWindow: 128000 };
+  const probe = (tokens: number) => `XYZ-CX-${tokens}-probe`;
+
+  it("Desktop: renders the host-supplied context-window text, not the English word", () => {
+    render(
+      <MosaicAgentComposerDesktop
+        {...baseProps}
+        selectedModel={model}
+        formatContextWindow={probe}
+      />,
+    );
+    expect(screen.getByText("XYZ-CX-128000-probe")).toBeTruthy();
+    expect(screen.queryByText(/context/i)).toBeNull();
+  });
+
+  it("Mobile: renders the host-supplied context-window text, not the English word", () => {
+    render(
+      <Wrapper>
+        <MosaicAgentComposerMobile
+          {...baseProps}
+          selectedModel={model}
+          formatContextWindow={probe}
+        />
+      </Wrapper>,
+    );
+    expect(screen.getByText("XYZ-CX-128000-probe")).toBeTruthy();
+    expect(screen.queryByText(/context/i)).toBeNull();
   });
 });

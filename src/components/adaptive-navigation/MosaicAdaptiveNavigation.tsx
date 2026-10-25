@@ -56,6 +56,12 @@ export interface MosaicAdaptiveNavigationProps {
   completeStatusLabel: string;
   /** Status caption shown when a step is not yet complete. Required, no default. */
   inProgressStatusLabel: string;
+  /**
+   * Visible duration badge text for an item that carries `duration`. Receives
+   * the raw value in seconds; the host owns the unit word and formatting.
+   * Required, no default.
+   */
+  formatDuration: (seconds: number) => string;
   className?: string;
   ref?: React.Ref<HTMLDivElement>;
 }
@@ -134,6 +140,7 @@ export function MosaicAdaptiveNavigation({
   tabNavAriaLabel,
   completeStatusLabel,
   inProgressStatusLabel,
+  formatDuration,
   className,
   ref,
 }: MosaicAdaptiveNavigationProps) {
@@ -180,7 +187,7 @@ export function MosaicAdaptiveNavigation({
                 <div className="flex items-center gap-2 shrink-0">
                   {item.duration !== undefined && (
                     <span className="rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                      {item.duration}s
+                      {formatDuration(item.duration)}
                     </span>
                   )}
                   <ChevronDownIcon rotated={isExpanded} />
@@ -250,7 +257,7 @@ export function MosaicAdaptiveNavigation({
                     isActive ? "bg-primary-foreground/20" : "bg-muted",
                   )}
                 >
-                  {item.duration}s
+                  {formatDuration(item.duration)}
                 </span>
               )}
             </button>

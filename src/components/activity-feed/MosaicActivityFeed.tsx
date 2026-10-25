@@ -129,6 +129,12 @@ export interface MosaicActivityFeedProps {
    */
   emptyMessage: string;
   /**
+   * Visible message-count text on an activity that carries `messages`.
+   * Receives the count; the host owns the unit word and word order.
+   * Required, no default.
+   */
+  formatMessageCount: (count: number) => string;
+  /**
    * Map of activity.type → icon ReactNode.
    * Default: generic clock icon for all types.
    */
@@ -220,6 +226,8 @@ function ArrowRightIcon() {
 
 export interface MosaicActivityItemProps {
   activity: MosaicActivity;
+  /** Visible message-count text. Receives the count; host owns the unit word. Required, no default. */
+  formatMessageCount: (count: number) => string;
   icon?: React.ReactNode;
   className?: string;
 }
@@ -228,7 +236,12 @@ export interface MosaicActivityItemProps {
  * MosaicActivityItem — single row in the activity feed.
  * Can be used standalone outside MosaicActivityFeed.
  */
-export function MosaicActivityItem({ activity, icon, className }: MosaicActivityItemProps) {
+export function MosaicActivityItem({
+  activity,
+  formatMessageCount,
+  icon,
+  className,
+}: MosaicActivityItemProps) {
   return (
     <div
       data-slot="activity-item"
@@ -272,7 +285,7 @@ export function MosaicActivityItem({ activity, icon, className }: MosaicActivity
                 </div>
                 {activity.messages !== undefined && (
                   <span className="text-xs text-muted-foreground">
-                    {activity.messages} messages
+                    {formatMessageCount(activity.messages)}
                   </span>
                 )}
               </div>
@@ -330,6 +343,7 @@ export function MosaicActivityFeed({
   viewAllHref,
   viewAllLabel,
   emptyMessage,
+  formatMessageCount,
   iconMap,
   renderLink,
   className,
@@ -380,7 +394,11 @@ export function MosaicActivityFeed({
               className="mosaic-activity-row"
               style={{ animationDelay: `${idx * 80}ms` }}
             >
-              <MosaicActivityItem activity={activity} icon={iconMap?.[activity.type]} />
+              <MosaicActivityItem
+                activity={activity}
+                formatMessageCount={formatMessageCount}
+                icon={iconMap?.[activity.type]}
+              />
             </div>
           ))
         )}

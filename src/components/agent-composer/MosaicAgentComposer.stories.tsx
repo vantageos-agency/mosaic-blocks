@@ -28,6 +28,7 @@ const requiredComposerLabels = {
   removeModuleAriaLabel: (label: string) => `Remove ${label}`,
   selectModuleAriaLabel: (label: string) => `Select ${label}`,
   changeModuleLabel: (label: string) => `Change ${label}`,
+  formatContextWindow: (tokens: number) => `${tokens.toLocaleString()} context`,
   labels: {
     role: "Role",
     persona: "Persona",

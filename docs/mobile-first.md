@@ -207,12 +207,13 @@ function Example() {
       onItemChange={setActive}
       expandedItems={expanded}       // optional — controls accordion open state
       onToggleExpanded={toggle}      // optional
+      formatDuration={(seconds) => `${seconds}s`} // host-owned unit word, required
     />
   );
 }
 ```
 
-Props: `items`, `activeItem`, `onItemChange`, `expandedItems?`, `onToggleExpanded?`, `className?`, `ref?`.
+Props: `items`, `activeItem`, `onItemChange`, `expandedItems?`, `onToggleExpanded?`, `formatDuration`, `className?`, `ref?`.
 
 Storybook: `Layout/MosaicAdaptiveNavigation`
 

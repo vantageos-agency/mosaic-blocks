@@ -47,11 +47,15 @@ const galleryBaseProps = {
   expandSidebarAriaLabel: "Expand sidebar",
   previewLabel: "Preview",
   duplicateLabel: "Duplicate",
+  formatAgentCount: (count: number) => `${count} agents`,
+  formatUsageCount: (count: number) => `${count} uses`,
 };
 
 const templateCardLabels = {
   previewLabel: "Preview",
   duplicateLabel: "Duplicate",
+  formatAgentCount: (count: number) => `${count} agents`,
+  formatUsageCount: (count: number) => `${count} uses`,
 };
 
 describe("MosaicTemplateGallery", () => {
@@ -172,5 +176,47 @@ describe("MosaicAgentTeamPreview", () => {
     const agents = [{ id: "a1", name: "Alpha", type: "GPT-4" }];
     render(<MosaicAgentTeamPreview agents={agents} />);
     expect(screen.getByText("Alpha")).toBeTruthy();
+  });
+});
+
+describe("MosaicTemplateCard formatAgentCount / formatUsageCount (host-supplied count text)", () => {
+  const counted = {
+    ...templates[0],
+    agents: [
+      { id: "a1", name: "Moderator", type: "GPT-4" },
+      { id: "a2", name: "Critic", type: "GPT-4" },
+    ],
+    metadata: { usageCount: 9 },
+  };
+  const probes = {
+    previewLabel: "Preview",
+    duplicateLabel: "Duplicate",
+    formatAgentCount: (count: number) => `${count} XYZ-AG-probe`,
+    formatUsageCount: (count: number) => `${count} XYZ-US-probe`,
+  };
+
+  it("card renders the host-supplied agent and usage text, not the English words", () => {
+    render(<MosaicTemplateCard template={counted} onSelect={() => {}} {...probes} />);
+    expect(screen.getByText("2 XYZ-AG-probe")).toBeTruthy();
+    expect(screen.getByText("9 XYZ-US-probe")).toBeTruthy();
+    expect(screen.queryByText(/\bagents\b/i)).toBeNull();
+    expect(screen.queryByText(/\buses\b/i)).toBeNull();
+  });
+
+  it("gallery forwards both formatters to every card", () => {
+    render(
+      <Wrapper>
+        <MosaicTemplateGallery
+          templates={[counted]}
+          onSelectTemplate={() => {}}
+          {...galleryBaseProps}
+          {...probes}
+        />
+      </Wrapper>,
+    );
+    expect(screen.getByText("2 XYZ-AG-probe")).toBeTruthy();
+    expect(screen.getByText("9 XYZ-US-probe")).toBeTruthy();
+    expect(screen.queryByText(/\bagents\b/i)).toBeNull();
+    expect(screen.queryByText(/\buses\b/i)).toBeNull();
   });
 });

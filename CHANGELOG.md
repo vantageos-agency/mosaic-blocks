@@ -9,6 +9,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+**BREAKING (per component) — nine hardcoded English unit words removed; each is now a REQUIRED host-supplied formatter prop (no default, no fallback).** The library ships zero user-facing words of its own for these sites.
+
+- **MosaicAgentComposer / MosaicAgentComposerDesktop / MosaicAgentComposerMobile** — new required `formatContextWindow: (tokens: number) => string` on the shared `MosaicAgentComposerProps` (replaces `"{n} context"`). Hosts own number formatting, unit word and word order.
+- **MosaicAdaptiveNavigation** — new required `formatDuration: (seconds: number) => string` (replaces `"{n}s"` in both the mobile accordion and the desktop tab strip).
+- **MosaicTemplateGallery / MosaicTemplateCard** — new required `formatAgentCount: (count: number) => string` (replaces `"{n} agents"`) and `formatUsageCount: (count: number) => string` (replaces `"{n} uses"`); the gallery forwards both to every card.
+- **MosaicActivityFeed / MosaicActivityItem** — new required `formatMessageCount: (count: number) => string` (replaces `"{n} messages"`); the feed forwards it to every row.
+- **MosaicMultiOrgIndicator** (`org-panel`) — new required `formatOrgCount: (count: number) => string` (replaces `"{n} orgs"`, both the button and the badge variants).
+
 ### Added — 0.5.18-alpha
 
 **MosaicTagInput** (`src/components/tag-input/`) — presentational tag/chip input with optional autocomplete. Fully controlled: `tags: string[]`, `onAddTag`, `onRemoveTag`, required `placeholder` + `removeTagAriaLabel` (per-tag, no default). `Enter` commits the trimmed typed value (rejecting empty/duplicate); `Backspace` on an empty field removes the last tag. `maxTags?` refuses loudly — the input exposes `aria-disabled="true"` + `data-max-reached="true"`, never a silent no-op. `suggestions?` filtered with `@base-ui/react/combobox`'s `useFilter({ sensitivity: "base" }).contains`, excluding already-selected tags. 10 TDD tests.

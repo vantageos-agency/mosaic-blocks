@@ -531,6 +531,7 @@ export default function SandboxPage() {
                 tabNavAriaLabel="Tab navigation"
                 completeStatusLabel="Complete"
                 inProgressStatusLabel="In progress"
+                formatDuration={(seconds) => `${seconds}s`}
               />
             </div>
 
@@ -614,6 +615,7 @@ export default function SandboxPage() {
                 viewAllHref="#"
                 viewAllLabel="View All"
                 emptyMessage="No recent activity"
+                formatMessageCount={(count) => `${count} messages`}
                 activities={[
                   {
                     id: "a1",
@@ -707,6 +709,7 @@ export default function SandboxPage() {
                   removeModuleAriaLabel={(label) => `Remove ${label}`}
                   selectModuleAriaLabel={(label) => `Select ${label}`}
                   changeModuleLabel={(label) => `Change ${label}`}
+                  formatContextWindow={(tokens) => `${tokens.toLocaleString()} context`}
                   labels={{
                     role: "Role",
                     persona: "Persona",

@@ -122,6 +122,12 @@ export interface MosaicAgentComposerProps {
   // Found by the no-lying-prop-contract guard.
   /** Fallback name shown in the preview when `agentName` is empty. Required, no default. */
   unnamedAgentLabel: string;
+  /**
+   * Visible context-window text under the selected model (e.g. "128,000
+   * context"). Receives the raw token count; the host owns number formatting,
+   * the unit word and word order. Required, no default.
+   */
+  formatContextWindow: (tokens: number) => string;
 }
 
 // NOTE: same class of gap that produced the `requiredLabel` split above.
@@ -358,6 +364,7 @@ export function MosaicAgentComposerDesktop({
   customInstructionsPreviewLabel,
   selectAllModulesLabel,
   unnamedAgentLabel,
+  formatContextWindow,
   roleSublabel,
   personaSublabel,
   frameworkSublabel,
@@ -480,7 +487,7 @@ export function MosaicAgentComposerDesktop({
                     {(selectedModel.contextWindow || selectedModel.pricingLabel) && (
                       <p className="text-xs text-muted-foreground">
                         {selectedModel.contextWindow &&
-                          `${selectedModel.contextWindow.toLocaleString()} context`}
+                          formatContextWindow(selectedModel.contextWindow)}
                         {selectedModel.contextWindow && selectedModel.pricingLabel && " • "}
                         {selectedModel.pricingLabel}
                       </p>

@@ -131,10 +131,11 @@ export const MultiOrgIndicator: Story = {
     <div className="flex items-center gap-4">
       <MosaicMultiOrgIndicator
         orgCount={3}
+        formatOrgCount={(count) => `${count} orgs`}
         currentOrgName="Acme Corp"
         onSwitchOrg={() => console.log("switch")}
       />
-      <MosaicMultiOrgIndicator orgCount={1} />
+      <MosaicMultiOrgIndicator orgCount={1} formatOrgCount={(count) => `${count} orgs`} />
     </div>
   ),
 };

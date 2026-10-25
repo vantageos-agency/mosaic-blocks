@@ -545,12 +545,191 @@ function maskRegexLiterals(text) {
 }
 
 /**
+ * Skip one string/template literal starting at `text[i]` (a quote or a
+ * backtick) and return the index just past its closing delimiter, or -1 when
+ * it never closes. Template interpolations are walked with brace depth so a
+ * nested literal inside `${...}` cannot end the outer one early.
+ * @param {string} text
+ * @param {number} i
+ * @returns {number}
+ */
+function skipLiteral(text, i) {
+  const quote = text[i];
+  let j = i + 1;
+  if (quote !== "`") {
+    while (j < text.length) {
+      if (text[j] === "\\") {
+        j += 2;
+        continue;
+      }
+      if (text[j] === quote) return j + 1;
+      if (text[j] === "\n") return -1;
+      j++;
+    }
+    return -1;
+  }
+  while (j < text.length) {
+    const ch = text[j];
+    if (ch === "\\") {
+      j += 2;
+      continue;
+    }
+    if (ch === "`") return j + 1;
+    if (ch === "$" && text[j + 1] === "{") {
+      j += 2;
+      let depth = 1;
+      while (j < text.length && depth > 0) {
+        const c = text[j];
+        if (c === '"' || c === "'" || c === "`") {
+          j = skipLiteral(text, j);
+          if (j < 0) return -1;
+          continue;
+        }
+        if (c === "{") depth++;
+        else if (c === "}") depth--;
+        j++;
+      }
+      if (depth > 0) return -1;
+      continue;
+    }
+    j++;
+  }
+  return -1;
+}
+
+/**
+ * PASS C — rendered-child POSITION (k1754vz2awga7e6yt49n1mn5nh8c58p6).
+ *
+ * PASS A decides by shape, and shape cannot tell the word "submit" from the
+ * utility class "flex" or the enum value "compact": all three are one
+ * lowercase token. So a lowercase word rendered as text passed PASS A as a
+ * "utility token". The property that does tell them apart is POSITION, and
+ * the position is fixed by the React JSX runtime contract (react.dev,
+ * "Rendering lists" / `jsx(type, props)`): a string that is the value of the
+ * `children` prop, or an element of a `children` array, is rendered as a
+ * text node. esbuild's automatic runtime emits every JSX text child in
+ * exactly that position (`jsx("b", { children: "submit" })`,
+ * `jsxs("b", { children: [icon, " cancel"] })`), so the position is read from
+ * the artifact, never guessed.
+ *
+ * The domain of the children VALUE, derived from the expression grammar a
+ * value can take, and what this scanner does with each member:
+ *   - a literal directly (`children: "x"`)                        -> rendered
+ *   - a literal element of an array literal, at any nesting depth
+ *     of array literals (`children: ["x", ["y"]]`)               -> rendered
+ *   - a literal as a ternary / `??` / `||` / `&&` operand          -> rendered
+ *   - a literal inside a call's parens or an object's braces
+ *     (`cn("x")`, `{ className: "x" }`)                           -> not this pass's (PASS A/B judge it)
+ *   - a literal inside an array that is an OPERAND, i.e. followed by
+ *     member access or a call (`["skeleton-1"].map(...)`)         -> not rendered (keys)
+ *   - a literal inside an index access (`labels["x"]`)            -> not rendered
+ *   - a literal that is an equality operand (`v === "open" ? ...`) -> not rendered
+ *   - a children value this scanner cannot walk to its end
+ *     (an unterminated literal or comment)                         -> named, exit 2
+ *
+ * DECLARED DIVERGENCE: a lowercase word that reaches the screen through a
+ * value which is NOT the children position (a `label: "save"` entry in a
+ * config object, rendered later by `{item.label}`) is still not decidable
+ * here: in that position it has the same shape as an enum value. It stays
+ * PASS A's to judge, and PASS A passes a single lowercase token.
+ * @param {string} text
+ * @returns {{ starts: Set<number>, unreadable: number[] }} opening-delimiter
+ *   offsets of every literal in rendered-child position, and the offsets of
+ *   every `children:` value that could not be walked
+ */
+function findRenderedChildLiterals(text) {
+  const starts = new Set();
+  const unreadable = [];
+  const childrenKeyRe = /\bchildren\s*:\s*/g;
+  let m;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
+  while ((m = childrenKeyRe.exec(text))) {
+    let i = m.index + m[0].length;
+    /** @type {Array<{ kind: "array" | "other", mark: number }>} */
+    const stack = [];
+    /** @type {number[]} */
+    const collected = [];
+    let ok = true;
+    while (i < text.length) {
+      const ch = text[i];
+      if (ch === '"' || ch === "'" || ch === "`") {
+        const end = skipLiteral(text, i);
+        if (end < 0) {
+          ok = false;
+          break;
+        }
+        const allArrays = stack.every((e) => e.kind === "array");
+        const before = text.slice(Math.max(0, i - 8), i);
+        let k = end;
+        while (k < text.length && /\s/.test(text[k])) k++;
+        const after = text.slice(k, k + 3);
+        const equalityOperand = /[=!]==?\s*$/.test(before) || /^[=!]=/.test(after);
+        if (allArrays && !equalityOperand) collected.push(i);
+        i = end;
+        continue;
+      }
+      if (ch === "/" && text[i + 1] === "*") {
+        const e = text.indexOf("*/", i + 2);
+        if (e < 0) {
+          ok = false;
+          break;
+        }
+        i = e + 2;
+        continue;
+      }
+      if (ch === "/" && text[i + 1] === "/") {
+        const e = text.indexOf("\n", i);
+        i = e < 0 ? text.length : e;
+        continue;
+      }
+      if (ch === "[") {
+        // An index access follows an identifier, `)`, `]` or `?.`; an array
+        // literal follows an operator, `(`, `,`, `?`, `:` or the key itself.
+        let p = i - 1;
+        while (p >= 0 && /\s/.test(text[p])) p--;
+        const prev = p >= 0 ? text[p] : "";
+        const isIndex = /[\w$)\].]/.test(prev) && p >= m.index + m[0].length;
+        stack.push({ kind: isIndex ? "other" : "array", mark: collected.length });
+        i++;
+        continue;
+      }
+      if (ch === "(" || ch === "{") {
+        stack.push({ kind: "other", mark: collected.length });
+        i++;
+        continue;
+      }
+      if (ch === ")" || ch === "]" || ch === "}") {
+        if (stack.length === 0) break; // end of the children value
+        const entry = stack.pop();
+        if (ch === "]" && entry.kind === "array") {
+          let k = i + 1;
+          while (k < text.length && /\s/.test(text[k])) k++;
+          // `[...].map(...)` / `[...][0]` / `[...](...)`: the array is an
+          // operand, its literals are keys or data, not rendered children.
+          if (text[k] === "." || text[k] === "[" || text[k] === "(") collected.length = entry.mark;
+        }
+        i++;
+        continue;
+      }
+      if (ch === "," && stack.length === 0) break;
+      i++;
+    }
+    if (!ok) {
+      unreadable.push(m.index);
+      continue;
+    }
+    for (const s of collected) starts.add(s);
+  }
+  return { starts, unreadable };
+}
+
+/**
  * Extract every string/template-literal candidate from the bundle text,
  * with its 1-based line number and the ~80 chars preceding it (for
  * context-based exclusions: displayName, defineProperty(exports, ...),
  * `.key === `).
  * @param {string} text
- * @returns {Array<{ line: number, value: string, precedingContext: string, isTextAttributeValue: boolean }>}
+ * @returns {{ candidates: Array<{ line: number, value: string, precedingContext: string, isTextAttributeValue: boolean, isRenderedChild: boolean }>, unreadableChildrenAt: number[] }}
  */
 function extractCandidates(text) {
   const candidates = [];
@@ -653,11 +832,13 @@ function extractCandidates(text) {
   // Mark which candidates are the VALUE of a text-bearing attribute (PASS B).
   // `rawStart` points at the opening quote of a double-quoted candidate, so
   // the value itself starts one byte later.
+  const renderedChildren = findRenderedChildLiterals(text);
   for (const c of candidates) {
     c.isTextAttributeValue = textAttrValueSpans.has(c.rawStart + 1);
+    c.isRenderedChild = renderedChildren.starts.has(c.rawStart);
   }
 
-  return candidates;
+  return { candidates, unreadableChildrenAt: renderedChildren.unreadable.map(lineForIndex) };
 }
 
 /**
@@ -777,7 +958,14 @@ function main() {
   // `` /^`([^`]+)`/ ``) would otherwise create for the template-literal
   // scanner. See maskRegexLiterals's own comment for the real bundle case.
   const maskedText = maskRegexLiterals(text);
-  const candidates = extractCandidates(maskedText);
+  const { candidates, unreadableChildrenAt } = extractCandidates(maskedText);
+  if (unreadableChildrenAt.length > 0) {
+    console.error(
+      `REFUSING TO JUDGE: no-hardcoded-words-guard could not walk ${unreadableChildrenAt.length} \`children:\` value(s) to their end (unterminated literal or comment) at ${DIST_PATH}:${unreadableChildrenAt.join(", ")}. A rendered-child literal it cannot delimit is a literal it cannot judge; refusing rather than passing it.`,
+    );
+    process.exit(2);
+    return;
+  }
   const lines = maskedText.split("\n");
 
   const violations = [];
@@ -839,6 +1027,19 @@ function main() {
         snippet: c.value,
         reason:
           "value of a WAI-ARIA/HTML text-bearing attribute (aria-label/alt/placeholder/title/...) — spec says this is always human-facing text",
+      });
+      continue;
+    }
+
+    // PASS C — rendered-child position (see findRenderedChildLiterals): a
+    // string the React runtime renders as a text node is user-facing whatever
+    // its shape; only a literal with no letter at all (a glyph) passes.
+    if (c.isRenderedChild && /\p{L}/u.test(decodeUnicodeEscapes(c.value))) {
+      violations.push({
+        line: c.line,
+        snippet: c.value,
+        reason:
+          "rendered JSX child (value or array element of `children`) — the React runtime renders it as a text node, so it is user-facing text whatever its case",
       });
       continue;
     }
