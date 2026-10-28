@@ -598,6 +598,182 @@ function skipLiteral(text, i) {
 }
 
 /**
+ * DOMAIN of the forms that can follow an array literal (`[ ... ]`) in a
+ * children value. Source: ECMA-262 (Array.prototype, section "Properties of the
+ * Array Prototype Object") plus Object.prototype, which every array inherits.
+ * The set of member NAMES is derived at runtime from the engine
+ * (`Object.getOwnPropertyNames`), never typed here; only the classification of
+ * each name is declared, and the default for a name not declared below is
+ * RENDERED (the literals are kept). Non-name forms: an index (`[i]`) returns
+ * the element -> rendered; a call (`[...](...)`) is not a valid operation on an
+ * array -> unclassifiable, refused.
+ *
+ * Members PROVEN not to return an element (or a string built from one), so
+ * the literals of the array are data, not a rendered child:
+ *   - return a boolean:   every, some, includes
+ *   - return a number:    indexOf, lastIndexOf, findIndex, findLastIndex,
+ *                         push, unshift, `length`
+ *   - return undefined:   forEach
+ *   - return an iterator of numbers: keys
+ * Members that compose their result from the CALLBACK's return values, not
+ * from the elements: map, flatMap. The element reaches the result only if the
+ * callback lets it through its parameter; see callbackLetsElementThrough.
+ * Everything else (join, toString, toLocaleString, at, find, findLast, filter,
+ * slice, concat, flat, reverse, sort, toSorted, toReversed, toSpliced, with,
+ * splice, pop, shift, reduce, reduceRight, fill, copyWithin, values, entries,
+ * valueOf, constructor, ...) returns the element, a string joined from it, or
+ * an array/iterator of it, all of which React renders -> kept as rendered.
+ */
+const ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS = new Set([
+  "every",
+  "some",
+  "includes",
+  "indexOf",
+  "lastIndexOf",
+  "findIndex",
+  "findLastIndex",
+  "push",
+  "unshift",
+  "length",
+  "forEach",
+  "keys",
+]);
+const ARRAY_MEMBERS_COMPOSED_FROM_CALLBACK = new Set(["map", "flatMap"]);
+
+/** Every member name an array literal can be followed by, derived from the engine. */
+function arrayMemberNames() {
+  return new Set([
+    ...Object.getOwnPropertyNames(Array.prototype),
+    ...Object.getOwnPropertyNames(Object.prototype),
+  ]);
+}
+
+/**
+ * Index of the character after the balanced close of the group opened at
+ * `open` (`(`, `[` or `{`), skipping literals and comments; -1 if it cannot be
+ * walked to its end.
+ * @param {string} text
+ * @param {number} open
+ */
+function skipBalanced(text, open) {
+  let depth = 0;
+  let i = open;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === "`") {
+      i = skipLiteral(text, i);
+      if (i < 0) return -1;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "*") {
+      const e = text.indexOf("*/", i + 2);
+      if (e < 0) return -1;
+      i = e + 2;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "/") {
+      const e = text.indexOf("\n", i);
+      i = e < 0 ? text.length : e;
+      continue;
+    }
+    if (ch === "(" || ch === "[" || ch === "{") depth++;
+    else if (ch === ")" || ch === "]" || ch === "}") {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+    i++;
+  }
+  return -1;
+}
+
+/**
+ * For `.map(cb)` / `.flatMap(cb)`: does the callback let the ELEMENT reach its
+ * result? Proven NO only when the callback is an inline function whose first
+ * parameter (a plain identifier, or none) is never read in the body except as
+ * the React `key` (`key: p` in a props object, or the trailing third argument
+ * of the jsx runtime call `jsx(type, { ... }, p)`). Any other read of the
+ * parameter -> the element flows -> YES. A callback this cannot read (a
+ * function reference, a destructured parameter, an unbalanced body) -> null.
+ * @param {string} text
+ * @param {number} openParen index of the `(` of the `.map(` call
+ * @returns {boolean | null} true = element flows, false = proven not, null = cannot classify
+ */
+function callbackLetsElementThrough(text, openParen) {
+  const end = skipBalanced(text, openParen);
+  if (end < 0) return null;
+  const inner = text.slice(openParen + 1, end - 1);
+  const lead = inner.replace(/^(?:\s|\/\*[\s\S]*?\*\/)+/, "");
+  let param = null;
+  let bodyStart;
+  const arrowRe = /^(?:\(\s*([\w$]+)\s*(?:,[^)]*)?\)|([\w$]+))\s*=>/.exec(lead);
+  const arrowNoParamRe = /^\(\s*\)\s*=>/.exec(lead);
+  const functionRe = /^function\s*[\w$]*\s*\(\s*(?:([\w$]+)\s*(?:,[^)]*)?)?\)/.exec(lead);
+  if (arrowRe) {
+    param = arrowRe[1] ?? arrowRe[2];
+    bodyStart = arrowRe[0].length;
+  } else if (arrowNoParamRe) {
+    bodyStart = arrowNoParamRe[0].length;
+  } else if (functionRe) {
+    param = functionRe[1] ?? null;
+    bodyStart = functionRe[0].length;
+  } else {
+    return null;
+  }
+  if (param === null) return false;
+  let body = lead.slice(bodyStart);
+  // Blank plain string literals so a word like "p-4" cannot read as the parameter.
+  body = body.replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, (lit) => " ".repeat(lit.length));
+  const id = param.replace(/\$/g, "\\$");
+  body = body.replace(new RegExp(`\\bkey\\s*:\\s*${id}(?![\\w$])`, "g"), " ");
+  body = body.replace(new RegExp(`(\\})\\s*,\\s*${id}\\s*(\\))`, "g"), "$1$2");
+  return new RegExp(`(?<![\\w$.])${id}(?![\\w$])`).test(body);
+}
+
+/**
+ * Decide what the form following an array literal does to the literals the
+ * array contains. `pos` is the index just after the closing `]`.
+ * @param {string} text
+ * @param {number} pos
+ * @returns {{ drop: true } | { drop: false } | { unreadable: string }}
+ */
+function classifyArrayOperand(text, pos) {
+  let k = pos;
+  while (k < text.length && /\s/.test(text[k])) k++;
+  const rest = text.slice(k);
+  const optional = rest.startsWith("?.");
+  const head = optional ? rest.slice(2) : rest;
+  const first = head[0];
+  if (first === "(") return { unreadable: "array literal called as a function" };
+  if (first === "[") return { drop: false }; // index access: `["x"][0]` is the element itself
+  if (first !== "." && !optional) return { drop: false }; // not an operand at all
+  const nameMatch = /^\.?\s*([A-Za-z_$][\w$]*)\s*(\()?/.exec(head);
+  if (!nameMatch) {
+    return {
+      unreadable: `member access after an array literal that is not a plain name (${JSON.stringify(rest.slice(0, 12))})`,
+    };
+  }
+  const name = nameMatch[1];
+  if (!arrayMemberNames().has(name)) {
+    return {
+      unreadable: `member \`${name}\` after an array literal is not a member of Array.prototype or Object.prototype`,
+    };
+  }
+  if (ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS.has(name)) return { drop: true };
+  if (ARRAY_MEMBERS_COMPOSED_FROM_CALLBACK.has(name)) {
+    if (!nameMatch[2]) return { unreadable: `\`.${name}\` after an array literal with no call` };
+    const open = k + (optional ? 2 : 0) + nameMatch[0].lastIndexOf("(");
+    const flows = callbackLetsElementThrough(text, open);
+    if (flows === null) {
+      return {
+        unreadable: `\`.${name}\` callback not an inline function with a plain first parameter, so map callback cannot be read`,
+      };
+    }
+    return { drop: !flows };
+  }
+  return { drop: false };
+}
+
+/**
  * PASS C — rendered-child POSITION (k1754vz2awga7e6yt49n1mn5nh8c58p6).
  *
  * PASS A decides by shape, and shape cannot tell the word "submit" from the
@@ -621,8 +797,15 @@ function skipLiteral(text, i) {
  *   - a literal inside a call's parens or an object's braces
  *     (`cn("x")`, `{ className: "x" }`)                           -> not this pass's (PASS A/B judge it)
  *   - a literal inside an array that is an OPERAND, i.e. followed by
- *     member access or a call (`["skeleton-1"].map(...)`)         -> not rendered (keys)
+ *     member access, an index or a call: the form that FOLLOWS the array
+ *     decides, and the domain of those forms is derived, not remembered
+ *     (see classifyArrayOperand): only a member PROVEN not to return the
+ *     element or a string built from it drops the literals; every other
+ *     member keeps them as rendered; a form that cannot be classified is
+ *     named and refused (exit 2)
  *   - a literal inside an index access (`labels["x"]`)            -> not rendered
+ *     (this is a literal INSIDE the brackets; an array literal followed by an
+ *     index, `["x"][0]`, is the element itself and stays rendered)
  *   - a literal that is an equality operand (`v === "open" ? ...`) -> not rendered
  *   - a children value this scanner cannot walk to its end
  *     (an unterminated literal or comment)                         -> named, exit 2
@@ -633,9 +816,9 @@ function skipLiteral(text, i) {
  * here: in that position it has the same shape as an enum value. It stays
  * PASS A's to judge, and PASS A passes a single lowercase token.
  * @param {string} text
- * @returns {{ starts: Set<number>, unreadable: number[] }} opening-delimiter
- *   offsets of every literal in rendered-child position, and the offsets of
- *   every `children:` value that could not be walked
+ * @returns {{ starts: Set<number>, unreadable: Array<{ offset: number, reason: string }> }}
+ *   opening-delimiter offsets of every literal in rendered-child position, and
+ *   the offset + reason of every `children:` value that could not be walked
  */
 function findRenderedChildLiterals(text) {
   const starts = new Set();
@@ -650,6 +833,7 @@ function findRenderedChildLiterals(text) {
     /** @type {number[]} */
     const collected = [];
     let ok = true;
+    let unreadableReason = "unterminated literal or comment";
     while (i < text.length) {
       const ch = text[i];
       if (ch === '"' || ch === "'" || ch === "`") {
@@ -702,11 +886,16 @@ function findRenderedChildLiterals(text) {
         if (stack.length === 0) break; // end of the children value
         const entry = stack.pop();
         if (ch === "]" && entry.kind === "array") {
-          let k = i + 1;
-          while (k < text.length && /\s/.test(text[k])) k++;
-          // `[...].map(...)` / `[...][0]` / `[...](...)`: the array is an
-          // operand, its literals are keys or data, not rendered children.
-          if (text[k] === "." || text[k] === "[" || text[k] === "(") collected.length = entry.mark;
+          // The array is an operand when a member/index/call follows it. What
+          // that does to its literals is classifyArrayOperand's decision (the
+          // domain of forms is derived there); this site never drops on syntax.
+          const verdict = classifyArrayOperand(text, i + 1);
+          if (verdict.unreadable) {
+            unreadableReason = verdict.unreadable;
+            ok = false;
+            break;
+          }
+          if (verdict.drop) collected.length = entry.mark;
         }
         i++;
         continue;
@@ -715,7 +904,7 @@ function findRenderedChildLiterals(text) {
       i++;
     }
     if (!ok) {
-      unreadable.push(m.index);
+      unreadable.push({ offset: m.index, reason: unreadableReason });
       continue;
     }
     for (const s of collected) starts.add(s);
@@ -729,7 +918,7 @@ function findRenderedChildLiterals(text) {
  * context-based exclusions: displayName, defineProperty(exports, ...),
  * `.key === `).
  * @param {string} text
- * @returns {{ candidates: Array<{ line: number, value: string, precedingContext: string, isTextAttributeValue: boolean, isRenderedChild: boolean }>, unreadableChildrenAt: number[] }}
+ * @returns {{ candidates: Array<{ line: number, value: string, precedingContext: string, isTextAttributeValue: boolean, isRenderedChild: boolean }>, unreadableChildrenAt: Array<{ line: number, reason: string }> }}
  */
 function extractCandidates(text) {
   const candidates = [];
@@ -838,7 +1027,13 @@ function extractCandidates(text) {
     c.isRenderedChild = renderedChildren.starts.has(c.rawStart);
   }
 
-  return { candidates, unreadableChildrenAt: renderedChildren.unreadable.map(lineForIndex) };
+  return {
+    candidates,
+    unreadableChildrenAt: renderedChildren.unreadable.map((u) => ({
+      line: lineForIndex(u.offset),
+      reason: u.reason,
+    })),
+  };
 }
 
 /**
@@ -961,7 +1156,7 @@ function main() {
   const { candidates, unreadableChildrenAt } = extractCandidates(maskedText);
   if (unreadableChildrenAt.length > 0) {
     console.error(
-      `REFUSING TO JUDGE: no-hardcoded-words-guard could not walk ${unreadableChildrenAt.length} \`children:\` value(s) to their end (unterminated literal or comment) at ${DIST_PATH}:${unreadableChildrenAt.join(", ")}. A rendered-child literal it cannot delimit is a literal it cannot judge; refusing rather than passing it.`,
+      `REFUSING TO JUDGE: no-hardcoded-words-guard could not walk ${unreadableChildrenAt.length} \`children:\` value(s) to a verdict at ${unreadableChildrenAt.map((u) => `${DIST_PATH}:${u.line} (${u.reason})`).join("; ")}. A rendered-child literal it cannot delimit or classify is a literal it cannot judge; refusing rather than passing it.`,
     );
     process.exit(2);
     return;
