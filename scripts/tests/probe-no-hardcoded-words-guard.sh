@@ -475,6 +475,170 @@ else
   fi
 fi
 
+# ---------------------------------------------------------------------------
+# PASS C — MEMBER FORMS after an array literal in a children position
+# (review REVISE on PR #187: `["save", "draft"].join(" ")` passed, because the
+# scanner dropped the literals of ANY array followed by `.`, `[` or `(`).
+#
+# DOMAIN, derived (not remembered): the forms that can follow an array literal
+# are the members of Array.prototype (ECMA-262 §23.1.3) and Object.prototype
+# reachable through it, plus index access and a call. The guard derives that
+# set at runtime from `Object.getOwnPropertyNames`; this probe injects ONE real
+# word per RENDERED member family into FOREIGN components (MosaicCallout,
+# MosaicCounter), none of them the nonce `zq*` shape, and asserts each lands in
+# the bundle before reading the verdict.
+# ---------------------------------------------------------------------------
+git -C "$CLONE" checkout --quiet --force -B probe-pass-c-members "$BASE"
+MEMBER_FORMS=(
+  'M1 join|share print|["share", "print"].join(" ")'
+  'M2 index access|archive|["archive"][0]'
+  'M3 at|restore|["restore"].at(0)'
+  'M4 find|export|["export"].find(Boolean)'
+  'M5 filter|attach|["attach"].filter(Boolean)'
+  'M6 toString|upload|["upload"].toString()'
+  'M7 reduce|download|["download"].reduce((a, b) => a + b)'
+  'M8 slice|refresh|["refresh"].slice(0)'
+  'M9 pop|retry|["retry"].pop()'
+  'M10 optional join|discard|["discard"]?.join(" ")'
+  'M11 concat|publish|["publish"].concat()'
+  'M12 nested flat|print|[["print"]].flat()'
+  'M13 map identity (element flows to the result)|suspend|["suspend"].map((w) => w)'
+)
+MEMBER_WORDS=()
+for case_desc in "${MEMBER_FORMS[@]}"; do
+  IFS='|' read -r _label words _expr <<< "$case_desc"
+  for w in $words; do MEMBER_WORDS+=("$w"); done
+done
+MEMBER_FORMS_FILE="$SCRATCH/member-forms.txt"
+printf '%s\n' "${MEMBER_FORMS[@]}" > "$MEMBER_FORMS_FILE"
+MEMBER_SETUP_OK=true
+for w in "${MEMBER_WORDS[@]}"; do
+  if grep -rqF -- "\"$w\"" "$CLONE/src"; then
+    FAILURES+=("MUST_BLOCK member forms — \"$w\" ALREADY exists in the clone's sources, it would not be a subject this probe controls — probe invalid")
+    MEMBER_SETUP_OK=false
+  fi
+done
+python3 - "$CLONE" "$MEMBER_FORMS_FILE" <<'MEMBEREOF'
+import sys
+root, forms_file = sys.argv[1], sys.argv[2]
+exprs = []
+with open(forms_file) as f:
+    for line in f:
+        line = line.rstrip("\n")
+        if line:
+            exprs.append(line.split("|", 2)[2])
+def mutate(rel, needle, replacement):
+    path = f"{root}/{rel}"
+    with open(path) as f:
+        text = f.read()
+    if text.count(needle) != 1:
+        raise SystemExit(f"probe: injection anchor not found exactly once in {path}")
+    with open(path, "w") as f:
+        f.write(text.replace(needle, replacement))
+half = (len(exprs) + 1) // 2
+mutate("src/components/callout/MosaicCallout.tsx",
+       '<p className="font-medium">{title}</p>',
+       '<p className="font-medium">{title}' + "".join("{" + e + "}" for e in exprs[:half]) + "</p>")
+mutate("src/components/counter/MosaicCounter.tsx",
+       "      {display}\n    </span>",
+       "      {display}" + "".join("{" + e + "}" for e in exprs[half:]) + "\n    </span>")
+MEMBEREOF
+if [ "$MEMBER_SETUP_OK" = true ] && [ -n "$BASELINE_COUNT" ]; then
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: one real word per rendered Array.prototype member form (PASS C)")
+  log INFO "building PASS C member-forms tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK member forms build — pnpm build failed on the mutated tree")
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + ${#MEMBER_FORMS[@]}))
+  else
+    for w in "${MEMBER_WORDS[@]}"; do
+      if ! grep -qF -- "\"$w\"" "$CLONE/dist/index.cjs"; then
+        FAILURES+=("MUST_BLOCK member forms \"$w\" never reached dist/index.cjs — probe invalid")
+      fi
+    done
+    set +e
+    output="$(run_guard 2>&1)"
+    status=$?
+    set -e
+    for case_desc in "${MEMBER_FORMS[@]}"; do
+      IFS='|' read -r label words _expr <<< "$case_desc"
+      MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+      all_named=true
+      for w in $words; do
+        if ! echo "$output" | grep -A1 -F -- "\"$w\"" | grep -qF "rendered JSX child"; then all_named=false; fi
+      done
+      if [ "$status" -eq 1 ] && [ "$all_named" = true ]; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — PASS C member $label — guard named \"$words\" as a rendered JSX child"
+      else
+        FAILURES+=("MUST_BLOCK PASS C member $label — guard exited $status or did not name \"$words\" as a rendered JSX child")
+        log MUST_BLOCK "FAIL — PASS C member $label — exit=$status"
+      fi
+    done
+    member_count="$(echo "$output" | grep -c '^  - ' || true)"
+    expected=$((BASELINE_COUNT + ${#MEMBER_WORDS[@]}))
+    if [ "$member_count" -ne "$expected" ]; then
+      FAILURES+=("MUST_BLOCK PASS C member forms — offender count is $member_count, expected exactly $expected (baseline $BASELINE_COUNT + ${#MEMBER_WORDS[@]} injected words)")
+    fi
+  fi
+else
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + ${#MEMBER_FORMS[@]}))
+fi
+
+# MUST_PASS: members whose result is provably NOT the element (boolean / number
+# / undefined), and a `.map` whose callback uses the element only as the React
+# `key`. Together they must add ZERO offenders.
+git -C "$CLONE" checkout --quiet --force -B probe-pass-c-members-pass "$BASE"
+python3 - "$CLONE" <<'MEMBERPASSEOF'
+import sys
+root = sys.argv[1]
+path = f"{root}/src/components/callout/MosaicCallout.tsx"
+needle = '<p className="font-medium">{title}</p>'
+repl = ('<p className="font-medium">{title}'
+        '{["zqsome"].some(Boolean) ? null : null}'
+        '{["zqinc"].includes("zqarg") ? null : null}'
+        '{["zqind"].indexOf("zqarg")}'
+        '{["zqlen"].length}'
+        '{["zqmapk"].map((k, i) => <span key={k} data-i={i} />)}'
+        '</p>')
+with open(path) as f:
+    text = f.read()
+if text.count(needle) != 1:
+    raise SystemExit(f"probe: injection anchor not found exactly once in {path}")
+with open(path, "w") as f:
+    f.write(text.replace(needle, repl))
+MEMBERPASSEOF
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+if ! grep -qF 'zqmapk' "$CLONE/src/components/callout/MosaicCallout.tsx"; then
+  FAILURES+=("MUST_PASS PASS C member near-miss injection did NOT land — probe invalid")
+elif [ -z "$BASELINE_COUNT" ]; then
+  FAILURES+=("MUST_PASS PASS C member near-miss — no baseline count to compare against")
+else
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: non-rendering Array.prototype members (PASS C near-miss)")
+  log INFO "building PASS C member near-miss tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_PASS PASS C member near-miss build — pnpm build failed")
+  else
+    MEMBER_NEAR_LANDED=true
+    for word in zqsome zqinc zqind zqlen zqmapk; do
+      if ! grep -qF -- "\"$word\"" "$CLONE/dist/index.cjs"; then
+        FAILURES+=("MUST_PASS PASS C member near-miss \"$word\" never reached the bundle — probe invalid")
+        MEMBER_NEAR_LANDED=false
+      fi
+    done
+    set +e
+    output="$(run_guard 2>&1)"
+    set -e
+    near_count="$(echo "$output" | grep -c '^  - ' || true)"
+    if [ "$MEMBER_NEAR_LANDED" = true ] && [ "$near_count" -eq "$BASELINE_COUNT" ] && ! echo "$output" | grep -qE 'zqsome|zqinc|zqind|zqlen|zqmapk'; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — PASS C non-rendering members (some/includes/indexOf/length/key-only map) added ZERO offenders (baseline $BASELINE_COUNT, now $near_count)"
+    else
+      FAILURES+=("MUST_PASS PASS C member near-miss — offender count $near_count vs baseline $BASELINE_COUNT, or a near-miss was named — output: $output")
+      log MUST_PASS "FAIL — PASS C member near-miss — count $near_count vs $BASELINE_COUNT"
+    fi
+  fi
+fi
+
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-forms)
 
 # ---------------------------------------------------------------------------
@@ -1242,6 +1406,36 @@ else
       fi
     fi
     restore_real_dist
+
+    # --- MUST_REFUSE (PASS C members): a member form after a rendered-child
+    #     array that the scanner cannot classify is named and refused, never
+    #     dropped. One scenario per unclassifiable family. ---
+    REFUSE_MEMBER_CASES=(
+      'array literal called as a function|var zqCall = { children: ["zqcall"](1) };|array literal called as a function'
+      'member outside Array.prototype|var zqUnk = { children: ["zqunk"].zqnotamember(1) };|zqnotamember'
+      'map callback not an inline function|var zqRef = { children: ["zqref"].map(renderIt) };|map callback'
+      'map callback destructures its element|var zqDes = { children: ["zqdes"].map(({ a }) => a) };|map callback'
+    )
+    for case_desc in "${REFUSE_MEMBER_CASES[@]}"; do
+      IFS='|' read -r label injected expect <<< "$case_desc"
+      MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+      cp "$REAL_DIST_BACKUP" "$REAL_DIST"
+      printf '\n%s\n' "$injected" >> "$REAL_DIST"
+      if ! grep -qF -- "$injected" "$REAL_DIST"; then
+        FAILURES+=("MUST_REFUSE member $label — mutation did NOT land — probe invalid")
+        log MUST_REFUSE "FAIL — member $label — mutation did not land"
+      else
+        run_guard_on_real_dist
+        if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF -- "$expect"; then
+          MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+          log MUST_REFUSE "PASS — member $label — exited 2, REFUSED TO JUDGE, named \"$expect\""
+        else
+          FAILURES+=("MUST_REFUSE member $label — guard exited $REFUSE_STATUS (expected 2, naming '$expect') — output: $REFUSE_OUTPUT")
+          log MUST_REFUSE "FAIL — member $label — exit=$REFUSE_STATUS"
+        fi
+      fi
+      restore_real_dist
+    done
 
     # --- MUST_REFUSE 3: artifact present but implausibly small / missing
     #     the require(...) landmark a real build always carries. ---
