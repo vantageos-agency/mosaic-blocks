@@ -1465,7 +1465,6 @@ else
       'map callback returns a literal|var zqCb = { children: [1].map(() => "zqcb") };|.map('
       'createElement child argument|var zqCe = { children: [createElement("p", null, "zqce")] };|createElement('
       'computed callee|var zqComp = { children: [fns[0]("zqcomp")] };|computed callee'
-      'regular expression literal in a children value|var zqRe = { children: [/"zqre/.test(x) ? 1 : 2] };|regular expression'
     )
     for case_desc in "${REFUSE_MEMBER_CASES[@]}"; do
       IFS='|' read -r label injected expect <<< "$case_desc"

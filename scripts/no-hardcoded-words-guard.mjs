@@ -598,31 +598,32 @@ function skipLiteral(text, i) {
 }
 
 /**
- * DOMAIN of the forms that can follow an array literal (`[ ... ]`) in a
- * children value. Source: ECMA-262 (Array.prototype, section "Properties of the
- * Array Prototype Object") plus Object.prototype, which every array inherits.
- * The set of member NAMES is derived at runtime from the engine
- * (`Object.getOwnPropertyNames`), never typed here; only the classification of
- * each name is declared, and the default for a name not declared below is
- * RENDERED (the literals are kept). Non-name forms: an index (`[i]`) returns
- * the element -> rendered; a call (`[...](...)`) is not a valid operation on an
- * array -> unclassifiable, refused.
+ * DOMAIN of the members that can follow a value in a children expression.
+ * Source: ECMA-262 (Array.prototype, String.prototype, Object.prototype, which
+ * every array and string inherits). The member NAMES are derived at runtime
+ * from the engine (`Object.getOwnPropertyNames`), never typed here; only the
+ * classification of a name is declared, and the default for a name that is
+ * not declared is RENDERED (the literals are kept). `assertDeclaredNamesExist`
+ * refuses to start if a declared name is not a member of any of the three
+ * prototypes, so a typo or a removed member cannot silently reclassify.
  *
- * Members PROVEN not to return an element (or a string built from one), so
- * the literals of the array are data, not a rendered child:
- *   - return a boolean:   every, some, includes
- *   - return a number:    indexOf, lastIndexOf, findIndex, findLastIndex,
- *                         push, unshift, `length`
- *   - return undefined:   forEach
- *   - return an iterator of numbers: keys
+ * A member whose RESULT cannot contain the receiver's elements (nor a string
+ * built from them) lets the receiver's literals drop:
+ *   - Array receiver, boolean result:  every, some, includes
+ *   - Array receiver, number result:   indexOf, lastIndexOf, findIndex,
+ *                                      findLastIndex, push, unshift, `length`
+ *   - Array receiver, undefined:       forEach
+ *   - Array receiver, iterator of numbers: keys
+ *   - String receiver, boolean/number: includes, startsWith, endsWith,
+ *                                      indexOf, lastIndexOf, search,
+ *                                      localeCompare, codePointAt, charCodeAt,
+ *                                      isWellFormed, `length`
  * Members that compose their result from the CALLBACK's return values, not
  * from the elements: map, flatMap. The element reaches the result only if the
  * callback lets it through its parameter; see callbackLetsElementThrough.
- * Everything else (join, toString, toLocaleString, at, find, findLast, filter,
- * slice, concat, flat, reverse, sort, toSorted, toReversed, toSpliced, with,
- * splice, pop, shift, reduce, reduceRight, fill, copyWithin, values, entries,
- * valueOf, constructor, ...) returns the element, a string joined from it, or
- * an array/iterator of it, all of which React renders -> kept as rendered.
+ * Everything else (join, toString, at, find, filter, slice, concat, flat,
+ * split, replace, padStart, ...) returns the element, a string built from it,
+ * or an array/iterator of it, all of which React renders -> kept as rendered.
  */
 const ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS = new Set([
   "every",
@@ -638,14 +639,156 @@ const ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS = new Set([
   "forEach",
   "keys",
 ]);
+const STRING_MEMBERS_NOT_RETURNING_ELEMENTS = new Set([
+  "includes",
+  "startsWith",
+  "endsWith",
+  "indexOf",
+  "lastIndexOf",
+  "search",
+  "localeCompare",
+  "codePointAt",
+  "charCodeAt",
+  "isWellFormed",
+  "length",
+]);
 const ARRAY_MEMBERS_COMPOSED_FROM_CALLBACK = new Set(["map", "flatMap"]);
 
-/** Every member name an array literal can be followed by, derived from the engine. */
+/**
+ * Members whose ARGUMENTS cannot be part of the call's result: the result is a
+ * boolean, a number, undefined, an iterator of numbers, or is derived from the
+ * receiver alone while the argument is a predicate, a locale, a separator, a
+ * pattern or a normalization form. A literal among their arguments is data.
+ * Every other prototype member returns something built from its arguments
+ * (join's separator, concat's operands, replace's replacement, padStart's pad,
+ * ...) and keeps the argument literals as rendered.
+ */
+const CALL_ARGS_NOT_RETURNED = new Set([
+  "every",
+  "some",
+  "includes",
+  "indexOf",
+  "lastIndexOf",
+  "findIndex",
+  "findLastIndex",
+  "push",
+  "unshift",
+  "forEach",
+  "keys",
+  "startsWith",
+  "endsWith",
+  "search",
+  "localeCompare",
+  "normalize",
+  "split",
+  "match",
+  "matchAll",
+  "charAt",
+  "charCodeAt",
+  "codePointAt",
+  "toLocaleString",
+  "toLocaleDateString",
+  "toLocaleTimeString",
+  "toLocaleUpperCase",
+  "toLocaleLowerCase",
+  "hasOwnProperty",
+  "isPrototypeOf",
+  "propertyIsEnumerable",
+]);
+/** Members that run a callback: a literal inside the callback body may or may not be returned, so it cannot be classified. */
+const CALL_TAKES_CALLBACK = new Set([
+  "map",
+  "flatMap",
+  "filter",
+  "find",
+  "findLast",
+  "reduce",
+  "reduceRight",
+  "sort",
+  "toSorted",
+]);
+/** Element constructors: the call returns an element; its text children are matched by their own `children:` key. */
+const ELEMENT_CONSTRUCTORS = new Set(["jsx", "jsxs", "jsxDEV"]);
+/** Global calls PROVEN to return their argument's text (String) or an array of their arguments. */
+const GLOBAL_CALLS_RETURNING_ARGS = new Set(["String", "Array.of", "Array.from"]);
+/** Words after which `(` opens a parenthesized expression, not a call (ECMA-262 §13 operators/keywords). */
+const KEYWORDS_BEFORE_GROUP = new Set([
+  "typeof",
+  "void",
+  "delete",
+  "in",
+  "instanceof",
+  "of",
+  "new",
+  "return",
+  "await",
+  "yield",
+  "case",
+  "throw",
+  "else",
+  "do",
+]);
+
+function protoNames(proto) {
+  return Object.getOwnPropertyNames(proto);
+}
+
+/** Every member name a receiver can be followed by, derived from the engine. */
+function receiverMemberNames(receiver) {
+  const names = new Set(protoNames(Object.prototype));
+  if (receiver !== "string") for (const n of protoNames(Array.prototype)) names.add(n);
+  if (receiver !== "array") for (const n of protoNames(String.prototype)) names.add(n);
+  return names;
+}
 function arrayMemberNames() {
-  return new Set([
-    ...Object.getOwnPropertyNames(Array.prototype),
-    ...Object.getOwnPropertyNames(Object.prototype),
-  ]);
+  return receiverMemberNames("array");
+}
+
+/**
+ * Every member name a CALL can carry when the receiver's type is unknown:
+ * the prototypes of the values a children expression formats (arrays,
+ * strings, numbers, dates) plus Object.prototype.
+ */
+function callMemberNames() {
+  const names = receiverMemberNames("either");
+  for (const proto of [Number.prototype, Date.prototype])
+    for (const n of protoNames(proto)) names.add(n);
+  return names;
+}
+
+/** Refuse to start when a declared classification names something the engine does not have. */
+function assertDeclaredNamesExist() {
+  const all = callMemberNames();
+  const declared = [
+    ...ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS,
+    ...STRING_MEMBERS_NOT_RETURNING_ELEMENTS,
+    ...ARRAY_MEMBERS_COMPOSED_FROM_CALLBACK,
+    ...CALL_ARGS_NOT_RETURNED,
+    ...CALL_TAKES_CALLBACK,
+  ];
+  const missing = declared.filter((n) => !all.has(n));
+  if (missing.length > 0) {
+    console.error(
+      `no-hardcoded-words-guard: REFUSING TO JUDGE — declared member(s) ${missing.join(", ")} are not members of Array, String, Number, Date or Object prototypes on this engine.`,
+    );
+    process.exit(2);
+  }
+}
+assertDeclaredNamesExist();
+
+/** True when `name` returns nothing derived from the receiver's elements, for this receiver kind. */
+function memberDropsReceiver(name, receiver) {
+  if (receiver === "array") return ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS.has(name);
+  if (receiver === "string") return STRING_MEMBERS_NOT_RETURNING_ELEMENTS.has(name);
+  // unknown receiver (a call result, a parenthesized value): drop only if the
+  // name drops in EVERY prototype that has it.
+  const inArray = protoNames(Array.prototype).includes(name);
+  const inString = protoNames(String.prototype).includes(name);
+  if (!inArray && !inString) return false;
+  return (
+    (!inArray || ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS.has(name)) &&
+    (!inString || STRING_MEMBERS_NOT_RETURNING_ELEMENTS.has(name))
+  );
 }
 
 /**
@@ -730,36 +873,41 @@ function callbackLetsElementThrough(text, openParen) {
 }
 
 /**
- * Decide what the form following an array literal does to the literals the
- * array contains. `pos` is the index just after the closing `]`.
+ * Decide what the form following a value (array literal, string literal,
+ * call result, parenthesized value) does to the literals that value contains.
+ * `pos` is the index just after the value's closing delimiter.
  * @param {string} text
  * @param {number} pos
+ * @param {"array" | "string" | "either"} receiver
  * @returns {{ drop: true } | { drop: false } | { unreadable: string }}
  */
-function classifyArrayOperand(text, pos) {
+function classifyOperand(text, pos, receiver = "array") {
   let k = pos;
   while (k < text.length && /\s/.test(text[k])) k++;
   const rest = text.slice(k);
   const optional = rest.startsWith("?.");
   const head = optional ? rest.slice(2) : rest;
   const first = head[0];
-  if (first === "(") return { unreadable: "array literal called as a function" };
+  if (first === "(")
+    return {
+      unreadable: `${receiver === "array" ? "array literal" : `${receiver} value`} called as a function`,
+    };
   if (first === "[") return { drop: false }; // index access: `["x"][0]` is the element itself
   if (first !== "." && !optional) return { drop: false }; // not an operand at all
   const nameMatch = /^\.?\s*([A-Za-z_$][\w$]*)\s*(\()?/.exec(head);
   if (!nameMatch) {
     return {
-      unreadable: `member access after an array literal that is not a plain name (${JSON.stringify(rest.slice(0, 12))})`,
+      unreadable: `member access after a ${receiver} value that is not a plain name (${JSON.stringify(rest.slice(0, 12))})`,
     };
   }
   const name = nameMatch[1];
-  if (!arrayMemberNames().has(name)) {
+  if (!receiverMemberNames(receiver).has(name)) {
     return {
-      unreadable: `member \`${name}\` after an array literal is not a member of Array.prototype or Object.prototype`,
+      unreadable: `member \`${name}\` after a ${receiver} value is not a member of the prototypes that value inherits`,
     };
   }
-  if (ARRAY_MEMBERS_NOT_RETURNING_ELEMENTS.has(name)) return { drop: true };
-  if (ARRAY_MEMBERS_COMPOSED_FROM_CALLBACK.has(name)) {
+  if (memberDropsReceiver(name, receiver)) return { drop: true };
+  if (ARRAY_MEMBERS_COMPOSED_FROM_CALLBACK.has(name) && receiver !== "string") {
     if (!nameMatch[2]) return { unreadable: `\`.${name}\` after an array literal with no call` };
     const open = k + (optional ? 2 : 0) + nameMatch[0].lastIndexOf("(");
     const flows = callbackLetsElementThrough(text, open);
@@ -788,33 +936,77 @@ function classifyArrayOperand(text, pos) {
  * `jsxs("b", { children: [icon, " cancel"] })`), so the position is read from
  * the artifact, never guessed.
  *
- * The domain of the children VALUE, derived from the expression grammar a
- * value can take, and what this scanner does with each member:
- *   - a literal directly (`children: "x"`)                        -> rendered
- *   - a literal element of an array literal, at any nesting depth
- *     of array literals (`children: ["x", ["y"]]`)               -> rendered
- *   - a literal as a ternary / `??` / `||` / `&&` operand          -> rendered
- *   - a literal inside a call's parens or an object's braces
- *     (`cn("x")`, `{ className: "x" }`)                           -> not this pass's (PASS A/B judge it)
- *   - a literal inside an array that is an OPERAND, i.e. followed by
- *     member access, an index or a call: the form that FOLLOWS the array
- *     decides, and the domain of those forms is derived, not remembered
- *     (see classifyArrayOperand): only a member PROVEN not to return the
- *     element or a string built from it drops the literals; every other
- *     member keeps them as rendered; a form that cannot be classified is
- *     named and refused (exit 2)
- *   - a literal inside an index access (`labels["x"]`)            -> not rendered
- *     (this is a literal INSIDE the brackets; an array literal followed by an
- *     index, `["x"][0]`, is the element itself and stays rendered)
- *   - a literal that is an equality operand (`v === "open" ? ...`) -> not rendered
- *   - a children value this scanner cannot walk to its end
- *     (an unterminated literal or comment)                         -> named, exit 2
+ * RULE: inside a `children` value, EVERY string or template literal the walk
+ * reaches is RENDERED, unless the walk PROVES that the expression holding it
+ * does not return it. A literal the walk cannot place is never skipped: the
+ * enclosing call is named and the guard exits 2.
+ *
+ * CENSUS of the expression kinds, derived from the ESTree Expression union
+ * (https://github.com/estree/estree/blob/master/es2015.md and es2020.md, the
+ * grammar esbuild emits for a `--format=cjs` bundle). This file walks TOKENS,
+ * not a tree, so each ESTree kind is listed with the token that opens it and
+ * its single disposition: WALKED (its literals are judged), PROVEN (its
+ * literals are proven not returned), or REFUSED (exit 2, form named).
+ *   Literal (string)          `"x"` `'x'`  WALKED: rendered, except an equality
+ *                             operand, an `in` operand, an object key, a
+ *                             string-receiver member that returns no text
+ *                             (`"x".length`), and anything under PROVEN.
+ *   TemplateLiteral           backtick     WALKED: static text rendered; every
+ *                             `${ ... }` interpolation is walked in turn.
+ *   TaggedTemplateExpression  tag`...`     REFUSED when it holds a literal
+ *                             (the tag is a callee that is not classifiable).
+ *   ArrayExpression           `[ ... ]`    WALKED: elements rendered; the member
+ *                             that follows decides (classifyOperand).
+ *   SpreadElement             `...x`       WALKED: `...` is not an index; the
+ *                             spread value is walked like an element.
+ *   ObjectExpression/Property `{ k: v }`   WALKED: values rendered, a quoted key
+ *                             is not a value.
+ *   ConditionalExpression     `a ? b : c`  WALKED: both branches rendered.
+ *   LogicalExpression         `&& || ??`   WALKED: both operands rendered.
+ *   BinaryExpression          `+` etc.     WALKED: both operands rendered;
+ *                             equality / `in` operands are PROVEN (boolean).
+ *   SequenceExpression        `a, b`       WALKED (inside a group).
+ *   Parenthesized group       `( ... )`    WALKED: transparent; the member that
+ *                             follows decides when the group holds a literal.
+ *   MemberExpression          `x.y` `x[i]` `x?.y`  WALKED: a literal inside the
+ *                             index brackets is a key (PROVEN not rendered); a
+ *                             member after a value is classified by name.
+ *   CallExpression/NewExpression  `f(...)` `new F(...)`  by callee:
+ *                               element constructor jsx/jsxs/jsxDEV, incl. the
+ *                               `(0, ns.jsx)` form -> PROVEN (text children are
+ *                               matched by their own `children:` key);
+ *                               String / Array.of / Array.from -> WALKED
+ *                               (return their arguments);
+ *                               a prototype member in CALL_ARGS_NOT_RETURNED
+ *                               -> PROVEN; any other prototype member -> WALKED
+ *                               (returns something built from its arguments);
+ *                               a member that takes a callback (map, filter,
+ *                               ...), createElement, a bare identifier such as
+ *                               `fmt`, a computed callee, `new` -> REFUSED.
+ *   ArrowFunction/Function    `=> ...`     WALKED as part of the enclosing call
+ *                             (a literal in a callback body is judged by the
+ *                             call's disposition: callback-taking -> REFUSED).
+ *   BlockStatement            `{ ... }` after `=>` / `)` / `else` ...  WALKED
+ *                             only inside a `return` expression; a literal in
+ *                             any other statement is PROVEN not returned here.
+ *   RegExpLiteral             `/.../`      REFUSED (its body can hold a quote
+ *                             the walk would misread).
+ *   Identifier, number, operators, `;`     carry no literal: skipped by design.
+ *   Any other construct holding a literal inside an unclassified call is
+ *   REFUSED through that call; there is no default silent skip.
  *
  * DECLARED DIVERGENCE: a lowercase word that reaches the screen through a
  * value which is NOT the children position (a `label: "save"` entry in a
  * config object, rendered later by `{item.label}`) is still not decidable
  * here: in that position it has the same shape as an enum value. It stays
  * PASS A's to judge, and PASS A passes a single lowercase token.
+ * DECLARED DIVERGENCE: a word bound to a variable or object in a function body
+ * (`const accent = x ?? "blue"`) and returned later through that identifier is
+ * a data-flow question this token walk does not answer; it has the same shape
+ * as the config-object case above and is PASS A's to judge.
+ * DECLARED DIVERGENCE: the quoted-key form `"children": x` is matched like the
+ * bare key; a computed key (`[k]: x` with k === "children") is not decidable
+ * from the artifact and is not matched.
  * @param {string} text
  * @returns {{ starts: Set<number>, unreadable: Array<{ offset: number, reason: string }> }}
  *   opening-delimiter offsets of every literal in rendered-child position, and
@@ -823,93 +1015,271 @@ function classifyArrayOperand(text, pos) {
 function findRenderedChildLiterals(text) {
   const starts = new Set();
   const unreadable = [];
-  const childrenKeyRe = /\bchildren\s*:\s*/g;
+  const childrenKeyRe = /(?:\bchildren|"children"|'children')\s*:\s*/g;
   let m;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
   while ((m = childrenKeyRe.exec(text))) {
-    let i = m.index + m[0].length;
-    /** @type {Array<{ kind: "array" | "other", mark: number }>} */
-    const stack = [];
-    /** @type {number[]} */
-    const collected = [];
-    let ok = true;
-    let unreadableReason = "unterminated literal or comment";
-    while (i < text.length) {
-      const ch = text[i];
-      if (ch === '"' || ch === "'" || ch === "`") {
-        const end = skipLiteral(text, i);
-        if (end < 0) {
-          ok = false;
-          break;
-        }
-        const allArrays = stack.every((e) => e.kind === "array");
-        const before = text.slice(Math.max(0, i - 8), i);
-        let k = end;
-        while (k < text.length && /\s/.test(text[k])) k++;
-        const after = text.slice(k, k + 3);
-        const equalityOperand = /[=!]==?\s*$/.test(before) || /^[=!]=/.test(after);
-        if (allArrays && !equalityOperand) collected.push(i);
-        i = end;
-        continue;
-      }
-      if (ch === "/" && text[i + 1] === "*") {
-        const e = text.indexOf("*/", i + 2);
-        if (e < 0) {
-          ok = false;
-          break;
-        }
-        i = e + 2;
-        continue;
-      }
-      if (ch === "/" && text[i + 1] === "/") {
-        const e = text.indexOf("\n", i);
-        i = e < 0 ? text.length : e;
-        continue;
-      }
-      if (ch === "[") {
-        // An index access follows an identifier, `)`, `]` or `?.`; an array
-        // literal follows an operator, `(`, `,`, `?`, `:` or the key itself.
-        let p = i - 1;
-        while (p >= 0 && /\s/.test(text[p])) p--;
-        const prev = p >= 0 ? text[p] : "";
-        const isIndex = /[\w$)\].]/.test(prev) && p >= m.index + m[0].length;
-        stack.push({ kind: isIndex ? "other" : "array", mark: collected.length });
-        i++;
-        continue;
-      }
-      if (ch === "(" || ch === "{") {
-        stack.push({ kind: "other", mark: collected.length });
-        i++;
-        continue;
-      }
-      if (ch === ")" || ch === "]" || ch === "}") {
-        if (stack.length === 0) break; // end of the children value
-        const entry = stack.pop();
-        if (ch === "]" && entry.kind === "array") {
-          // The array is an operand when a member/index/call follows it. What
-          // that does to its literals is classifyArrayOperand's decision (the
-          // domain of forms is derived there); this site never drops on syntax.
-          const verdict = classifyArrayOperand(text, i + 1);
-          if (verdict.unreadable) {
-            unreadableReason = verdict.unreadable;
-            ok = false;
-            break;
-          }
-          if (verdict.drop) collected.length = entry.mark;
-        }
-        i++;
-        continue;
-      }
-      if (ch === "," && stack.length === 0) break;
-      i++;
-    }
-    if (!ok) {
-      unreadable.push({ offset: m.index, reason: unreadableReason });
-      continue;
-    }
-    for (const s of collected) starts.add(s);
+    const r = walkChildrenValue(text, m.index + m[0].length);
+    if (r.unreadable) unreadable.push({ offset: m.index, reason: r.unreadable });
+    else for (const s of r.collected) starts.add(s);
   }
   return { starts, unreadable };
+}
+
+/** Last non-space character before `i`, and its index (or "" / -1). */
+function prevNonSpace(text, i) {
+  let p = i - 1;
+  while (p >= 0 && /\s/.test(text[p])) p--;
+  return { ch: p >= 0 ? text[p] : "", at: p };
+}
+
+/** Classify the `(` at `open`: a parenthesized group, or a call with a disposition. */
+function classifyParen(text, open, floor) {
+  let before = text.slice(Math.max(floor, open - 300), open).replace(/\s+$/, "");
+  if (before.endsWith("?.")) before = before.slice(0, -2).replace(/\s+$/, "");
+  const last = before[before.length - 1] ?? "";
+  if (/[\w$]/.test(last)) {
+    const chain = /((?:[\w$]+\s*\??\.\s*)*[\w$]+)$/.exec(before)[1].replace(/\s+/g, "");
+    const lead = before.slice(0, before.length - chain.length).replace(/\s+$/, "");
+    const word = /([\w$]+)$/.exec(before)[1];
+    if (KEYWORDS_BEFORE_GROUP.has(word) && !chain.includes(".")) return { kind: "group" };
+    const name = chain.split(/\??\./).pop();
+    const isMember = chain.includes(".") || lead.endsWith(".");
+    return {
+      kind: "call",
+      ...classifyCallee(chain, name, isMember, lead.endsWith(".") && !chain.includes(".")),
+    };
+  }
+  if (last === ")") {
+    const zero = /\(\s*0\s*,\s*([\w$.]+)\s*\)$/.exec(before);
+    if (zero) {
+      const name = zero[1].split(".").pop();
+      return { kind: "call", ...classifyCallee(zero[1], name, zero[1].includes("."), false) };
+    }
+    return {
+      kind: "call",
+      verdict: "unknown",
+      display: `computed callee \`${before.slice(-24)}(...)\``,
+    };
+  }
+  if (last === "]") {
+    return {
+      kind: "call",
+      verdict: "unknown",
+      display: `computed callee \`${before.slice(-24)}(...)\``,
+    };
+  }
+  return { kind: "group" };
+}
+
+function classifyCallee(chain, name, isMember, bareMember) {
+  const display = bareMember ? `.${name}(` : `${chain}(`;
+  if (ELEMENT_CONSTRUCTORS.has(name)) return { verdict: "drop", display };
+  if (GLOBAL_CALLS_RETURNING_ARGS.has(chain)) return { verdict: "flows", display };
+  if (!isMember) return { verdict: "unknown", display };
+  if (CALL_ARGS_NOT_RETURNED.has(name)) return { verdict: "drop", display };
+  if (CALL_TAKES_CALLBACK.has(name)) return { verdict: "unknown", display };
+  if (callMemberNames().has(name)) return { verdict: "flows", display };
+  return { verdict: "unknown", display };
+}
+
+/**
+ * Walk ONE `children` value starting at `from`; stop at its end (a `,` or a
+ * closer at depth 0). Returns the offsets of the rendered literals, or the
+ * reason the value could not be walked.
+ * @param {string} text
+ * @param {number} from
+ * @returns {{ collected: number[] } | { unreadable: string }}
+ */
+function walkChildrenValue(text, from) {
+  /** @type {Array<{ kind: string, mark: number, verdict?: string, display?: string, start?: number }>} */
+  const stack = [];
+  /** @type {number[]} */
+  const collected = [];
+  let i = from;
+
+  /** Judge a literal opening at `i` (`end` = index after it). null = skip, number = collect, string = unreadable. */
+  function judge(start, end, isTemplate) {
+    const k = (() => {
+      let q = end;
+      while (q < text.length && /\s/.test(text[q])) q++;
+      return q;
+    })();
+    const before = text.slice(Math.max(0, start - 8), start);
+    const after = text.slice(k, k + 3);
+    if (/[=!]==?\s*$/.test(before) || /^[=!]=/.test(after)) return { skip: true };
+    if (/^in\s/.test(text.slice(k, k + 3))) return { skip: true }; // `"x" in obj` is a boolean
+    // Inside a function body block, only a `return` expression hands a value to
+    // the caller; a literal in any other statement is not returned HERE (a value
+    // bound to a variable and returned later is the declared data-flow divergence).
+    for (let q = stack.length - 1; q >= 0; q--) {
+      if (stack[q].kind === "block") {
+        if (!stack[q].returning) return { skip: true };
+        break;
+      }
+    }
+    if (stack.some((e) => e.kind === "index" || (e.kind === "call" && e.verdict === "drop")))
+      return { skip: true };
+    const unknownCall = stack.find((e) => e.kind === "call" && e.verdict === "unknown");
+    if (unknownCall) {
+      const shown = text.slice(start, Math.min(end, start + 24));
+      return {
+        unreadable: `literal ${shown} is inside the call \`${unknownCall.display}...)\` whose callee cannot be classified (not an element constructor, not a call proven to return its arguments, not one proven not to)`,
+      };
+    }
+    const top = stack[stack.length - 1];
+    if (!isTemplate && top && top.kind === "object") {
+      const p = prevNonSpace(text, start).ch;
+      if ((p === "{" || p === ",") && text[k] === ":") return { skip: true }; // object key
+    }
+    return { collect: true };
+  }
+
+  while (i < text.length) {
+    const top = stack[stack.length - 1];
+    const ch = text[i];
+
+    if (top && top.kind === "template") {
+      if (ch === "\\") {
+        i += 2;
+      } else if (ch === "`") {
+        stack.pop();
+        i++;
+        if (top.pendingCollect && collected.length > top.mark) {
+          // the template is an operand: the member that follows may drop its text
+          const v = classifyOperand(text, i, "string");
+          if (v.unreadable) return { unreadable: v.unreadable };
+          if (v.drop) collected.length = top.mark;
+        }
+      } else if (ch === "$" && text[i + 1] === "{") {
+        stack.push({ kind: "interp", mark: collected.length });
+        i += 2;
+      } else {
+        i++;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      const end = skipLiteral(text, i);
+      if (end < 0) return { unreadable: "unterminated literal or comment" };
+      const j = judge(i, end, false);
+      if (j.unreadable) return { unreadable: j.unreadable };
+      if (j.collect) {
+        const v = classifyOperand(text, end, "string");
+        if (v.unreadable) return { unreadable: v.unreadable };
+        if (!v.drop) collected.push(i);
+      }
+      i = end;
+      continue;
+    }
+    if (ch === "`") {
+      // validate the whole template is walkable before entering it
+      const tend = skipLiteral(text, i);
+      if (tend < 0) return { unreadable: "unterminated literal or comment" };
+      if (/[\w$)\]]/.test(prevNonSpace(text, i).ch)) {
+        return {
+          unreadable: "tagged template literal: the tag is a callee that cannot be classified",
+        };
+      }
+      const j = judge(i, tend, true);
+      if (j.unreadable) return { unreadable: j.unreadable };
+      const mark = collected.length;
+      if (j.collect) collected.push(i);
+      stack.push({ kind: "template", mark, pendingCollect: Boolean(j.collect) });
+      i++;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "*") {
+      const e = text.indexOf("*/", i + 2);
+      if (e < 0) return { unreadable: "unterminated literal or comment" };
+      i = e + 2;
+      continue;
+    }
+    if (ch === "/" && text[i + 1] === "/") {
+      const e = text.indexOf("\n", i);
+      i = e < 0 ? text.length : e;
+      continue;
+    }
+    if (ch === "[") {
+      const { ch: p, at } = prevNonSpace(text, i);
+      const spread = text.slice(Math.max(0, at - 2), at + 1) === "...";
+      const isIndex = !spread && /[\w$)\].]/.test(p) && at >= from;
+      stack.push({ kind: isIndex ? "index" : "array", mark: collected.length });
+      i++;
+      continue;
+    }
+    if (ch === "(") {
+      const c = classifyParen(text, i, from);
+      stack.push({ ...c, mark: collected.length });
+      i++;
+      continue;
+    }
+    if (ch === "{") {
+      // A `{` is a BLOCK (function body or statement) after `=>`, `)`, `else`,
+      // `do`, `try`, `finally`, or at statement start inside a block; otherwise
+      // an object literal. `) {` is never an object literal in expression position.
+      const before = text.slice(Math.max(from, i - 12), i).replace(/\s+$/, "");
+      const p = before[before.length - 1] ?? "";
+      const inBlock = stack.length > 0 && stack[stack.length - 1].kind === "block";
+      const isBlock =
+        before.endsWith("=>") ||
+        p === ")" ||
+        /(?:^|[^\w$])(?:else|do|try|finally)$/.test(before) ||
+        (inBlock && (p === ";" || p === "}" || p === "{"));
+      stack.push(
+        isBlock
+          ? { kind: "block", mark: collected.length, returning: false }
+          : { kind: "object", mark: collected.length },
+      );
+      i++;
+      continue;
+    }
+    if (ch === ";") {
+      if (top && top.kind === "block") top.returning = false;
+      i++;
+      continue;
+    }
+    if (/[A-Za-z_$]/.test(ch) && !/[\w$.]/.test(text[i - 1] ?? "")) {
+      const word = /^[\w$]+/.exec(text.slice(i, i + 40))[0];
+      if (word === "return") {
+        for (let q = stack.length - 1; q >= 0; q--) {
+          if (stack[q].kind === "block") {
+            stack[q].returning = true;
+            break;
+          }
+        }
+      }
+      i += word.length;
+      continue;
+    }
+    if (ch === ")" || ch === "]" || ch === "}") {
+      if (stack.length === 0) break; // end of the children value
+      const entry = stack.pop();
+      i++;
+      if (entry.kind === "interp") continue;
+      const holdsLiteral = collected.length > entry.mark;
+      if (ch === "]" && entry.kind === "array") {
+        // The member that follows the array decides (the domain is derived in
+        // classifyOperand); this site never drops on syntax.
+        const v = classifyOperand(text, i, "array");
+        if (v.unreadable) return { unreadable: v.unreadable };
+        if (v.drop) collected.length = entry.mark;
+      } else if (
+        ch === ")" &&
+        holdsLiteral &&
+        (entry.kind === "group" || (entry.kind === "call" && entry.verdict === "flows"))
+      ) {
+        const v = classifyOperand(text, i, "either");
+        if (v.unreadable) return { unreadable: v.unreadable };
+        if (v.drop) collected.length = entry.mark;
+      }
+      continue;
+    }
+    if (ch === "," && stack.length === 0) break;
+    i++;
+  }
+  return { collected };
 }
 
 /**
