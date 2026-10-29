@@ -60,6 +60,39 @@ SCRATCH="$(mktemp -d)"
 CLONE="$SCRATCH/clone"
 trap 'rm -rf "$SCRATCH"' EXIT
 
+# ---------------------------------------------------------------------------
+# Toolchain: this probe borrows NOTHING from its environment. The package
+# manager is the one the repo DECLARES (package.json `packageManager`, read
+# here, never typed) and it is invoked through a shim that runs exactly that
+# version via npx, so a machine with no pnpm, or another pnpm, gives the same
+# answer. Every missing prerequisite refuses loudly, naming the step.
+# ---------------------------------------------------------------------------
+for tool in git node npx python3; do
+  command -v "$tool" >/dev/null 2>&1 || {
+    echo "probe: STEP prerequisites — \`$tool\` is not on PATH; refusing to run (a setup failure is never a pass)." >&2
+    exit 1
+  }
+done
+PNPM_PIN="$(node -e 'const m=/^pnpm@(\d+\.\d+\.\d+)$/.exec(require(process.argv[1]).packageManager||"");process.stdout.write(m?m[1]:"")' "$REPO_ROOT/package.json")"
+if [ -z "$PNPM_PIN" ]; then
+  echo "probe: STEP pin-pnpm — package.json has no \`packageManager: pnpm@x.y.z\`; refusing to guess a package manager." >&2
+  exit 1
+fi
+mkdir -p "$SCRATCH/bin"
+cat > "$SCRATCH/bin/pnpm" <<SHIM
+#!/usr/bin/env bash
+exec npx --yes "pnpm@$PNPM_PIN" "\$@"
+SHIM
+chmod +x "$SCRATCH/bin/pnpm"
+export PATH="$SCRATCH/bin:$PATH"
+PNPM_GOT="$(pnpm --version 2>"$SCRATCH/pnpm-version.err" || true)"
+if [ "$PNPM_GOT" != "$PNPM_PIN" ]; then
+  echo "probe: STEP pin-pnpm — \`npx pnpm@$PNPM_PIN --version\` answered '$PNPM_GOT' (expected $PNPM_PIN). stderr:" >&2
+  cat "$SCRATCH/pnpm-version.err" >&2
+  exit 1
+fi
+BUILD_LOG="$SCRATCH/build.log"
+
 MUST_BLOCK_PASS=0
 MUST_BLOCK_TOTAL=0
 MUST_PASS_PASS=0
@@ -103,8 +136,9 @@ fi
 # by every build below.
 git -C "$CLONE" checkout --quiet -b probe-base "$BASE"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
-(cd "$CLONE" && pnpm install --frozen-lockfile --silent >/dev/null 2>&1) || {
-  echo "probe: \`pnpm install\` failed in the scratch clone — cannot build anything, refusing to report a pass." >&2
+(cd "$CLONE" && pnpm install --frozen-lockfile >"$SCRATCH/install.log" 2>&1) || {
+  echo "probe: STEP pnpm-install — \`pnpm@$PNPM_PIN install --frozen-lockfile\` failed in the scratch clone — cannot build anything, refusing to report a pass. Log tail:" >&2
+  tail -30 "$SCRATCH/install.log" >&2
   exit 1
 }
 
@@ -116,9 +150,9 @@ run_guard() {
 }
 
 build_clone() {
-  (cd "$CLONE" && pnpm build >/tmp/probe-build.log 2>&1) || {
+  (cd "$CLONE" && pnpm build >"$BUILD_LOG" 2>&1) || {
     echo "probe: \`pnpm build\` failed in the scratch clone. Log:" >&2
-    cat /tmp/probe-build.log >&2
+    cat "$BUILD_LOG" >&2
     return 1
   }
 }
@@ -503,6 +537,15 @@ MEMBER_FORMS=(
   'M11 concat|publish|["publish"].concat()'
   'M12 nested flat|print|[["print"]].flat()'
   'M13 map identity (element flows to the result)|suspend|["suspend"].map((w) => w)'
+  'M14 spread element inside an array operand|clone relabel|[...["clone", "relabel"]].join(" ")'
+  'M15 Array.of call arguments|reassign cascade|Array.of("reassign", "cascade").join(" ")'
+  'M16 String() call argument|snooze|String("snooze")'
+  'M17 concat of an array argument onto an empty array|forward|([] as string[]).concat(["forward"])'
+  'M18 nested array flattened|bookmark|[["bookmark"]].flat()'
+  'M19 bare spread element in a children array|mute|[...["mute"]]'
+  'M20 Array.from call argument|unmute|Array.from(["unmute"]).join(" ")'
+  'M21 conditional inside a spread|pinned|[...(true ? ["pinned"] : [])].join(" ")'
+  'M22 template interpolation holding a conditional|starred|`${true ? "starred" : ""}`'
 )
 MEMBER_WORDS=()
 for case_desc in "${MEMBER_FORMS[@]}"; do
@@ -599,6 +642,9 @@ repl = ('<p className="font-medium">{title}'
         '{["zqind"].indexOf("zqarg")}'
         '{["zqlen"].length}'
         '{["zqmapk"].map((k, i) => <span key={k} data-i={i} />)}'
+        '{[...["zqspread"]].length}'
+        '{"zqstrlen".length}'
+        '{Array.of("zqarrinc").includes("zqarg") ? null : null}'
         '</p>')
 with open(path) as f:
     text = f.read()
@@ -619,7 +665,7 @@ else
     FAILURES+=("MUST_PASS PASS C member near-miss build — pnpm build failed")
   else
     MEMBER_NEAR_LANDED=true
-    for word in zqsome zqinc zqind zqlen zqmapk; do
+    for word in zqsome zqinc zqind zqlen zqmapk zqspread zqstrlen zqarrinc; do
       if ! grep -qF -- "\"$word\"" "$CLONE/dist/index.cjs"; then
         FAILURES+=("MUST_PASS PASS C member near-miss \"$word\" never reached the bundle — probe invalid")
         MEMBER_NEAR_LANDED=false
@@ -629,7 +675,7 @@ else
     output="$(run_guard 2>&1)"
     set -e
     near_count="$(echo "$output" | grep -c '^  - ' || true)"
-    if [ "$MEMBER_NEAR_LANDED" = true ] && [ "$near_count" -eq "$BASELINE_COUNT" ] && ! echo "$output" | grep -qE 'zqsome|zqinc|zqind|zqlen|zqmapk'; then
+    if [ "$MEMBER_NEAR_LANDED" = true ] && [ "$near_count" -eq "$BASELINE_COUNT" ] && ! echo "$output" | grep -qE 'zqsome|zqinc|zqind|zqlen|zqmapk|zqspread|zqstrlen|zqarrinc'; then
       MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
       log MUST_PASS "PASS — PASS C non-rendering members (some/includes/indexOf/length/key-only map) added ZERO offenders (baseline $BASELINE_COUNT, now $near_count)"
     else
@@ -1415,6 +1461,11 @@ else
       'member outside Array.prototype|var zqUnk = { children: ["zqunk"].zqnotamember(1) };|zqnotamember'
       'map callback not an inline function|var zqRef = { children: ["zqref"].map(renderIt) };|map callback'
       'map callback destructures its element|var zqDes = { children: ["zqdes"].map(({ a }) => a) };|map callback'
+      'unresolved callee, literal argument|var zqFmt = { children: [fmt("zqfmt")] };|fmt('
+      'map callback returns a literal|var zqCb = { children: [1].map(() => "zqcb") };|.map('
+      'createElement child argument|var zqCe = { children: [createElement("p", null, "zqce")] };|createElement('
+      'computed callee|var zqComp = { children: [fns[0]("zqcomp")] };|computed callee'
+      'regular expression literal in a children value|var zqRe = { children: [/"zqre/.test(x) ? 1 : 2] };|regular expression'
     )
     for case_desc in "${REFUSE_MEMBER_CASES[@]}"; do
       IFS='|' read -r label injected expect <<< "$case_desc"
