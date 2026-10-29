@@ -61,6 +61,14 @@
  *     never rendered to an end user.
  *   - `Object.defineProperty(exports, "<Name>", ...)` — a CJS export
  *     identifier name, never rendered.
+ *   ORDER OF JUDGEMENT: the PASS C rendered-child position is decided BEFORE
+ *   any exemption keyed on the literal's CONTENT. The KeyboardEvent.key
+ *   exemption below therefore applies ONLY to a literal PASS C proved is NOT a
+ *   rendered child; a key-set word ("Delete", "Home", ...) rendered as a JSX
+ *   child is reported as the user-facing text it is. Its remaining domain is
+ *   exactly three non-rendered positions: `.key ===`/`!==` operand, element of
+ *   an array / `Set([...])` membership list, and the `case` label of a switch
+ *   on `.key`.
  *   - `.key === "<Value>"` / `.key !== "<Value>"` comparisons against a
  *     value in the W3C UI Events `KeyboardEvent.key` spec set
  *     (https://www.w3.org/TR/uievents-key/) — a closed, standardized,
@@ -1563,6 +1571,24 @@ function main() {
     // rendered as text. Scoped tightly to the exact `d:` key so it cannot
     // accidentally swallow an unrelated single-letter prop.
     if (/\bd:\s*$/.test(c.precedingContext)) continue;
+    // ORDER (rendered position first): the rendered-child POSITION decides
+    // before ANY exemption by the literal's content. A KeyboardEvent.key word
+    // ("Delete", "Home", ...) rendered as a JSX child is user-facing text;
+    // the key-set exemptions below apply only to a literal PASS C has proven is
+    // NOT a rendered child.
+    // PASS C — rendered-child position (see findRenderedChildLiterals): a
+    // string the React runtime renders as a text node is user-facing whatever
+    // its shape; only a literal with no letter at all (a glyph) passes.
+    if (c.isRenderedChild && /\p{L}/u.test(decodeUnicodeEscapes(c.value))) {
+      violations.push({
+        line: c.line,
+        snippet: c.value,
+        reason:
+          "rendered JSX child (value or array element of `children`) — the React runtime renders it as a text node, so it is user-facing text whatever its case",
+      });
+      continue;
+    }
+
     if (/\.key\s*(?:===|!==)\s*$/.test(c.precedingContext)) {
       if (KEYBOARD_EVENT_KEY_VALUES.has(c.value)) continue;
       violations.push({
@@ -1581,6 +1607,17 @@ function main() {
     // either alone, so this cannot silently exempt an unrelated string that
     // merely happens to share text with a key name.
     if (KEYBOARD_EVENT_KEY_VALUES.has(c.value) && /[[,]\s*$/.test(c.precedingContext)) continue;
+    // Third and last key-set position: the `case "<Key>":` label of a switch
+    // whose discriminant ends in `.key` (e.g. `switch (event.key) { case
+    // "Tab": ... }`). A case label is a comparison operand, never rendered.
+    // Both conditions again: spec-set member AND `case` position AND the
+    // nearest preceding `switch (...)` header is on `.key`. Anything else
+    // falls through to the shape pass and is reported, never silently passed.
+    if (KEYBOARD_EVENT_KEY_VALUES.has(c.value) && /\bcase\s*$/.test(c.precedingContext)) {
+      const switchAt = maskedText.lastIndexOf("switch (", c.rawStart);
+      const headerEnd = switchAt === -1 ? -1 : maskedText.indexOf(") {", switchAt);
+      if (headerEnd !== -1 && headerEnd < c.rawStart && /\.key\s*$/.test(maskedText.slice(switchAt + 8, headerEnd))) continue;
+    }
 
     // PASS B — spec-derived text-bearing attribute value: always a
     // violation regardless of shape (this is what catches placeholder:
@@ -1592,19 +1629,6 @@ function main() {
         snippet: c.value,
         reason:
           "value of a WAI-ARIA/HTML text-bearing attribute (aria-label/alt/placeholder/title/...) — spec says this is always human-facing text",
-      });
-      continue;
-    }
-
-    // PASS C — rendered-child position (see findRenderedChildLiterals): a
-    // string the React runtime renders as a text node is user-facing whatever
-    // its shape; only a literal with no letter at all (a glyph) passes.
-    if (c.isRenderedChild && /\p{L}/u.test(decodeUnicodeEscapes(c.value))) {
-      violations.push({
-        line: c.line,
-        snippet: c.value,
-        reason:
-          "rendered JSX child (value or array element of `children`) — the React runtime renders it as a text node, so it is user-facing text whatever its case",
       });
       continue;
     }
