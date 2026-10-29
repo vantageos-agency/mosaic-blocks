@@ -1616,7 +1616,12 @@ function main() {
     if (KEYBOARD_EVENT_KEY_VALUES.has(c.value) && /\bcase\s*$/.test(c.precedingContext)) {
       const switchAt = maskedText.lastIndexOf("switch (", c.rawStart);
       const headerEnd = switchAt === -1 ? -1 : maskedText.indexOf(") {", switchAt);
-      if (headerEnd !== -1 && headerEnd < c.rawStart && /\.key\s*$/.test(maskedText.slice(switchAt + 8, headerEnd))) continue;
+      if (
+        headerEnd !== -1 &&
+        headerEnd < c.rawStart &&
+        /\.key\s*$/.test(maskedText.slice(switchAt + 8, headerEnd))
+      )
+        continue;
     }
 
     // PASS B — spec-derived text-bearing attribute value: always a
