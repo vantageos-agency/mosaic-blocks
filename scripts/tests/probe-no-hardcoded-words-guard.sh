@@ -369,7 +369,10 @@ fi
 #   C5 template-literal child        MosaicCard      {`${props.id} zqtemplate`}
 # MUST_PASS near-misses (same position, not rendered): an array operand
 # (`["zqkey"].map`), an equality operand (`=== "zqeq"`), an optional-chain
-# index access (`?.["zqidx"]`) — together they must add ZERO offenders.
+# index access (`?.["zqidx"]`), a regular expression tested in a condition
+# (`/"zqre"/.test(..) ? 1 : 2`: the regex is never rendered, the ?: renders
+# numbers; moved here from MUST_REFUSE once regex literals are masked) —
+# together they must add ZERO offenders.
 # ---------------------------------------------------------------------------
 git -C "$CLONE" checkout --quiet -B probe-pass-c-block "$BASE"
 python3 - "$CLONE" <<'PASSCEOF'
@@ -469,6 +472,7 @@ replacement = (
     '        <span key={k} />\n'
     '      ))}\n'
     '      {props.id === "zqeq" ? null : null}\n'
+    '      {/"zqre"/.test(String(props.id)) ? 1 : 2}\n'
     '      {(props.style as Record<string, string> | undefined)?.["zqidx"]}\n'
     '    </div>'
 )
@@ -489,7 +493,7 @@ else
     FAILURES+=("MUST_PASS PASS C near-miss build — pnpm build failed")
   else
     NEAR_MISS_LANDED=true
-    for word in zqkey zqeq zqidx; do
+    for word in zqkey zqeq zqidx zqre; do
       if ! grep -qF -- "\"$word\"" "$CLONE/dist/index.cjs"; then
         FAILURES+=("MUST_PASS PASS C near-miss \"$word\" never reached the bundle — probe invalid")
         NEAR_MISS_LANDED=false
