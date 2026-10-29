@@ -514,6 +514,156 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# KEY-SET words after the rendered-child check (task k172f4bbavm7jzdqsp73709s518gzh3q).
+#
+# The guard exempts the W3C UI Events KeyboardEvent.key values (Delete, Home,
+# End, Enter, Tab, ...). That exemption is content-based; the rendered-child
+# POSITION is the stronger signal and must be judged FIRST: a key-set word
+# rendered as a JSX child is user-facing text whatever it is spelt like.
+# Census of the exemption's call sites, derived from the guard source:
+#   `KEYBOARD_EVENT_KEY_VALUES.has(` in scripts/no-hardcoded-words-guard.mjs
+#   -> the `.key ===` comparison, the `[`/`,` array-membership position and the
+#   `case` label of a switch on `.key`. The rendered-child shape it can collide
+#   with is the `,` array-position one (`children: [display, "Delete"]`).
+# MUST_BLOCK (five key-set words, three foreign components, each rendered as a
+# JSX child): Delete (MosaicCounter), Home + End (MosaicCallout), Tab + Enter
+# (MosaicCard title / body).
+# MUST_PASS (same words, NOT rendered): a Set([...]) membership list, a
+# `.key ===` comparison and a `switch (event.key) { case ...: }` label, in a
+# seeded component; they must add ZERO offenders.
+# ---------------------------------------------------------------------------
+git -C "$CLONE" checkout --quiet -B probe-keyset-block "$BASE"
+python3 - "$CLONE" <<'KEYSETEOF'
+import sys
+root = sys.argv[1]
+def mutate(rel, needle, replacement):
+    path = f"{root}/{rel}"
+    with open(path) as f:
+        text = f.read()
+    if text.count(needle) != 1:
+        raise SystemExit(f"probe: injection anchor not found exactly once in {path}")
+    with open(path, "w") as f:
+        f.write(text.replace(needle, replacement))
+mutate("src/components/counter/MosaicCounter.tsx",
+       "      {display}\n    </span>",
+       "      {display}Delete\n    </span>")
+mutate("src/components/callout/MosaicCallout.tsx",
+       '<p className="font-medium">{title}</p>',
+       '<p className="font-medium">{title}Home</p>')
+mutate("src/components/callout/MosaicCallout.tsx",
+       '{children ? <div className="text-muted-foreground">{children}</div> : null}',
+       '{children ? <div className="text-muted-foreground">{children}End</div> : null}')
+mutate("src/components/card/MosaicCard.tsx",
+       '      className={cn("text-lg font-semibold leading-none tracking-tight", className)}\n      {...props}\n    />',
+       '      className={cn("text-lg font-semibold leading-none tracking-tight", className)}\n      {...props}\n    >\n      {props.id}Tab\n    </h3>')
+mutate("src/components/card/MosaicCard.tsx",
+       '        "bg-card text-card-foreground rounded-xl border border-border shadow-sm",\n        className,\n      )}\n      {...props}\n    />',
+       '        "bg-card text-card-foreground rounded-xl border border-border shadow-sm",\n        className,\n      )}\n      {...props}\n    >\n      {props.id}Enter\n    </div>')
+KEYSETEOF
+KEYSET_FORMS=(
+  "K1 Delete after an expression|Delete|src/components/counter/MosaicCounter.tsx|{display}Delete|display,\"Delete\"]"
+  "K2 Home after an expression|Home|src/components/callout/MosaicCallout.tsx|{title}Home|title,\"Home\"]"
+  "K3 End after an expression|End|src/components/callout/MosaicCallout.tsx|{children}End|children,\"End\"]"
+  "K4 Tab after an expression|Tab|src/components/card/MosaicCard.tsx|{props.id}Tab|props.id,\"Tab\"]"
+  "K5 Enter after an expression|Enter|src/components/card/MosaicCard.tsx|{props.id}Enter|props.id,\"Enter\"]"
+)
+KEYSET_LANDED=true
+for case_desc in "${KEYSET_FORMS[@]}"; do
+  IFS='|' read -r _label _word rel anchor _token <<< "$case_desc"
+  if ! grep -qF -- "$anchor" "$CLONE/$rel"; then
+    FAILURES+=("MUST_BLOCK key-set injection \"$anchor\" did NOT land in $rel — probe invalid")
+    KEYSET_LANDED=false
+  fi
+done
+if [ "$KEYSET_LANDED" = true ] && [ -n "$BASELINE_COUNT" ]; then
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: key-set words rendered as JSX children (foreign components)")
+  log INFO "building key-set block tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_BLOCK key-set build — pnpm build failed on the mutated tree")
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + ${#KEYSET_FORMS[@]}))
+  else
+    set +e
+    output="$(run_guard 2>&1)"
+    status=$?
+    set -e
+    for case_desc in "${KEYSET_FORMS[@]}"; do
+      IFS='|' read -r label word _rel _anchor token <<< "$case_desc"
+      MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+      # esbuild prints the array across lines; landing is asserted on the
+      # whitespace-stripped bundle: `<expr>,"<word>"]`.
+      if ! tr -d ' \n' < "$CLONE/dist/index.cjs" | grep -qF -- "$token"; then
+        FAILURES+=("MUST_BLOCK key-set \"$word\" never reached dist/index.cjs as an array child — probe invalid")
+      elif [ "$status" -eq 1 ] && echo "$output" | grep -A1 -E -- "^  - .*\"$word\"" | grep -qF "rendered JSX child"; then
+        MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+        log MUST_BLOCK "PASS — key-set $label — guard named \"$word\" as a rendered JSX child"
+      else
+        FAILURES+=("MUST_BLOCK key-set $label — guard exited $status or did not name \"$word\" as a rendered JSX child")
+        log MUST_BLOCK "FAIL — key-set $label — exit=$status"
+      fi
+    done
+    keyset_count="$(echo "$output" | grep -c '^  - ' || true)"
+    expected=$((BASELINE_COUNT + ${#KEYSET_FORMS[@]}))
+    if [ "$keyset_count" -ne "$expected" ]; then
+      FAILURES+=("MUST_BLOCK key-set — offender count is $keyset_count, expected exactly $expected (baseline $BASELINE_COUNT + ${#KEYSET_FORMS[@]} forms)")
+    fi
+  fi
+else
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + ${#KEYSET_FORMS[@]}))
+fi
+
+git -C "$CLONE" checkout --quiet -B probe-keyset-pass "$BASE"
+mkdir -p "$CLONE/src/components/probe-keyset-seed"
+cat > "$CLONE/src/components/probe-keyset-seed/MosaicProbeKeysetSeed.tsx" <<'SEEDEOF'
+import * as React from "react";
+
+const probeKeysetMembership = new Set(["ArrowUp", "Home", "End"]);
+
+function probeKeysetHandler(event: React.KeyboardEvent): number {
+  if (event.key === "Enter") return 1;
+  switch (event.key) {
+    case "Tab":
+      return 2;
+    default:
+      return probeKeysetMembership.has(event.key) ? 3 : 0;
+  }
+}
+
+export const MosaicProbeKeysetSeed = React.forwardRef<HTMLSpanElement>((_props, ref) => (
+  <span ref={ref} tabIndex={0} onKeyDown={(event) => probeKeysetHandler(event)} />
+));
+MosaicProbeKeysetSeed.displayName = "MosaicProbeKeysetSeed";
+SEEDEOF
+printf '\nexport { MosaicProbeKeysetSeed } from "./components/probe-keyset-seed/MosaicProbeKeysetSeed";\n' >> "$CLONE/src/index.ts"
+MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+if ! grep -qF 'new Set(["ArrowUp", "Home", "End"])' "$CLONE/src/components/probe-keyset-seed/MosaicProbeKeysetSeed.tsx"; then
+  FAILURES+=("MUST_PASS key-set non-rendered — seeded fixture did NOT land — probe invalid")
+elif [ -z "$BASELINE_COUNT" ]; then
+  FAILURES+=("MUST_PASS key-set non-rendered — no baseline count to compare against")
+else
+  (cd "$CLONE" && git add -A && git commit --quiet -m "probe: key-set words in membership / comparison / switch-case positions")
+  log INFO "building key-set non-rendered tree (this takes ~15-25s)..."
+  if ! build_clone; then
+    FAILURES+=("MUST_PASS key-set non-rendered build — pnpm build failed")
+  elif ! grep -F 'probeKeysetMembership = ' "$CLONE/dist/index.cjs" | grep -qF '["ArrowUp", "Home", "End"]' \
+    || ! grep -A8 -F 'function probeKeysetHandler' "$CLONE/dist/index.cjs" | grep -qF 'event.key === "Enter"' \
+    || ! grep -A8 -F 'function probeKeysetHandler' "$CLONE/dist/index.cjs" | grep -qF 'case "Tab":'; then
+    FAILURES+=("MUST_PASS key-set non-rendered — membership / comparison / switch-case never reached the bundle in those forms — probe invalid")
+  else
+    set +e
+    output="$(run_guard 2>&1)"
+    set -e
+    keyset_pass_count="$(echo "$output" | grep -c '^  - ' || true)"
+    if [ "$keyset_pass_count" -eq "$BASELINE_COUNT" ]; then
+      MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+      log MUST_PASS "PASS — key-set words in Set membership, .key === and switch-case positions added ZERO offenders (baseline $BASELINE_COUNT, now $keyset_pass_count)"
+    else
+      FAILURES+=("MUST_PASS key-set non-rendered — offender count $keyset_pass_count vs baseline $BASELINE_COUNT — output: $output")
+      log MUST_PASS "FAIL — key-set non-rendered — count $keyset_pass_count vs $BASELINE_COUNT"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # PASS C — MEMBER FORMS after an array literal in a children position
 # (review REVISE on PR #187: `["save", "draft"].join(" ")` passed, because the
 # scanner dropped the literals of ANY array followed by `.`, `[` or `(`).
