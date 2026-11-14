@@ -1182,3 +1182,41 @@ export type {
   MosaicAdminOnlyGuardBaseProps,
   MosaicAdminOnlyGuardExitProps,
 } from "./components/admin-only-guard/MosaicAdminOnlyGuard.js";
+
+// ── document-review: generic document table + criteria panel + stack-free review logic ─
+export { MosaicDocumentTable } from "./components/document-review/MosaicDocumentTable.js";
+export type {
+  MosaicDocumentTableProps,
+  MosaicDocumentTableRowContext,
+} from "./components/document-review/MosaicDocumentTable.js";
+export { MosaicDocumentCriteriaPanel } from "./components/document-review/MosaicDocumentCriteriaPanel.js";
+export type {
+  MosaicDocumentCriteriaPanelLabels,
+  MosaicDocumentCriteriaPanelProps,
+} from "./components/document-review/MosaicDocumentCriteriaPanel.js";
+export {
+  INITIAL_REVIEW_PANEL_TAB,
+  REVIEW_PANEL_TABS,
+  applyFieldCorrection,
+  correctionOutcome,
+  initialColumnVisibility,
+  isEditableTarget,
+  neighbourRowId,
+  toggleColumnVisibility,
+  visibleColumns,
+} from "./lib/document-review/index.js";
+export type {
+  ApplyFieldCorrectionArgs,
+  ColumnVisibility,
+  CorrectionRecord,
+  FieldCorrectionRequest,
+  FieldCorrectionResult,
+  FieldValidation,
+  FieldValidator,
+  FieldValue,
+  FieldWriteResponse,
+  NavDirection,
+  ReviewColumn,
+  ReviewPanelTab,
+  ReviewRow,
+} from "./lib/document-review/index.js";

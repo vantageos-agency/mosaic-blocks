@@ -22,7 +22,13 @@ import type { ReviewColumn, ReviewRow } from "./index.js";
 const columns: ReviewColumn<ReviewRow>[] = [
   { id: "a", label: "A", defaultVisible: true, accessor: (r) => r.values.a ?? null },
   { id: "b", label: "B", defaultVisible: false, accessor: (r) => r.values.b ?? null },
-  { id: "c", label: "C", defaultVisible: true, accessor: (r) => r.values.c ?? null, editable: false },
+  {
+    id: "c",
+    label: "C",
+    defaultVisible: true,
+    accessor: (r) => r.values.c ?? null,
+    editable: false,
+  },
 ];
 
 const row: ReviewRow = { id: "r1", values: { a: "one", b: 2, c: null } };
@@ -113,7 +119,10 @@ describe("applyFieldCorrection", () => {
 
   it("a second correction keeps the FIRST original", async () => {
     const write = vi.fn().mockResolvedValue({ ok: true, value: "dos" });
-    const first = await applyFieldCorrection({ ...base, write: async () => ({ ok: true, value: "uno" }) });
+    const first = await applyFieldCorrection({
+      ...base,
+      write: async () => ({ ok: true, value: "uno" }),
+    });
     if (!first.ok) throw new Error("first must succeed");
     const second = await applyFieldCorrection({ ...base, row: first.row, input: "dos", write });
     if (!second.ok) throw new Error("second must succeed");
@@ -163,7 +172,10 @@ describe("applyFieldCorrection", () => {
   });
 
   it("an echoed null is a confirmation of erasure, not a silence", async () => {
-    const r = await applyFieldCorrection({ ...base, write: async () => ({ ok: true, value: null }) });
+    const r = await applyFieldCorrection({
+      ...base,
+      write: async () => ({ ok: true, value: null }),
+    });
     if (!r.ok) throw new Error("must succeed");
     expect(r.confirmed).toBe(true);
     expect(r.row.values.a).toBeNull();

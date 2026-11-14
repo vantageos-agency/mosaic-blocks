@@ -11,7 +11,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ReviewColumn, ReviewRow } from "../../lib/document-review/index.js";
 import { MosaicDocumentCriteriaPanel } from "./MosaicDocumentCriteriaPanel.js";
-import type { MosaicDocumentCriteriaPanelLabels } from "./MosaicDocumentCriteriaPanel.js";
+import type {
+  MosaicDocumentCriteriaPanelLabels,
+  MosaicDocumentCriteriaPanelProps,
+} from "./MosaicDocumentCriteriaPanel.js";
 import { MosaicDocumentTable } from "./MosaicDocumentTable.js";
 
 const columns: ReviewColumn<ReviewRow>[] = [
@@ -45,7 +48,7 @@ const labels: MosaicDocumentCriteriaPanelLabels = {
   editField: (column) => `edit ${column}`,
 };
 
-function renderPanel(overrides: Partial<React.ComponentProps<typeof MosaicDocumentCriteriaPanel>> = {}) {
+function renderPanel(overrides: Partial<MosaicDocumentCriteriaPanelProps<ReviewRow>> = {}) {
   const onCorrect = vi.fn();
   const onNavigate = vi.fn();
   const utils = render(
@@ -72,7 +75,9 @@ describe("MosaicDocumentCriteriaPanel", () => {
     const { container } = renderPanel();
     const compare = screen.getByRole("tab", { name: "T-compare" });
     expect(compare.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("tab", { name: "T-document" }).getAttribute("aria-selected")).toBe("false");
+    expect(screen.getByRole("tab", { name: "T-document" }).getAttribute("aria-selected")).toBe(
+      "false",
+    );
     expect(screen.getByRole("tab", { name: "T-row" }).getAttribute("aria-selected")).toBe("false");
 
     const pane = container.querySelector("[data-slot='resizable-split-pane']") as HTMLElement;
@@ -145,7 +150,9 @@ describe("MosaicDocumentCriteriaPanel", () => {
         labels={labels}
       />,
     );
-    expect((screen.getByRole("button", { name: "P-prev" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "P-prev" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 });
 
@@ -203,28 +210,39 @@ describe("MosaicDocumentTable", () => {
     fireEvent.click(screen.getByText("a2"));
     const panel = container.querySelector("[data-slot='document-criteria-panel']") as HTMLElement;
     expect(panel).toBeTruthy();
-    expect(within(panel).getByRole("tab", { name: "T-compare" }).getAttribute("aria-selected")).toBe("true");
-    const selected = container.querySelectorAll("[data-slot='data-table-row'][data-selected='true']");
+    expect(
+      within(panel).getByRole("tab", { name: "T-compare" }).getAttribute("aria-selected"),
+    ).toBe("true");
+    const selected = container.querySelectorAll(
+      "[data-slot='document-table-open'][data-selected='true']",
+    );
     expect(selected).toHaveLength(1);
     fireEvent.click(within(panel).getByRole("button", { name: "P-next" }));
     expect(
-      container
-        .querySelector("[data-slot='data-table-row'][data-selected='true']")
+      container.querySelector("[data-slot='document-table-open'][data-selected='true']")
         ?.textContent,
-    ).toContain("a3");
+    ).toBe("a3");
   });
 
-  it("selects a row from the keyboard (Enter)", () => {
+  it("selects a row from the keyboard: the first cell is a real button", () => {
     const { container } = renderTable();
-    const tr = screen.getByText("a1").closest("tr") as HTMLElement;
-    expect(tr.getAttribute("tabindex")).toBe("0");
-    fireEvent.keyDown(tr, { key: "Enter" });
-    expect(container.querySelector("[data-slot='document-criteria-panel']")).toBeTruthy();
+    const button = screen.getByRole("button", { name: "a1" });
+    button.focus();
+    expect(document.activeElement).toBe(button);
+    fireEvent.click(button); // a button's Enter/Space activation is delivered as a click
+    expect(
+      container.querySelector("[data-slot='document-criteria-panel']")?.getAttribute("data-row-id"),
+    ).toBe("r1");
   });
 
   it("shows emptyMessage when there are no rows", () => {
     render(
-      <MosaicDocumentTable columns={columns} rows={[]} getRowId={(r) => r.id} emptyMessage="nothing" />,
+      <MosaicDocumentTable
+        columns={columns}
+        rows={[]}
+        getRowId={(r) => r.id}
+        emptyMessage="nothing"
+      />,
     );
     expect(screen.getByText("nothing")).toBeTruthy();
   });
