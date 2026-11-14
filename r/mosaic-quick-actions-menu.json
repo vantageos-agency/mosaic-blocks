@@ -5,7 +5,7 @@
   "description": "Generic + button dropdown for quick actions. Items with icon + label + separator. Custom link renderer prop.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

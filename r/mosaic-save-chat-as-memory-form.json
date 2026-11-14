@@ -5,9 +5,9 @@
   "description": "MosaicSaveChatAsMemoryForm — presentational \"turn this thread into agency knowledge\" form: the chat → memory bridge.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-input.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-tag-input.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-textarea.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-input.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-tag-input.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-textarea.json"
   ],
   "files": [
     {

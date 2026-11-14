@@ -5,9 +5,9 @@
   "description": "MosaicEditSessionDialog — presentational \"rename / reclassify a work-in-progress session\" form modal",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-adaptive-modal.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-input.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-select.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-adaptive-modal.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-input.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-select.json"
   ],
   "files": [
     {

@@ -5,7 +5,7 @@
   "description": "Generic user preferences form. Grouped sections with select and toggle fields. Fully controlled via props.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

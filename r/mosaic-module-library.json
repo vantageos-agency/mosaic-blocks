@@ -5,7 +5,7 @@
   "description": "Generic module/library manager (responsive-pair). Includes MosaicModuleForm. Tabs, search, CRUD callbacks.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-adaptive-modal.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-adaptive-modal.json"
   ],
   "files": [
     {
