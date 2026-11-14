@@ -4,13 +4,11 @@ export type NavDirection = "prev" | "next";
 
 // Arrow keys inside a field move the caret or the option, never the row.
 export function isEditableTarget(target: EventTarget | null): boolean {
-  if (!target || typeof (target as HTMLElement).tagName !== "string") return false;
-  const el = target as HTMLElement;
   return (
-    el.tagName === "INPUT" ||
-    el.tagName === "TEXTAREA" ||
-    el.tagName === "SELECT" ||
-    el.isContentEditable === true
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable === true)
   );
 }
 

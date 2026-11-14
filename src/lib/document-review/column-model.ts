@@ -21,11 +21,20 @@ export interface ReviewColumn<T> {
 /** Explicit visibility per column id; an absent id falls back to `defaultVisible`. */
 export type ColumnVisibility = Readonly<Record<string, boolean>>;
 
+// Developer-facing invariant error, thrown at misuse time, never rendered to an end
+// user. Kept as an object-literal constant with the marker BETWEEN properties: a `//`
+// comment right before a `throw new Error(...)` is stripped by esbuild and would never
+// reach dist (same pattern as MosaicDeviceProvider).
+const COLUMN_MODEL_ERRORS = {
+  // allow-hardcoded-word: developer-facing invariant error, never rendered to an end user
+  unknownColumn: (id: string) => `document-review: visibility names unknown column "${id}"`,
+};
+
 function assertKnown<T>(columns: readonly ReviewColumn<T>[], ids: Iterable<string>): void {
   const known = new Set(columns.map((c) => c.id));
   for (const id of ids) {
     if (!known.has(id)) {
-      throw new Error(`document-review: visibility names unknown column "${id}"`);
+      throw new Error(COLUMN_MODEL_ERRORS.unknownColumn(id));
     }
   }
 }
