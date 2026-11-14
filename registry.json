@@ -795,6 +795,43 @@
       ]
     },
     {
+      "name": "mosaic-document-table",
+      "type": "registry:ui",
+      "title": "MosaicDocumentTable",
+      "description": "MosaicDocumentTable — generic document table, built on MosaicDataTable.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/components/document-review/MosaicDocumentCriteriaPanel.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-review/MosaicDocumentTable.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-review/column-model.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-review/document-review-logic.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-review/field-correction.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-review/panel-tab.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/document-review/row-navigation.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-document-upload",
       "type": "registry:ui",
       "title": "MosaicDocumentUpload",

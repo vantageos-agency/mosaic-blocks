@@ -5,7 +5,7 @@
   "description": "Generic collapsible filter sidebar. Filter tabs + category list with counts. Reusable across agents/marketplace/templates.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.35-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {
