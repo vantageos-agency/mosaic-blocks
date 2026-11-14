@@ -9,13 +9,13 @@
  */
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ReviewColumn, ReviewRow } from "../../lib/document-review/index.js";
 import { MosaicDocumentCriteriaPanel } from "./MosaicDocumentCriteriaPanel.js";
 import type {
   MosaicDocumentCriteriaPanelLabels,
   MosaicDocumentCriteriaPanelProps,
 } from "./MosaicDocumentCriteriaPanel.js";
 import { MosaicDocumentTable } from "./MosaicDocumentTable.js";
+import type { ReviewColumn, ReviewRow } from "./document-review-logic.js";
 
 const columns: ReviewColumn<ReviewRow>[] = [
   { id: "alpha", label: "Alpha", defaultVisible: true, accessor: (r) => r.values.alpha ?? null },

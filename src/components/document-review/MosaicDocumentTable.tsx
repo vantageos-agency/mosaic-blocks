@@ -17,13 +17,13 @@
  */
 import { useState } from "react";
 import type * as React from "react";
+import { MosaicDataTable, type MosaicDataTableColumn } from "../data-table/MosaicDataTable.js";
 import {
   type ColumnVisibility,
   type ReviewColumn,
   initialColumnVisibility,
   visibleColumns,
-} from "../../lib/document-review/index.js";
-import { MosaicDataTable, type MosaicDataTableColumn } from "../data-table/MosaicDataTable.js";
+} from "./document-review-logic.js";
 
 export interface MosaicDocumentTableRowContext {
   rowId: string;

@@ -16,8 +16,8 @@ import {
   neighbourRowId,
   toggleColumnVisibility,
   visibleColumns,
-} from "./index.js";
-import type { ReviewColumn, ReviewRow } from "./index.js";
+} from "./document-review-logic.js";
+import type { ReviewColumn, ReviewRow } from "./document-review-logic.js";
 
 const columns: ReviewColumn<ReviewRow>[] = [
   { id: "a", label: "A", defaultVisible: true, accessor: (r) => r.values.a ?? null },
