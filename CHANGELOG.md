@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — document review (unreleased)
+
+**MosaicDocumentTable / MosaicDocumentCriteriaPanel + `src/lib/document-review/`** — generic, vocabulary-free parts for a document-review screen. `MosaicDocumentTable<T>` composes `MosaicDataTable`: rows and a column model from props, column visibility from the model (`defaultVisible`, or a `columnVisibility` override), row selection (click, or the first cell's real button) opens `renderPanel`. `MosaicDocumentCriteriaPanel<T>` composes `MosaicTabs` + `MosaicResizableSplitPane` + `MosaicPdfViewer` + `MosaicEditableCell`: it opens on **Compare** (document left, fields right) with no interaction; each field is editable and shows a host-supplied provenance label; an edit reports `{ rowId, field, input, by, provenance }` to `onCorrect`; prev/next walk the host's row order. Every word is a prop (`labels`, column labels): required, no default. Stack-free logic: `ReviewPanelTab` / `INITIAL_REVIEW_PANEL_TAB`, `neighbourRowId`, `applyFieldCorrection` (validate, write, keep the first original + corrected + who/when/provenance, failed write returns the row from before, an unechoed write is `confirmed: false`), `ReviewColumn` model with `visibleColumns` / `toggleColumnVisibility`. Declared: `./lib/document-review/index.js` joins `NON_REGISTRY_SOURCES` in `scripts/registry-json-derive.mjs` (same status as `./hooks/useMediaQuery.js`). The version is not bumped here: the release-artifacts guard forbids it, the bot derives it after merge.
+
 ### Changed
 
 **BREAKING (per component) — nine hardcoded English unit words removed; each is now a REQUIRED host-supplied formatter prop (no default, no fallback).** The library ships zero user-facing words of its own for these sites.
