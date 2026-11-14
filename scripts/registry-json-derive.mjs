@@ -125,7 +125,6 @@ const NON_REGISTRY_SOURCES = new Set([
   "./version.js",
   "./placeholder.js",
   "./hooks/useMediaQuery.js",
-  "./lib/document-review/index.js",
 ]);
 
 /**

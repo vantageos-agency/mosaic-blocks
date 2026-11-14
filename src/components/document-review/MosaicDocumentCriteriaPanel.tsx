@@ -12,6 +12,15 @@
  * the column model.
  */
 import { useState } from "react";
+import { MosaicEditableCell } from "../editable-cell/MosaicEditableCell.js";
+import { MosaicPdfViewer } from "../pdf-viewer/MosaicPdfViewer.js";
+import { MosaicResizableSplitPane } from "../resizable-split-pane/MosaicResizableSplitPane.js";
+import {
+  MosaicTabs,
+  MosaicTabsList,
+  MosaicTabsPanel,
+  MosaicTabsTrigger,
+} from "../tabs/MosaicTabs.js";
 import {
   type ColumnVisibility,
   type FieldCorrectionRequest,
@@ -22,16 +31,7 @@ import {
   initialColumnVisibility,
   neighbourRowId,
   visibleColumns,
-} from "../../lib/document-review/index.js";
-import { MosaicEditableCell } from "../editable-cell/MosaicEditableCell.js";
-import { MosaicPdfViewer } from "../pdf-viewer/MosaicPdfViewer.js";
-import { MosaicResizableSplitPane } from "../resizable-split-pane/MosaicResizableSplitPane.js";
-import {
-  MosaicTabs,
-  MosaicTabsList,
-  MosaicTabsPanel,
-  MosaicTabsTrigger,
-} from "../tabs/MosaicTabs.js";
+} from "./document-review-logic.js";
 
 export interface MosaicDocumentCriteriaPanelLabels {
   tabCompare: string;

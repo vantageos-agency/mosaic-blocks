@@ -1204,7 +1204,7 @@ export {
   neighbourRowId,
   toggleColumnVisibility,
   visibleColumns,
-} from "./lib/document-review/index.js";
+} from "./components/document-review/document-review-logic.js";
 export type {
   ApplyFieldCorrectionArgs,
   ColumnVisibility,
@@ -1219,4 +1219,4 @@ export type {
   ReviewColumn,
   ReviewPanelTab,
   ReviewRow,
-} from "./lib/document-review/index.js";
+} from "./components/document-review/document-review-logic.js";
