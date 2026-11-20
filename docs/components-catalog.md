@@ -4,7 +4,7 @@
 
 Documented: **85 Mosaic* components + 10 hooks** — a curated subset with usage
 snippets and prop notes, not the full public API. `src/index.ts` exports
-**192** `Mosaic*` components and **314** total named exports; see `README.md`
+**192** `Mosaic*` components and **323** total named exports; see `README.md`
 Section 6 for the complete, machine-checked list of every export.
 
 For mobile-first conventions and the responsive-pair pattern see `docs/mobile-first.md`.
@@ -485,7 +485,7 @@ silently reverted.
 
 This catalog is a **curated subset**, not the full public API. It documents
 **85 `Mosaic*` components** and **10 hooks** <!-- count-exempt: curated-subset figures, NOT derived from src/index.ts; the 180/283 library totals on this same line ARE derived and guarded --> out of the **192** `Mosaic*`
-components (**314** total named exports) that `src/index.ts` actually
+components (**323** total named exports) that `src/index.ts` actually
 exports. The full 1:1 list lives in `README.md` Section 6, which is guarded
 by a CI test against drift.
 

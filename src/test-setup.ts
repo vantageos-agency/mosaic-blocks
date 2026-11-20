@@ -58,6 +58,14 @@ if (typeof window.ResizeObserver !== "function") {
   global.ResizeObserver = ResizeObserverPolyfill;
 }
 
+// 1.6. CSS.escape — absent from jsdom; react-aria (under @heroui/react's Drawer
+//      and Popover) calls it on mount to read a <meta> CSP nonce.
+if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS.escape !== "function") {
+  const cssEscape = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+  // @ts-ignore — polyfill assignment
+  globalThis.CSS = { ...(globalThis.CSS ?? {}), escape: cssEscape };
+}
+
 // 2. HTMLDialogElement.showModal / close — not supported in jsdom
 if (!HTMLDialogElement.prototype.showModal) {
   HTMLDialogElement.prototype.showModal = function () {

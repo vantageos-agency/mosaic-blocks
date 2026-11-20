@@ -1220,3 +1220,40 @@ export type {
   ReviewPanelTab,
   ReviewRow,
 } from "./components/document-review/document-review-logic.js";
+
+// ── registre: registry-screen grid, chrome, row panel shell and row detail (HeroUI + AG Grid) ─
+export { GrilleRegistre } from "./components/registre/GrilleRegistre.js";
+export type { GrilleRegistreProps } from "./components/registre/GrilleRegistre.js";
+export { PanneauRegistreShell } from "./components/registre/PanneauRegistreShell.js";
+export type {
+  PanneauRegistreShellLabels,
+  PanneauRegistreShellProps,
+} from "./components/registre/PanneauRegistreShell.js";
+export { RegistreEcran } from "./components/registre/RegistreEcran.js";
+export type {
+  RegistreEcranLabels,
+  RegistreEcranProps,
+} from "./components/registre/RegistreEcran.js";
+export { RegistreLigneDetail } from "./components/registre/RegistreLigneDetail.js";
+export type {
+  CorrectionChamp,
+  RegistreLigneDetailLabels,
+  RegistreLigneDetailProps,
+} from "./components/registre/RegistreLigneDetail.js";
+export { ChoixColonnes } from "./components/registre/ChoixColonnes.js";
+export type {
+  ChoixColonnesLabels,
+  ChoixColonnesProps,
+} from "./components/registre/ChoixColonnes.js";
+export { estVisible } from "./components/registre/colonnes.js";
+export type {
+  ColonneChoisie,
+  ColonneRegistre,
+  EtatVisibilite,
+  TypeColonneRegistre,
+} from "./components/registre/colonnes.js";
+export {
+  fitGridWidthStrategy,
+  refitColumns,
+  registreGridTheme,
+} from "./components/registre/grid-theme.js";
