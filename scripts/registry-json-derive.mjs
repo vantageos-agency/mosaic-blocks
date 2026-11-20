@@ -26,8 +26,16 @@
  *     export name's naming convention (`use*` -> hook) and the primary
  *     file's own extension/shape (`.ts` handler with no JSX -> lib).
  *   - `title` — the primary exported component/hook name, verbatim.
- *   - `dependencies` — read from the primary file's own `import` statements
- *     against the known peer-dependency allowlist (never asserted by hand).
+ *   - `dependencies` — the UNION of the bare packages imported by EVERY file
+ *     of the item (its `files` list, not the primary only), matched against
+ *     the eligible set, itself DERIVED from package.json `peerDependencies` +
+ *     `dependencies` minus react/react-dom (never a hand-typed allowlist).
+ *     Subpath imports (`"pkg/sub"`) count as `pkg`. An item file importing a
+ *     bare package that is neither eligible, react/react-dom, nor a node
+ *     builtin makes the derivation THROW naming file + package — never a
+ *     silent drop. For an item already in registry.json the existing value
+ *     is preserved (curated), but every item's files are still scanned so an
+ *     undeclared import anywhere fails loud.
  *   - `files` — every shipped (non-test, non-story) source file that actually exists in that
  *     component's directory, read from disk.
  *
@@ -58,6 +66,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { builtinModules } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -72,6 +81,7 @@ const ROOT = resolve(__dirname, "..");
 const INDEX_TS = join(ROOT, "src/index.ts");
 const REGISTRY_JSON = join(ROOT, "registry.json");
 const COMPONENTS_DIR = join(ROOT, "src/components");
+const PACKAGE_JSON = join(ROOT, "package.json");
 
 const CHECK = process.argv.includes("--check");
 // `--stdout`: print the derived registry.json to stdout, write NOTHING. It lets a
@@ -83,19 +93,6 @@ if (CHECK && STDOUT) {
   console.error("registry-json-derive: --check and --stdout are mutually exclusive.");
   process.exit(2);
 }
-
-// Known peer/runtime dependencies a component's own `import` lines may
-// reference. Anything else stays out of `dependencies` (workspace-relative
-// imports, node builtins, React itself).
-const KNOWN_DEPENDENCIES = [
-  "@base-ui/react",
-  "class-variance-authority",
-  "@clerk/nextjs",
-  "next-themes",
-  "recharts",
-  "svix",
-  "@vantageos/cloud-identity",
-];
 
 /**
  * Reads a file, throwing a named, actionable error instead of letting a
@@ -344,18 +341,96 @@ function leadingJsDocSummary(absPath) {
   return paragraph.join(" ").trim();
 }
 
+/** Packages that are the host's own runtime, never an item dependency. */
+const HOST_RUNTIME = new Set(["react", "react-dom"]);
+const BUILTINS = new Set(builtinModules);
+
 /**
- * @param {string} absPath
- * @returns {string[]} known dependencies referenced by this file's imports
+ * The packages an item may list in `dependencies`: package.json
+ * `peerDependencies` + `dependencies`, minus react/react-dom. Derived from the
+ * manifest on every run — a package becomes eligible by being declared there.
+ * @param {{peerDependencies?: Record<string,string>, dependencies?: Record<string,string>}} pkgJson
+ * @returns {Set<string>}
  */
-function dependenciesIn(absPath) {
-  const text = readFileOrThrow(absPath);
-  // Matches both the bare package (`"@base-ui/react"`) and any subpath
-  // import (`"@base-ui/react/popover"`) — real components overwhelmingly
-  // import subpaths, never the bare package root.
-  return KNOWN_DEPENDENCIES.filter((dep) =>
-    new RegExp(`["']${dep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(/[^"']*)?["']`).test(text),
+export function eligibleDependencies(pkgJson) {
+  return new Set(
+    [
+      ...Object.keys(pkgJson.peerDependencies ?? {}),
+      ...Object.keys(pkgJson.dependencies ?? {}),
+    ].filter((n) => !HOST_RUNTIME.has(n)),
   );
+}
+
+/**
+ * Every module specifier of a source file. Census of forms (ES/TypeScript
+ * module grammar): `import … from "x"`, `import type … from "x"`,
+ * `export … from "x"`, side-effect `import "x"`, dynamic `import("x")`
+ * (incl. `typeof import("x")`), `require("x")`. Comments are masked out and
+ * keywords are matched on a string-blanked copy, so prose inside a comment or
+ * a string literal is never read as an import. A dynamic import/require whose
+ * argument is not a string literal THROWS — it cannot be read, so it is not
+ * skipped.
+ * @param {string} absPath
+ * @returns {string[]}
+ */
+function specifiersIn(absPath) {
+  const text = readFileOrThrow(absPath);
+  const kept = maskCommentsAndStrings(text, true);
+  const blanked = maskCommentsAndStrings(text, false);
+  const out = [];
+  const literalAt = (quoteIdx) => {
+    const q = kept[quoteIdx];
+    const close = kept.indexOf(q, quoteIdx + 1);
+    return kept.slice(quoteIdx + 1, close);
+  };
+  for (const m of blanked.matchAll(/\b(?:from|import)\s*(["'])/g)) {
+    out.push(literalAt(m.index + m[0].length - 1));
+  }
+  for (const m of blanked.matchAll(/(?<![.\w$])(?:import|require)\s*\(\s*/g)) {
+    const at = m.index + m[0].length;
+    const ch = blanked[at];
+    if ((ch !== '"' && ch !== "'" && ch !== "`") || (ch === "`" && literalAt(at).includes("${"))) {
+      throw new Error(
+        `registry-json-derive: \`${relative(ROOT, absPath)}\` has a non-literal \`${m[0].trim()}…)\` — its package cannot be read, refusing to derive its dependencies.`,
+      );
+    }
+    out.push(literalAt(at));
+  }
+  return out;
+}
+
+/** `@scope/name/sub` -> `@scope/name`; `name/sub` -> `name`. */
+function packageOf(specifier) {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
+/**
+ * The item's `dependencies`: union over EVERY file of the item of the bare
+ * packages it imports, sorted. Relative specifiers, node builtins and
+ * react/react-dom are not dependencies; anything else not in `eligible`
+ * THROWS naming the file and the package — never a silent drop.
+ * @param {string[]} absPaths every file of the item
+ * @param {Set<string>} eligible
+ * @returns {string[]}
+ */
+export function dependenciesOfFiles(absPaths, eligible) {
+  const deps = new Set();
+  for (const absPath of absPaths) {
+    for (const spec of specifiersIn(absPath)) {
+      if (spec.startsWith(".") || spec.startsWith("/")) continue;
+      if (spec.startsWith("node:") || BUILTINS.has(spec) || BUILTINS.has(packageOf(spec))) continue;
+      const pkg = packageOf(spec);
+      if (HOST_RUNTIME.has(pkg)) continue;
+      if (!eligible.has(pkg)) {
+        throw new Error(
+          `registry-json-derive: \`${relative(ROOT, absPath)}\` imports \`${spec}\` — package \`${pkg}\` is not declared in package.json peerDependencies/dependencies. Declare it, or a host installing this item from the registry will not get it.`,
+        );
+      }
+      deps.add(pkg);
+    }
+  }
+  return [...deps].sort();
 }
 
 /**
@@ -371,6 +446,7 @@ function groupByDir(exportsFlat) {
 }
 
 function main() {
+  const ELIGIBLE_DEPENDENCIES = eligibleDependencies(JSON.parse(readFileOrThrow(PACKAGE_JSON)));
   const exportsFlat = parseBarrelExports();
   const byDir = groupByDir(exportsFlat);
 
@@ -431,6 +507,12 @@ function main() {
         );
       }
 
+      // Scanned for EVERY item, preserved or not: an undeclared import fails loud anywhere.
+      const derivedDependencies = dependenciesOfFiles(
+        files.map((f) => join(ROOT, f.path)),
+        ELIGIBLE_DEPENDENCIES,
+      );
+
       if (!existingItem) {
         missing.push(slug);
       }
@@ -440,7 +522,7 @@ function main() {
         type: isHook ? "registry:hook" : (existingItem?.type ?? "registry:ui"),
         title: existingItem?.title ?? primary.name,
         description: existingItem?.description ?? leadingJsDocSummary(primaryAbs),
-        dependencies: existingItem?.dependencies ?? dependenciesIn(primaryAbs),
+        dependencies: existingItem?.dependencies ?? derivedDependencies,
         files,
       });
     }
