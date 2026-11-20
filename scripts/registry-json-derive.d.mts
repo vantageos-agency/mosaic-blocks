@@ -2,3 +2,8 @@
 export function parseBarrelExports(
   src?: string,
 ): Array<{ name: string; dir: string; file: string; isType: boolean }>;
+export function eligibleDependencies(pkgJson: {
+  peerDependencies?: Record<string, string>;
+  dependencies?: Record<string, string>;
+}): Set<string>;
+export function dependenciesOfFiles(absPaths: string[], eligible: Set<string>): string[];
