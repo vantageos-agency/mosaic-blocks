@@ -5,7 +5,7 @@
   "description": "MosaicMemorySearch — search bar over a host-supplied knowledge base: a query input, optional filter chips (by type/tag), a clear action, and a result-count indication.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-input.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-input.json"
   ],
   "files": [
     {

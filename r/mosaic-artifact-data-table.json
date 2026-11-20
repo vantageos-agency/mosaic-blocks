@@ -5,7 +5,7 @@
   "description": "MosaicArtifactDataTable — dumb, contract-agnostic data-table artifact renderer",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-data-table.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-data-table.json"
   ],
   "files": [
     {

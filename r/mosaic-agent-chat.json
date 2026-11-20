@@ -5,10 +5,10 @@
   "description": "MosaicAgentChat — presentational session harness: MVP-8, the last MVP piece, wiring MosaicChatThread + MosaicChatMessage + MosaicChatComposer + MosaicApprovalPrompt into one send/resume/respond harness.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-approval-prompt.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-chat-composer.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-chat-message.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-chat-thread.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-approval-prompt.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-chat-composer.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-chat-message.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-chat-thread.json"
   ],
   "files": [
     {

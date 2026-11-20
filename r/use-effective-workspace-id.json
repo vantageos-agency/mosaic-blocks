@@ -5,7 +5,7 @@
   "description": "Re-exposes cloud-identity workspace resolver as a typed React hook. Reads from MosaicMultiTenantProvider context.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-multi-tenant-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-multi-tenant-provider.json"
   ],
   "files": [
     {
