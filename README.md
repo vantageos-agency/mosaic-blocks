@@ -169,7 +169,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 
 ## 6. Component Catalogue Summary
 
-192 exported `Mosaic*` components across 9 sections (314 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+192 exported `Mosaic*` components across 9 sections (323 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from `src/index.ts` again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
 
 > There is **no "Debate" section**. No `Mosaic*` debate component (room/timer/participant) is exported by this package — despite the "absorbed from anydebate" origin story below, the debate UI was never ported. If you need debate-room UI, it does not exist here yet.
 
@@ -186,6 +186,8 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 | Theming | `MosaicThemeProvider` | 1 |
 
 All exports: `import { ComponentName } from "@vantageos/mosaic-blocks"`
+
+**Registry-screen blocks** (`src/components/registre/`): `GrilleRegistre` (AG Grid Community grid, every column sortable/filterable/resizable, stable row id), `RegistreEcran` (fullscreen section + toolbar: global search, column chooser, fullscreen toggle), `PanneauRegistreShell` (resizable HeroUI drawer with ArrowUp/ArrowDown row navigation) and `RegistreLigneDetail` (declaration-driven per-field detail and edit), plus `ChoixColonnes`, the `ColonneRegistre` declaration type and `registreGridTheme`. Columns, row shape, labels and formatters are props. They need the peer dependencies `@heroui/react` (with its styles), `ag-grid-community`, `ag-grid-react` and `lucide-react`.
 
 ---
 
