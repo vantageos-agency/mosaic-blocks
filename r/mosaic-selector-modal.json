@@ -5,7 +5,7 @@
   "description": "Generic searchable item picker modal. Search bar + category tabs + card grid. Confirm/cancel actions.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-adaptive-modal.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-adaptive-modal.json"
   ],
   "files": [
     {

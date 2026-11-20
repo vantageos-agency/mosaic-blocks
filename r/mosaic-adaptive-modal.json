@@ -5,7 +5,7 @@
   "description": "Unified modal/sheet: Dialog on desktop, bottom-sheet on mobile. Uses native <dialog> element (focus trap, Escape key, backdrop). Single API: isOpen, onClose, title, children, description. No Radix/Vaul dep — fully portable.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

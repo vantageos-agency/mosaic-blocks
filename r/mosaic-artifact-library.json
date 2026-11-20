@@ -5,7 +5,7 @@
   "description": "MosaicArtifactLibrary — org-scoped list/search of saved artifacts, opening a selected one through the C1 adapter (MosaicArtifactCanvasAdapter) + C2 renderers.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-artifact-canvas-adapter.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-artifact-canvas-adapter.json"
   ],
   "files": [
     {

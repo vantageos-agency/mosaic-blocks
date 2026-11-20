@@ -5,8 +5,8 @@
   "description": "Generic org management shell. Includes MosaicOrgRoleBadge, MosaicMultiOrgIndicator, MosaicCreateOrgDialog, MosaicInviteMemberDialog, MosaicMemberList. Pure presentational — no Clerk/Convex.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-adaptive-modal.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.36-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-adaptive-modal.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

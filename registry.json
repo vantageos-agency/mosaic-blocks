@@ -1631,6 +1631,48 @@
       ]
     },
     {
+      "name": "mosaic-grille-registre",
+      "type": "registry:ui",
+      "title": "GrilleRegistre",
+      "description": "GrilleRegistre — the shared AG Grid of a registry screen: AG Grid Community, a stable row identity, and every column sortable, filterable (with a floating filter) and resizable.",
+      "dependencies": [
+        "@heroui/react",
+        "ag-grid-community",
+        "ag-grid-react",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "src/components/registre/ChoixColonnes.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/registre/GrilleRegistre.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/registre/PanneauRegistreShell.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/registre/RegistreEcran.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/registre/RegistreLigneDetail.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/registre/colonnes.ts",
+          "type": "registry:ui"
+        },
+        {
+          "path": "src/components/registre/grid-theme.ts",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "mosaic-reply-input",
       "type": "registry:ui",
       "title": "MosaicReplyInput",
