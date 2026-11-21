@@ -5,7 +5,7 @@
   "description": "Generic responsive top-nav. Desktop: inline link strip. Mobile: hamburger + drawer. Items are props.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

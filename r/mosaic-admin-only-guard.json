@@ -5,7 +5,7 @@
   "description": "MosaicAdminOnlyGuard — permission gate that renders `children` for admins, an access-denied card for non-admins, and a loading fallback while permissions resolve, EveVantage M3 C7.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-button.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-button.json"
   ],
   "files": [
     {
