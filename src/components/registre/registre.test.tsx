@@ -53,6 +53,19 @@ describe("GrilleRegistre — shared registry grid", () => {
     );
     expect(container.querySelector(".ag-root-wrapper")).not.toBeNull();
   });
+
+  it("shows the host's messageVide in the no-rows overlay when there are no rows", async () => {
+    const { container } = render(
+      <GrilleRegistre<Ligne>
+        lignes={[]}
+        columnDefs={COLS}
+        getRowId={(l) => l.id}
+        messageVide="Aucune ligne (test)"
+      />,
+    );
+    const message = await screen.findByText("Aucune ligne (test)");
+    expect(message.closest(".ag-root-wrapper")).toBe(container.querySelector(".ag-root-wrapper"));
+  });
 });
 
 // ── RegistreEcran (R-5, R-6, R-7) ────────────────────────────────────────────
