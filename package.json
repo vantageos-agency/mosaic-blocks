@@ -124,7 +124,7 @@
     "http-server": "^14.1.1",
     "jsdom": "^26.1.0",
     "lucide-react": "^0.511.0",
-    "next": "16.4.1",
+    "next": "16.4.5",
     "react": "^19",
     "react-dom": "^19",
     "recharts": "^2.12.0",

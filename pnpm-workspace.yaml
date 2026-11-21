@@ -1,5 +1,5 @@
 overrides:
-  next: 16.4.1
+  next: 16.4.5
   sharp: 0.35.5
   tinypool: 2.1.2
   vite: 7.3.7
