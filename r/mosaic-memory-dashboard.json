@@ -5,7 +5,7 @@
   "description": "MosaicMemoryDashboard — landing surface of a knowledge base: a header with a title and a primary \"add\" action, a row of host-supplied summary statistics, an optional slot for a search bar, a host-controlled view-mode toggle (tiles / rows), and a slot for results.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-button.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-button.json"
   ],
   "files": [
     {

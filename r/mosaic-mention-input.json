@@ -5,7 +5,7 @@
   "description": "MosaicMentionInput — text input that opens an anchored, host-owned list of mentionable entries when the host-chosen trigger character is typed.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-popover.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-popover.json"
   ],
   "files": [
     {

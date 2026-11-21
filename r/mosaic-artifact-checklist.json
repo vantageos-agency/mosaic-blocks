@@ -5,7 +5,7 @@
   "description": "MosaicArtifactChecklist — dumb, contract-agnostic checklist artifact renderer",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-progress.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-progress.json"
   ],
   "files": [
     {

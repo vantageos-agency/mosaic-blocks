@@ -5,7 +5,7 @@
   "description": "MosaicChatMessage — one chat message: role + ordered parts (text / reasoning / tool call).",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-collapsible.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-collapsible.json"
   ],
   "files": [
     {

@@ -5,7 +5,7 @@
   "description": "MosaicFilterBar — responsive horizontal control bar for filter rows",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.37-alpha/r/mosaic-button.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-button.json"
   ],
   "files": [
     {
