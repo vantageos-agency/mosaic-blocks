@@ -7,8 +7,8 @@
  * (c) the table opens the panel on row selection.
  * Plus: column visibility from the model, prev/next navigation, provenance label.
  */
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { MosaicDocumentCriteriaPanel } from "./MosaicDocumentCriteriaPanel.js";
 import type {
   MosaicDocumentCriteriaPanelLabels,
@@ -157,8 +157,35 @@ describe("MosaicDocumentCriteriaPanel", () => {
 });
 
 describe("MosaicDocumentTable", () => {
-  function renderTable() {
-    return render(
+  // The table renders through GrilleRegistre (AG Grid), and jsdom reports every
+  // element at 0x0: AG Grid needs a real size to render its rows. Restored after.
+  const sized = ["clientWidth", "offsetWidth", "clientHeight", "offsetHeight"] as const;
+  const saved = sized.map((prop) => Object.getOwnPropertyDescriptor(HTMLElement.prototype, prop));
+  beforeAll(() => {
+    for (const prop of sized) {
+      const value = prop.endsWith("Width") ? 1200 : 600;
+      Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, value });
+    }
+  });
+  afterAll(() => {
+    sized.forEach((prop, i) => {
+      const descriptor = saved[i];
+      if (descriptor) Object.defineProperty(HTMLElement.prototype, prop, descriptor);
+    });
+  });
+
+  // AG Grid renders its header and rows asynchronously after mount, and fires
+  // `cellClicked` asynchronously too: every test waits for the grid to settle
+  // before it reads the DOM, and for the selection after a click.
+  async function settled(container: HTMLElement, rowCount: number) {
+    await waitFor(() => {
+      expect(container.querySelector(".ag-header-cell")).not.toBeNull();
+      expect(container.querySelectorAll(".ag-row")).toHaveLength(rowCount);
+    });
+  }
+
+  async function renderTable() {
+    const utils = render(
       <MosaicDocumentTable
         columns={columns}
         rows={rows}
@@ -181,17 +208,24 @@ describe("MosaicDocumentTable", () => {
         )}
       />,
     );
+    await settled(utils.container, rows.length);
+    return utils;
   }
 
-  it("renders only the visible columns of the model", () => {
-    renderTable();
+  const firstColumnTexts = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll("[data-slot='document-table-open']")).map(
+      (el) => el.textContent,
+    );
+
+  it("renders only the visible columns of the model", async () => {
+    await renderTable();
     expect(screen.getByRole("columnheader", { name: "Alpha" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Gamma" })).toBeTruthy();
     expect(screen.queryByRole("columnheader", { name: "Beta" })).toBeNull();
   });
 
-  it("honours a controlled columnVisibility override", () => {
-    render(
+  it("honours a controlled columnVisibility override", async () => {
+    const { container } = render(
       <MosaicDocumentTable
         columns={columns}
         rows={rows}
@@ -200,16 +234,19 @@ describe("MosaicDocumentTable", () => {
         columnVisibility={{ beta: true, alpha: false }}
       />,
     );
+    await settled(container, rows.length);
     expect(screen.getByRole("columnheader", { name: "Beta" })).toBeTruthy();
     expect(screen.queryByRole("columnheader", { name: "Alpha" })).toBeNull();
   });
 
-  it("(c) opens the panel on row selection, with Compare active, and navigates", () => {
-    const { container } = renderTable();
+  it("(c) opens the panel on row selection, with Compare active, and navigates", async () => {
+    const { container } = await renderTable();
     expect(container.querySelector("[data-slot='document-criteria-panel']")).toBeNull();
     fireEvent.click(screen.getByText("a2"));
+    await waitFor(() =>
+      expect(container.querySelector("[data-slot='document-criteria-panel']")).toBeTruthy(),
+    );
     const panel = container.querySelector("[data-slot='document-criteria-panel']") as HTMLElement;
-    expect(panel).toBeTruthy();
     expect(
       within(panel).getByRole("tab", { name: "T-compare" }).getAttribute("aria-selected"),
     ).toBe("true");
@@ -224,18 +261,32 @@ describe("MosaicDocumentTable", () => {
     ).toBe("a3");
   });
 
-  it("selects a row from the keyboard: the first cell is a real button", () => {
-    const { container } = renderTable();
+  it("selects a row from the keyboard: the first cell is a real button", async () => {
+    const { container } = await renderTable();
     const button = screen.getByRole("button", { name: "a1" });
     button.focus();
     expect(document.activeElement).toBe(button);
     fireEvent.click(button); // a button's Enter/Space activation is delivered as a click
-    expect(
-      container.querySelector("[data-slot='document-criteria-panel']")?.getAttribute("data-row-id"),
-    ).toBe("r1");
+    await waitFor(() =>
+      expect(
+        container
+          .querySelector("[data-slot='document-criteria-panel']")
+          ?.getAttribute("data-row-id"),
+      ).toBe("r1"),
+    );
   });
 
-  it("shows emptyMessage when there are no rows", () => {
+  it("each row's button is its keyboard stop: grid cells take no tab focus of their own", async () => {
+    const { container } = await renderTable();
+    const cells = Array.from(container.querySelectorAll(".ag-row .ag-cell"));
+    expect(cells.length).toBeGreaterThan(0);
+    for (const cell of cells) expect(cell.getAttribute("tabindex")).not.toBe("0");
+    for (const id of ["a1", "a2", "a3"]) {
+      expect(screen.getByRole("button", { name: id }).tabIndex).toBe(0);
+    }
+  });
+
+  it("shows emptyMessage when there are no rows", async () => {
     render(
       <MosaicDocumentTable
         columns={columns}
@@ -244,6 +295,81 @@ describe("MosaicDocumentTable", () => {
         emptyMessage="nothing"
       />,
     );
-    expect(screen.getByText("nothing")).toBeTruthy();
+    expect(await screen.findByText("nothing")).toBeTruthy();
+  });
+
+  it("renders through GrilleRegistre (AG Grid), never through MosaicDataTable", async () => {
+    const { container } = await renderTable();
+    const table = container.querySelector("[data-slot='document-table']") as HTMLElement;
+    expect(table.querySelector(".ag-root-wrapper")).not.toBeNull();
+    expect(container.querySelector("[data-slot='data-table']")).toBeNull();
+    // The first column's button lives inside an AG Grid cell.
+    expect(screen.getByRole("button", { name: "a1" }).closest(".ag-cell")).not.toBeNull();
+  });
+
+  it("a click on any cell of a row reports that row id, once (same payload as before)", async () => {
+    const onSelectedRowChange = vi.fn();
+    const { container } = render(
+      <MosaicDocumentTable
+        columns={columns}
+        rows={rows}
+        getRowId={(r) => r.id}
+        emptyMessage="nothing"
+        onSelectedRowChange={onSelectedRowChange}
+      />,
+    );
+    await settled(container, rows.length);
+    fireEvent.click(screen.getByText("g2"));
+    await waitFor(() => expect(onSelectedRowChange).toHaveBeenCalledTimes(1));
+    expect(onSelectedRowChange).toHaveBeenLastCalledWith("r2");
+    fireEvent.click(screen.getByRole("button", { name: "a3" }));
+    await waitFor(() => expect(onSelectedRowChange).toHaveBeenCalledTimes(2));
+    expect(onSelectedRowChange).toHaveBeenLastCalledWith("r3");
+  });
+
+  it("controlled selection: marks the host's row and leaves the move to the host", async () => {
+    const onSelectedRowChange = vi.fn();
+    const { container } = render(
+      <MosaicDocumentTable
+        columns={columns}
+        rows={rows}
+        getRowId={(r) => r.id}
+        emptyMessage="nothing"
+        selectedRowId="r2"
+        onSelectedRowChange={onSelectedRowChange}
+      />,
+    );
+    await settled(container, rows.length);
+    const marked = () =>
+      Array.from(
+        container.querySelectorAll("[data-slot='document-table-open'][data-selected='true']"),
+      ).map((el) => el.textContent);
+    expect(marked()).toEqual(["a2"]);
+    expect(screen.getByRole("button", { name: "a2" }).getAttribute("aria-current")).toBe("true");
+    fireEvent.click(screen.getByText("a3"));
+    await waitFor(() => expect(onSelectedRowChange).toHaveBeenLastCalledWith("r3"));
+    expect(marked()).toEqual(["a2"]);
+  });
+
+  it("keeps the host's row order: the grid neither sorts nor filters", async () => {
+    const { container } = await renderTable();
+    expect(firstColumnTexts(container)).toEqual(["a1", "a2", "a3"]);
+    expect(container.querySelector(".ag-floating-filter")).toBeNull();
+    fireEvent.click(screen.getByRole("columnheader", { name: "Alpha" }));
+    expect(firstColumnTexts(container)).toEqual(["a1", "a2", "a3"]);
+  });
+
+  it("shows emptyMessage inside the grid when there are no rows", async () => {
+    const { container } = render(
+      <MosaicDocumentTable
+        columns={columns}
+        rows={[]}
+        getRowId={(r) => r.id}
+        emptyMessage="nothing"
+      />,
+    );
+    const message = await screen.findByText("nothing");
+    expect(container.querySelector(".ag-root-wrapper")).not.toBeNull();
+    expect(message.closest(".ag-root-wrapper")).not.toBeNull();
   });
 });

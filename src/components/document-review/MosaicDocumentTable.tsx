@@ -1,23 +1,30 @@
 /**
- * MosaicDocumentTable — generic document table, built on MosaicDataTable.
+ * MosaicDocumentTable — generic document table, a composition of GrilleRegistre.
+ *
+ * One table component serves every document screen: this module renders through
+ * the library's shared AG Grid (GrilleRegistre) and adds only the document-review
+ * contract on top of it — the column model, the row selection and the panel.
  *
  * Rows and the column model come from props; column visibility comes from the
  * model (`defaultVisible`) unless the host passes a `columnVisibility` override.
  * Selecting a row (click, Enter, Space) opens `renderPanel` for that row. The
- * module ships no business vocabulary: every label is a prop.
+ * module ships no business vocabulary: every label is a prop, the empty state
+ * included (GrilleRegistre's `messageVide`).
  *
- * Row activation is delivered WITHOUT touching MosaicDataTable: the first visible
- * column renders its value inside a real `<button>` (keyboard + assistive tech),
- * and a click anywhere on a body row is resolved to its row through the table's own
- * `sectionRowIndex` (delegated on the wrapper).
+ * Row activation: the first visible column renders its value inside a real
+ * `<button>` (keyboard + assistive tech), and a click on any cell of a row —
+ * the button's keyboard activation arrives as a click — is resolved to its row
+ * through the grid's `onCellClicked`, one path for both. Grid cells take no focus
+ * of their own (`suppressCellFocus`), so each row's button is its keyboard stop.
  *
- * Sorting is off: MosaicDataTable sorts on `row[key]`, and a column model reads
- * values through accessors, so the table keeps the host's row order — which is
- * also the order prev/next navigation walks.
+ * Sorting and filtering are off on every column: the table keeps the host's row
+ * order, which is also the order prev/next navigation walks (`orderedRowIds`).
  */
-import { useState } from "react";
+import type { CellClickedEvent, ColDef, ICellRendererParams } from "ag-grid-community";
+import { createContext, useContext, useMemo, useState } from "react";
 import type * as React from "react";
-import { MosaicDataTable, type MosaicDataTableColumn } from "../data-table/MosaicDataTable.js";
+import { GrilleRegistre } from "../registre/GrilleRegistre.js";
+import { refitColumns } from "../registre/grid-theme.js";
 import {
   type ColumnVisibility,
   type ReviewColumn,
@@ -51,6 +58,27 @@ export interface MosaicDocumentTableProps<T> {
   className?: string;
 }
 
+// The selected row id reaches the first-column renderer through React context:
+// ag-grid-react renders cell renderers in portals of this tree, so a selection
+// change re-renders the marked button without rebuilding the column definitions.
+const SelectedRowIdContext = createContext<string | null>(null);
+
+function OpenRowButton({ value, node }: ICellRendererParams) {
+  const selectedRowId = useContext(SelectedRowIdContext);
+  const isSelected = node.id !== undefined && node.id === selectedRowId;
+  return (
+    <button
+      type="button"
+      data-slot="document-table-open"
+      aria-current={isSelected ? "true" : undefined}
+      data-selected={isSelected ? "true" : undefined}
+      className="text-left underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {value as string}
+    </button>
+  );
+}
+
 export function MosaicDocumentTable<T>({
   columns,
   rows,
@@ -71,36 +99,31 @@ export function MosaicDocumentTable<T>({
     onSelectedRowChange?.(rowId);
   }
 
-  const shown = visibleColumns(columns, columnVisibility ?? initialColumnVisibility(columns));
-  const tableColumns: MosaicDataTableColumn<T>[] = shown.map((column, columnIndex) => ({
-    key: column.id,
-    header: column.label,
-    render: (row) => {
-      const value = column.accessor(row);
-      const text = value === null ? "" : String(value);
-      if (columnIndex !== 0) return text;
-      const isSelected = getRowId(row) === selectedRowId;
-      return (
-        <button
-          type="button"
-          data-slot="document-table-open"
-          aria-current={isSelected ? "true" : undefined}
-          data-selected={isSelected ? "true" : undefined}
-          className="text-left underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {text}
-        </button>
-      );
-    },
-  }));
+  const columnDefs = useMemo<ColDef<T>[]>(
+    () =>
+      visibleColumns(columns, columnVisibility ?? initialColumnVisibility(columns)).map(
+        (column, columnIndex) => ({
+          colId: column.id,
+          headerName: column.label,
+          // The column model's value, as text: null reads as an empty cell.
+          valueGetter: (params) => {
+            if (params.data === undefined) return "";
+            const value = column.accessor(params.data);
+            return value === null ? "" : String(value);
+          },
+          // No type inference: a boolean stays text, never a grid checkbox.
+          cellDataType: false,
+          sortable: false,
+          filter: false,
+          floatingFilter: false,
+          ...(columnIndex === 0 ? { cellRenderer: OpenRowButton } : {}),
+        }),
+      ),
+    [columns, columnVisibility],
+  );
 
-  // One delegated handler: a click on any cell of a body row selects that row. A
-  // button's keyboard activation arrives here as a click, so one path serves both.
-  function handleClick(event: React.MouseEvent<HTMLDivElement>) {
-    const tr = (event.target as HTMLElement).closest("tr[data-slot='data-table-row']");
-    if (!(tr instanceof HTMLTableRowElement)) return;
-    const row = rows[tr.sectionRowIndex];
-    if (row !== undefined) select(getRowId(row));
+  function handleCellClicked(event: CellClickedEvent<T>) {
+    if (event.data !== undefined) select(getRowId(event.data));
   }
 
   const orderedRowIds = rows.map(getRowId);
@@ -108,15 +131,19 @@ export function MosaicDocumentTable<T>({
     selectedRowId === null ? undefined : rows.find((row) => getRowId(row) === selectedRowId);
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard path is the first column's real <button>; this only resolves mouse clicks on other cells to their row
-    <div data-slot="document-table" className={className} onClick={handleClick}>
-      <MosaicDataTable<T>
-        columns={tableColumns}
-        rows={rows}
-        getRowKey={(row) => getRowId(row)}
-        sortable={false}
-        emptyMessage={emptyMessage}
-      />
+    <div data-slot="document-table" className={className}>
+      <SelectedRowIdContext.Provider value={selectedRowId}>
+        <GrilleRegistre<T>
+          lignes={rows}
+          columnDefs={columnDefs}
+          getRowId={getRowId}
+          onCellClicked={handleCellClicked}
+          suppressCellFocus
+          domLayout="autoHeight"
+          onGridSizeChanged={refitColumns}
+          messageVide={emptyMessage}
+        />
+      </SelectedRowIdContext.Provider>
       {selectedRow !== undefined && renderPanel
         ? renderPanel(selectedRow, {
             rowId: getRowId(selectedRow),

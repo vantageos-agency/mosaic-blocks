@@ -65,6 +65,11 @@ export interface GrilleRegistreProps<T> {
   domLayout?: "normal" | "autoHeight" | "print";
   /** Refit columns on a size change — `refitColumns` on an autoHeight grid. */
   onGridSizeChanged?: (e: GridSizeChangedEvent<T>) => void;
+  /**
+   * Text of the grid's no-rows overlay, shown when `lignes` is empty. The host
+   * owns the language; omitted, AG Grid shows its own default overlay text.
+   */
+  messageVide?: string;
 }
 
 export function GrilleRegistre<T>({
@@ -82,6 +87,7 @@ export function GrilleRegistre<T>({
   rowHeight,
   domLayout,
   onGridSizeChanged,
+  messageVide,
 }: GrilleRegistreProps<T>) {
   ensureModules();
   // The parent sets the height unless the caller asks for autoHeight.
@@ -104,6 +110,9 @@ export function GrilleRegistre<T>({
         rowHeight={rowHeight}
         domLayout={domLayout}
         onGridSizeChanged={onGridSizeChanged}
+        overlayComponentParams={
+          messageVide === undefined ? undefined : { noRows: { overlayText: messageVide } }
+        }
         animateRows
       />
     </div>
