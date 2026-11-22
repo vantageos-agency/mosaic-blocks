@@ -70,6 +70,17 @@ export interface GrilleRegistreProps<T> {
    * owns the language; omitted, AG Grid shows its own default overlay text.
    */
   messageVide?: string;
+  /** AG Grid pagination; omitted, the grid shows every row (no paging panel). */
+  pagination?: boolean;
+  /** Rows per page when `pagination` is on; omitted, AG Grid's default. */
+  paginationPageSize?: number;
+  /** Page-size choices offered in the paging panel, or false to hide the picker. */
+  paginationPageSizeSelector?: number[] | boolean;
+  /**
+   * Grid UI text keyed by AG Grid locale key. The host owns the language;
+   * omitted, AG Grid shows its own default text.
+   */
+  localeText?: Record<string, string>;
 }
 
 export function GrilleRegistre<T>({
@@ -88,6 +99,10 @@ export function GrilleRegistre<T>({
   domLayout,
   onGridSizeChanged,
   messageVide,
+  pagination,
+  paginationPageSize,
+  paginationPageSizeSelector,
+  localeText,
 }: GrilleRegistreProps<T>) {
   ensureModules();
   // The parent sets the height unless the caller asks for autoHeight.
@@ -113,6 +128,10 @@ export function GrilleRegistre<T>({
         overlayComponentParams={
           messageVide === undefined ? undefined : { noRows: { overlayText: messageVide } }
         }
+        pagination={pagination}
+        paginationPageSize={paginationPageSize}
+        paginationPageSizeSelector={paginationPageSizeSelector}
+        localeText={localeText}
         animateRows
       />
     </div>

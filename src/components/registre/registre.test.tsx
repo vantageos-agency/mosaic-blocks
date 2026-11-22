@@ -8,12 +8,14 @@
  * host supplies them: the library ships no words of its own.
  */
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ColDef } from "ag-grid-community";
+import type { ColDef, GridApi } from "ag-grid-community";
+import { AgGridReact } from "ag-grid-react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   type ColonneRegistre,
   type EtatVisibilite,
   GrilleRegistre,
+  type GrilleRegistreProps,
   PanneauRegistreShell,
   type PanneauRegistreShellLabels,
   RegistreEcran,
@@ -65,6 +67,71 @@ describe("GrilleRegistre — shared registry grid", () => {
     );
     const message = await screen.findByText("Aucune ligne (test)");
     expect(message.closest(".ag-root-wrapper")).toBe(container.querySelector(".ag-root-wrapper"));
+  });
+
+  // The pass-through props are read back from the mounted grid's own API: the
+  // value AG Grid holds is the proof it reached AgGridReact.
+  async function grilleMontee(props: Partial<GrilleRegistreProps<Ligne>> = {}) {
+    let api: GridApi<Ligne> | undefined;
+    render(
+      <GrilleRegistre<Ligne>
+        lignes={[{ id: "a", nom: "Dupont" }]}
+        columnDefs={COLS}
+        getRowId={(l) => l.id}
+        onGridReady={(e) => {
+          api = e.api;
+        }}
+        {...props}
+      />,
+    );
+    await waitFor(() => expect(api).toBeDefined());
+    return api as GridApi<Ligne>;
+  }
+
+  it("forwards pagination to AgGridReact", async () => {
+    const api = await grilleMontee({ pagination: true });
+    expect(api.getGridOption("pagination")).toBe(true);
+  });
+
+  it("forwards paginationPageSize to AgGridReact", async () => {
+    const api = await grilleMontee({ pagination: true, paginationPageSize: 25 });
+    expect(api.getGridOption("paginationPageSize")).toBe(25);
+  });
+
+  it("forwards paginationPageSizeSelector to AgGridReact", async () => {
+    const api = await grilleMontee({ pagination: true, paginationPageSizeSelector: [10, 25, 50] });
+    expect(api.getGridOption("paginationPageSizeSelector")).toEqual([10, 25, 50]);
+  });
+
+  it("forwards the host's localeText to AgGridReact", async () => {
+    const localeText = { noRowsToShow: "Libellé hôte (test)" };
+    const api = await grilleMontee({ localeText });
+    expect(api.getGridOption("localeText")).toEqual(localeText);
+  });
+
+  it("leaves pagination, page size, page-size selector and localeText at AG Grid's own defaults when omitted", async () => {
+    // Reference: a bare AgGridReact with none of the four options. Its values are
+    // AG Grid's defaults, read from AG Grid rather than typed here.
+    let nu: GridApi<Ligne> | undefined;
+    render(
+      <AgGridReact<Ligne>
+        rowData={[{ id: "a", nom: "Dupont" }]}
+        columnDefs={COLS}
+        onGridReady={(e) => {
+          nu = e.api;
+        }}
+      />,
+    );
+    await waitFor(() => expect(nu).toBeDefined());
+    const api = await grilleMontee();
+    for (const option of [
+      "pagination",
+      "paginationPageSize",
+      "paginationPageSizeSelector",
+      "localeText",
+    ] as const) {
+      expect(api.getGridOption(option)).toEqual((nu as GridApi<Ligne>).getGridOption(option));
+    }
   });
 });
 
