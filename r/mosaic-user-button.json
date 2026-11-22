@@ -3,9 +3,7 @@
   "name": "mosaic-user-button",
   "title": "MosaicUserButton",
   "description": "Clerk <UserButton> with OKLCH-token appearance. Avatar + popover themed to mosaic tokens. Clerk injected as peer prop.",
-  "dependencies": [
-    "@clerk/nextjs"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {

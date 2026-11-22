@@ -3,7 +3,9 @@
   "name": "mosaic-session-list",
   "title": "MosaicSessionList",
   "description": "MosaicSessionList — presentational, layout-disposition-only list of the workstation's in-progress sessions",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

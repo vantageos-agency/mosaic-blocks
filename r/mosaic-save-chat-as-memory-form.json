@@ -3,7 +3,9 @@
   "name": "mosaic-save-chat-as-memory-form",
   "title": "MosaicSaveChatAsMemoryForm",
   "description": "MosaicSaveChatAsMemoryForm — presentational \"turn this thread into agency knowledge\" form: the chat → memory bridge.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-tag-input.json",

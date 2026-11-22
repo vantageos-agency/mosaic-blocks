@@ -4,7 +4,8 @@
   "title": "MosaicAlertDialog",
   "description": "MosaicAlertDialog — confirm-before-irreversible-action dialog (compound API)",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

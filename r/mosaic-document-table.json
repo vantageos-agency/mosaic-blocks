@@ -3,7 +3,9 @@
   "name": "mosaic-document-table",
   "title": "MosaicDocumentTable",
   "description": "MosaicDocumentTable — generic document table, built on MosaicDataTable.",
-  "dependencies": [],
+  "dependencies": [
+    "ag-grid-community"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-editable-cell.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-grille-registre.json",

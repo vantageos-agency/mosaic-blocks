@@ -3,7 +3,9 @@
   "name": "mosaic-memory-card",
   "title": "MosaicMemoryCard",
   "description": "MosaicMemoryCard — memory item card (detailed / compact variants)",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

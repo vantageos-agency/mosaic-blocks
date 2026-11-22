@@ -3,7 +3,9 @@
   "name": "mosaic-save-template-modal",
   "title": "MosaicSaveTemplateModal",
   "description": "MosaicSaveTemplateModal — presentational \"save as template\" form modal",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-adaptive-modal.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json",

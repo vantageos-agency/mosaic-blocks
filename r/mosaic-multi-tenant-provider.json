@@ -3,10 +3,7 @@
   "name": "mosaic-multi-tenant-provider",
   "title": "MosaicMultiTenantProvider",
   "description": "Wraps <ClerkProvider> + cloud-identity workspace-scope context. resolveWorkspaceId prop integrates @vantageos/cloud-identity. Exposes useMosaicWorkspace hook.",
-  "dependencies": [
-    "@clerk/nextjs",
-    "@vantageos/cloud-identity"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {

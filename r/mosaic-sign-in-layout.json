@@ -3,9 +3,7 @@
   "name": "mosaic-sign-in-layout",
   "title": "MosaicSignInLayout",
   "description": "Sign-in page layout, themed, mobile-first. Wraps Clerk <SignIn> with OKLCH-token appearance. Clerk injected as peer prop.",
-  "dependencies": [
-    "@clerk/nextjs"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {

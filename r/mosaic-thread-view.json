@@ -3,7 +3,9 @@
   "name": "mosaic-thread-view",
   "title": "MosaicThreadView",
   "description": "MosaicThreadView — one client request, several agents replying beneath it",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

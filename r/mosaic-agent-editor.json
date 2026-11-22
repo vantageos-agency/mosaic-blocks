@@ -3,7 +3,9 @@
   "name": "mosaic-agent-editor",
   "title": "MosaicAgentEditor",
   "description": "MosaicAgentEditor — agent config form (name / role / instructions)",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-button.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json",

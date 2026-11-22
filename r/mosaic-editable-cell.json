@@ -3,7 +3,9 @@
   "name": "mosaic-editable-cell",
   "title": "MosaicEditableCell",
   "description": "MosaicEditableCell — table cell with double-click-to-edit",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json"
   ],

@@ -4,7 +4,8 @@
   "title": "MosaicPopover",
   "description": "MosaicPopover — @base-ui/react Popover primitive, anchored to any host element",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

@@ -3,7 +3,9 @@
   "name": "mosaic-template-management-panel",
   "title": "MosaicTemplateManagementPanel",
   "description": "MosaicTemplateManagementPanel — manage a host-supplied list of saved agent templates: rename, duplicate, delete.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-button.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-dropdown-menu.json",

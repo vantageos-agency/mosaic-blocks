@@ -126,3 +126,29 @@ describe("registry.json derivation — mosaic-grille-registre", () => {
     expect(dependenciesOfFiles(abs, eligibleDependencies(pkg))).toEqual(item.dependencies);
   });
 });
+
+describe("registry.json — every item's dependencies equal a fresh derivation from its imports", () => {
+  it("has zero items whose saved dependencies diverge from their files' real imports", () => {
+    const registry = JSON.parse(readFileSync(path.join(ROOT, "registry.json"), "utf-8")) as {
+      items: Array<{ name: string; dependencies?: string[]; files: Array<{ path: string }> }>;
+    };
+    const eligible = eligibleDependencies(pkg);
+    expect(registry.items.length).toBeGreaterThan(0); // positive control: items were read
+    const divergent = registry.items
+      .map((item) => {
+        const saved = [...(item.dependencies ?? [])].sort();
+        const derived = dependenciesOfFiles(
+          item.files.map((f) => path.join(ROOT, f.path)),
+          eligible,
+        );
+        return { name: item.name, saved, derived };
+      })
+      .filter(({ saved, derived }) => saved.join("\n") !== derived.join("\n"));
+    expect(
+      divergent,
+      `${divergent.length} of ${registry.items.length} items diverge:\n${divergent
+        .map((d) => `  ${d.name}: saved [${d.saved.join(", ")}] derived [${d.derived.join(", ")}]`)
+        .join("\n")}`,
+    ).toEqual([]);
+  });
+});

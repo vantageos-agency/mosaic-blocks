@@ -3,7 +3,9 @@
   "name": "mosaic-reply-input",
   "title": "MosaicReplyInput",
   "description": "MosaicReplyInput — presentational, controlled reply input scoped to one thread",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

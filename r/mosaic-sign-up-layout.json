@@ -3,9 +3,7 @@
   "name": "mosaic-sign-up-layout",
   "title": "MosaicSignUpLayout",
   "description": "Sign-up page layout, themed, mobile-first. Wraps Clerk <SignUp> with OKLCH-token appearance. Clerk injected as peer prop.",
-  "dependencies": [
-    "@clerk/nextjs"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {

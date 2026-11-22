@@ -3,7 +3,9 @@
   "name": "mosaic-chat-sidebar",
   "title": "MosaicChatSidebar",
   "description": "MosaicChatSidebar — presentational, disposition-only column of conversation threads.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

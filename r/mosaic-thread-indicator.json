@@ -3,7 +3,9 @@
   "name": "mosaic-thread-indicator",
   "title": "MosaicThreadIndicator",
   "description": "MosaicThreadIndicator — signals a thread has UNREAD replies",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

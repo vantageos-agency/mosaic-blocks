@@ -4,7 +4,8 @@
   "title": "MosaicDrawer",
   "description": "MosaicDrawer — agent detail viewed as a side panel (SW-xx)",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

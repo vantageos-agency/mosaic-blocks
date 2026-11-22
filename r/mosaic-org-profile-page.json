@@ -3,9 +3,7 @@
   "name": "mosaic-org-profile-page",
   "title": "MosaicOrgProfilePage",
   "description": "Clerk <OrganizationProfile> for team management with OKLCH appearance. hash/path/virtual routing modes. Clerk injected as peer prop.",
-  "dependencies": [
-    "@clerk/nextjs"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {

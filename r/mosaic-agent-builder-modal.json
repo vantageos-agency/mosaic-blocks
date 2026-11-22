@@ -4,7 +4,8 @@
   "title": "MosaicAgentBuilderModal",
   "description": "MosaicAgentBuilderModal — modal shell for composing/configuring an agent, confirmed or cancelled by the host.",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

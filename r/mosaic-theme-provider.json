@@ -3,9 +3,7 @@
   "name": "mosaic-theme-provider",
   "title": "MosaicThemeProvider",
   "description": "Thin next-themes ThemeProvider wrapper. Generic, zero branding. All ThemeProviderProps forwarded.",
-  "dependencies": [
-    "next-themes"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {
