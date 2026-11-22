@@ -3,7 +3,9 @@
   "name": "mosaic-memory-list",
   "title": "MosaicMemoryList",
   "description": "MosaicMemoryList — presentational, row-disposition-only list of host items",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

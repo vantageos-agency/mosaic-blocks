@@ -3,7 +3,9 @@
   "name": "mosaic-chat-thread",
   "title": "MosaicChatThread",
   "description": "MosaicChatThread — presentational, auto-scrolling chat message stream",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

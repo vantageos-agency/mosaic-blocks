@@ -4,7 +4,8 @@
   "title": "MosaicTagInput",
   "description": "MosaicTagInput — presentational tag/chip input with optional autocomplete.",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

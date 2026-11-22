@@ -3,7 +3,9 @@
   "name": "mosaic-template-category-chips",
   "title": "MosaicTemplateCategoryChips",
   "description": "MosaicTemplateCategoryChips — presentational horizontal chip row filtering agent-templates by category.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

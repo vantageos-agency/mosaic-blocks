@@ -3,7 +3,9 @@
   "name": "mosaic-session-card",
   "title": "MosaicSessionCard",
   "description": "MosaicSessionCard — a single work-in-progress session at a glance (default / compact variants)",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-badge.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-card.json"

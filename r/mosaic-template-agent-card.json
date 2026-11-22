@@ -3,7 +3,9 @@
   "name": "mosaic-template-agent-card",
   "title": "MosaicTemplateAgentCard",
   "description": "MosaicTemplateAgentCard — agent-type template preview card",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

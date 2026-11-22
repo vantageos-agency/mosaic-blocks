@@ -3,7 +3,9 @@
   "name": "mosaic-markdown",
   "title": "MosaicMarkdown",
   "description": "MosaicMarkdown — presentational, dependency-free markdown renderer",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

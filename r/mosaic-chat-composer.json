@@ -3,7 +3,9 @@
   "name": "mosaic-chat-composer",
   "title": "MosaicChatComposer",
   "description": "MosaicChatComposer — presentational, controlled chat input + send/stop button",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

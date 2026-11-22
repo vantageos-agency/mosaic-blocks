@@ -4,7 +4,8 @@
   "title": "MosaicModelSelector",
   "description": "MosaicModelSelector — @base-ui/react Combobox primitive",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

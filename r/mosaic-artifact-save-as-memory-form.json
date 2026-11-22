@@ -3,7 +3,9 @@
   "name": "mosaic-artifact-save-as-memory-form",
   "title": "MosaicArtifactSaveAsMemoryForm",
   "description": "MosaicArtifactSaveAsMemoryForm — presentational \"capitalise this artifact into memory\" form: the artifact → memory bridge, sibling of MosaicSaveChatAsMemoryForm (chat → memory) in the same product family.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-tag-input.json"

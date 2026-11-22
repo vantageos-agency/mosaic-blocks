@@ -3,7 +3,9 @@
   "name": "mosaic-template-list",
   "title": "MosaicTemplateList",
   "description": "MosaicTemplateList — presentational, disposition-only list of host items",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

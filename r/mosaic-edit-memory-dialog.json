@@ -4,7 +4,8 @@
   "title": "MosaicEditMemoryDialog",
   "description": "MosaicEditMemoryDialog — dialog to correct a stale knowledge entry (a \"memory\"): edit its content, type and tags, then save or cancel.",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-select.json",

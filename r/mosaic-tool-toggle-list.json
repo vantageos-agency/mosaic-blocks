@@ -4,7 +4,8 @@
   "title": "MosaicToolToggleList",
   "description": "MosaicToolToggleList — presentational per-tool enable switch + approval level selector, grouped into host-supplied sections.",
   "dependencies": [
-    "@base-ui/react"
+    "@base-ui/react",
+    "class-variance-authority"
   ],
   "registryDependencies": [],
   "files": [

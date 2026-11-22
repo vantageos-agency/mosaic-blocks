@@ -3,7 +3,9 @@
   "name": "mosaic-api-key-panel",
   "title": "MosaicApiKeyPanel",
   "description": "MosaicApiKeyPanel — presentational \"bring your own key\" (BYOK) panel.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

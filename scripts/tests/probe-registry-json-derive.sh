@@ -68,6 +68,58 @@ fi
 restore_registry
 
 # ---------------------------------------------------------------------------
+# MUST_BLOCK 1-DEPS — --check must go RED, naming the item, when an existing
+# item's saved `dependencies` differs from what its files import. The domain of
+# a dependency drift has exactly two forms (set difference in each direction):
+#   missing  — a package the item's files import is absent from the saved list
+#   extra    — the saved list names a package no file of the item imports
+# One mutation per form, each on a REAL merged item, landing asserted first.
+# ---------------------------------------------------------------------------
+probe_deps_drift() {
+  local form="$1" slug="$2" pkg="$3" js="$4"
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  SLUG="$slug" PKG="$pkg" node -e "$js"
+  if ! SLUG="$slug" PKG="$pkg" FORM="$form" node -e '
+    const r = JSON.parse(require("fs").readFileSync("registry.json", "utf8"));
+    const it = r.items.find((i) => i.name === process.env.SLUG);
+    const has = it && it.dependencies.includes(process.env.PKG);
+    process.exit((process.env.FORM === "missing" ? !has : has) ? 0 : 1);
+  '; then
+    log FAIL "MUST_BLOCK 1-DEPS $form: mutation did not land on $slug"
+    FAILURES+=("MUST_BLOCK 1-DEPS $form setup: mutation did not land")
+  else
+    set +e
+    OUT="$(node scripts/registry-json-derive.mjs --check 2>&1)"
+    CODE=$?
+    set -e
+    if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -q "DEPENDENCIES" && echo "$OUT" | grep -q "$slug"; then
+      log PASS "MUST_BLOCK 1-DEPS $form: --check exited $CODE, naming $slug"
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    else
+      log FAIL "MUST_BLOCK 1-DEPS $form: expected non-zero exit naming $slug, got exit=$CODE output=$OUT"
+      FAILURES+=("MUST_BLOCK 1-DEPS $form: guard did not bite")
+    fi
+  fi
+  restore_registry
+}
+probe_deps_drift missing mosaic-tool-toggle-list class-variance-authority '
+const fs = require("fs");
+const r = JSON.parse(fs.readFileSync("registry.json", "utf8"));
+const it = r.items.find((i) => i.name === process.env.SLUG);
+if (!it) { console.error("probe setup: " + process.env.SLUG + " not found"); process.exit(1); }
+it.dependencies = it.dependencies.filter((d) => d !== process.env.PKG);
+fs.writeFileSync("registry.json", JSON.stringify(r, null, 2) + "\n");
+'
+probe_deps_drift extra mosaic-theme-provider next-themes '
+const fs = require("fs");
+const r = JSON.parse(fs.readFileSync("registry.json", "utf8"));
+const it = r.items.find((i) => i.name === process.env.SLUG);
+if (!it) { console.error("probe setup: " + process.env.SLUG + " not found"); process.exit(1); }
+it.dependencies = [...it.dependencies, process.env.PKG].sort();
+fs.writeFileSync("registry.json", JSON.stringify(r, null, 2) + "\n");
+'
+
+# ---------------------------------------------------------------------------
 # MUST_BLOCK 2 — release-artifacts-guard.mjs must REFUSE a component PR that
 # hand-edits registry.json. Built as a real git diff (not a string match):
 # a throwaway branch that adds a real line to registry.json, exactly the

@@ -3,7 +3,9 @@
   "name": "mosaic-memory-search",
   "title": "MosaicMemorySearch",
   "description": "MosaicMemorySearch — search bar over a host-supplied knowledge base: a query input, optional filter chips (by type/tag), a clear action, and a result-count indication.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json"
   ],

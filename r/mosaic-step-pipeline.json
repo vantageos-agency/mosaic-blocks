@@ -3,7 +3,9 @@
   "name": "mosaic-step-pipeline",
   "title": "MosaicStepPipeline",
   "description": "MosaicStepPipeline — ordered stage progress pipeline",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

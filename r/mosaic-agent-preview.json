@@ -3,7 +3,9 @@
   "name": "mosaic-agent-preview",
   "title": "MosaicAgentPreview",
   "description": "MosaicAgentPreview — presentational, controlled preview of an agent configuration before creation is confirmed.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

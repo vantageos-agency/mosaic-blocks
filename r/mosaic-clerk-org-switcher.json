@@ -3,9 +3,7 @@
   "name": "mosaic-clerk-org-switcher",
   "title": "MosaicClerkOrgSwitcher",
   "description": "Clerk-backed org switcher (live org data). Wraps <OrganizationSwitcher> with OKLCH appearance. DISTINCT from MosaicOrgSwitcher (presentational, orgs via props).",
-  "dependencies": [
-    "@clerk/nextjs"
-  ],
+  "dependencies": [],
   "registryDependencies": [],
   "files": [
     {

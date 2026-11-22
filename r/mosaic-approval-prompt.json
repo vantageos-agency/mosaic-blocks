@@ -3,7 +3,9 @@
   "name": "mosaic-approval-prompt",
   "title": "MosaicApprovalPrompt",
   "description": "MosaicApprovalPrompt — presentational \"reprendre la main\" tool-call approval",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

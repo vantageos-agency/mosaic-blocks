@@ -3,7 +3,9 @@
   "name": "mosaic-document-upload",
   "title": "MosaicDocumentUpload",
   "description": "MosaicDocumentUpload — presentational document drop-zone + file status list",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

@@ -3,7 +3,9 @@
   "name": "mosaic-memory-grid",
   "title": "MosaicMemoryGrid",
   "description": "MosaicMemoryGrid — presentational, tile-disposition-only grid of host items",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [],
   "files": [
     {

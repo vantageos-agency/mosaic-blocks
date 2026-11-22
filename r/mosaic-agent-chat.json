@@ -3,7 +3,9 @@
   "name": "mosaic-agent-chat",
   "title": "MosaicAgentChat",
   "description": "MosaicAgentChat — presentational session harness: MVP-8, the last MVP piece, wiring MosaicChatThread + MosaicChatMessage + MosaicChatComposer + MosaicApprovalPrompt into one send/resume/respond harness.",
-  "dependencies": [],
+  "dependencies": [
+    "class-variance-authority"
+  ],
   "registryDependencies": [
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-approval-prompt.json",
     "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-chat-composer.json",

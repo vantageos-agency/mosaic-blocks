@@ -33,9 +33,13 @@
  *     Subpath imports (`"pkg/sub"`) count as `pkg`. An item file importing a
  *     bare package that is neither eligible, react/react-dom, nor a node
  *     builtin makes the derivation THROW naming file + package — never a
- *     silent drop. For an item already in registry.json the existing value
- *     is preserved (curated), but every item's files are still scanned so an
- *     undeclared import anywhere fails loud.
+ *     silent drop. It is ALWAYS the derived value, for every item, new or
+ *     existing: an existing item's saved `dependencies` is never preserved
+ *     (a preserved list goes stale the moment a file's imports change, and
+ *     did — items kept packages named only in comments and missed packages
+ *     their files import). Only real import statements count: comments and
+ *     string literals are masked before the scan. `--check` names every item
+ *     whose saved list differs from the derivation.
  *   - `files` — every shipped (non-test, non-story) source file that actually exists in that
  *     component's directory, read from disk.
  *
@@ -54,7 +58,8 @@
  * Modes:
  *   pnpm registry:derive          -> rewrites registry.json in place
  *   pnpm registry:derive --check  -> writes nothing; exits non-zero, NAMING
- *                                    every missing/stale component, if the
+ *                                    every missing/stale component or item whose
+ *                                    dependencies drifted from its imports, if the
  *                                    live registry.json disagrees with what
  *                                    src/index.ts currently exports
  *
@@ -462,6 +467,8 @@ function main() {
 
   const derivedItems = [];
   const missing = [];
+  /** existing items whose saved `dependencies` differ from the derivation */
+  const depsDrift = [];
 
   for (const [dir, exportsInDir] of [...byDir.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const primaries = primaryExports(exportsInDir, dir);
@@ -515,6 +522,13 @@ function main() {
 
       if (!existingItem) {
         missing.push(slug);
+      } else {
+        const saved = [...(existingItem.dependencies ?? [])].sort();
+        if (saved.join("\n") !== derivedDependencies.join("\n")) {
+          depsDrift.push(
+            `${slug} (saved [${saved.join(", ")}], derived [${derivedDependencies.join(", ")}])`,
+          );
+        }
       }
 
       derivedItems.push({
@@ -522,7 +536,9 @@ function main() {
         type: isHook ? "registry:hook" : (existingItem?.type ?? "registry:ui"),
         title: existingItem?.title ?? primary.name,
         description: existingItem?.description ?? leadingJsDocSummary(primaryAbs),
-        dependencies: existingItem?.dependencies ?? derivedDependencies,
+        // Always derived, never preserved from existingItem: dependencies are
+        // STATE read off the item's imports, not curated content.
+        dependencies: derivedDependencies,
         files,
       });
     }
@@ -536,7 +552,7 @@ function main() {
     .filter((slug) => !derivedItems.some((d) => d.name === slug));
 
   if (CHECK) {
-    if (missing.length === 0 && stale.length === 0) {
+    if (missing.length === 0 && stale.length === 0 && depsDrift.length === 0) {
       console.log(
         `registry-json-derive --check: OK — registry.json covers all ${derivedItems.length} exported component director${derivedItems.length === 1 ? "y" : "ies"}.`,
       );
@@ -547,6 +563,9 @@ function main() {
       lines.push(
         `MISSING from registry.json (exported in src/index.ts, absent here): ${missing.join(", ")}`,
       );
+    }
+    if (depsDrift.length > 0) {
+      lines.push(`DEPENDENCIES differ from the items' real imports: ${depsDrift.join("; ")}`);
     }
     if (stale.length > 0) {
       lines.push(
