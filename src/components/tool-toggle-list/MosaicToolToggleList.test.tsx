@@ -129,7 +129,9 @@ describe("MosaicToolToggleList", () => {
     render(<MosaicToolToggleList {...baseProps()} />);
     const trigger = screen.getByRole("combobox", { name: "Approval level for send_message" });
     await user.click(trigger);
-    expect(screen.getByRole("option", { name: "Never ask" })).toBeTruthy();
+    // base-ui Select opens on mousedown inside requestAnimationFrame, so the
+    // popup is not in the DOM when user.click resolves: await the option itself.
+    expect(await screen.findByRole("option", { name: "Never ask" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Ask every call" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Ask first time" })).toBeTruthy();
   });
@@ -140,7 +142,9 @@ describe("MosaicToolToggleList", () => {
     render(<MosaicToolToggleList {...props} />);
     const trigger = screen.getByRole("combobox", { name: "Approval level for send_message" });
     await user.click(trigger);
-    await user.click(screen.getByRole("option", { name: "Ask every call" }));
+    // base-ui Select opens on mousedown inside requestAnimationFrame, so the
+    // popup is not in the DOM when user.click resolves: await the option itself.
+    await user.click(await screen.findByRole("option", { name: "Ask every call" }));
     expect(props.onChangeApproval).toHaveBeenCalledWith("send_message", "always");
   });
 
