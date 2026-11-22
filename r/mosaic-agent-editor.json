@@ -5,9 +5,9 @@
   "description": "MosaicAgentEditor — agent config form (name / role / instructions)",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-button.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-input.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-textarea.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-button.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-textarea.json"
   ],
   "files": [
     {
