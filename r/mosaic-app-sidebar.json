@@ -5,7 +5,7 @@
   "description": "Collapsible sidebar (64px icon-only / 280px expanded) with nested nav, quick actions, recent items, and footer status slot. Full-width on mobile. Props: navItems[], quickActions[], recentItems[], logoSlot, footerStatus. No hardcoded routes or branding.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

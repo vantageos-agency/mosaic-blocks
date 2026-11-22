@@ -5,7 +5,7 @@
   "description": "Device-aware CSS grid wrapper. Reads isMobile/isTablet/isDesktop from MosaicDeviceProvider and applies the correct column count. Props: mobileColumns, tabletColumns, desktopColumns, gap. Uses inline CSS for dynamic columns (no JIT issues).",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

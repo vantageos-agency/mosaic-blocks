@@ -5,7 +5,7 @@
   "description": "MosaicMessageSearch — search bar over the messages of a single, already-open conversation: a query input and a clear action, with the matching results rendered entirely by the host.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.38-alpha/r/mosaic-input.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-input.json"
   ],
   "files": [
     {
