@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — GrilleRegistre pagination and localeText (unreleased)
+
+**GrilleRegistre** (`src/components/registre/`) gains four optional props forwarded to AG Grid: `pagination?: boolean`, `paginationPageSize?: number`, `paginationPageSizeSelector?: number[] | boolean` and `localeText?: Record<string, string>` (grid UI text keyed by AG Grid locale key; the host owns the language). Omitted, each stays at AG Grid's own default, so existing hosts are unchanged: the `GrilleRegistreProps` declaration in `dist/index.d.ts` gains these four members and nothing else. The version is not bumped here: the release-artifacts guard forbids it, the bot derives it after merge.
+
 ### Changed — MosaicDocumentTable renders through GrilleRegistre (unreleased)
 
 **MosaicDocumentTable** (`src/components/document-review/`) — rebuilt as a composition of `GrilleRegistre` (AG Grid) instead of `MosaicDataTable`, so a document-review screen and a registry screen render through one table component. The public API is unchanged: `MosaicDocumentTableProps<T>`, `MosaicDocumentTableRowContext` and the function signature are identical in `dist/index.d.ts`. Behaviour kept: the column model and its visibility, the first column's real `<button>` (each row's keyboard stop — grid cells take no focus of their own), controlled or internal selection, `renderPanel` with `orderedRowIds`, the host's row order (no sort, no filter), `emptyMessage` (now the grid's no-rows overlay). One timing difference: a click is resolved through AG Grid's `cellClicked`, which AG Grid dispatches asynchronously, so `onSelectedRowChange` fires on the next task rather than inside the click handler. `MosaicDataTable` itself is unchanged. **GrilleRegistre** gains an optional `messageVide?: string` — the text of the grid's no-rows overlay (AG Grid's provided overlay, `overlayComponentParams.noRows.overlayText`); omitted, AG Grid's default stays. The version is not bumped here: the release-artifacts guard forbids it, the bot derives it after merge.
