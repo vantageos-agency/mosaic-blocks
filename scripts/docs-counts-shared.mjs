@@ -23,7 +23,12 @@
  * neither consumer is allowed to redefine it locally.
  */
 
-import { JSX_TEXT_KINDS, blankRanges, loadTypeScript, readSourceTokens } from "./source-tokens-shared.mjs";
+import {
+  JSX_TEXT_KINDS,
+  blankRanges,
+  loadTypeScript,
+  readSourceTokens,
+} from "./source-tokens-shared.mjs";
 
 // ---------------------------------------------------------------------------
 // Counting definition — extracted from src/index.ts.

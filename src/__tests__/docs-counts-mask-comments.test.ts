@@ -12,10 +12,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  maskCommentsAndStrings,
-  scanExportStatements,
-} from "../../scripts/docs-counts-shared.mjs";
+import { maskCommentsAndStrings, scanExportStatements } from "../../scripts/docs-counts-shared.mjs";
 
 const lineBreaks = (s: string) => [...s].flatMap((c, i) => (c === "\n" ? [i] : []));
 
@@ -39,7 +36,7 @@ describe("maskCommentsAndStrings — a quote hidden in a non-string token never 
   });
 
   it("blanks the regex literal itself (neither code nor a string)", () => {
-    const blanked = maskCommentsAndStrings("const r = /import \"x\"/;\n", false);
+    const blanked = maskCommentsAndStrings('const r = /import "x"/;\n', false);
     expect(blanked).not.toContain("import");
     expect(blanked).not.toContain("/");
   });
@@ -67,8 +64,8 @@ describe("maskCommentsAndStrings — a quote hidden in a non-string token never 
   });
 
   it("masks a template's static text, keeps its substitution code visible", () => {
-    const out = maskCommentsAndStrings("const t = `ab${f(\"cd\")}ef`;", false);
-    expect(out).toBe("const t = `  ${f(\"  \")}  `;");
+    const out = maskCommentsAndStrings('const t = `ab${f("cd")}ef`;', false);
+    expect(out).toBe('const t = `  ${f("  ")}  `;');
   });
 
   it("blanks JSX text in a .tsx file, in both modes (not code, not a string)", () => {
@@ -95,7 +92,7 @@ describe("maskCommentsAndStrings — refuses what it cannot read, never a half-m
 
 describe("scanExportStatements — an export line below a regex-literal quote is still a statement", () => {
   it("reads the named re-export after `const re = /'/;`", () => {
-    const stmts = scanExportStatements("const re = /'/;\nexport { A } from \"./A.js\";\n");
+    const stmts = scanExportStatements('const re = /\'/;\nexport { A } from "./A.js";\n');
     expect(stmts.map((s) => [s.kind, s.source])).toEqual([["named-reexport", "./A.js"]]);
   });
 });

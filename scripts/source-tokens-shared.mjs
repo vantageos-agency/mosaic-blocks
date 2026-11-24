@@ -301,7 +301,9 @@ export function readSourceTokens(tsApi, text, options) {
     }
     if (templatePartKinds.has(node.kind)) {
       if (!handledTemplateParts.has(node))
-        refuse(`met a template-part token (kind ${node.kind}) outside a template at offset ${start}`);
+        refuse(
+          `met a template-part token (kind ${node.kind}) outside a template at offset ${start}`,
+        );
       return;
     }
     if (unclassifiedTextKinds.has(node.kind))
