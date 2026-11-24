@@ -19,7 +19,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { extractRealExports } from "../../scripts/docs-counts-shared.mjs";
+import { extractRealExports, maskCommentsAndStrings } from "../../scripts/docs-counts-shared.mjs";
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const INDEX_PATH = path.join(REPO_ROOT, "src", "index.ts");
@@ -106,6 +106,79 @@ describe("extractRealExports — export domain coverage (mutation-proven, one pe
     expect(names.has("MosaicAlpha")).toBe(true);
     expect(names.has("MosaicAlphaProps")).toBe(false);
     expect(names.size).toBe(1);
+  });
+});
+
+describe("extractRealExports — an export statement inside a comment or a string is not an export (one mutation per form)", () => {
+  const FORMS: Array<{ form: string; fake: string; text: string }> = [
+    { form: "line comment", fake: "MosaicFake1", text: '// export { MosaicFake1 } from "./x";' },
+    {
+      form: "block comment",
+      fake: "MosaicFake2",
+      text: '/* export { MosaicFake2 } from "./y"; */',
+    },
+    {
+      form: "string literal",
+      fake: "MosaicFake4",
+      text: "const fakeSource = 'export { MosaicFake4 } from \"./w\";';",
+    },
+    {
+      form: "JSDoc",
+      fake: "MosaicFake3",
+      text: '/**\n * Example:\n * export { MosaicFake3 } from "./z";\n */',
+    },
+  ];
+
+  for (const { form, fake, text } of FORMS) {
+    it(`MUST_BLOCK (${form}): a commented-out export on REAL src/index.ts leaves the set unchanged`, () => {
+      const before = extractRealExports(realIndexSource());
+      const mutated = `${text}\n${realIndexSource()}`;
+      expect(mutated, "mutation did not land").toContain(`export { ${fake} }`);
+
+      const after = extractRealExports(mutated);
+      expect(after.has(fake)).toBe(false);
+      expect([...after].sort()).toEqual([...before].sort());
+    });
+  }
+
+  it("MUST_PASS: a real added export line is still counted", () => {
+    const before = extractRealExports(realIndexSource());
+    const mutated = `${realIndexSource()}\nexport { MosaicRealNew } from "./components/button/Button.js";\n`;
+    expect(mutated).toContain("export { MosaicRealNew } from");
+
+    const after = extractRealExports(mutated);
+    expect(after.has("MosaicRealNew")).toBe(true);
+    expect(after.size).toBe(before.size + 1);
+  });
+
+  it("masking already-masked input is harmless: raw, masked and masked-twice give the same set", () => {
+    const raw = `// export { MosaicFake1 } from "./x";\n${realIndexSource()}`;
+    const masked = maskCommentsAndStrings(raw);
+    const maskedKeep = maskCommentsAndStrings(raw, true);
+    const expected = [...extractRealExports(raw)].sort();
+    expect([...extractRealExports(masked)].sort()).toEqual(expected);
+    expect([...extractRealExports(maskedKeep)].sort()).toEqual(expected);
+    expect([...extractRealExports(maskCommentsAndStrings(masked))].sort()).toEqual(expected);
+  });
+
+  it("fail-closed keeps its line number after comments above it (masking is length-preserving)", () => {
+    const source = [
+      "/* header",
+      '   export { MosaicFake2 } from "./y"; */',
+      'export { MosaicAlpha } from "./a.js";',
+      'export * from "./b.js";',
+    ].join("\n");
+    expect(() => extractRealExports(source)).toThrowError(/src\/index\.ts:4 /);
+  });
+
+  it("a source whose only exports are commented out yields an empty set (docs-counts refuses zero)", () => {
+    expect(extractRealExports('// export { MosaicFake1 } from "./x";\n').size).toBe(0);
+  });
+
+  it("a bare `export * from` inside a comment is not a bare star", () => {
+    expect(() =>
+      extractRealExports('// export * from "./b.js";\nexport const A = 1;\n'),
+    ).not.toThrow();
   });
 });
 
