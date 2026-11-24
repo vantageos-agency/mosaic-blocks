@@ -442,6 +442,12 @@ function classifyContentShape(str) {
  *     comments (SingleLineCommentTrivia, MultiLineCommentTrivia — a JSDoc
  *     block is a multi-line comment).
  *   - wordless by definition: NumericLiteral, BigIntLiteral.
+ *   - REFUSED if met (exit 2, the kind named): every other token kind the
+ *     derivation below returns — today JsxText, JsxTextAllWhiteSpaces,
+ *     JSDocCommentTextToken, NonTextFileMarkerTrivia. JSX text in SOURCE
+ *     reaches this bundle as a `children:` StringLiteral (the build compiles
+ *     JSX), so it is judged as a string; a JsxText TOKEN here means the
+ *     artifact was not produced by this repo's build, and is not certified.
  * Comments and regex literals are replaced by spaces of the SAME length in
  * the text every downstream pass reads (`stripped`), so every offset and line
  * number stays valid and no quote inside either can ever pair with anything.

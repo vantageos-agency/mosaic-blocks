@@ -987,6 +987,164 @@ fi
 (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-block-forms)
 
 # ---------------------------------------------------------------------------
+# MUST_PASS — COMMENT FORMS on real component source (task
+# k171ya0nn2244kqjvv63fxq5558jjkyy). The guard reads text from PARSED tokens;
+# a quote character inside a comment is not a delimiter and must never pair
+# with a quote in a string below it.
+#
+# DOMAIN (derived from ts.SyntaxKind, see the token-reader census further
+# down): a comment is SingleLineCommentTrivia (`//`) or MultiLineCommentTrivia
+# (`/* */`; a JSDoc `/** */` is one, and is listed separately here because it is
+# the third SOURCE spelling a component author writes). One mutation per form.
+#
+# SITES are derived, never chosen: the first three component files (sorted
+# path order, tests and stories excluded) holding a string argument on its own
+# line inside a multi-line `cn(` call. esbuild keeps every one of the three
+# comment forms in that position (an argument list), so the comment reaches
+# the bundle; landing is asserted IN THE BUNDLE, not only in the source.
+#
+# Each mutation inserts, before that string argument: a comment of the form
+# carrying an apostrophe and a nonce, then a NEW SINGLE-QUOTED class string
+# holding a CSS attribute selector with single quotes (`[&[data-<nonce>='on']]`,
+# the shape of the occurrence that opened this task). esbuild prints it
+# double-quoted with its inner single quotes kept, so the apostrophe in the
+# comment has a quote below it to pair with. A quote-pairing reader forms a
+# fake string from the comment into the selector and names it; a token reader
+# sees one comment and one utility-class string, and adds no offender.
+# ---------------------------------------------------------------------------
+COMMENT_FORMS=(
+  "line comment //|// the column's width"
+  "block comment /* */|/* the user's tab"
+  "JSDoc /** */|/** the row's height"
+)
+mapfile -t COMMENT_SITES < <(python3 - "$CLONE" <<'PYEOF'
+import os, re, sys
+root = sys.argv[1]
+STR_ARG = re.compile(r'^(\s*)"[^"\'\\`]*",\s*$')
+OPEN = re.compile(r'\bcn\($')
+found = []
+for dp, dn, fn in os.walk(os.path.join(root, "src", "components")):
+    dn.sort()
+    for f in sorted(fn):
+        if not f.endswith(".tsx") or ".test." in f or ".stories." in f:
+            continue
+        p = os.path.join(dp, f)
+        lines = open(p).read().split("\n")
+        for i, l in enumerate(lines):
+            if not STR_ARG.match(l):
+                continue
+            j = i - 1
+            while j >= 0 and (STR_ARG.match(lines[j]) or lines[j].strip().startswith("//")):
+                j -= 1
+            if j >= 0 and OPEN.search(lines[j].rstrip()):
+                found.append((os.path.relpath(p, root), i + 1))
+                break
+for r, n in sorted(found)[:3]:
+    print(f"{r}|{n}")
+PYEOF
+)
+COMMENT_OK=true
+if [ "${#COMMENT_SITES[@]}" -ne "${#COMMENT_FORMS[@]}" ]; then
+  FAILURES+=("MUST_PASS comment forms — derived ${#COMMENT_SITES[@]} \`cn(\` string-argument sites in src/components (need ${#COMMENT_FORMS[@]}) — probe invalid")
+  COMMENT_OK=false
+fi
+# Nonces: derived absent from the material by the shared predicate.
+COMMENT_NONCES=()
+for i in "${!COMMENT_FORMS[@]}"; do
+  [ "$COMMENT_OK" = true ] || break
+  nonce=""
+  for letter in a b c d e f g h; do
+    cand="zqcmt$((i + 1))$letter"
+    rc=0
+    subject_sites substring "$cand" >/dev/null || rc=$?
+    if [ "$rc" -eq 0 ]; then nonce="$cand"; break; fi
+    if [ "$rc" -ne 1 ]; then
+      FAILURES+=("MUST_PASS comment forms — could not prove nonce \"$cand\" absent (subject_sites exit $rc) — probe invalid")
+      COMMENT_OK=false
+      break
+    fi
+  done
+  if [ -z "$nonce" ] && [ "$COMMENT_OK" = true ]; then
+    FAILURES+=("MUST_PASS comment forms — slot $((i + 1)): every nonce zqcmt$((i + 1))[a-h] already exists in the material — probe invalid")
+    COMMENT_OK=false
+  fi
+  COMMENT_NONCES+=("$nonce")
+done
+for i in "${!COMMENT_FORMS[@]}"; do MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1)); done
+if [ "$COMMENT_OK" = true ] && [ -n "$BASELINE_COUNT" ]; then
+  git -C "$CLONE" checkout --quiet -b probe-comment-forms "$BASE"
+  COMMENT_LANDED=true
+  for i in "${!COMMENT_FORMS[@]}"; do
+    IFS='|' read -r _label comment_open <<< "${COMMENT_FORMS[$i]}"
+    IFS='|' read -r rel lineno <<< "${COMMENT_SITES[$i]}"
+    nonce="${COMMENT_NONCES[$i]}"
+    case "$comment_open" in
+      //*) comment="$comment_open ($nonce)" ;;
+      *) comment="$comment_open ($nonce) */" ;;
+    esac
+    python3 - "$CLONE/$rel" "$lineno" "$comment" "$nonce" <<'PYEOF'
+import re, sys
+path, lineno, comment, nonce = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4]
+lines = open(path).read().split("\n")
+indent = re.match(r"^(\s*)", lines[lineno - 1]).group(1)
+lines[lineno - 1:lineno - 1] = [indent + comment, indent + "'[&[data-" + nonce + "=\\'on\\']]:opacity-50',"]
+open(path, "w").write("\n".join(lines))
+PYEOF
+    if ! grep -qF -- "$comment" "$CLONE/$rel" || ! grep -qF -- "'[&[data-$nonce=\\'on\\']]:opacity-50'," "$CLONE/$rel"; then
+      FAILURES+=("MUST_PASS comment form ${COMMENT_FORMS[$i]%%|*} — mutation did NOT land in $rel:$lineno — probe invalid")
+      COMMENT_LANDED=false
+    else
+      log INFO "comment form ${COMMENT_FORMS[$i]%%|*}: injected into $rel before line $lineno (nonce $nonce)"
+    fi
+  done
+  if [ "$COMMENT_LANDED" = true ]; then
+    (cd "$CLONE" && git add -A && git commit --quiet -m "probe: one apostrophe comment form per real component, beside a new single-quoted string")
+    log INFO "building comment-forms tree (this takes ~15-25s)..."
+    if ! build_clone; then
+      FAILURES+=("MUST_PASS comment forms build — pnpm build failed on the mutated tree")
+    else
+      # Landing IN THE BUNDLE: the comment line, immediately followed by the
+      # selector string printed with its inner single quotes.
+      BUNDLE_LANDED=true
+      for i in "${!COMMENT_FORMS[@]}"; do
+        nonce="${COMMENT_NONCES[$i]}"
+        if ! python3 - "$CLONE/dist/index.cjs" "$nonce" <<'PYEOF'
+import sys
+lines = open(sys.argv[1]).read().split("\n")
+nonce = sys.argv[2]
+want = '"[&[data-' + nonce + "='on']]:opacity-50\","
+hits = [i for i, l in enumerate(lines) if "(" + nonce + ")" in l and i + 1 < len(lines) and lines[i + 1].strip() == want]
+sys.exit(0 if len(hits) == 1 else 1)
+PYEOF
+        then
+          FAILURES+=("MUST_PASS comment form ${COMMENT_FORMS[$i]%%|*} — the comment and the selector string did not reach dist/index.cjs adjacent (nonce $nonce) — probe invalid")
+          BUNDLE_LANDED=false
+        fi
+      done
+      if [ "$BUNDLE_LANDED" = true ]; then
+        set +e
+        output="$(run_guard 2>&1)"
+        status=$?
+        set -e
+        count="$(echo "$output" | grep -c '^  - ' || true)"
+        for i in "${!COMMENT_FORMS[@]}"; do
+          label="${COMMENT_FORMS[$i]%%|*}"
+          nonce="${COMMENT_NONCES[$i]}"
+          if [ "$count" = "$BASELINE_COUNT" ] && [ "$status" -ne 2 ] && ! echo "$output" | grep -qF -- "$nonce"; then
+            MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+            log MUST_PASS "PASS — comment form $label with an apostrophe beside a new single-quoted string (${COMMENT_SITES[$i]}) — not named, offender count $count = baseline $BASELINE_COUNT"
+          else
+            FAILURES+=("MUST_PASS comment form $label — guard exited $status, offender count $count vs baseline $BASELINE_COUNT, or named nonce $nonce — output: $output")
+            log MUST_PASS "FAIL — comment form $label — exit=$status count=$count baseline=$BASELINE_COUNT"
+          fi
+        done
+      fi
+    fi
+  fi
+  (cd "$CLONE" && git checkout --quiet "$BASE" -- . && git clean -fdq && git checkout --quiet "$BASE" && git branch -D --quiet probe-comment-forms)
+fi
+
+# ---------------------------------------------------------------------------
 # MUST_BLOCK #5 — the marker MENTIONED IN PROSE (not anchored at start of
 # its own line, immediately before the offending statement) must NOT
 # disable the guard. Same class of self-disabling bug the release-artifacts
@@ -1942,32 +2100,31 @@ PYEOF
 )
     if [ "${#TOKEN_ANCHORS[@]}" -ne 3 ]; then
       FAILURES+=("MUST_BLOCK/MUST_PASS token reader — fewer than 3 real \`var x = require(...)\` anchor lines in the clean bundle — probe invalid")
-      MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 7)); MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 5)); MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+      MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 7)); MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 5)); MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 2))
     else
-      # Words are DERIVED: each candidate is used only if absent from the clean bundle.
-      pick_phrase() { # $@ = candidates; prints the first absent from the clean bundle
-        local c
-        for c in "$@"; do
-          if ! grep -qF -- "$c" "$REAL_DIST_BACKUP"; then printf '%s' "$c"; return 0; fi
-        done
-        return 1
-      }
+      # Subjects are DERIVED, never typed: each slot's phrase is two `zq`
+      # nonces (not words of any language), the first TitleCased so the phrase
+      # reads as prose to PASS A. A nonce is used only when the shared
+      # predicate subject_sites (substring mode) proves it absent from `src`
+      # and from the clean baseline bundle; a slot with no usable nonce
+      # refuses the probe, naming the slot.
       TOK_OK=true
       declare -A TOKW
-      slot=0
-      for set in \
-        "Quartz lantern vessel|Marble ember fountain|Cobalt harbor window" \
-        "Velvet anchor meadow|Copper orchid summit|Amber glacier thread" \
-        "Silver compass garden|Violet tundra beacon|Ivory canyon whisper" \
-        "Saffron kettle bridge|Indigo meadow lattice|Umber falcon orchard" \
-        "Walnut ribbon harvest|Cedar prism lagoon|Ochre bramble signal" \
-        "Teal cinder parade|Sable quill orbit|Coral basalt journey" \
-        "Slate mosaic tavern|Hazel dune ledger|Pearl thistle engine" \
-        "Fawn rivet carousel|Mauve cobble stanza|Rust wicker meridian"; do
-        slot=$((slot + 1))
-        IFS='|' read -r c1 c2 c3 <<< "$set"
-        if w="$(pick_phrase "$c1" "$c2" "$c3")"; then TOKW[$slot]="$w"; else
-          FAILURES+=("MUST_BLOCK token reader — word slot $slot: every candidate [$c1 | $c2 | $c3] is already in the clean bundle — probe refuses (a subject it does not control proves nothing)")
+      for slot in 1 2 3 4 5 6 7 8; do
+        TOKW[$slot]=""
+        for letter in a b c d e f g h; do
+          n="zqtok${slot}${letter}"
+          rc1=0; subject_sites substring "Z${n:1}" >/dev/null || rc1=$?
+          rc2=0; subject_sites substring "${n}w" >/dev/null || rc2=$?
+          if [ "$rc1" -gt 1 ] || [ "$rc2" -gt 1 ]; then
+            FAILURES+=("MUST_BLOCK token reader — could not prove nonce \"$n\" absent (subject_sites exit $rc1/$rc2) — probe invalid")
+            TOK_OK=false
+            break
+          fi
+          if [ "$rc1" -eq 0 ] && [ "$rc2" -eq 0 ]; then TOKW[$slot]="Z${n:1} ${n}w"; break; fi
+        done
+        if [ -z "${TOKW[$slot]}" ]; then
+          FAILURES+=("MUST_BLOCK token reader — word slot $slot: every nonce zqtok${slot}[a-h] already exists in the material — probe refuses (a subject it does not control proves nothing)")
           TOK_OK=false
         fi
       done
@@ -2084,6 +2241,27 @@ PYEOF
         else
           FAILURES+=("MUST_REFUSE unparseable bundle — guard exited $REFUSE_STATUS (expected 2, naming 'could not parse' at line $((anchor + 1))) — output: $REFUSE_OUTPUT")
           log MUST_REFUSE "FAIL — unparseable bundle — exit=$REFUSE_STATUS"
+        fi
+      fi
+      restore_real_dist
+
+      # REFUSE pole: a text-bearing token kind the guard does not judge
+      # (JsxText: a bundle still holding JSX was not built by this repo's
+      # build) is named and refused, never skipped.
+      MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+      anchor="${TOKEN_ANCHORS[1]}"
+      inject_after "$anchor" "var zqtokJsx = <b>zqtokjsx</b>;"
+      if ! landed "$anchor" "var zqtokJsx = <b>zqtokjsx</b>;"; then
+        FAILURES+=("MUST_REFUSE JsxText token — mutation did NOT land — probe invalid")
+        log MUST_REFUSE "FAIL — JsxText token — mutation did not land"
+      else
+        run_guard_on_real_dist
+        if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "JsxText"; then
+          MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+          log MUST_REFUSE "PASS — JsxText token in the bundle — exited 2, REFUSED TO JUDGE, named the kind JsxText"
+        else
+          FAILURES+=("MUST_REFUSE JsxText token — guard exited $REFUSE_STATUS (expected 2, naming 'JsxText') — output: $REFUSE_OUTPUT")
+          log MUST_REFUSE "FAIL — JsxText token — exit=$REFUSE_STATUS"
         fi
       fi
       restore_real_dist
