@@ -426,8 +426,12 @@ export function eligibleDependencies(pkgJson) {
  */
 function specifiersIn(absPath) {
   const text = readFileOrThrow(absPath);
-  const kept = maskCommentsAndStrings(text, true);
-  const blanked = maskCommentsAndStrings(text, false);
+  // Token-read (a TypeScript parse by the file's own extension): a regex literal
+  // or JSX text holding a quote can no longer open a fake string over the
+  // import lines below it, and a file that does not parse REFUSES (a
+  // SourceReadRefusal, exit 2 here) instead of yielding a half-masked copy.
+  const kept = maskCommentsAndStrings(text, true, absPath);
+  const blanked = maskCommentsAndStrings(text, false, absPath);
   const out = [];
   const literalAt = (quoteIdx) => {
     const q = kept[quoteIdx];

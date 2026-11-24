@@ -101,6 +101,34 @@ describe("dependenciesOfFiles — union over every file of an item", () => {
     );
   });
 
+  it("reads the imports below a regex literal holding a quote (task k17dchnw3f2fqgjeqw10mn9b9h8jvfcm)", () => {
+    // `/'/` used to open a fake string that swallowed the import line below it.
+    const f = fixture(
+      "RegexQuote.ts",
+      ["const re = /'/;", 'import { Button } from "@heroui/react";', "const s = 'x';", ""].join("\n"),
+    );
+    expect(readFileSync(f, "utf-8")).toContain("/'/"); // mutation landed
+    expect(dependenciesOfFiles([f], ELIGIBLE)).toEqual(["@heroui/react"]);
+  });
+
+  it("reads the imports below JSX text holding an apostrophe, and ignores a specifier inside JSX text", () => {
+    const f = fixture(
+      "JsxApostrophe.tsx",
+      [
+        "export const A = () => <p>it's import \"ghost-in-jsx-text\"</p>;",
+        "const s = 'x';",
+        'import { Button } from "@heroui/react";',
+        "",
+      ].join("\n"),
+    );
+    expect(dependenciesOfFiles([f], ELIGIBLE)).toEqual(["@heroui/react"]);
+  });
+
+  it("REFUSES a file that does not parse, naming it", () => {
+    const f = fixture("Unparseable.ts", "import { from ;\n");
+    expect(() => dependenciesOfFiles([f], ELIGIBLE)).toThrow(/could not parse .*Unparseable\.ts/);
+  });
+
   it("THROWS on a non-literal dynamic import it cannot read", () => {
     const f = fixture("DynamicVar.ts", "const name = 'x';\nconst m = await import(name);\n");
     expect(() => dependenciesOfFiles([f], ELIGIBLE)).toThrow(/DynamicVar\.ts.*non-literal/);

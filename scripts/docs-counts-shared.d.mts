@@ -15,7 +15,11 @@
 export type VersionTableRowStatus = "Current" | "Historical" | "unclassified";
 
 export function extractRealExports(indexSource: string): Set<string>;
-export function maskCommentsAndStrings(src: string, keepStrings?: boolean): string;
+export function maskCommentsAndStrings(
+  src: string,
+  keepStrings?: boolean,
+  fileName?: string,
+): string;
 export interface ExportStatement {
   kind: "named-reexport" | "named-local" | "star" | "star-as" | "declaration" | "default";
   line: number;
