@@ -433,6 +433,12 @@ function specifiersIn(absPath) {
   const kept = maskCommentsAndStrings(text, true, absPath);
   const blanked = maskCommentsAndStrings(text, false, absPath);
   const out = [];
+  // Not a quote scanner: `quoteIdx` is the opening delimiter of a string TOKEN
+  // (found in `blanked`, where only token delimiters survive), and the closing
+  // one is the next same quote in `kept`. A module specifier carries no escaped
+  // quote, so the first same quote is its closing delimiter; a specifier that
+  // did would not be a package name, and `packageOf` / the declared-dependency
+  // check below would refuse it by name.
   const literalAt = (quoteIdx) => {
     const q = kept[quoteIdx];
     const close = kept.indexOf(q, quoteIdx + 1);
