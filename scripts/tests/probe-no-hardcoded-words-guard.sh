@@ -1003,6 +1003,9 @@ fi
 # comment forms in that position (an argument list), so the comment reaches
 # the bundle; landing is asserted IN THE BUNDLE, not only in the source.
 #
+# The comment text opens with a capital letter on purpose: lowercase
+# multi-word text matches the utility-class shape, so a guard that read
+# comments as text would still pass it, and the case would not discriminate.
 # Each mutation inserts, before that string argument: a comment of the form
 # carrying an apostrophe and a nonce, then a NEW SINGLE-QUOTED class string
 # holding a CSS attribute selector with single quotes (`[&[data-<nonce>='on']]`,
@@ -1013,9 +1016,9 @@ fi
 # sees one comment and one utility-class string, and adds no offender.
 # ---------------------------------------------------------------------------
 COMMENT_FORMS=(
-  "line comment //|// the column's width"
-  "block comment /* */|/* the user's tab"
-  "JSDoc /** */|/** the row's height"
+  "line comment //|// The column's width"
+  "block comment /* */|/* The user's tab"
+  "JSDoc /** */|/** The row's height"
 )
 mapfile -t COMMENT_SITES < <(python3 - "$CLONE" <<'PYEOF'
 import os, re, sys
@@ -2148,11 +2151,11 @@ PYEOF
       TOK_PASS_LABELS=("apostrophe in a // comment beside a new single-quoted string" "apostrophe in a /* */ comment beside a new single-quoted string" "apostrophe in a JSDoc /** */ beside a new single-quoted string" "quotes inside a regex literal beside a new string" "apostrophe in a same-line trailing // comment beside a new single-quoted string")
       TOK_PASS_ANCHOR=(0 1 2 0 1)
       TOK_PASS_TEXT=(
-        "// the column's width${NL}var zqtokPa = 'ok';${NL}var zqtokPb = 'x';"
-        "/* the user's tab */ var zqtokPc = 'ok'; var zqtokPd = 'x';"
-        "/**${NL} * the user's tab${NL} */${NL}var zqtokPe = 'ok';${NL}var zqtokPf = 'x';"
+        "// The column's width${NL}var zqtokPa = 'ok';${NL}var zqtokPb = 'x';"
+        "/* The user's tab */ var zqtokPc = 'ok'; var zqtokPd = 'x';"
+        "/**${NL} * The user's tab${NL} */${NL}var zqtokPe = 'ok';${NL}var zqtokPf = 'x';"
         "var zqtokRe = /[\"'\`]|it's 'a/g; var zqtokPg = 'ok';"
-        "var zqtokPh = 1; // the user's tab${NL}var zqtokPi = 'x';"
+        "var zqtokPh = 1; // The user's tab${NL}var zqtokPi = 'x';"
       )
       TOK_PASS_NEEDLE=("var zqtokPb = 'x';" "var zqtokPd = 'x';" "var zqtokPf = 'x';" "var zqtokPg = 'ok';" "var zqtokPi = 'x';")
 
