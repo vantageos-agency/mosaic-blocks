@@ -223,8 +223,8 @@ export function parseBarrelExports(src = readFileOrThrow(INDEX_TS)) {
   // Cross-check against the SINGLE shared definition of "named value export"
   // (G1's extractRealExports): every value name it counts must have been
   // accounted for above — a second, independent reading of the same file.
-  // Comments/strings masked first so prose mentioning `export` is not counted.
-  const shared = extractRealExports(maskCommentsAndStrings(src));
+  // extractRealExports masks comments itself, so the raw source is passed.
+  const shared = extractRealExports(src);
   const unaccounted = [...shared].filter((n) => !valueNames.has(n));
   const phantom = [...valueNames].filter((n) => !shared.has(n));
   if (unaccounted.length > 0 || phantom.length > 0) {

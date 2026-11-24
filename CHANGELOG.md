@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — `extractRealExports` masks comments itself: an `export { X }` inside a comment is no longer counted (unreleased)
+
+`extractRealExports` (`scripts/docs-counts-shared.mjs`) ran its regexes over the text it was given. `scripts/docs-counts.mjs` and two tests passed the raw `src/index.ts`, so `// export { X } from "./x";`, a block comment or a JSDoc example was counted as a real export and the README counts moved; `registry-json-derive.mjs` alone masked first. The class is closed at the function: it now masks comments, regex literals and string content (`maskCommentsAndStrings(src, false, "src/index.ts")`; the specifier text is never read) before matching, so every caller reads the same count. Masking is length-preserving, so the fail-closed errors keep their line numbers; masking already-masked text is a no-op. `registry-json-derive.mjs` drops its now-redundant caller-side mask (output unchanged, probe green). Tests: `src/__tests__/docs-counts-export-domain.test.ts` (one mutation per comment form on the real `src/index.ts`, positive pole, idempotence, line number). Scripts and tests only; no shipped code changes. Task k17bbzm6t33ardm0bc7vwsy3918jtbx7.
+
 ### Fixed — the theme-tokens guard and `maskCommentsAndStrings` read tokens from the shared parse, never pair quotes (unreleased)
 
 Three more hand-written quote scanners carried the defect the no-hardcoded-words guard just lost: a quote inside a comment or a regex literal is not a delimiter, yet it paired with the next quote below it and formed a fake string over real code. The parse-based token reader moves out of `scripts/no-hardcoded-words-guard.mjs` into **`scripts/source-tokens-shared.mjs`** (`readSourceTokens`, `blankRanges`, `loadTypeScript`, `SourceReadRefusal`; typed by `source-tokens-shared.d.mts`), and the guard imports it with its behaviour unchanged.
