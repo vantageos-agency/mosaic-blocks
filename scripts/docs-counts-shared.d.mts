@@ -14,7 +14,7 @@
 
 export type VersionTableRowStatus = "Current" | "Historical" | "unclassified";
 
-export function extractRealExports(indexSource: string): Set<string>;
+export function extractRealExports(rawSource: string): Set<string>;
 export function maskCommentsAndStrings(
   src: string,
   keepStrings?: boolean,

@@ -61,11 +61,22 @@ import {
  * instead, naming the exact source line, so a human resolves the target
  * module rather than the count silently under-reporting.
  *
- * @param {string} indexSource
+ * Comments (line, block, JSDoc) are masked before matching, here, so every
+ * caller reads the same count whether or not it masked first.
+ *
+ * @param {string} rawSource the text of src/index.ts, masked or not
  * @returns {Set<string>}
  */
-export function extractRealExports(indexSource) {
+export function extractRealExports(rawSource) {
   const names = new Set();
+  // Every match below runs on MASKED text: comments, regex literals and string
+  // content are blanked, delimiters kept. An `export { X } from "./x";` inside a
+  // `//` comment, a block comment, a JSDoc or a string literal is not an export;
+  // the module specifier is not read here, so its content may be blank. Masking
+  // is length-preserving, so the line numbers in the errors below are exact, and
+  // masking already-masked text is a no-op. Unparseable input throws
+  // SourceReadRefusal, never a count.
+  const indexSource = maskCommentsAndStrings(rawSource, false, "src/index.ts");
 
   // Bare `export * from "…";` — reject BEFORE consuming `export * as NS`
   // below (that form is legitimate and handled separately). A negative
@@ -76,7 +87,7 @@ export function extractRealExports(indexSource) {
   if (bareStarMatch) {
     const line = lineNumberAt(indexSource, bareStarMatch.index);
     throw new Error(
-      `extractRealExports: bare "export * from ...;" at src/index.ts:${line} (${bareStarMatch[0].trim()}) re-exports an unknown set of names — this function cannot enumerate them without resolving the target module, and silently skipping it would under-count. Use a named barrel \`export { A, B } from "...";\` or a namespaced \`export * as NS from "...";\` instead, or extend extractRealExports to resolve the target.`,
+      `extractRealExports: bare "export * from ...;" at src/index.ts:${line} (${rawSource.slice(bareStarMatch.index, bareStarMatch.index + bareStarMatch[0].length).trim()}) re-exports an unknown set of names — this function cannot enumerate them without resolving the target module, and silently skipping it would under-count. Use a named barrel \`export { A, B } from "...";\` or a namespaced \`export * as NS from "...";\` instead, or extend extractRealExports to resolve the target.`,
     );
   }
 

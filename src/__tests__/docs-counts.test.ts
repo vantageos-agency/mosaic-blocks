@@ -26,7 +26,15 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -63,6 +71,8 @@ function makeFixture(): string {
     path.resolve(REPO_ROOT, "scripts", "source-tokens-shared.mjs"),
     path.join(dir, "scripts", "source-tokens-shared.mjs"),
   );
+  // ...which loads the `typescript` parser: resolve it from the repo's install.
+  symlinkSync(path.resolve(REPO_ROOT, "node_modules"), path.join(dir, "node_modules"), "dir");
   return dir;
 }
 
