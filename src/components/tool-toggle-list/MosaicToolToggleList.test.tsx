@@ -15,7 +15,7 @@
  * reads it from ownerWindow — polyfill ensures click-path works in tests.
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -143,8 +143,15 @@ describe("MosaicToolToggleList", () => {
     const trigger = screen.getByRole("combobox", { name: "Approval level for send_message" });
     await user.click(trigger);
     // base-ui Select opens on mousedown inside requestAnimationFrame, so the
-    // popup is not in the DOM when user.click resolves: await the option itself.
-    await user.click(await screen.findByRole("option", { name: "Ask every call" }));
+    // popup is not in the DOM when user.click resolves; and once it is, its
+    // positioner keeps `pointer-events: none` until it settles, so a click sent
+    // at first appearance can be refused. Await the popup holding focus (base-ui
+    // moves it in a later frame, after both) before clicking an option.
+    await waitFor(() => {
+      const popup = document.querySelector('[data-slot="tool-toggle-list-approval-popup"]');
+      expect(popup?.contains(document.activeElement)).toBe(true);
+    });
+    await user.click(screen.getByRole("option", { name: "Ask every call" }));
     expect(props.onChangeApproval).toHaveBeenCalledWith("send_message", "always");
   });
 
