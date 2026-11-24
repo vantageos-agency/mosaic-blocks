@@ -26,7 +26,14 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const COPIED = ["scripts", "src", "package.json", "registry.json", "tsconfig.test.json", ".storybook"];
+const COPIED = [
+  "scripts",
+  "src",
+  "package.json",
+  "registry.json",
+  "tsconfig.test.json",
+  ".storybook",
+];
 
 const work = mkdtempSync(path.join(tmpdir(), "registry-derive-exit-"));
 const base = path.join(work, "base");
@@ -49,7 +56,9 @@ beforeAll(() => {
   }
   const derived = run(base);
   if (derived.code !== 0) {
-    throw new Error(`setup: deriving the copy's registry.json failed (exit ${derived.code}): ${derived.out}`);
+    throw new Error(
+      `setup: deriving the copy's registry.json failed (exit ${derived.code}): ${derived.out}`,
+    );
   }
 }, 60_000);
 
