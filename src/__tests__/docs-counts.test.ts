@@ -58,6 +58,11 @@ function makeFixture(): string {
   mkdirSync(path.join(dir, "docs"), { recursive: true });
   cpSync(SCRIPT_PATH, path.join(dir, "scripts", "docs-counts.mjs"));
   cpSync(SHARED_MODULE_PATH, path.join(dir, "scripts", "docs-counts-shared.mjs"));
+  // docs-counts-shared.mjs imports the shared token reader.
+  cpSync(
+    path.resolve(REPO_ROOT, "scripts", "source-tokens-shared.mjs"),
+    path.join(dir, "scripts", "source-tokens-shared.mjs"),
+  );
   return dir;
 }
 

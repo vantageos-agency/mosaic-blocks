@@ -15,6 +15,7 @@ const repoRoot = join(__dirname, "..", "..");
 const SCRIPTS = [
   "release-artifacts-guard.mjs",
   "docs-counts-shared.mjs",
+  "source-tokens-shared.mjs", // imported by docs-counts-shared.mjs
   "build-registry-items.mjs",
   "check-registry-items-drift.mjs",
   "non-shipped.mjs",
