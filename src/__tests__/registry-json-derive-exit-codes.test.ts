@@ -20,7 +20,15 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -54,6 +62,9 @@ beforeAll(() => {
   for (const entry of COPIED) {
     cpSync(path.join(ROOT, entry), path.join(base, entry), { recursive: true });
   }
+  // The deriver parses source with `typescript`, resolved from the copy's own
+  // scripts/: the copy borrows the repo's node_modules (a link, never a copy).
+  symlinkSync(path.join(ROOT, "node_modules"), path.join(base, "node_modules"), "dir");
   const derived = run(base);
   if (derived.code !== 0) {
     throw new Error(
