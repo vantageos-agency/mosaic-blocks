@@ -57,11 +57,12 @@ else
   OUT="$(node scripts/registry-json-derive.mjs --check 2>&1)"
   CODE=$?
   set -e
-  if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -q "mosaic-chat-sidebar"; then
+  # Exit 1 = a violation (missing item); exit 2 would be a refusal to judge.
+  if [ "$CODE" -eq 1 ] && echo "$OUT" | grep -q "mosaic-chat-sidebar"; then
     log PASS "MUST_BLOCK 1: --check exited $CODE, naming mosaic-chat-sidebar"
     MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
   else
-    log FAIL "MUST_BLOCK 1: expected non-zero exit naming mosaic-chat-sidebar, got exit=$CODE output=$OUT"
+    log FAIL "MUST_BLOCK 1: expected exit 1 (violation) naming mosaic-chat-sidebar, got exit=$CODE output=$OUT"
     FAILURES+=("MUST_BLOCK 1: guard did not bite")
   fi
 fi
@@ -92,11 +93,11 @@ probe_deps_drift() {
     OUT="$(node scripts/registry-json-derive.mjs --check 2>&1)"
     CODE=$?
     set -e
-    if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -q "DEPENDENCIES" && echo "$OUT" | grep -q "$slug"; then
+    if [ "$CODE" -eq 1 ] && echo "$OUT" | grep -q "DEPENDENCIES" && echo "$OUT" | grep -q "$slug"; then
       log PASS "MUST_BLOCK 1-DEPS $form: --check exited $CODE, naming $slug"
       MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
     else
-      log FAIL "MUST_BLOCK 1-DEPS $form: expected non-zero exit naming $slug, got exit=$CODE output=$OUT"
+      log FAIL "MUST_BLOCK 1-DEPS $form: expected exit 1 (violation) naming $slug, got exit=$CODE output=$OUT"
       FAILURES+=("MUST_BLOCK 1-DEPS $form: guard did not bite")
     fi
   fi
@@ -208,7 +209,8 @@ fi
 # src/index.ts was invisible and --check stayed green. The census below is the
 # export grammar (see scanExportStatements in scripts/docs-counts-shared.mjs).
 # Each form is appended to the REAL src/index.ts, its landing is grep-asserted
-# BEFORE the verdict, and --check must exit non-zero naming the form. The real
+# BEFORE the verdict, and --check must REFUSE TO JUDGE (exit 2) naming the form —
+# an export it cannot read is a refusal, never a violation (exit 1). The real
 # file is restored after every mutation (git diff --quiet -- src).
 # ---------------------------------------------------------------------------
 FORMS=(
@@ -242,11 +244,11 @@ for entry in "${FORMS[@]}"; do
     OUT="$(node scripts/registry-json-derive.mjs --check 2>&1)"
     CODE=$?
     set -e
-    if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -qF -- "$FORM_EXPECT"; then
+    if [ "$CODE" -eq 2 ] && echo "$OUT" | grep -qF "REFUSING TO JUDGE" && echo "$OUT" | grep -qF -- "$FORM_EXPECT"; then
       log PASS "MUST_BLOCK form [$FORM_LINE]: exit $CODE, naming '$FORM_EXPECT'"
       MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
     else
-      log FAIL "MUST_BLOCK form [$FORM_LINE]: expected non-zero exit naming '$FORM_EXPECT', got exit=$CODE"
+      log FAIL "MUST_BLOCK form [$FORM_LINE]: expected exit 2 REFUSING TO JUDGE naming '$FORM_EXPECT', got exit=$CODE"
       FAILURES+=("MUST_BLOCK form [$FORM_LINE]: not blocked")
     fi
   fi

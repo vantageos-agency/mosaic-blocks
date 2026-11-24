@@ -177,6 +177,22 @@ describe("registry-json-derive --check — exit 2 REFUSING TO JUDGE when it cann
       "src/components/select",
     ],
     [
+      "tsconfig.test.json absent (read while non-shipped.mjs is evaluated)",
+      (dir) => {
+        rmSync(path.join(dir, "tsconfig.test.json"));
+        return existsSync(path.join(dir, "tsconfig.test.json")) ? "" : "landed";
+      },
+      "tsconfig.test.json",
+    ],
+    [
+      ".storybook/main.ts absent (read while non-shipped.mjs is evaluated)",
+      (dir) => {
+        rmSync(path.join(dir, ".storybook", "main.ts"));
+        return existsSync(path.join(dir, ".storybook", "main.ts")) ? "" : "landed";
+      },
+      "main.ts",
+    ],
+    [
       "registry.json whose items is not a list",
       (dir) => {
         write(dir, "registry.json", '{ "items": 3 }\n');

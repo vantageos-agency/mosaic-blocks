@@ -63,6 +63,18 @@
  *                                    live registry.json disagrees with what
  *                                    src/index.ts currently exports
  *
+ * Exit codes (three states — a refusal is never mistakable for a violation):
+ *   0  clean (--check: registry.json is the derivation; otherwise: written/printed)
+ *   1  VIOLATION — every artifact was read and something in it is wrong: an item
+ *      missing or stale, saved dependencies that drifted from the imports, or a
+ *      file importing a package package.json does not declare
+ *      (`DerivationViolation`, the ONLY error class that maps to 1)
+ *   2  REFUSING TO JUDGE: <what> — the script could not read something it needs
+ *      (an unreadable/absent/malformed file, an export form or a dynamic import
+ *      it cannot read, a declared exception it cannot apply, conflicting flags).
+ *      Fail-closed: ANY other error, including an unexpected one, maps here —
+ *      the domain is "violation, or could not judge", never a third silent case.
+ *
  * Fail-closed by construction: any file this script expects to read (the
  * barrel, a component's primary file) that is unreadable is a LOUD error —
  * never a silent skip. `--check` finding nothing wrong prints the covered
@@ -79,7 +91,6 @@ import {
   maskCommentsAndStrings,
   scanExportStatements,
 } from "./docs-counts-shared.mjs";
-import { isShipped } from "./non-shipped.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -95,9 +106,18 @@ const CHECK = process.argv.includes("--check");
 // the release-artifacts guard uses it to accept a registry.json that IS the derivation.
 const STDOUT = process.argv.includes("--stdout");
 if (CHECK && STDOUT) {
-  console.error("registry-json-derive: --check and --stdout are mutually exclusive.");
+  console.error(
+    "registry-json-derive: REFUSING TO JUDGE: --check and --stdout are mutually exclusive.",
+  );
   process.exit(2);
 }
+
+/**
+ * A defect FOUND in artifacts that were fully read (exit 1). Every other error
+ * this script raises — or meets — means it could not read something, and is a
+ * refusal to judge (exit 2). See the exit-code table in the header.
+ */
+export class DerivationViolation extends Error {}
 
 /**
  * Reads a file, throwing a named, actionable error instead of letting a
@@ -111,6 +131,23 @@ function readFileOrThrow(path) {
   } catch (err) {
     throw new Error(
       `registry-json-derive: cannot read \`${relative(ROOT, path)}\` — refusing to derive registry.json from an unreadable artifact. ${err.message}`,
+    );
+  }
+}
+
+/**
+ * Reads and parses a JSON file, naming the file when it is not JSON or not the
+ * expected shape — a malformed artifact is unreadable, never a bare SyntaxError.
+ * @param {string} path
+ * @returns {any}
+ */
+function readJsonOrThrow(path) {
+  const raw = readFileOrThrow(path);
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new Error(
+      `registry-json-derive: \`${relative(ROOT, path)}\` is not valid JSON — refusing to derive from it. ${err.message}`,
     );
   }
 }
@@ -205,9 +242,10 @@ export function parseBarrelExports(src = readFileOrThrow(INDEX_TS)) {
 
 /**
  * @param {string} dir component directory, relative to src/components
+ * @param {(sourcePath: string) => boolean} isShipped non-shipped.mjs's predicate
  * @returns {string[]} shipped (non-test, non-story), non-declaration source files that exist on disk
  */
-function sourceFilesIn(dir) {
+function sourceFilesIn(dir, isShipped) {
   const abs = join(COMPONENTS_DIR, dir);
   let entries;
   try {
@@ -222,7 +260,15 @@ function sourceFilesIn(dir) {
     .filter((f) => isShipped(`src/components/${dir}/${f}`))
     .filter((f) => !f.endsWith(".d.ts"))
     .sort()
-    .filter((f) => statSync(join(abs, f)).isFile());
+    .filter((f) => {
+      try {
+        return statSync(join(abs, f)).isFile();
+      } catch (err) {
+        throw new Error(
+          `registry-json-derive: cannot stat \`src/components/${dir}/${f}\` — a listed file is unreadable. ${err.message}`,
+        );
+      }
+    });
 }
 
 /**
@@ -428,7 +474,7 @@ export function dependenciesOfFiles(absPaths, eligible) {
       const pkg = packageOf(spec);
       if (HOST_RUNTIME.has(pkg)) continue;
       if (!eligible.has(pkg)) {
-        throw new Error(
+        throw new DerivationViolation(
           `registry-json-derive: \`${relative(ROOT, absPath)}\` imports \`${spec}\` — package \`${pkg}\` is not declared in package.json peerDependencies/dependencies. Declare it, or a host installing this item from the registry will not get it.`,
         );
       }
@@ -450,8 +496,9 @@ function groupByDir(exportsFlat) {
   return map;
 }
 
-function main() {
-  const ELIGIBLE_DEPENDENCIES = eligibleDependencies(JSON.parse(readFileOrThrow(PACKAGE_JSON)));
+/** @param {(sourcePath: string) => boolean} isShipped non-shipped.mjs's predicate */
+function main(isShipped) {
+  const ELIGIBLE_DEPENDENCIES = eligibleDependencies(readJsonOrThrow(PACKAGE_JSON));
   const exportsFlat = parseBarrelExports();
   const byDir = groupByDir(exportsFlat);
 
@@ -461,8 +508,17 @@ function main() {
     );
   }
 
-  const existingRaw = readFileOrThrow(REGISTRY_JSON);
-  const existing = JSON.parse(existingRaw);
+  const existing = readJsonOrThrow(REGISTRY_JSON);
+  if (
+    existing === null ||
+    typeof existing !== "object" ||
+    !Array.isArray(existing.items) ||
+    !existing.items.every((it) => it !== null && typeof it === "object" && typeof it.name === "string")
+  ) {
+    throw new Error(
+      "registry-json-derive: `registry.json` has no `items` list of named entries — its shape cannot be read, refusing to compare against it.",
+    );
+  }
   const existingBySlug = new Map(existing.items.map((it) => [it.name, it]));
 
   const derivedItems = [];
@@ -473,7 +529,7 @@ function main() {
   for (const [dir, exportsInDir] of [...byDir.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const primaries = primaryExports(exportsInDir, dir);
     const isMultiPrimary = MULTI_PRIMARY_DIRS.has(dir);
-    const allDirFiles = sourceFilesIn(dir);
+    const allDirFiles = sourceFilesIn(dir, isShipped);
     if (allDirFiles.length === 0) {
       throw new Error(
         `registry-json-derive: \`src/components/${dir}\` contains no source files on disk.`,
@@ -596,6 +652,26 @@ function main() {
 }
 
 // Run only when invoked directly, so tests can import `parseBarrelExports`.
+// Exit mapping (header table): DerivationViolation -> 1; anything else -> 2.
+// non-shipped.mjs is imported HERE, dynamically, not statically at the top: it
+// reads tsconfig.test.json and .storybook/main.ts while it is evaluated, and a
+// static import that throws at evaluation would end the process before this
+// handler exists — an unreadable file exiting 1, exactly like a violation.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main();
+  try {
+    const { isShipped } = await import("./non-shipped.mjs");
+    main(isShipped);
+  } catch (err) {
+    const message = (err instanceof Error ? err.message : String(err)).replace(
+      /^registry-json-derive: /,
+      "",
+    );
+    if (err instanceof DerivationViolation) {
+      console.error(`registry-json-derive: BLOCKED — ${message}`);
+      process.exitCode = 1;
+    } else {
+      console.error(`registry-json-derive: REFUSING TO JUDGE: ${message}`);
+      process.exitCode = 2;
+    }
+  }
 }
