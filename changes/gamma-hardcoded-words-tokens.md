@@ -13,7 +13,7 @@
 - Hides text, never judged: `SingleLineCommentTrivia`, `MultiLineCommentTrivia` (a JSDoc block is one), `RegularExpressionLiteral`.
 - Carries text, judged: `StringLiteral`, `NoSubstitutionTemplateLiteral`, `TemplateHead`, `TemplateMiddle`, `TemplateTail`.
 - Carries no word: `NumericLiteral`, `BigIntLiteral`.
-- Refused if met: `JsxText`, `JsxTextAllWhiteSpaces`, `JSDocCommentTextToken`.
+- Refused if met: `JsxText`, `JsxTextAllWhiteSpaces`, `JSDocCommentTextToken`, `NonTextFileMarkerTrivia`.
 
 ## Changes
 
