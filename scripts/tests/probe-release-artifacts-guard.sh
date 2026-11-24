@@ -95,6 +95,9 @@ cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-arti
 # material" under test (that is the historical README/package.json lines below),
 # so it is installed from this worktree exactly like the guard itself.
 cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+# docs-counts-shared imports the shared token reader (and, to parse, `typescript`: the clone borrows this worktree's node_modules).
+cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+ln -sfn "$REPO_ROOT/node_modules" "$CLONE/node_modules"
 
 run_guard() {
   local base_ref="$1"
@@ -129,6 +132,9 @@ run_guard() {
   # tool, re-copied every switch so a `git checkout` between cases cannot leave
   # the clone with a stale copy the guard's imports no longer resolve against).
   cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  # docs-counts-shared imports the shared token reader (and, to parse, `typescript`: the clone borrows this worktree's node_modules).
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+  ln -sfn "$REPO_ROOT/node_modules" "$CLONE/node_modules"
   cp "$REPO_ROOT/scripts/docs-counts.mjs" "$CLONE/scripts/docs-counts.mjs"
   (cd "$CLONE" && RELEASE_ARTIFACTS_BASE_REF="$base_ref" node scripts/release-artifacts-guard.mjs)
 }
@@ -291,13 +297,16 @@ fi
 reg_tools_install() {
   cp "$REPO_ROOT/scripts/release-artifacts-guard.mjs" "$CLONE/scripts/release-artifacts-guard.mjs"
   cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  # docs-counts-shared imports the shared token reader (and, to parse, `typescript`: the clone borrows this worktree's node_modules).
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+  ln -sfn "$REPO_ROOT/node_modules" "$CLONE/node_modules"
   cp "$REPO_ROOT/scripts/registry-json-derive.mjs" "$CLONE/scripts/registry-json-derive.mjs"
   # registry-json-derive.mjs imports ./non-shipped.mjs: install its import closure too.
   cp "$REPO_ROOT/scripts/non-shipped.mjs" "$CLONE/scripts/non-shipped.mjs"
   cp "$REPO_ROOT/scripts/docs-counts.mjs" "$CLONE/scripts/docs-counts.mjs"
 }
 reg_tools_reset() {
-  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared registry-json-derive non-shipped docs-counts; do
+  (cd "$CLONE" && for f in release-artifacts-guard docs-counts-shared source-tokens-shared registry-json-derive non-shipped docs-counts; do
     git checkout -- "scripts/$f.mjs" 2>/dev/null || rm -f "scripts/$f.mjs"
   done; git clean -fdq)
 }

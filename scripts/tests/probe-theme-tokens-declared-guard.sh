@@ -724,6 +724,113 @@ EOF
 assert_landed "$DR/src/styles.css" "--color-probe-real-stale: oklch(0.6 0.1 30);" "decl real literal stale"
 expect MUST_BLOCK "DECL — literal-value stale row in a copy of the REAL src/styles.css" "$DR" "--color-probe-real-stale"
 
+# ---------------------------------------------------------------------------
+# D1 — FORM 1 + FORM 2 read TOKENS, not quote pairs (task
+# k17dchnw3f2fqgjeqw10mn9b9h8jvfcm). One mutation per hiding form, injected into
+# REAL component files of this repo's src/ chosen by a stated RULE (not by hand):
+#
+#   RULE: the eligible files are `src/components/**/*.tsx` that are not tests or
+#   stories, sorted bytewise; the sites are the files at index
+#   floor(N*1/6), floor(N*3/6), floor(N*5/6) of that list (N = its length).
+#
+# HIDING FORMS (the domain: a quote character in a non-string token that a
+# quote-pairing scanner reads as a delimiter): an apostrophe in a `//` comment,
+# in a block comment, in a JSDoc block, and a quote inside a regex literal.
+# Each is placed immediately BEFORE three real strings appended to every site:
+# an undeclared utility ('bg-zqprobe-<k>-f1', FORM 1), an undeclared
+# var(--color-zqprobe-<k>-f2) (FORM 2) and an undeclared utility in a template
+# literal (`text-zqprobe-<k>-tpl ${...}`) — the positive pole: a real
+# undeclared token in a string and in a template is still flagged.
+#
+# VERDICT TEST: for each hiding form the guard's full output (exit code and
+# every named token and site, directory names normalised) must be BYTE-FOR-BYTE
+# the output of a CONTROL copy carrying the same lines with the hiding quote
+# removed, and must name all nine tokens. A scanner that pairs quotes loses the
+# strings the quote swallows, so its verdict differs from the control (a flip).
+# Every injection is grep-asserted as landed BEFORE any verdict is read.
+# ---------------------------------------------------------------------------
+if grep -rqF -- 'zqprobe' "$REPO_ROOT/src"; then
+  echo "probe: 'zqprobe' already occurs in the real src/ — the D1 nonce is not unique, premise lost." >&2
+  exit 1
+fi
+mapfile -t D1_ELIGIBLE < <(cd "$REPO_ROOT" && find src/components -name '*.tsx' ! -name '*.test.tsx' ! -name '*.stories.tsx' | LC_ALL=C sort)
+D1_N="${#D1_ELIGIBLE[@]}"
+if [ "$D1_N" -lt 6 ]; then
+  echo "probe: only $D1_N eligible component files — the D1 site rule has nothing to pick from." >&2
+  exit 1
+fi
+D1_SITES=()
+for num in 1 3 5; do
+  D1_SITES+=("${D1_ELIGIBLE[$((D1_N * num / 6))]}")
+done
+log INFO "D1 sites (N=$D1_N): ${D1_SITES[*]}"
+
+# $1 dest dir  $2 hider-kind (sl|bl|jd|rx)  $3 mode (mutated|control)
+d1_make_copy() {
+  local dest="$1" kind="$2" mode="$3" k=0 site f q
+  make_real_copy "$dest"
+  for site in "${D1_SITES[@]}"; do
+    k=$((k + 1))
+    f="$dest/$site"
+    q="'"
+    [ "$mode" = control ] && q=""
+    local a="const __zqA = 'bg-zqprobe-$k-f1'; const __zqB = 'var(--color-zqprobe-$k-f2)';"
+    local tpl="const __zqT = \`text-zqprobe-$k-tpl \${__zqA}\`;"
+    {
+      echo
+      case "$kind" in
+        sl) echo "// zq: the column${q}s width"; echo "$a" ;;
+        bl) echo "/* zq: the column${q}s width */"; echo "$a" ;;
+        jd) echo "/** zq: the column${q}s width */"; echo "$a" ;;
+        rx) if [ "$mode" = control ]; then echo "const __zqRe = /x/; void __zqRe; $a"; else echo "const __zqRe = /'/; void __zqRe; $a"; fi ;;
+      esac
+      echo "$tpl"
+      echo "void [__zqA, __zqB, __zqT];"
+    } >> "$f"
+    assert_landed "$f" "bg-zqprobe-$k-f1" "D1 $kind/$mode site $k ($site)"
+    assert_landed "$f" "var(--color-zqprobe-$k-f2)" "D1 $kind/$mode site $k ($site)"
+    assert_landed "$f" "text-zqprobe-$k-tpl" "D1 $kind/$mode site $k ($site)"
+    if [ "$mode" = mutated ]; then
+      case "$kind" in
+        sl) assert_landed "$f" "// zq: the column's width" "D1 hider $kind site $k" ;;
+        bl) assert_landed "$f" "/* zq: the column's width */" "D1 hider $kind site $k" ;;
+        jd) assert_landed "$f" "/** zq: the column's width */" "D1 hider $kind site $k" ;;
+        rx) assert_landed "$f" "const __zqRe = /'/;" "D1 hider $kind site $k" ;;
+      esac
+    fi
+  done
+}
+
+d1_verdict() { # $1 dir -> prints "<exit>\n<normalised output>"
+  local dir="$1" out st
+  set +e
+  out="$(run_guard "$dir/src" "$dir/src/styles.css" 2>&1)"; st=$?
+  set -e
+  printf '%s\n%s\n' "$st" "$(printf '%s' "$out" | sed -E "s#[^[:space:](]*/d1-[a-z]+-(control|mutated)/#<D>/#g")"
+}
+
+for kind in sl bl jd rx; do
+  d1_make_copy "$SCRATCH/d1-$kind-control" "$kind" control
+  d1_make_copy "$SCRATCH/d1-$kind-mutated" "$kind" mutated
+  ctrl="$(d1_verdict "$SCRATCH/d1-$kind-control")"
+  mut="$(d1_verdict "$SCRATCH/d1-$kind-mutated")"
+  MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+  names_all=1
+  for k in 1 2 3; do
+    for part in f1 f2 tpl; do
+      printf '%s' "$mut" | grep -qF -- "zqprobe-$k-$part" || names_all=0
+    done
+  done
+  ctrl_exit="$(printf '%s' "$ctrl" | head -1)"
+  if [ "$ctrl_exit" = 1 ] && [ "$names_all" = 1 ] && [ "$ctrl" = "$mut" ]; then
+    MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+    log MUST_BLOCK "PASS — D1 $kind — hiding quote in 3 real components: all 9 undeclared tokens named, verdict identical to the control"
+  else
+    FAILURES+=("MUST_BLOCK D1 $kind — control exit=$ctrl_exit, names-all-nine=$names_all, identical-to-control=$([ "$ctrl" = "$mut" ] && echo yes || echo NO). MUTATED:\n$mut\nCONTROL:\n$ctrl")
+    log MUST_BLOCK "FAIL — D1 $kind — control exit=$ctrl_exit, names-all-nine=$names_all, identical=$([ "$ctrl" = "$mut" ] && echo yes || echo NO)"
+  fi
+done
+
 echo
 echo "===== probe-theme-tokens-declared-guard summary ====="
 echo "MUST_BLOCK: $MUST_BLOCK_PASS/$MUST_BLOCK_TOTAL"

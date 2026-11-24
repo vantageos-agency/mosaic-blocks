@@ -216,6 +216,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { SourceReadRefusal, blankRanges, readSourceTokens } from "./source-tokens-shared.mjs";
 
 // No environment override — the guard always scans the real artifact at its
 // real path, relative to the current working directory. See the header
@@ -417,238 +418,96 @@ function classifyContentShape(str) {
 /**
  * TOKEN READER — the ONE place text is read out of the bundle.
  *
- * WHY A PARSE (task k171ya0nn2244kqjvv63fxq5558jjkyy): an earlier revision
- * found strings by running a quote-pairing regex over the raw text. A quote
- * character is not a string delimiter outside of code: an apostrophe inside a
- * comment (`// the column's width`) paired with the NEXT single quote anywhere
- * below it and formed a FAKE string spanning real code — a false positive —
- * and, worse, every real string between two such apostrophes was swallowed
- * into that fake pair and never judged (a false negative: `'Hidden phrase'`
- * sitting between two comment apostrophes was never seen). Pairing quotes
- * across text is the single-formulation defect this guard exists to forbid,
- * so the text is now read from TOKENS produced by the TypeScript parser
- * (`typescript` is already a devDependency of this package; no new
- * dependency). A full parse, not the bare scanner: the bare scanner cannot
- * tell a regex literal from a division.
+ * The reader itself (a full `typescript` parse; text read only from string and
+ * template tokens, comments and regex literals contributing nothing and
+ * pairing nothing; the token-kind domain derived from `ts.SyntaxKind`; every
+ * unclassified text-bearing kind and every parse error REFUSED) lives in
+ * scripts/source-tokens-shared.mjs, shared with the other scanners of this
+ * package. Read its header for the census. Why a parse (task
+ * k171ya0nn2244kqjvv63fxq5558jjkyy): an apostrophe in a comment paired with
+ * the next single quote and formed a fake string spanning real code, and a
+ * real word between two such apostrophes was never judged.
  *
- * DOMAIN, derived from `ts.SyntaxKind` (typescript's own enum), never from
- * memory: every TOKEN kind whose name says it carries text is classified
- * below, and a kind that is neither classified nor provably wordless REFUSES
- * the run (exit 2) naming the kind — never a silent skip.
- *   - text-bearing, judged:    StringLiteral (single- and double-quoted),
- *     NoSubstitutionTemplateLiteral, TemplateHead / TemplateMiddle /
- *     TemplateTail (the static segments of a template with substitutions).
- *   - never contribute text, never pair quotes: RegularExpressionLiteral, and
- *     comments (SingleLineCommentTrivia, MultiLineCommentTrivia — a JSDoc
- *     block is a multi-line comment).
- *   - wordless by definition: NumericLiteral, BigIntLiteral.
- *   - REFUSED if met (exit 2, the kind named): every other token kind the
- *     derivation below returns — today JsxText, JsxTextAllWhiteSpaces,
- *     JSDocCommentTextToken, NonTextFileMarkerTrivia. JSX text in SOURCE
+ * This function only adds what is SPECIFIC to this guard on top of that read:
+ *   - a template with substitutions is judged part by part, unless its whole
+ *     static text carries a CSS at-rule marker (an injected stylesheet);
+ *   - a string that is the initializer of a TEXT_BEARING_ATTRIBUTES property
+ *     is flagged;
+ *   - `JsxText` is NOT in the reader's `ignoreKinds` here: JSX text in SOURCE
  *     reaches this bundle as a `children:` StringLiteral (the build compiles
- *     JSX), so it is judged as a string; a JsxText TOKEN here means the
- *     artifact was not produced by this repo's build, and is not certified.
- * Comments and regex literals are replaced by spaces of the SAME length in
- * the text every downstream pass reads (`stripped`), so every offset and line
- * number stays valid and no quote inside either can ever pair with anything.
- * `// allow-hardcoded-word:` markers are looked up in the ORIGINAL text.
- */
-const TEXT_BEARING_STRING_KINDS = ["StringLiteral", "NoSubstitutionTemplateLiteral"];
-const TEXT_BEARING_TEMPLATE_PART_KINDS = ["TemplateHead", "TemplateMiddle", "TemplateTail"];
-const NEVER_TEXT_KINDS = ["RegularExpressionLiteral"];
-const WORDLESS_LITERAL_KINDS = ["NumericLiteral", "BigIntLiteral"];
-
-function refuseToJudge(what) {
-  console.error(
-    `REFUSING TO JUDGE: no-hardcoded-words-guard ${what}. A bundle it cannot read token by token is a bundle it cannot certify; refusing rather than guessing.`,
-  );
-  process.exit(2);
-}
-
-/**
- * Derive, from the enum itself, the token kinds whose NAME says they can carry
- * text, and refuse to start if a classified name is not a member of it.
- * @param {typeof import("typescript")} tsApi
- * @returns {Map<number, string>} kind -> name, for every token kind that is NOT classified
- */
-function deriveUnclassifiedTextKinds(tsApi) {
-  const classified = new Set([
-    ...TEXT_BEARING_STRING_KINDS,
-    ...TEXT_BEARING_TEMPLATE_PART_KINDS,
-    ...NEVER_TEXT_KINDS,
-    ...WORDLESS_LITERAL_KINDS,
-  ]);
-  for (const name of classified) {
-    if (typeof tsApi.SyntaxKind[name] !== "number")
-      refuseToJudge(
-        `declares token kind "${name}" but typescript's SyntaxKind has no such member (typescript ${tsApi.version})`,
-      );
-  }
-  const unclassified = new Map();
-  for (const name of Object.keys(tsApi.SyntaxKind)) {
-    const kind = tsApi.SyntaxKind[name];
-    if (typeof kind !== "number" || /^(First|Last)/.test(name)) continue;
-    if (kind >= tsApi.SyntaxKind.FirstNode) continue; // a node, not a token
-    if (!/Literal|Template|Text/.test(name)) continue;
-    if (classified.has(name)) continue;
-    unclassified.set(kind, name);
-  }
-  return unclassified;
-}
-
-/**
- * Parse the bundle and return its string-bearing tokens plus a `stripped` copy
- * of the text (comments and regex literals blanked, same length, newlines kept).
+ *     JSX), so a JsxText TOKEN means the artifact was not produced by this
+ *     repo's build, and is not certified (the reader refuses it, exit 2).
+ * Comments and regex literals are replaced by spaces of the SAME length in the
+ * text every downstream pass reads (`stripped`), so every offset and line
+ * number stays valid. `// allow-hardcoded-word:` markers are looked up in the
+ * ORIGINAL text.
  * @param {typeof import("typescript")} tsApi
  * @param {string} text
  * @returns {{ stripped: string, literals: Array<{ rawStart: number, value: string, isTextAttributeValue: boolean }> }}
  */
 function readTokens(tsApi, text) {
   const { SyntaxKind } = tsApi;
-  const sf = tsApi.createSourceFile(
-    "index.cjs",
-    text,
-    tsApi.ScriptTarget.Latest,
-    /* setParentNodes */ true,
-    tsApi.ScriptKind.JS,
-  );
-  const parseErrors = sf.parseDiagnostics;
-  if (!Array.isArray(parseErrors))
-    refuseToJudge(
-      `cannot read typescript's parse diagnostics (typescript ${tsApi.version} exposes no parseDiagnostics) so it cannot tell a parsed bundle from a mis-parsed one`,
-    );
-  if (parseErrors.length > 0) {
-    const first = parseErrors[0];
-    const where = sf.getLineAndCharacterOfPosition(first.start ?? 0);
-    refuseToJudge(
-      `could not parse ${DIST_PATH} (${parseErrors.length} syntax error(s); first at line ${where.line + 1}, column ${where.character + 1}: ${tsApi.flattenDiagnosticMessageText(first.messageText, " ")})`,
-    );
+  let read;
+  try {
+    read = readSourceTokens(tsApi, text, { fileName: "index.cjs", label: DIST_PATH });
+  } catch (err) {
+    if (err instanceof SourceReadRefusal) refuseToJudge(err.what);
+    throw err;
   }
-
-  const unclassifiedTextKinds = deriveUnclassifiedTextKinds(tsApi);
-  // kind number -> its own name. `SyntaxKind[n]` is NOT usable for this: the
-  // enum carries range aliases (FirstTemplateToken, LastLiteralToken, ...) that
-  // share a number with a real kind, and the reverse lookup returns the alias.
-  const kindOf = (names) => new Set(names.map((n) => SyntaxKind[n]));
-  const stringKinds = kindOf(TEXT_BEARING_STRING_KINDS);
-  const templatePartKinds = kindOf(TEXT_BEARING_TEMPLATE_PART_KINDS);
-  const neverTextKinds = kindOf(NEVER_TEXT_KINDS);
-  const literals = [];
-  const commentRanges = new Map(); // pos -> end
-  const tokenRanges = []; // every token's [start, end)
-  const blankRanges = []; // regex literals: covered, but contribute nothing
-  const handledTemplateParts = new Set();
   const textAttrNames = new Set(TEXT_BEARING_ATTRIBUTES);
-
-  const addComments = (ranges) => {
-    for (const r of ranges ?? []) commentRanges.set(r.pos, r.end);
-  };
-
-  const visit = (node) => {
-    if (node.kind >= SyntaxKind.FirstNode) {
-      if (node.kind >= SyntaxKind.FirstJSDocNode && node.kind <= SyntaxKind.LastJSDocNode) return; // comment text, covered via trivia
-      if (node.kind === SyntaxKind.TemplateExpression) {
-        const parts = [node.head, ...node.templateSpans.map((s) => s.literal)];
-        const segments = [];
-        for (const part of parts) {
-          handledTemplateParts.add(part);
-          const lastIsTail = part.kind === SyntaxKind.TemplateTail;
-          // head: `...${  middle: }...${  tail: }...`
-          segments.push(text.slice(part.getStart(sf) + 1, part.end - (lastIsTail ? 1 : 2)));
-        }
-        const whole = segments.join(" ");
-        // An injected stylesheet's `@media`/`@keyframes` marker can land in ONE
-        // static segment while an interpolation splits the surrounding CSS
-        // across several; judge the whole literal first.
-        if (!CSS_AT_RULE_RE.test(whole)) {
-          for (const seg of segments) {
-            if (seg.trim() === "") continue;
-            literals.push({
-              rawStart: node.head.getStart(sf),
-              value: seg,
-              isTextAttributeValue: false,
-            });
-          }
-        }
+  const literals = [];
+  for (const lit of read.literals) {
+    if (lit.kind === "template") {
+      const segments = lit.parts.map(([s, e]) => text.slice(s, e));
+      const whole = segments.join(" ");
+      // An injected stylesheet's `@media`/`@keyframes` marker can land in ONE
+      // static segment while an interpolation splits the surrounding CSS
+      // across several; judge the whole literal first.
+      if (CSS_AT_RULE_RE.test(whole)) continue;
+      for (const seg of segments) {
+        if (seg.trim() === "") continue;
+        literals.push({ rawStart: lit.start, value: seg, isTextAttributeValue: false });
       }
-      for (const child of node.getChildren(sf)) visit(child);
-      return;
+      continue;
     }
-    // ---- a token ----
-    addComments(tsApi.getLeadingCommentRanges(text, node.pos));
-    addComments(tsApi.getTrailingCommentRanges(text, node.pos));
-    const start = node.getStart(sf);
-    if (node.kind === SyntaxKind.EndOfFileToken) return;
-    tokenRanges.push([start, node.end]);
-    if (neverTextKinds.has(node.kind)) {
-      blankRanges.push([start, node.end]);
-      return;
-    }
-    if (stringKinds.has(node.kind)) {
-      let isAttr = false;
-      const parent = node.parent;
-      if (
-        node.kind === SyntaxKind.StringLiteral &&
-        parent &&
-        parent.kind === SyntaxKind.PropertyAssignment &&
-        parent.initializer === node &&
-        (parent.name.kind === SyntaxKind.Identifier ||
-          parent.name.kind === SyntaxKind.StringLiteral) &&
-        textAttrNames.has(parent.name.text)
-      )
-        isAttr = true;
-      literals.push({
-        rawStart: start,
-        value: text.slice(start + 1, node.end - 1),
-        isTextAttributeValue: isAttr,
-      });
-      return;
-    }
-    if (templatePartKinds.has(node.kind)) {
-      if (!handledTemplateParts.has(node))
-        refuseToJudge(
-          `met a template-part token (kind ${node.kind}) outside a template expression at offset ${start}`,
-        );
-      return;
-    }
-    if (unclassifiedTextKinds.has(node.kind))
-      refuseToJudge(
-        `met a text-bearing token kind it does not classify: ${unclassifiedTextKinds.get(node.kind)} at offset ${start}`,
-      );
-  };
-  visit(sf);
-
-  // COMPLETENESS PROOF: every non-whitespace character of the bundle must be
-  // inside a token or a comment. A character in neither is text this reader
-  // did not see; that is a refusal, never a pass.
-  const covered = [...tokenRanges, ...[...commentRanges].map(([pos, end]) => [pos, end])].sort(
-    (a, b) => a[0] - b[0],
-  );
-  let cursor = 0;
-  for (const [s, e] of covered) {
-    if (s > cursor && /\S/.test(text.slice(cursor, s)))
-      refuseToJudge(
-        `left unread text between offsets ${cursor} and ${s} (neither a token nor a comment)`,
-      );
-    if (e > cursor) cursor = e;
+    let isAttr = false;
+    const node = lit.node;
+    const parent = node.parent;
+    if (
+      node.kind === SyntaxKind.StringLiteral &&
+      parent &&
+      parent.kind === SyntaxKind.PropertyAssignment &&
+      parent.initializer === node &&
+      (parent.name.kind === SyntaxKind.Identifier ||
+        parent.name.kind === SyntaxKind.StringLiteral) &&
+      textAttrNames.has(parent.name.text)
+    )
+      isAttr = true;
+    literals.push({
+      rawStart: lit.start,
+      value: text.slice(lit.start + 1, lit.end - 1),
+      isTextAttributeValue: isAttr,
+    });
   }
-  if (/\S/.test(text.slice(cursor)))
-    refuseToJudge(`left unread text after offset ${cursor} (neither a token nor a comment)`);
-
-  const blank = (chunk) => chunk.replace(/[^\n\r]/g, " ");
-  const strip = [...commentRanges.entries(), ...blankRanges].sort((a, b) => a[0] - b[0]);
-  let stripped = "";
-  let at = 0;
-  for (const [s, e] of strip) {
-    if (s < at) continue;
-    stripped += text.slice(at, s) + blank(text.slice(s, e));
-    at = e;
-  }
-  stripped += text.slice(at);
+  const stripped = blankRanges(text, [...read.comments, ...read.regexes], {
+    keepCarriageReturn: true,
+  });
   return { stripped, literals };
 }
 
 /**
+ * DELIBERATELY NOT MOVED ONTO readSourceTokens (task
+ * k17dchnw3f2fqgjeqw10mn9b9h8jvfcm sweep): this is NOT a scanner that finds
+ * strings. It is the cursor of the children-expression walker below, and it
+ * only ever runs on `stripped` (comments and regex literals already blanked by
+ * the token reader), starting at a delimiter the walker itself reached. A quote
+ * in a comment or a regex therefore never reaches it. When it cannot reach a
+ * closing delimiter it returns -1 and the caller records the child as
+ * UNREADABLE, which refuses the whole run (exit 2) — it fails closed, it never
+ * pairs a quote with a distant one silently. Replacing the walker's cursor
+ * with the token reader's literal ranges is possible but changes a 300-line
+ * walker this task did not set out to touch.
+ *
  * Skip one string/template literal starting at `text[i]` (a quote or a
  * backtick) and return the index just past its closing delimiter, or -1 when
  * it never closes. Template interpolations are walked with brace depth so a

@@ -23,6 +23,8 @@
  * neither consumer is allowed to redefine it locally.
  */
 
+import { JSX_TEXT_KINDS, blankRanges, loadTypeScript, readSourceTokens } from "./source-tokens-shared.mjs";
+
 // ---------------------------------------------------------------------------
 // Counting definition — extracted from src/index.ts.
 // ---------------------------------------------------------------------------
@@ -108,44 +110,51 @@ export function extractRealExports(indexSource) {
 }
 
 /**
- * Replace comments and string/template-literal CONTENT with spaces (newlines
- * kept), so statement scanning sees code only and line numbers stay exact.
- * Quote characters themselves are kept so a module specifier stays visible
- * as `"   "`-shaped spans; the specifier text is recovered from the original.
+ * Replace comments, regex literals, JSX text and string/template-literal
+ * CONTENT with spaces (newlines kept), so statement scanning sees code only and
+ * line numbers stay exact: the result has the SAME length as `src`, so every
+ * offset is valid in both. Quote characters themselves are kept so a module
+ * specifier stays visible as `"   "`-shaped spans; the specifier text is
+ * recovered with `keepStrings`.
+ *
+ * The text is read from the tokens of a TypeScript parse
+ * (scripts/source-tokens-shared.mjs, task k17dchnw3f2fqgjeqw10mn9b9h8jvfcm),
+ * never by pairing quote characters: this function used to skip comments but
+ * not regex literals, so a `'` inside `/'/` opened a fake string that swallowed
+ * the real code below it (an import line after it was read as string content
+ * and vanished). Per token kind:
+ *   - comments (`//`, block, JSDoc)             -> blanked entirely;
+ *   - regex literals (`/'/g`)                   -> blanked entirely (neither
+ *     code nor a string: a quote or the word `import` inside one must not be
+ *     read by the callers' keyword matching);
+ *   - JSX text (`<p>it's an import "x"</p>`)    -> blanked entirely, in both
+ *     modes, for the same reason;
+ *   - string / no-substitution template        -> delimiters kept, content
+ *     blanked unless `keepStrings`;
+ *   - template with substitutions               -> backticks kept, the static
+ *     segments blanked unless `keepStrings`; the `\${` `}` delimiters and the
+ *     CODE inside a substitution stay visible (a template's substitutions are
+ *     code, and a string nested in one is masked by its own token).
+ * REFUSES (throws SourceReadRefusal, naming the reason) when the text does not
+ * parse or holds a token kind this reader does not classify — it never returns
+ * a half-masked copy.
  * @param {string} src
  * @param {boolean} keepStrings keep string content (comments are always masked)
+ * @param {string} fileName names the grammar by extension (`.ts`, `.tsx`, `.js` …); the
+ *   default is the barrel `src/index.ts`, which `scanExportStatements` and
+ *   `extractRealExports` read
  * @returns {string}
  */
-export function maskCommentsAndStrings(src, keepStrings = false) {
-  let out = "";
-  let i = 0;
-  const blank = (ch) => (ch === "\n" ? "\n" : " ");
-  while (i < src.length) {
-    const ch = src[i];
-    const next = src[i + 1];
-    if (ch === "/" && next === "/") {
-      while (i < src.length && src[i] !== "\n") out += blank(src[i++]);
-    } else if (ch === "/" && next === "*") {
-      out += "  ";
-      i += 2;
-      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) out += blank(src[i++]);
-      out += "  ";
-      i += 2;
-    } else if (ch === '"' || ch === "'" || ch === "`") {
-      out += ch;
-      i++;
-      while (i < src.length && src[i] !== ch) {
-        if (src[i] === "\\") out += keepStrings ? src[i++] : blank(src[i++]);
-        out += keepStrings ? src[i++] : blank(src[i++]);
-      }
-      out += ch;
-      i++;
-    } else {
-      out += ch;
-      i++;
-    }
+export function maskCommentsAndStrings(src, keepStrings = false, fileName = "src/index.ts") {
+  const read = readSourceTokens(loadTypeScript(), src, {
+    fileName,
+    ignoreKinds: JSX_TEXT_KINDS,
+  });
+  const ranges = [...read.comments, ...read.regexes, ...read.texts];
+  if (!keepStrings) {
+    for (const lit of read.literals) ranges.push(...lit.parts);
   }
-  return out;
+  return blankRanges(src, ranges);
 }
 
 /**
@@ -175,9 +184,9 @@ export function maskCommentsAndStrings(src, keepStrings = false) {
  *   name: string|null, keyword: string|null }>}
  */
 export function scanExportStatements(indexSource) {
-  const masked = maskCommentsAndStrings(indexSource);
+  const masked = maskCommentsAndStrings(indexSource, false, "src/index.ts");
   // Comments masked, string contents kept: specifier text is read from here.
-  const codeOnly = maskCommentsAndStrings(indexSource, true);
+  const codeOnly = maskCommentsAndStrings(indexSource, true, "src/index.ts");
   const statements = [];
   const startRe = /^[ \t]*export\b/gm;
   let m;

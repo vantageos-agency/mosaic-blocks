@@ -136,6 +136,8 @@ fi
 # by every build below.
 git -C "$CLONE" checkout --quiet -b probe-base "$BASE"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+# The guard imports the shared token reader: it is part of OUR tool, installed with it.
+cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
 (cd "$CLONE" && pnpm install --frozen-lockfile >"$SCRATCH/install.log" 2>&1) || {
   echo "probe: STEP pnpm-install — \`pnpm@$PNPM_PIN install --frozen-lockfile\` failed in the scratch clone — cannot build anything, refusing to report a pass. Log tail:" >&2
   tail -30 "$SCRATCH/install.log" >&2
@@ -146,6 +148,8 @@ run_guard() {
   # Re-install the guard on every call: it is never part of any probe
   # commit (it is our own tool under test, not the "foreign material").
   cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+  # The guard imports the shared token reader: it is part of OUR tool, installed with it.
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
   (cd "$CLONE" && node scripts/no-hardcoded-words-guard.mjs)
 }
 
@@ -1325,6 +1329,8 @@ if ! grep -qF "title={\"$GROWN_SEED_VALUE\"}" "$CLONE/src/components/checkbox/Mo
   FAILURES+=("MUST_BLOCK ratchet-grown — 2nd-site mutation did NOT land — probe invalid")
 else
   cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+  # The guard imports the shared token reader: it is part of OUR tool, installed with it.
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
   add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$GROWN_SEED_VALUE" 1
   if ! grep -qF "value: \"$GROWN_SEED_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
     FAILURES+=("MUST_BLOCK ratchet-grown — seeded BASELINE row did NOT land — probe invalid")
@@ -1456,6 +1462,8 @@ MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
 git -C "$CLONE" checkout --quiet -b probe-block-stale "$BASE"
 mkdir -p "$CLONE/scripts"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+# The guard imports the shared token reader: it is part of OUR tool, installed with it.
+cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
 add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$RATCHET_VALUE" 1
 # The component is deliberately NOT created: the row declares a value the
 # bundle does not carry, which is precisely the "fixed but undeleted" state.
@@ -1581,6 +1589,8 @@ MosaicProbeLooseBudgetSeed.displayName = "MosaicProbeLooseBudgetSeed";
 SEEDEOF
 printf '\nexport { MosaicProbeLooseBudgetSeed } from "./components/probe-loose-budget-seed/MosaicProbeLooseBudgetSeed";\n' >> "$CLONE/src/index.ts"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+# The guard imports the shared token reader: it is part of OUR tool, installed with it.
+cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
 add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$LOOSE_VALUE" "$LOOSE_COUNT"
 if ! grep -qF "value: \"$LOOSE_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
   FAILURES+=("MUST_BLOCK loose-budget — seeded BASELINE row did NOT land — probe invalid")
@@ -1828,6 +1838,8 @@ git -C "$CLONE" checkout --quiet "$BASE"
 # or every case below silently re-tests the OLD, unpatched guard checked out
 # from $BASE instead of the fix this probe exists to prove.
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
+# The guard imports the shared token reader: it is part of OUR tool, installed with it.
+cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
 log INFO "building clean MUST_REFUSE artifact (this takes ~15-25s)..."
 if ! build_clone; then
   MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 5))

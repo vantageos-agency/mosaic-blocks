@@ -163,6 +163,12 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  JSX_TEXT_KINDS,
+  SourceReadRefusal,
+  loadTypeScript,
+  readSourceTokens,
+} from "./source-tokens-shared.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
@@ -586,94 +592,82 @@ function classifySuffix(prefix, rawSuffix, builtinFamilies) {
   return { kind: "custom", token: suffix };
 }
 
-function extractClassStringCandidates(text) {
-  // className="...", cn("...", "..."), and template literals passed to
-  // cn(...)/className={`...`} — same permissive string/backtick extraction
-  // shape as scripts/no-hardcoded-words-guard.mjs, scoped here to
-  // double-quoted / single-quoted / backtick literals anywhere in the file
-  // (utility strings only ever appear as string literals in this codebase;
-  // narrowing further to specific call sites would reintroduce the
-  // single-formulation blind spot this guard exists to avoid).
-  const literalRe = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
+/**
+ * Read one source file's tokens through the shared parse-based reader
+ * (scripts/source-tokens-shared.mjs, task k17dchnw3f2fqgjeqw10mn9b9h8jvfcm).
+ * Both consumption forms below start from this one read.
+ *
+ * Both used to be hand-written quote scanners over the whole file text. FORM 1
+ * paired quote characters over comments too, so an apostrophe in `// the
+ * column's width` paired with the next `'` and formed a fake string spanning
+ * real code: the real string after it was never seen (a missed undeclared
+ * token). FORM 2 skipped `//` and block comments but did not parse regex
+ * literals, so a `'` in `/'/` did the same. A parse removes the class: a quote
+ * is a delimiter only where the grammar says so.
+ *
+ * DELIBERATELY NOT COVERED, stated here: JSX text (`JsxText`,
+ * `JsxTextAllWhiteSpaces`) is declared ignorable (`ignoreKinds`) because this
+ * guard judges STRING literals only — a class name or a `var(--color-x)` in
+ * JSX text is not consumption (before this change a quoted word in JSX text
+ * was picked up by FORM 1 by accident of the pairing). Every other
+ * text-bearing token kind, and any parse error, REFUSES (exit 2) naming the
+ * file and the kind.
+ * @param {string} text
+ * @param {string} fileName  only its extension is used (ts/tsx grammar)
+ */
+function readFileTokens(text, fileName) {
+  try {
+    return readSourceTokens(loadTypeScript(), text, {
+      fileName,
+      label: fileName,
+      ignoreKinds: JSX_TEXT_KINDS,
+    });
+  } catch (err) {
+    if (err instanceof SourceReadRefusal) {
+      throw new Error(`cannot read ${fileName} token by token — ${err.what}`);
+    }
+    throw err;
+  }
+}
+
+/**
+ * FORM 1 scanner: every string literal of the file as class-string
+ * candidates — `className="..."`, `cn("...", "...")`, and the static segments
+ * of template literals — one `{ text, index }` per static segment, `index` the
+ * offset of the literal's opening delimiter (used only for the line number).
+ * Utility strings only ever appear as string literals in this codebase;
+ * narrowing to specific call sites would reintroduce the single-formulation
+ * blind spot this guard exists to avoid. Comments and regex literals
+ * contribute nothing.
+ * @param {string} text
+ * @param {ReturnType<typeof readFileTokens>} read
+ */
+function extractClassStringCandidates(text, read) {
   const matches = [];
-  for (let m = literalRe.exec(text); m !== null; m = literalRe.exec(text)) {
-    const raw = m[0];
-    const inner = raw.slice(1, -1);
-    // Skip anything containing `${` — template interpolation makes token
-    // boundaries unreliable; the STATIC segments around it are still
-    // picked up by other literal matches / segments split below.
-    const segments = inner.split(/\$\{[^}]*\}/);
-    for (const seg of segments) {
-      matches.push({ text: seg, index: m.index });
+  for (const lit of read.literals) {
+    for (const [s, e] of lit.parts) {
+      matches.push({ text: text.slice(s, e), index: lit.start });
     }
   }
   return matches;
 }
 
 /**
- * FORM 2 scanner. Walks the source as JS/TSX and returns the content of every
- * string literal, SKIPPING comments (a `var(--color-x)` in a comment is not
- * consumption). Template literals yield their static text; `${…}` bodies are
- * scanned recursively, so a literal nested inside one is still seen.
- * Heuristics, stated: a ' or " literal that hits a newline before closing is
- * treated as a stray apostrophe (JSX text), not a string; regex literals are
- * not parsed. A mis-read can only drop or add a literal locally.
+ * FORM 2 scanner: the content of every string literal, with COMMENTS AND REGEX
+ * LITERALS contributing nothing (a `var(--color-x)` in a comment is not
+ * consumption). A template yields its static text with U+0000 where a `${…}`
+ * body was; literals nested inside a `${…}` are returned too (before their
+ * template, the order the old scanner produced).
+ * @param {string} text
+ * @param {ReturnType<typeof readFileTokens>} read
  */
-function extractStringLiteralsSkippingComments(text) {
-  const out = [];
-  function scan(from, inExpr) {
-    let i = from;
-    let depth = 0;
-    while (i < text.length) {
-      const c = text[i];
-      const n = text[i + 1];
-      if (c === "/" && n === "/") {
-        while (i < text.length && text[i] !== "\n") i++;
-      } else if (c === "/" && n === "*") {
-        const end = text.indexOf("*/", i + 2);
-        i = end === -1 ? text.length : end + 2;
-      } else if (c === '"' || c === "'") {
-        let j = i + 1;
-        while (j < text.length && text[j] !== c && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1;
-        if (text[j] === c) {
-          out.push({ text: text.slice(i + 1, j), index: i });
-          i = j + 1;
-        } else {
-          i += 1; // stray apostrophe / quote in JSX text
-        }
-      } else if (c === "`") {
-        let j = i + 1;
-        let buf = "";
-        let start = i + 1;
-        while (j < text.length && text[j] !== "`") {
-          if (text[j] === "\\") {
-            j += 2;
-          } else if (text[j] === "$" && text[j + 1] === "{") {
-            buf += `${text.slice(start, j)}\u0000`;
-            j = scan(j + 2, true);
-            start = j;
-          } else {
-            j += 1;
-          }
-        }
-        buf += text.slice(start, j);
-        out.push({ text: buf, index: i });
-        i = j + 1;
-      } else if (inExpr && c === "{") {
-        depth++;
-        i++;
-      } else if (inExpr && c === "}") {
-        if (depth === 0) return i + 1;
-        depth--;
-        i++;
-      } else {
-        i++;
-      }
-    }
-    return i;
-  }
-  scan(0, false);
-  return out;
+function extractStringLiteralsSkippingComments(text, read) {
+  return [...read.literals]
+    .sort((a, b) => a.end - b.end)
+    .map((lit) => ({
+      text: lit.parts.map(([s, e]) => text.slice(s, e)).join("\u0000"),
+      index: lit.start,
+    }));
 }
 
 // `var(--color-<token>)` / `var(--color-<token>, fallback)`. The token must be
@@ -917,7 +911,15 @@ function main() {
       return;
     }
     const lines = text.split("\n");
-    const candidates = extractClassStringCandidates(text);
+    let read;
+    try {
+      read = readFileTokens(text, file);
+    } catch (err) {
+      console.error(`theme-tokens-declared-guard: REFUSES TO JUDGE — ${err.message}`);
+      process.exitCode = 2;
+      return;
+    }
+    const candidates = extractClassStringCandidates(text, read);
     for (const { text: seg, index } of candidates) {
       const tokens = seg.split(/\s+/).filter(Boolean);
       for (const rawToken of tokens) {
@@ -948,7 +950,7 @@ function main() {
     }
 
     // FORM 2: var(--color-<token>) inside a string literal (comments skipped).
-    for (const { text: seg, index } of extractStringLiteralsSkippingComments(text)) {
+    for (const { text: seg, index } of extractStringLiteralsSkippingComments(text, read)) {
       VAR_COLOR_REF_RE.lastIndex = 0;
       for (let vm = VAR_COLOR_REF_RE.exec(seg); vm !== null; vm = VAR_COLOR_REF_RE.exec(seg)) {
         const prefix = vm[1];
