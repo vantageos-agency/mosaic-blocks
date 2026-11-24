@@ -222,6 +222,18 @@ import { resolve } from "node:path";
 // comment ("Usage") for why an override was removed rather than added-to.
 const DIST_PATH = resolve(process.cwd(), "dist", "index.cjs");
 
+// The parser. `typescript` is already a devDependency of this package. An
+// import failure is a refusal (exit 2), never a fallback to a text scan.
+let ts;
+try {
+  ts = (await import("typescript")).default;
+} catch (err) {
+  console.error(
+    `REFUSING TO JUDGE: no-hardcoded-words-guard cannot load the \`typescript\` parser (run \`pnpm install\`). Refusing to fall back to scanning quote characters in raw text. Underlying error: ${err.message}`,
+  );
+  process.exit(2);
+}
+
 // ---------------------------------------------------------------------------
 // Spec-derived closed sets — sourced from an external standard, never from
 // memory of this bug's own past offenders (per guard-formulation-census.md:
@@ -403,153 +415,231 @@ function classifyContentShape(str) {
 }
 
 /**
- * Find every top-level template literal in `text`, tracking `${...}` brace
- * depth so a backtick encountered INSIDE an interpolation (i.e. a nested
- * template literal used as part of that interpolation's own expression) is
- * never mistaken for this literal's closing backtick. See the call site
- * comment for the real bundle case this fixes.
- * @param {string} text
- * @returns {Array<{ start: number, inner: string }>}
+ * TOKEN READER — the ONE place text is read out of the bundle.
+ *
+ * WHY A PARSE (task k171ya0nn2244kqjvv63fxq5558jjkyy): an earlier revision
+ * found strings by running a quote-pairing regex over the raw text. A quote
+ * character is not a string delimiter outside of code: an apostrophe inside a
+ * comment (`// the column's width`) paired with the NEXT single quote anywhere
+ * below it and formed a FAKE string spanning real code — a false positive —
+ * and, worse, every real string between two such apostrophes was swallowed
+ * into that fake pair and never judged (a false negative: `'Hidden phrase'`
+ * sitting between two comment apostrophes was never seen). Pairing quotes
+ * across text is the single-formulation defect this guard exists to forbid,
+ * so the text is now read from TOKENS produced by the TypeScript parser
+ * (`typescript` is already a devDependency of this package; no new
+ * dependency). A full parse, not the bare scanner: the bare scanner cannot
+ * tell a regex literal from a division.
+ *
+ * DOMAIN, derived from `ts.SyntaxKind` (typescript's own enum), never from
+ * memory: every TOKEN kind whose name says it carries text is classified
+ * below, and a kind that is neither classified nor provably wordless REFUSES
+ * the run (exit 2) naming the kind — never a silent skip.
+ *   - text-bearing, judged:    StringLiteral (single- and double-quoted),
+ *     NoSubstitutionTemplateLiteral, TemplateHead / TemplateMiddle /
+ *     TemplateTail (the static segments of a template with substitutions).
+ *   - never contribute text, never pair quotes: RegularExpressionLiteral, and
+ *     comments (SingleLineCommentTrivia, MultiLineCommentTrivia — a JSDoc
+ *     block is a multi-line comment).
+ *   - wordless by definition: NumericLiteral, BigIntLiteral.
+ * Comments and regex literals are replaced by spaces of the SAME length in
+ * the text every downstream pass reads (`stripped`), so every offset and line
+ * number stays valid and no quote inside either can ever pair with anything.
+ * `// allow-hardcoded-word:` markers are looked up in the ORIGINAL text.
  */
-function findTemplateLiterals(text) {
-  const results = [];
-  let i = 0;
-  while (i < text.length) {
-    if (text[i] !== "`") {
-      i++;
-      continue;
-    }
-    const start = i;
-    i++;
-    const innerStart = i;
-    let braceDepth = 0;
-    while (i < text.length) {
-      const ch = text[i];
-      if (ch === "\\") {
-        i += 2;
-        continue;
-      }
-      if (braceDepth === 0 && ch === "`") {
-        i++; // consume closing backtick
-        break;
-      }
-      if (ch === "$" && text[i + 1] === "{") {
-        braceDepth++;
-        i += 2;
-        continue;
-      }
-      if (braceDepth > 0 && ch === "{") {
-        braceDepth++;
-        i++;
-        continue;
-      }
-      if (braceDepth > 0 && ch === "}") {
-        braceDepth--;
-        i++;
-        continue;
-      }
-      i++;
-    }
-    results.push({ start, inner: text.slice(innerStart, i - 1) });
-  }
-  return results;
+const TEXT_BEARING_STRING_KINDS = ["StringLiteral", "NoSubstitutionTemplateLiteral"];
+const TEXT_BEARING_TEMPLATE_PART_KINDS = ["TemplateHead", "TemplateMiddle", "TemplateTail"];
+const NEVER_TEXT_KINDS = ["RegularExpressionLiteral"];
+const WORDLESS_LITERAL_KINDS = ["NumericLiteral", "BigIntLiteral"];
+
+function refuseToJudge(what) {
+  console.error(
+    `REFUSING TO JUDGE: no-hardcoded-words-guard ${what}. A bundle it cannot read token by token is a bundle it cannot certify; refusing rather than guessing.`,
+  );
+  process.exit(2);
 }
 
 /**
- * Replace every JS REGEX LITERAL in `text` with spaces of the SAME LENGTH
- * (never removing characters, so every later line number stays correct).
- *
- * WHY THIS EXISTS: this bundle ships components that build markdown/rich
- * text parsers using regex literals containing an escaped backtick, e.g.
- * `` /^`([^`]+)`/ ``. `findTemplateLiterals`'s brace/backtick scanner has no
- * concept of "this backtick is inside a regex, not a template literal" — it
- * saw the regex's OWN backtick as the start of a nested template literal and
- * went hunting for a closing backtick possibly hundreds of lines away,
- * corrupting every string/template-literal candidate in between into
- * meaningless code fragments (confirmed on real material during this guard's
- * own probe development — see PR description). Masking regex literals BEFORE
- * the quote/template scanners run removes the ambiguity at the source.
- *
- * Regex-vs-division disambiguation is a classic, genuinely ambiguous JS
- * lexing problem without a full parser. This uses the standard practical
- * heuristic (a `/` is a regex opener when it follows an operator/keyword
- * context, not an identifier or a closing `)`/`]`) — sufficient for
- * distinguishing regex literals from division in formatted, non-obfuscated
- * bundle output; a full tokenizer is out of scope for a bundle-text guard.
- * @param {string} text
- * @returns {string}
+ * Derive, from the enum itself, the token kinds whose NAME says they can carry
+ * text, and refuse to start if a classified name is not a member of it.
+ * @param {typeof import("typescript")} tsApi
+ * @returns {Map<number, string>} kind -> name, for every token kind that is NOT classified
  */
-function maskRegexLiterals(text) {
-  let result = "";
-  let i = 0;
-  while (i < text.length) {
-    const ch = text[i];
-    // Line and block comments must be skipped WHOLESALE before any regex
-    // detection: a block comment's closing `*/` slash was being misread as
-    // a REGEX OPENER (its preceding char `*` doesn't look like division),
-    // then hunting for the next unrelated `/` as its "close" and masking
-    // everything in between — including real strings — into garbage. This
-    // was caught on real material (bundle line ~10611) during this guard's
-    // own development.
-    if (ch === "/" && text[i + 1] === "/") {
-      let k = i;
-      while (k < text.length && text[k] !== "\n") k++;
-      result += text.slice(i, k);
-      i = k;
-      continue;
-    }
-    if (ch === "/" && text[i + 1] === "*") {
-      const end = text.indexOf("*/", i + 2);
-      const k = end === -1 ? text.length : end + 2;
-      result += text.slice(i, k);
-      i = k;
-      continue;
-    }
-    if (ch === "/") {
-      // Look at the last non-whitespace character already emitted to decide
-      // regex-opener vs division — division follows an identifier, digit,
-      // `)`, or `]`; a regex literal follows everything else (operators,
-      // `(`, `,`, `:`, `;`, `{`, `[`, `!`, `&`, `|`, `?`, `=`, or start-of-text).
-      let j = result.length - 1;
-      while (j >= 0 && /\s/.test(result[j])) j--;
-      const prevChar = j >= 0 ? result[j] : "";
-      const looksLikeDivision = /[A-Za-z0-9_$)\]]/.test(prevChar);
-      if (!looksLikeDivision) {
-        const regexStart = i;
-        let k = i + 1;
-        let inCharClass = false;
-        let closed = false;
-        while (k < text.length) {
-          const c2 = text[k];
-          if (c2 === "\\") {
-            k += 2;
-            continue;
-          }
-          if (c2 === "\n") break; // a real regex literal never spans a raw newline
-          if (c2 === "[") inCharClass = true;
-          else if (c2 === "]") inCharClass = false;
-          else if (c2 === "/" && !inCharClass) {
-            k++; // consume closing slash
-            while (k < text.length && /[a-z]/.test(text[k])) k++; // flags
-            closed = true;
-            break;
-          }
-          k++;
-        }
-        if (closed) {
-          result += " ".repeat(k - regexStart);
-          i = k;
-          continue;
-        }
-        // Not actually a regex literal (no closing `/` before a newline) —
-        // fall through and emit this character as-is; it was division or a
-        // stray slash, not a regex.
-      }
-    }
-    result += ch;
-    i++;
+function deriveUnclassifiedTextKinds(tsApi) {
+  const classified = new Set([
+    ...TEXT_BEARING_STRING_KINDS,
+    ...TEXT_BEARING_TEMPLATE_PART_KINDS,
+    ...NEVER_TEXT_KINDS,
+    ...WORDLESS_LITERAL_KINDS,
+  ]);
+  for (const name of classified) {
+    if (typeof tsApi.SyntaxKind[name] !== "number")
+      refuseToJudge(
+        `declares token kind "${name}" but typescript's SyntaxKind has no such member (typescript ${tsApi.version})`,
+      );
   }
-  return result;
+  const unclassified = new Map();
+  for (const name of Object.keys(tsApi.SyntaxKind)) {
+    const kind = tsApi.SyntaxKind[name];
+    if (typeof kind !== "number" || /^(First|Last)/.test(name)) continue;
+    if (kind >= tsApi.SyntaxKind.FirstNode) continue; // a node, not a token
+    if (!/Literal|Template|Text/.test(name)) continue;
+    if (classified.has(name)) continue;
+    unclassified.set(kind, name);
+  }
+  return unclassified;
+}
+
+/**
+ * Parse the bundle and return its string-bearing tokens plus a `stripped` copy
+ * of the text (comments and regex literals blanked, same length, newlines kept).
+ * @param {typeof import("typescript")} tsApi
+ * @param {string} text
+ * @returns {{ stripped: string, literals: Array<{ rawStart: number, value: string, isTextAttributeValue: boolean }> }}
+ */
+function readTokens(tsApi, text) {
+  const { SyntaxKind } = tsApi;
+  const sf = tsApi.createSourceFile(
+    "index.cjs",
+    text,
+    tsApi.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    tsApi.ScriptKind.JS,
+  );
+  const parseErrors = sf.parseDiagnostics;
+  if (!Array.isArray(parseErrors))
+    refuseToJudge(
+      `cannot read typescript's parse diagnostics (typescript ${tsApi.version} exposes no parseDiagnostics) so it cannot tell a parsed bundle from a mis-parsed one`,
+    );
+  if (parseErrors.length > 0) {
+    const first = parseErrors[0];
+    const where = sf.getLineAndCharacterOfPosition(first.start ?? 0);
+    refuseToJudge(
+      `could not parse ${DIST_PATH} (${parseErrors.length} syntax error(s); first at line ${where.line + 1}, column ${where.character + 1}: ${tsApi.flattenDiagnosticMessageText(first.messageText, " ")})`,
+    );
+  }
+
+  const unclassifiedTextKinds = deriveUnclassifiedTextKinds(tsApi);
+  // kind number -> its own name. `SyntaxKind[n]` is NOT usable for this: the
+  // enum carries range aliases (FirstTemplateToken, LastLiteralToken, ...) that
+  // share a number with a real kind, and the reverse lookup returns the alias.
+  const kindOf = (names) => new Set(names.map((n) => SyntaxKind[n]));
+  const stringKinds = kindOf(TEXT_BEARING_STRING_KINDS);
+  const templatePartKinds = kindOf(TEXT_BEARING_TEMPLATE_PART_KINDS);
+  const neverTextKinds = kindOf(NEVER_TEXT_KINDS);
+  const literals = [];
+  const commentRanges = new Map(); // pos -> end
+  const tokenRanges = []; // every token's [start, end)
+  const blankRanges = []; // regex literals: covered, but contribute nothing
+  const handledTemplateParts = new Set();
+  const textAttrNames = new Set(TEXT_BEARING_ATTRIBUTES);
+
+  const addComments = (ranges) => {
+    for (const r of ranges ?? []) commentRanges.set(r.pos, r.end);
+  };
+
+  const visit = (node) => {
+    if (node.kind >= SyntaxKind.FirstNode) {
+      if (node.kind >= SyntaxKind.FirstJSDocNode && node.kind <= SyntaxKind.LastJSDocNode) return; // comment text, covered via trivia
+      if (node.kind === SyntaxKind.TemplateExpression) {
+        const parts = [node.head, ...node.templateSpans.map((s) => s.literal)];
+        const segments = [];
+        for (const part of parts) {
+          handledTemplateParts.add(part);
+          const lastIsTail = part.kind === SyntaxKind.TemplateTail;
+          // head: `...${  middle: }...${  tail: }...`
+          segments.push(text.slice(part.getStart(sf) + 1, part.end - (lastIsTail ? 1 : 2)));
+        }
+        const whole = segments.join(" ");
+        // An injected stylesheet's `@media`/`@keyframes` marker can land in ONE
+        // static segment while an interpolation splits the surrounding CSS
+        // across several; judge the whole literal first.
+        if (!CSS_AT_RULE_RE.test(whole)) {
+          for (const seg of segments) {
+            if (seg.trim() === "") continue;
+            literals.push({
+              rawStart: node.head.getStart(sf),
+              value: seg,
+              isTextAttributeValue: false,
+            });
+          }
+        }
+      }
+      for (const child of node.getChildren(sf)) visit(child);
+      return;
+    }
+    // ---- a token ----
+    addComments(tsApi.getLeadingCommentRanges(text, node.pos));
+    addComments(tsApi.getTrailingCommentRanges(text, node.pos));
+    const start = node.getStart(sf);
+    if (node.kind === SyntaxKind.EndOfFileToken) return;
+    tokenRanges.push([start, node.end]);
+    if (neverTextKinds.has(node.kind)) {
+      blankRanges.push([start, node.end]);
+      return;
+    }
+    if (stringKinds.has(node.kind)) {
+      let isAttr = false;
+      const parent = node.parent;
+      if (
+        node.kind === SyntaxKind.StringLiteral &&
+        parent &&
+        parent.kind === SyntaxKind.PropertyAssignment &&
+        parent.initializer === node &&
+        (parent.name.kind === SyntaxKind.Identifier ||
+          parent.name.kind === SyntaxKind.StringLiteral) &&
+        textAttrNames.has(parent.name.text)
+      )
+        isAttr = true;
+      literals.push({
+        rawStart: start,
+        value: text.slice(start + 1, node.end - 1),
+        isTextAttributeValue: isAttr,
+      });
+      return;
+    }
+    if (templatePartKinds.has(node.kind)) {
+      if (!handledTemplateParts.has(node))
+        refuseToJudge(
+          `met a template-part token (kind ${node.kind}) outside a template expression at offset ${start}`,
+        );
+      return;
+    }
+    if (unclassifiedTextKinds.has(node.kind))
+      refuseToJudge(
+        `met a text-bearing token kind it does not classify: ${unclassifiedTextKinds.get(node.kind)} at offset ${start}`,
+      );
+  };
+  visit(sf);
+
+  // COMPLETENESS PROOF: every non-whitespace character of the bundle must be
+  // inside a token or a comment. A character in neither is text this reader
+  // did not see; that is a refusal, never a pass.
+  const covered = [...tokenRanges, ...[...commentRanges].map(([pos, end]) => [pos, end])].sort(
+    (a, b) => a[0] - b[0],
+  );
+  let cursor = 0;
+  for (const [s, e] of covered) {
+    if (s > cursor && /\S/.test(text.slice(cursor, s)))
+      refuseToJudge(
+        `left unread text between offsets ${cursor} and ${s} (neither a token nor a comment)`,
+      );
+    if (e > cursor) cursor = e;
+  }
+  if (/\S/.test(text.slice(cursor)))
+    refuseToJudge(`left unread text after offset ${cursor} (neither a token nor a comment)`);
+
+  const blank = (chunk) => chunk.replace(/[^\n\r]/g, " ");
+  const strip = [...commentRanges.entries(), ...blankRanges].sort((a, b) => a[0] - b[0]);
+  let stripped = "";
+  let at = 0;
+  for (const [s, e] of strip) {
+    if (s < at) continue;
+    stripped += text.slice(at, s) + blank(text.slice(s, e));
+    at = e;
+  }
+  stripped += text.slice(at);
+  return { stripped, literals };
 }
 
 /**
@@ -1295,10 +1385,11 @@ function walkChildrenValue(text, from) {
  * with its 1-based line number and the ~80 chars preceding it (for
  * context-based exclusions: displayName, defineProperty(exports, ...),
  * `.key === `).
- * @param {string} text
+ * @param {string} text comment- and regex-stripped bundle text (readTokens().stripped)
+ * @param {Array<{ rawStart: number, value: string, isTextAttributeValue: boolean }>} literals parsed string tokens
  * @returns {{ candidates: Array<{ line: number, value: string, precedingContext: string, isTextAttributeValue: boolean, isRenderedChild: boolean }>, unreadableChildrenAt: Array<{ line: number, reason: string }> }}
  */
-function extractCandidates(text) {
+function extractCandidates(text, literals) {
   const candidates = [];
   // Track line numbers by counting newlines up to each match's start index.
   const newlineOffsets = [0];
@@ -1317,91 +1408,22 @@ function extractCandidates(text) {
     return lo + 1; // 1-based
   }
 
-  const textAttrAlternation = TEXT_BEARING_ATTRIBUTES.join("|");
-  // Matches `"aria-label": "value"` / `aria-label: "value"` / `title: "value"`
-  // — quoted or bare object key, immediately followed by a string literal.
-  // The exact byte offset of the captured value (group 1) is what lets us
-  // mark the matching candidate below as a text-bearing-attribute value.
-  const textAttrRe = new RegExp(
-    `(?:"(?:${textAttrAlternation})"|\\b(?:${textAttrAlternation}))\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`,
-    "g",
-  );
-  const textAttrValueSpans = new Set();
-  let m;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((m = textAttrRe.exec(text))) {
-    const valueStart = m.index + m[0].length - 1 - m[1].length;
-    textAttrValueSpans.add(valueStart);
-  }
-
-  // Double-quoted string literals.
-  const dqRe = /"(?:[^"\\]|\\.)*"/g;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((m = dqRe.exec(text))) {
-    const raw = m[0];
-    const value = raw.slice(1, -1);
-    const start = m.index;
+  // Every candidate comes from a PARSED token (see readTokens) — a quote in a
+  // comment or a regex literal never reaches this point.
+  for (const lit of literals) {
     candidates.push({
-      line: lineForIndex(start),
-      value,
-      precedingContext: text.slice(Math.max(0, start - 80), start),
-      rawStart: start,
+      line: lineForIndex(lit.rawStart),
+      value: lit.value,
+      precedingContext: text.slice(Math.max(0, lit.rawStart - 80), lit.rawStart),
+      rawStart: lit.rawStart,
+      isTextAttributeValue: lit.isTextAttributeValue,
     });
   }
 
-  // Single-quoted string literals (some minifiers/tools emit these).
-  const sqRe = /'(?:[^'\\]|\\.)*'/g;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex-exec-loop idiom
-  while ((m = sqRe.exec(text))) {
-    const raw = m[0];
-    const value = raw.slice(1, -1);
-    const start = m.index;
-    candidates.push({
-      line: lineForIndex(start),
-      value,
-      precedingContext: text.slice(Math.max(0, start - 80), start),
-      rawStart: start,
-    });
-  }
-
-  // Template literals: split on `${...}` interpolations, each STATIC segment
-  // becomes its own candidate — this is what catches the concatenation form
-  // (`` `Edit ${label}` ``: the static segment "Edit " is the hardcoded word).
-  //
-  // A plain `` /`(?:[^`\\]|\\.)*`/g `` pairing regex mis-parses a template
-  // literal whose interpolation itself contains a NESTED template literal
-  // (e.g. `` `Notifications${count > 0 ? ` (${count})` : ""}` `` — real code
-  // in this bundle): it terminates at the FIRST unescaped backtick, which is
-  // the nested literal's OPENING backtick, not the outer literal's closing
-  // one, and silently truncates everything after it. `findTemplateLiterals`
-  // instead tracks `${...}` brace depth so a backtick encountered WHILE
-  // inside an interpolation is correctly treated as part of that
-  // interpolation's own (nested) template, not as this literal's terminator.
-  for (const { start, inner } of findTemplateLiterals(text)) {
-    // An injected stylesheet's `@media`/`@keyframes` marker can land in ONE
-    // static segment while an interpolation (e.g. `repeat(${n}, minmax(...))`)
-    // splits the surrounding CSS across several — classifying segment-by-segment
-    // would see the marker in segment 1 only and misjudge every other segment
-    // of the SAME literal as prose. Check the whole un-split literal first.
-    if (CSS_AT_RULE_RE.test(inner)) continue;
-    const segments = inner.split(/\$\{(?:[^{}]|\{[^{}]*\})*\}/);
-    for (const seg of segments) {
-      if (seg.trim() === "") continue;
-      candidates.push({
-        line: lineForIndex(start),
-        value: seg,
-        precedingContext: text.slice(Math.max(0, start - 80), start),
-        rawStart: start,
-      });
-    }
-  }
-
-  // Mark which candidates are the VALUE of a text-bearing attribute (PASS B).
-  // `rawStart` points at the opening quote of a double-quoted candidate, so
-  // the value itself starts one byte later.
+  // PASS B's `isTextAttributeValue` was set above from the parse (a string that
+  // is the initializer of a property named by TEXT_BEARING_ATTRIBUTES).
   const renderedChildren = findRenderedChildLiterals(text);
   for (const c of candidates) {
-    c.isTextAttributeValue = textAttrValueSpans.has(c.rawStart + 1);
     c.isRenderedChild = renderedChildren.starts.has(c.rawStart);
   }
 
@@ -1525,13 +1547,13 @@ function main() {
   }
 
   const webhookHandlerSpan = findWebhookHandlerFunctionSpan(text);
-  // Regex literals are masked to spaces of IDENTICAL length before
-  // extraction — this preserves every offset/line-number computation below
-  // while removing the ambiguity a raw backtick inside a regex literal (e.g.
-  // `` /^`([^`]+)`/ ``) would otherwise create for the template-literal
-  // scanner. See maskRegexLiterals's own comment for the real bundle case.
-  const maskedText = maskRegexLiterals(text);
-  const { candidates, unreadableChildrenAt } = extractCandidates(maskedText);
+  // Comments and regex literals are blanked to spaces of IDENTICAL length by
+  // the parse-based token reader before anything is extracted — this
+  // preserves every offset/line-number computation below while making it
+  // impossible for a quote inside a comment or a regex to pair with another.
+  // See readTokens.
+  const { stripped: maskedText, literals } = readTokens(ts, text);
+  const { candidates, unreadableChildrenAt } = extractCandidates(maskedText, literals);
   if (unreadableChildrenAt.length > 0) {
     console.error(
       `REFUSING TO JUDGE: no-hardcoded-words-guard could not walk ${unreadableChildrenAt.length} \`children:\` value(s) to a verdict at ${unreadableChildrenAt.map((u) => `${DIST_PATH}:${u.line} (${u.reason})`).join("; ")}. A rendered-child literal it cannot delimit or classify is a literal it cannot judge; refusing rather than passing it.`,
@@ -1539,7 +1561,8 @@ function main() {
     process.exit(2);
     return;
   }
-  const lines = maskedText.split("\n");
+  // The escape marker lives in a COMMENT, so it is looked up in the original text.
+  const lines = text.split("\n");
 
   const violations = [];
 
