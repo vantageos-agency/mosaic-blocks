@@ -120,9 +120,22 @@ for (const form of UNRECOGNISED_PROSE) {
 // Zero-regression: a RECOGNISED anchor whose number drifts is STILL caught.
 {
   const orig = readFileSync(README, "utf8");
-  const drifted = orig.replace("It provides 180 opinionated", "It provides 181 opinionated");
+  // The count is read from the README itself (derive, never type): a typed
+  // number goes stale the day a component is added, and the mutation then
+  // never lands.
+  const hero = /It provides (\d+) opinionated/.exec(orig);
+  const heroCount = hero ? Number(hero[1]) : Number.NaN;
+  const drifted = hero
+    ? orig.replace(
+        `It provides ${heroCount} opinionated`,
+        `It provides ${heroCount + 1} opinionated`,
+      )
+    : orig;
   try {
-    log(drifted !== orig, "  [recognised-anchor drift] mutation LANDED (hero '180'->'181')");
+    log(
+      drifted !== orig,
+      `  [recognised-anchor drift] mutation LANDED (hero '${heroCount}'->'${heroCount + 1}')`,
+    );
     writeFileSync(README, drifted);
     const c = run("node", [DOCS_COUNTS, "--check"]);
     log(
