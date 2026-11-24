@@ -1432,7 +1432,9 @@ else
   elif [ "$(grep -oF "$LOOSE_VALUE" "$CLONE/dist/index.cjs" | wc -l)" -lt 2 ]; then
     FAILURES+=("MUST_BLOCK loose-budget — seeded value did not reach the bundle at least twice — premise not met, probe invalid")
   else
-    MUTATED_GUARD="$SCRATCH/guard-loose-budget.mjs"
+    # Inside the clone (not $SCRATCH): the guard resolves its `typescript` parser
+    # from the node_modules next to it, so a copy elsewhere would refuse to run.
+    MUTATED_GUARD="$CLONE/scripts/guard-loose-budget.mjs"
     cp "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$MUTATED_GUARD"
     python3 - "$MUTATED_GUARD" "$LOOSE_VALUE" "$LOOSE_COUNT" <<'PYEOF'
 import re
@@ -1742,11 +1744,11 @@ else
       log MUST_REFUSE "FAIL — unwalkable-children — mutation did not land"
     else
       run_guard_on_real_dist
-      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "could not walk"; then
+      if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "could not parse"; then
         MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
-        log MUST_REFUSE "PASS — unwalkable children value — exited 2, REFUSED TO JUDGE, named the site"
+        log MUST_REFUSE "PASS — unwalkable children value (unterminated string: the parse refuses it before the children walk) — exited 2, REFUSED TO JUDGE, named the parse failure"
       else
-        FAILURES+=("MUST_REFUSE unwalkable-children — guard exited $REFUSE_STATUS (expected 2, naming 'could not walk') — output: $REFUSE_OUTPUT")
+        FAILURES+=("MUST_REFUSE unwalkable-children — guard exited $REFUSE_STATUS (expected 2, naming 'could not parse') — output: $REFUSE_OUTPUT")
         log MUST_REFUSE "FAIL — unwalkable-children — exit=$REFUSE_STATUS"
       fi
     fi
@@ -1875,6 +1877,224 @@ PYEOF
       fi
     fi
     restore_real_dist
+
+    # =======================================================================
+    # TOKEN READER (task k171ya0nn2244kqjvv63fxq5558jjkyy) — the guard reads
+    # text from PARSED tokens, never by pairing quote characters.
+    #
+    # CENSUS (derived, not remembered). Source: typescript's `ts.SyntaxKind`
+    # enum (the `typescript` devDependency of this repo). Every TOKEN kind
+    # whose enum name says it can carry or hide text, with its disposition:
+    #   hides text (never judged, never pairs quotes)
+    #     SingleLineCommentTrivia   `// ...`
+    #     MultiLineCommentTrivia    `/* ... */` — a JSDoc `/** ... */` is one
+    #     RegularExpressionLiteral  quotes inside a regex must not open a string
+    #   carries text (judged)
+    #     StringLiteral                   single- AND double-quoted
+    #     NoSubstitutionTemplateLiteral   `` `text` ``
+    #     TemplateHead / TemplateMiddle / TemplateTail   static segments of a
+    #                                     template with substitutions
+    #   carries no word (documented)
+    #     NumericLiteral, BigIntLiteral
+    #   not producible from a CJS bundle (the guard REFUSES if it meets one)
+    #     JsxText, JsxTextAllWhiteSpaces, JSDocCommentTextToken,
+    #     NonTextFileMarkerTrivia
+    # The probe re-derives the enum's token kinds on every run and FAILS
+    # LOUDLY if the enum holds a text-bearing kind this census does not name.
+    #
+    # Mutations are injected into REAL bundle lines the probe did not write:
+    # after the first, a middle, and the last `var <name> = require(...)` line
+    # of the clean build, found by pattern. Landing is asserted by grep (and
+    # by the anchor line sitting immediately before the injection) BEFORE any
+    # verdict is read. The probe resolves everything from its own location:
+    # no absolute path, no assumed branch, no ambient identity.
+    # =======================================================================
+    TOKEN_CENSUS_KINDS="SingleLineCommentTrivia MultiLineCommentTrivia NonTextFileMarkerTrivia NumericLiteral BigIntLiteral StringLiteral JsxText JsxTextAllWhiteSpaces RegularExpressionLiteral NoSubstitutionTemplateLiteral TemplateHead TemplateMiddle TemplateTail JSDocCommentTextToken"
+    MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+    census_drift="$(cd "$REPO_ROOT" && node -e '
+      const ts = require("typescript");
+      const census = new Set(process.argv[1].split(" "));
+      const S = ts.SyntaxKind;
+      const derived = Object.keys(S).filter((n) => typeof S[n] === "number" && !/^(First|Last)/.test(n) && S[n] < S.FirstNode && /Literal|Template|Text|Comment/.test(n));
+      const missing = derived.filter((n) => !census.has(n));
+      const stale = [...census].filter((n) => typeof S[n] !== "number");
+      if (derived.length === 0) { console.log("derived zero kinds from ts.SyntaxKind"); process.exit(0); }
+      if (missing.length || stale.length) console.log("not in census: [" + missing.join(" ") + "] ; not in enum: [" + stale.join(" ") + "]");
+    ' "$TOKEN_CENSUS_KINDS" 2>&1)"
+    if [ -n "$census_drift" ]; then
+      FAILURES+=("MUST_BLOCK token census — typescript's SyntaxKind and the probe's census disagree: $census_drift")
+      log MUST_BLOCK "FAIL — token census drift: $census_drift"
+    else
+      MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+      log MUST_BLOCK "PASS — token census matches ts.SyntaxKind (every text-bearing token kind named)"
+    fi
+
+    # Real anchors: first / middle / last top-level `var x = require(...)` line.
+    mapfile -t TOKEN_ANCHORS < <(python3 - "$REAL_DIST_BACKUP" <<'PYEOF'
+import re, sys
+lines = open(sys.argv[1]).read().split("\n")
+idx = [i for i, l in enumerate(lines) if re.match(r"^var [A-Za-z0-9_$]+ = require\(", l)]
+if len(idx) < 3:
+    sys.exit(0)
+for i in (idx[0], idx[len(idx) // 2], idx[-1]):
+    print(i + 1)
+PYEOF
+)
+    if [ "${#TOKEN_ANCHORS[@]}" -ne 3 ]; then
+      FAILURES+=("MUST_BLOCK/MUST_PASS token reader — fewer than 3 real \`var x = require(...)\` anchor lines in the clean bundle — probe invalid")
+      MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 7)); MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 5)); MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+    else
+      # Words are DERIVED: each candidate is used only if absent from the clean bundle.
+      pick_phrase() { # $@ = candidates; prints the first absent from the clean bundle
+        local c
+        for c in "$@"; do
+          if ! grep -qF -- "$c" "$REAL_DIST_BACKUP"; then printf '%s' "$c"; return 0; fi
+        done
+        return 1
+      }
+      TOK_OK=true
+      declare -A TOKW
+      slot=0
+      for set in \
+        "Quartz lantern vessel|Marble ember fountain|Cobalt harbor window" \
+        "Velvet anchor meadow|Copper orchid summit|Amber glacier thread" \
+        "Silver compass garden|Violet tundra beacon|Ivory canyon whisper" \
+        "Saffron kettle bridge|Indigo meadow lattice|Umber falcon orchard" \
+        "Walnut ribbon harvest|Cedar prism lagoon|Ochre bramble signal" \
+        "Teal cinder parade|Sable quill orbit|Coral basalt journey" \
+        "Slate mosaic tavern|Hazel dune ledger|Pearl thistle engine" \
+        "Fawn rivet carousel|Mauve cobble stanza|Rust wicker meridian"; do
+        slot=$((slot + 1))
+        IFS='|' read -r c1 c2 c3 <<< "$set"
+        if w="$(pick_phrase "$c1" "$c2" "$c3")"; then TOKW[$slot]="$w"; else
+          FAILURES+=("MUST_BLOCK token reader — word slot $slot: every candidate [$c1 | $c2 | $c3] is already in the clean bundle — probe refuses (a subject it does not control proves nothing)")
+          TOK_OK=false
+        fi
+      done
+      # Template-with-substitution needs three distinct multi-word segments.
+      TPL_A="${TOKW[4]}"; TPL_B="${TOKW[5]}"; TPL_C="${TOKW[6]}"
+      # Each case: label | anchor index (0-2) | injected text. Placeholders are bash-expanded here.
+      NL=$'\n'
+      TOK_BLOCK_LABELS=("single-quoted string" "double-quoted string" "template literal (no substitution)" "template with substitution (head/middle/tail)" "single-quoted word hidden between two // comment apostrophes" "double-quoted word hidden between two // comment quotes" "single-quoted word hidden between two JSDoc apostrophes")
+      TOK_BLOCK_ANCHOR=(0 1 2 0 1 2 0)
+      TOK_BLOCK_TEXT=(
+        "var zqtokSq = '${TOKW[1]}';"
+        "var zqtokDq = \"${TOKW[2]}\";"
+        "var zqtokTpl = \`${TOKW[3]}\`;"
+        "var zqtokSub = \`${TPL_A} \${zqtokSq} ${TPL_B} \${zqtokDq} ${TPL_C}\`;"
+        "// the column's width${NL}var zqtokHid = '${TOKW[7]}';${NL}// the user's tab"
+        "// say \"hi${NL}var zqtokHidD = \"${TOKW[8]}\";${NL}// bye\""
+        "/** the column's width */${NL}var zqtokHidJ = '${TOKW[1]} two';${NL}/** the user's tab */"
+      )
+      # Words each case must name (all of them).
+      TOK_BLOCK_NAMES=("${TOKW[1]}" "${TOKW[2]}" "${TOKW[3]}" "${TPL_A}|${TPL_B}|${TPL_C}" "${TOKW[7]}" "${TOKW[8]}" "${TOKW[1]} two")
+      TOK_PASS_LABELS=("apostrophe in a // comment beside a new single-quoted string" "apostrophe in a /* */ comment beside a new single-quoted string" "apostrophe in a JSDoc /** */ beside a new single-quoted string" "quotes inside a regex literal beside a new string" "apostrophe in a same-line trailing // comment beside a new single-quoted string")
+      TOK_PASS_ANCHOR=(0 1 2 0 1)
+      TOK_PASS_TEXT=(
+        "// the column's width${NL}var zqtokPa = 'ok';${NL}var zqtokPb = 'x';"
+        "/* the user's tab */ var zqtokPc = 'ok'; var zqtokPd = 'x';"
+        "/**${NL} * the user's tab${NL} */${NL}var zqtokPe = 'ok';${NL}var zqtokPf = 'x';"
+        "var zqtokRe = /[\"'\`]|it's 'a/g; var zqtokPg = 'ok';"
+        "var zqtokPh = 1; // the user's tab${NL}var zqtokPi = 'x';"
+      )
+      TOK_PASS_NEEDLE=("var zqtokPb = 'x';" "var zqtokPd = 'x';" "var zqtokPf = 'x';" "var zqtokPg = 'ok';" "var zqtokPi = 'x';")
+
+      # inject_after <anchorLine> <text> : writes the real-bundle copy with <text> inserted AFTER the anchor line.
+      inject_after() {
+        python3 - "$REAL_DIST_BACKUP" "$REAL_DIST" "$1" "$2" <<'PYEOF'
+import sys
+src, dst, anchor, text = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+lines = open(src).read().split("\n")
+lines[anchor:anchor] = text.split("\n")
+open(dst, "w").write("\n".join(lines))
+PYEOF
+      }
+      # landed <anchorLine> <firstInjectedLine> : the anchor line is immediately followed by the injection, and the anchor is real.
+      landed() {
+        local anchor="$1" first="$2" real
+        real="$(sed -n "${anchor}p" "$REAL_DIST_BACKUP")"
+        [ -n "$real" ] || return 1
+        [ "$(sed -n "${anchor}p" "$REAL_DIST")" = "$real" ] || return 1
+        [ "$(sed -n "$((anchor + 1))p" "$REAL_DIST")" = "$first" ] || return 1
+        grep -qF -- "$first" "$REAL_DIST"
+      }
+
+      for i in "${!TOK_BLOCK_LABELS[@]}"; do
+        MUST_BLOCK_TOTAL=$((MUST_BLOCK_TOTAL + 1))
+        label="${TOK_BLOCK_LABELS[$i]}"; anchor="${TOKEN_ANCHORS[${TOK_BLOCK_ANCHOR[$i]}]}"; text="${TOK_BLOCK_TEXT[$i]}"
+        first="${text%%$'\n'*}"
+        if [ "$TOK_OK" != true ]; then continue; fi
+        inject_after "$anchor" "$text"
+        if ! landed "$anchor" "$first"; then
+          FAILURES+=("MUST_BLOCK token $label — mutation did NOT land after real line $anchor — probe invalid")
+          log MUST_BLOCK "FAIL — token $label — mutation did not land"
+        else
+          run_guard_on_real_dist
+          named=true
+          IFS='|' read -ra want <<< "${TOK_BLOCK_NAMES[$i]}"
+          for w in "${want[@]}"; do
+            echo "$REFUSE_OUTPUT" | grep -qF -- "$w" || named=false
+          done
+          if [ "$REFUSE_STATUS" -eq 1 ] && [ "$named" = true ]; then
+            MUST_BLOCK_PASS=$((MUST_BLOCK_PASS + 1))
+            log MUST_BLOCK "PASS — token $label (after real bundle line $anchor) — exit 1, guard named \"${TOK_BLOCK_NAMES[$i]}\""
+          else
+            FAILURES+=("MUST_BLOCK token $label — guard exited $REFUSE_STATUS (expected 1) or did not name \"${TOK_BLOCK_NAMES[$i]}\" — output: $REFUSE_OUTPUT")
+            log MUST_BLOCK "FAIL — token $label — exit=$REFUSE_STATUS"
+          fi
+        fi
+        restore_real_dist
+      done
+      # A failed word derivation is a refusal that must still be counted against the totals.
+      if [ "$TOK_OK" != true ]; then log MUST_BLOCK "FAIL — token reader word derivation — see FAILURES"; fi
+
+      for i in "${!TOK_PASS_LABELS[@]}"; do
+        MUST_PASS_TOTAL=$((MUST_PASS_TOTAL + 1))
+        label="${TOK_PASS_LABELS[$i]}"; anchor="${TOKEN_ANCHORS[${TOK_PASS_ANCHOR[$i]}]}"; text="${TOK_PASS_TEXT[$i]}"
+        first="${text%%$'\n'*}"
+        inject_after "$anchor" "$text"
+        if ! landed "$anchor" "$first" || ! grep -qF -- "${TOK_PASS_NEEDLE[$i]}" "$REAL_DIST"; then
+          FAILURES+=("MUST_PASS token $label — mutation did NOT land after real line $anchor — probe invalid")
+          log MUST_PASS "FAIL — token $label — mutation did not land"
+        else
+          run_guard_on_real_dist
+          if [ "$REFUSE_STATUS" -eq 0 ] && ! echo "$REFUSE_OUTPUT" | grep -q '^  - '; then
+            MUST_PASS_PASS=$((MUST_PASS_PASS + 1))
+            log MUST_PASS "PASS — token: $label (after real bundle line $anchor) — exit 0, no offender"
+          else
+            FAILURES+=("MUST_PASS token $label — guard exited $REFUSE_STATUS (expected 0) — output: $REFUSE_OUTPUT")
+            log MUST_PASS "FAIL — token: $label — exit=$REFUSE_STATUS"
+          fi
+        fi
+        restore_real_dist
+      done
+
+      # REFUSE pole: an unparseable bundle is named and refused, never judged.
+      MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 1))
+      anchor="${TOKEN_ANCHORS[0]}"
+      inject_after "$anchor" "var zqtokBroken = ;"
+      if ! landed "$anchor" "var zqtokBroken = ;"; then
+        FAILURES+=("MUST_REFUSE unparseable bundle — mutation did NOT land — probe invalid")
+        log MUST_REFUSE "FAIL — unparseable bundle — mutation did not land"
+      else
+        run_guard_on_real_dist
+        if [ "$REFUSE_STATUS" -eq 2 ] && echo "$REFUSE_OUTPUT" | grep -qF "REFUSING TO JUDGE" && echo "$REFUSE_OUTPUT" | grep -qF "could not parse" && echo "$REFUSE_OUTPUT" | grep -qF "line $((anchor + 1))"; then
+          MUST_REFUSE_PASS=$((MUST_REFUSE_PASS + 1))
+          log MUST_REFUSE "PASS — unparseable bundle — exited 2, REFUSED TO JUDGE, named the parse failure at line $((anchor + 1))"
+        else
+          FAILURES+=("MUST_REFUSE unparseable bundle — guard exited $REFUSE_STATUS (expected 2, naming 'could not parse' at line $((anchor + 1))) — output: $REFUSE_OUTPUT")
+          log MUST_REFUSE "FAIL — unparseable bundle — exit=$REFUSE_STATUS"
+        fi
+      fi
+      restore_real_dist
+
+      # Restoration of the artifact the token cases mutated.
+      if cmp -s "$REAL_DIST" "$REAL_DIST_BACKUP"; then
+        log INFO "token cases: dist/index.cjs restored byte-for-byte (cmp clean)"
+      else
+        FAILURES+=("token cases — dist/index.cjs differs from its backup after restore")
+      fi
+    fi
   fi
 fi
 
