@@ -9,6 +9,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — registry-json-derive tells a refusal from a violation by exit code (unreleased)
+
+**`scripts/registry-json-derive.mjs`** — three exit states. `0` clean; `1` a violation found in artifacts it fully read (an item missing or stale, saved dependencies that drifted from the imports, an import of a package `package.json` does not declare — the `DerivationViolation` class, the only one mapped to 1); `2` with `REFUSING TO JUDGE: <what>` when it could not read something it needs (an unreadable, absent or malformed file, an export form or a non-literal `import()`/`require()` it cannot read, a declared exception it cannot apply, `--check` with `--stdout`). Any other error also maps to 2 (fail-closed). `non-shipped.mjs` is now imported inside the handler, so a missing `tsconfig.test.json` or `.storybook/main.ts` also refuses with 2 instead of ending the process with 1. Script and test only; no shipped code changes.
+
+### Fixed — MosaicSelect and MosaicToolToggleList tests wait for an interactive popup (unreleased)
+
+`MosaicSelect.test.tsx` ("closes popup on Escape key", "selects an item and calls onValueChange") and `MosaicToolToggleList.test.tsx` (option click) sent Escape or an option click as soon as the option text was in the DOM. base-ui opens the Select inside `requestAnimationFrame`; at that instant the document-level Escape listener (a passive effect) is not attached yet and the positioner still carries `pointer-events: none`, so the interaction was dropped and the test failed under load. The tests now wait until focus is inside the popup, which base-ui sets in a later frame. Test-only change.
+
 ### Added — GrilleRegistre pagination and localeText (unreleased)
 
 **GrilleRegistre** (`src/components/registre/`) gains four optional props forwarded to AG Grid: `pagination?: boolean`, `paginationPageSize?: number`, `paginationPageSizeSelector?: number[] | boolean` and `localeText?: Record<string, string>` (grid UI text keyed by AG Grid locale key; the host owns the language). Omitted, each stays at AG Grid's own default, so existing hosts are unchanged: the `GrilleRegistreProps` declaration in `dist/index.d.ts` gains these four members and nothing else. The version is not bumped here: the release-artifacts guard forbids it, the bot derives it after merge.
