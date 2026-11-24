@@ -1,8 +1,17 @@
 // Unit tests for scripts/gate-local.mjs — parsing, skip classification, fail-loud.
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   GateLocalError,
@@ -47,6 +56,69 @@ jobs:
       - name: Playwright
         run: npx playwright install chromium --with-deps
 `;
+
+// The CLI derives its emulated events from git (base = `--base`, default origin/main;
+// head, subject and branch from HEAD) in the directory that holds the script. These
+// tests never run it against this checkout: a sandbox export may carry no .git, or a
+// shallow one with no origin/main, and the result would then depend on the clone.
+// Each CLI test builds its own throwaway repository: a base commit, origin/main set
+// on it, then the commit under test — and runs a copy of the script from there.
+const SCRIPT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "gate-local.mjs");
+const REPO_NODE_MODULES = resolve(dirname(SCRIPT), "..", "node_modules");
+
+function fixtureGit(cwd, args) {
+  const r = spawnSync(
+    "git",
+    [
+      "-c",
+      "user.name=gate-local fixture",
+      "-c",
+      "user.email=fixture@invalid",
+      "-c",
+      "commit.gpgsign=false",
+      ...args,
+    ],
+    { cwd, encoding: "utf8" },
+  );
+  if (r.status !== 0) {
+    throw new Error(`fixture setup: git ${args.join(" ")} failed: ${r.stderr || r.error}`);
+  }
+  return r.stdout.trim();
+}
+
+/**
+ * A throwaway git repository the CLI can resolve, independent of this checkout.
+ * Returns { dir, run(args) }. `withBase: false` leaves origin/main unset (the
+ * refusal path). Setup failure throws; the landing of each ref is asserted.
+ */
+function cliFixture({ withBase = true } = {}) {
+  const dir = mkdtempSync(join(tmpdir(), "gate-local-git-"));
+  mkdirSync(join(dir, "scripts"));
+  copyFileSync(SCRIPT, join(dir, "scripts", "gate-local.mjs"));
+  if (!existsSync(join(REPO_NODE_MODULES, "yaml"))) {
+    throw new Error(`fixture setup: ${REPO_NODE_MODULES}/yaml not found — install deps first`);
+  }
+  symlinkSync(REPO_NODE_MODULES, join(dir, "node_modules"), "dir");
+  writeFileSync(join(dir, ".gitignore"), "node_modules\n*.yml\n");
+  fixtureGit(dir, ["init", "-q", "-b", "fixture-branch"]);
+  fixtureGit(dir, ["add", "-A"]);
+  fixtureGit(dir, ["commit", "-q", "-m", "chore: fixture base"]);
+  const baseSha = fixtureGit(dir, ["rev-parse", "HEAD"]);
+  if (withBase) {
+    fixtureGit(dir, ["update-ref", "refs/remotes/origin/main", baseSha]);
+    expect(fixtureGit(dir, ["rev-parse", "--verify", "origin/main"])).toBe(baseSha);
+  }
+  writeFileSync(join(dir, "change.txt"), "the change under test\n");
+  fixtureGit(dir, ["add", "change.txt"]);
+  fixtureGit(dir, ["commit", "-q", "-m", "feat(fixture): the change under test"]);
+  expect(fixtureGit(dir, ["rev-parse", "HEAD~1"])).toBe(baseSha);
+  const run = (args) =>
+    spawnSync("node", [join(dir, "scripts", "gate-local.mjs"), ...args], {
+      cwd: dir,
+      encoding: "utf8",
+    });
+  return { dir, run };
+}
 
 const byName = (plan, name) => plan[0].steps.find((s) => s.name === name);
 
@@ -221,27 +293,52 @@ jobs:
   });
 
   it("CLI: a step added to the workflow runs with no runner edit; exit 1 on failure", () => {
-    const dir = mkdtempSync(join(tmpdir(), "gate-local-"));
+    const { dir, run } = cliFixture();
     const wf = join(dir, "wf.yml");
     const base = "jobs:\n  j:\n    steps:\n      - run: echo base-step\n";
     writeFileSync(wf, `${base}      - run: echo gamma-derived-proof\n`);
-    const ok = spawnSync("node", ["scripts/gate-local.mjs", "--workflow", wf], {
-      encoding: "utf8",
-    });
+    const ok = run(["--workflow", wf]);
+    expect(ok.stderr).toBe("");
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain("gamma-derived-proof");
     expect(ok.stdout).toMatch(/2 run \/ 2 total, 0 skipped, 0 failed/);
     writeFileSync(wf, `${base}      - run: exit 1\n`);
-    const red = spawnSync("node", ["scripts/gate-local.mjs", "--workflow", wf], {
-      encoding: "utf8",
-    });
+    const red = run(["--workflow", wf]);
     expect(red.status).toBe(1);
+    expect(red.stdout).toMatch(/FAILED:\s+j#2/);
     writeFileSync(wf, `${base}      - run: echo\n        bogus: 1\n`);
-    const loud = spawnSync("node", ["scripts/gate-local.mjs", "--workflow", wf], {
-      encoding: "utf8",
-    });
+    const loud = run(["--workflow", wf]);
     expect(loud.status).toBe(2);
     expect(loud.stderr).toContain("bogus");
+  });
+
+  it("CLI: a base ref that does not resolve, or no git repository, is a named refusal (exit 2)", () => {
+    const { dir, run } = cliFixture({ withBase: false });
+    const wf = join(dir, "wf.yml");
+    writeFileSync(wf, "jobs:\n  j:\n    steps:\n      - run: echo never-runs\n");
+    const noBase = run(["--workflow", wf]);
+    expect(noBase.status).toBe(2);
+    expect(noBase.stderr).toMatch(
+      /gate:local REFUSES TO RUN — git rev-parse --verify origin\/main failed/,
+    );
+    expect(noBase.stdout).not.toContain("never-runs");
+    const missing = run(["--workflow", wf, "--base", "refs/heads/no-such-base"]);
+    expect(missing.status).toBe(2);
+    expect(missing.stderr).toContain("git rev-parse --verify refs/heads/no-such-base failed");
+
+    const bare = mkdtempSync(join(tmpdir(), "gate-local-nogit-"));
+    mkdirSync(join(bare, "scripts"));
+    copyFileSync(SCRIPT, join(bare, "scripts", "gate-local.mjs"));
+    symlinkSync(REPO_NODE_MODULES, join(bare, "node_modules"), "dir");
+    const noGit = spawnSync("node", [join(bare, "scripts", "gate-local.mjs"), "--workflow", wf], {
+      cwd: bare,
+      env: { ...process.env, GIT_CEILING_DIRECTORIES: dirname(bare) },
+      encoding: "utf8",
+    });
+    expect(noGit.status).toBe(2);
+    expect(noGit.stderr).toMatch(
+      /gate:local REFUSES TO RUN — git rev-parse --verify origin\/main failed: fatal: not a git repository/,
+    );
   });
 });
 
@@ -353,15 +450,14 @@ jobs:
   );
 
   it("CLI: a could-not-run step with no failure exits 2, never 0", () => {
-    const dir = mkdtempSync(join(tmpdir(), "gate-local-"));
+    const { dir, run } = cliFixture();
     const file = join(dir, "wf.yml");
     writeFileSync(
       file,
       "jobs:\n  j:\n    steps:\n      - run: true playwright install chromium\n      - run: echo playwright test\n",
     );
-    const r = spawnSync("node", ["scripts/gate-local.mjs", "--workflow", file], {
-      encoding: "utf8",
-    });
+    const r = run(["--workflow", file]);
+    expect(r.stderr).not.toMatch(/REFUSES TO RUN/);
     expect(r.status).toBe(2);
     expect(r.stdout).toMatch(/COULD-NOT-RUN j#2 .*listed no install location/s);
   });
