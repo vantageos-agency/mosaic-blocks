@@ -513,7 +513,9 @@ function main(isShipped) {
     existing === null ||
     typeof existing !== "object" ||
     !Array.isArray(existing.items) ||
-    !existing.items.every((it) => it !== null && typeof it === "object" && typeof it.name === "string")
+    !existing.items.every(
+      (it) => it !== null && typeof it === "object" && typeof it.name === "string",
+    )
   ) {
     throw new Error(
       "registry-json-derive: `registry.json` has no `items` list of named entries — its shape cannot be read, refusing to compare against it.",
