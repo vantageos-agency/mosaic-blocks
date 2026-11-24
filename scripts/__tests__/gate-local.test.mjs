@@ -1,10 +1,17 @@
 // Unit tests for scripts/gate-local.mjs — parsing, skip classification, fail-loud.
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { GateLocalError, buildPlan, runPlan, summarize } from "../gate-local.mjs";
+import {
+  GateLocalError,
+  buildPlan,
+  expandScripts,
+  playwrightBrowserGap,
+  runPlan,
+  summarize,
+} from "../gate-local.mjs";
 
 const FIXTURE = `
 name: Fixture
@@ -235,5 +242,127 @@ jobs:
     });
     expect(loud.status).toBe(2);
     expect(loud.stderr).toContain("bogus");
+  });
+});
+
+describe("gate-local preconditions — a step whose host prerequisite is absent COULD NOT RUN", () => {
+  const wf = `
+jobs:
+  j:
+    steps:
+      - name: Install browsers
+        run: npx playwright install chromium --with-deps
+      - name: E2E
+        run: pnpm test:browser
+      - name: Unit
+        run: pnpm test
+`;
+  const scriptsFor = () => ({ "test:browser": "playwright test", test: "vitest run" });
+
+  it("attaches the precondition through the package script, derived from the job's install line", () => {
+    const steps = buildPlan(wf, { scriptsFor })[0].steps;
+    expect(steps[1].precondition).toEqual({
+      id: "playwright-browsers",
+      need: {
+        installRun: "npx playwright install chromium",
+        dryRun: "npx playwright install chromium --dry-run",
+      },
+    });
+    expect(steps[2].precondition).toBeNull();
+    expect(expandScripts("pnpm run test:browser", scriptsFor())).toMatch(/\[playwright test\]/);
+  });
+
+  it("refuses (fail-closed) a playwright step whose job has no install line to derive browsers from", () => {
+    const bare = "jobs:\n  j:\n    steps:\n      - run: npx playwright test\n";
+    expect(() => buildPlan(bare)).toThrow(/0 `playwright install` line/);
+  });
+
+  it("reports the step COULD-NOT-RUN with the named gap, never executes it, never counts it passed", () => {
+    const plan = buildPlan(wf, { scriptsFor, installBrowsers: true });
+    const ran = [];
+    const results = runPlan(plan, {
+      log: () => {},
+      exec: (step) => {
+        ran.push(step.name);
+        return 0;
+      },
+      checkPrecondition: () => "Playwright browser(s) not installed: /x/chromium-1",
+    });
+    expect(ran).toEqual(["Install browsers", "Unit"]);
+    const { text, failed, couldNotRun } = summarize(results);
+    expect(failed).toBe(0);
+    expect(couldNotRun).toBe(1);
+    expect(text).toMatch(/2 run \/ 3 total, 0 skipped, 0 failed, 1 could not run/);
+    expect(text).toMatch(/COULD-NOT-RUN: j#2 E2E — \[playwright-browsers\] .*chromium-1/);
+  });
+
+  it("names every missing install location reported by Playwright's own dry run", () => {
+    const gap = playwrightBrowserGap(
+      {
+        installRun: "npx playwright install chromium",
+        dryRun:
+          "printf '  Install location:    /nonexistent/chromium-9\\n  Install location: /nonexistent/shell-9\\n'",
+      },
+      tmpdir(),
+    );
+    expect(gap).toContain("/nonexistent/chromium-9, /nonexistent/shell-9");
+    expect(gap).toContain("pnpm gate:local --install-browsers");
+  });
+
+  it("refuses to read silence: a dry run listing no location, or failing, is a gap", () => {
+    expect(playwrightBrowserGap({ installRun: "x", dryRun: "true" }, tmpdir())).toMatch(
+      /listed no install location/,
+    );
+    expect(playwrightBrowserGap({ installRun: "x", dryRun: "exit 7" }, tmpdir())).toMatch(
+      /exited 7/,
+    );
+  });
+
+  it.runIf(process.platform === "linux")(
+    "names the system libraries a present browser cannot load (ldd), with the root-only provisioning",
+    () => {
+      const dir = mkdtempSync(join(tmpdir(), "gate-local-pw-"));
+      const loc = join(dir, "chromium-1");
+      mkdirSync(join(loc, "chrome-linux64"), { recursive: true });
+      const exe = join(loc, "chrome-linux64", "chrome");
+      writeFileSync(exe, "\x7fELF fake");
+      chmodSync(exe, 0o755);
+      const bin = join(dir, "bin");
+      mkdirSync(bin);
+      writeFileSync(
+        join(bin, "ldd"),
+        "#!/bin/sh\necho '\tlibnss3.so => not found'\necho '\tlibc.so.6 => /lib/libc.so.6'\n",
+      );
+      chmodSync(join(bin, "ldd"), 0o755);
+      const prevPath = process.env.PATH;
+      process.env.PATH = `${bin}:${prevPath}`;
+      try {
+        const gap = playwrightBrowserGap(
+          {
+            installRun: "npx playwright install chromium",
+            dryRun: `echo '  Install location: ${loc}'`,
+          },
+          tmpdir(),
+        );
+        expect(gap).toMatch(/browser system libraries missing: libnss3\.so/);
+        expect(gap).toContain("sudo npx playwright install-deps chromium");
+      } finally {
+        process.env.PATH = prevPath;
+      }
+    },
+  );
+
+  it("CLI: a could-not-run step with no failure exits 2, never 0", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gate-local-"));
+    const file = join(dir, "wf.yml");
+    writeFileSync(
+      file,
+      "jobs:\n  j:\n    steps:\n      - run: true playwright install chromium\n      - run: echo playwright test\n",
+    );
+    const r = spawnSync("node", ["scripts/gate-local.mjs", "--workflow", file], {
+      encoding: "utf8",
+    });
+    expect(r.status).toBe(2);
+    expect(r.stdout).toMatch(/COULD-NOT-RUN j#2 .*listed no install location/s);
   });
 });

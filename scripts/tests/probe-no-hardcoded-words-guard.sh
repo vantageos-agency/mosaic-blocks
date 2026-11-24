@@ -171,7 +171,67 @@ else
   set -e
   BASELINE_COUNT="$(echo "$baseline_output" | grep -c '^  - ' || true)"
   log INFO "baseline offender count on clean $BASE: $BASELINE_COUNT (guard is EXPECTED to be red here until the known offenders are fixed by other PRs — that is correct)"
+  # Kept for subject_sites below: later sections rebuild dist/ on mutated trees.
+  cp "$CLONE/dist/index.cjs" "$SCRATCH/baseline-index.cjs"
 fi
+
+# ---------------------------------------------------------------------------
+# subject_sites MODE WORD — the ONE predicate deciding whether an injected
+# subject is a subject this probe controls. A subject that already exists in
+# the material is not: the guard's verdict on it, and every offender count
+# derived from the injection, would mix our word with the repository's.
+#
+# SURFACES, both read: the clone's `src` at $BASE (what the probe mutates) and
+# the clean baseline bundle (what the guard reads; JSX text only appears as a
+# quoted literal there).
+# MODES:
+#   literal   — WORD as a whole string literal, in each of the three quote forms
+#               a string literal can take ("w", 'w', `w`). For real words, where
+#               a bare-substring match would hit identifiers and class names.
+#   substring — any occurrence. For `zq*` nonces, which are not words of any
+#               language, so any occurrence at all is a collision.
+# Prints one `<surface>: <pattern>` line per site found.
+# Exit 0 = absent; 1 = present (sites printed); 2 = could not read a surface —
+# the caller refuses, it never reads 2 as "absent".
+# ---------------------------------------------------------------------------
+subject_sites() {
+  local mode="$1" word="$2" pattern rc found=1 bundle="$SCRATCH/baseline-index.cjs"
+  local -a patterns
+  case "$mode" in
+    literal) patterns=("\"$word\"" "'$word'" "\`$word\`") ;;
+    substring) patterns=("$word") ;;
+    *)
+      echo "probe: subject_sites — unknown mode '$mode'" >&2
+      return 2
+      ;;
+  esac
+  if [ ! -s "$bundle" ]; then
+    echo "probe: subject_sites — no baseline bundle at $bundle (baseline build failed?) — cannot prove \"$word\" absent" >&2
+    return 2
+  fi
+  for pattern in "${patterns[@]}"; do
+    rc=0
+    grep -rlF -- "$pattern" "$CLONE/src" > "$SCRATCH/subject-sites.out" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      sed "s|^$CLONE/|src-file |; s|\$|: $pattern|" "$SCRATCH/subject-sites.out"
+      found=0
+    elif [ "$rc" -ne 1 ]; then
+      echo "probe: subject_sites — grep over $CLONE/src failed (exit $rc) — cannot prove \"$word\" absent" >&2
+      return 2
+    fi
+    rc=0
+    grep -qF -- "$pattern" "$bundle" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      echo "baseline bundle dist/index.cjs: $pattern"
+      found=0
+    elif [ "$rc" -ne 1 ]; then
+      echo "probe: subject_sites — grep over the baseline bundle failed (exit $rc) — cannot prove \"$word\" absent" >&2
+      return 2
+    fi
+  done
+  [ "$found" -eq 0 ] && return 1
+  return 0
+}
 
 # ---------------------------------------------------------------------------
 # MUST_BLOCK #1-4 — one real component file per form, one hardcoded literal
@@ -375,6 +435,29 @@ fi
 # together they must add ZERO offenders.
 # ---------------------------------------------------------------------------
 git -C "$CLONE" checkout --quiet -B probe-pass-c-block "$BASE"
+PASS_C_FORMS=(
+  "C1 direct literal child|zqdirect|src/components/callout/MosaicCallout.tsx"
+  "C2 array element|zqarray|src/components/counter/MosaicCounter.tsx"
+  "C3 ternary operand inside array|zqternary|src/components/callout/MosaicCallout.tsx"
+  "C4 nullish operand, non-array value|zqfallback|src/components/card/MosaicCard.tsx"
+  "C5 template-literal child|zqtemplate|src/components/card/MosaicCard.tsx"
+)
+# The expected offender count below is BASELINE + one per form: it holds only
+# if no nonce already exists in the material. Proven here, before injection,
+# by the shared predicate — a collision makes the section invalid, named.
+PASS_C_SUBJECTS_OK=true
+for case_desc in "${PASS_C_FORMS[@]}"; do
+  IFS='|' read -r _label word _rel <<< "$case_desc"
+  rc=0
+  sites="$(subject_sites substring "$word")" || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    FAILURES+=("MUST_BLOCK PASS C — nonce \"$word\" ALREADY exists in the material ($(echo "$sites" | paste -sd ';' -)) — not a subject this probe controls — probe invalid")
+    PASS_C_SUBJECTS_OK=false
+  elif [ "$rc" -ne 0 ]; then
+    FAILURES+=("MUST_BLOCK PASS C — could not prove nonce \"$word\" absent (subject_sites exit $rc) — probe invalid")
+    PASS_C_SUBJECTS_OK=false
+  fi
+done
 python3 - "$CLONE" <<'PASSCEOF'
 import sys
 root = sys.argv[1]
@@ -402,13 +485,6 @@ mutate("src/components/card/MosaicCard.tsx",
        '        "bg-card text-card-foreground rounded-xl border border-border shadow-sm",\n        className,\n      )}\n      {...props}\n    />',
        '        "bg-card text-card-foreground rounded-xl border border-border shadow-sm",\n        className,\n      )}\n      {...props}\n    >\n      {`${props.id} zqtemplate`}\n    </div>')
 PASSCEOF
-PASS_C_FORMS=(
-  "C1 direct literal child|zqdirect|src/components/callout/MosaicCallout.tsx"
-  "C2 array element|zqarray|src/components/counter/MosaicCounter.tsx"
-  "C3 ternary operand inside array|zqternary|src/components/callout/MosaicCallout.tsx"
-  "C4 nullish operand, non-array value|zqfallback|src/components/card/MosaicCard.tsx"
-  "C5 template-literal child|zqtemplate|src/components/card/MosaicCard.tsx"
-)
 PASS_C_LANDED=true
 for case_desc in "${PASS_C_FORMS[@]}"; do
   IFS='|' read -r _label word rel <<< "$case_desc"
@@ -417,7 +493,7 @@ for case_desc in "${PASS_C_FORMS[@]}"; do
     PASS_C_LANDED=false
   fi
 done
-if [ "$PASS_C_LANDED" = true ] && [ -n "$BASELINE_COUNT" ]; then
+if [ "$PASS_C_LANDED" = true ] && [ "$PASS_C_SUBJECTS_OK" = true ] && [ -n "$BASELINE_COUNT" ]; then
   (cd "$CLONE" && git add -A && git commit --quiet -m "probe: one lowercase rendered-child form per foreign component (PASS C)")
   log INFO "building PASS C block tree (this takes ~15-25s)..."
   if ! build_clone; then
@@ -701,6 +777,67 @@ MEMBER_FORMS=(
   'M21 conditional inside a spread|pinned|[...(true ? ["pinned"] : [])].join(" ")'
   'M22 template interpolation holding a conditional|starred|`${true ? "starred" : ""}`'
 )
+# The words above are PREFERENCES, not subjects. A typed word is absent from
+# the material only until a source file adopts it (`"print"` was adopted by a
+# layout union and silently invalidated all 22 forms). The subject of each slot
+# is DERIVED here, at run time, against the material this run mutates:
+#   - the preferred word is kept when subject_sites (literal mode) proves it
+#     absent from src AND from the baseline bundle, and no earlier slot took it
+#     (every slot carries a DISTINCT word, so the expected offender count below
+#     is one per word whatever the guard's per-value grouping);
+#   - otherwise the first MEMBER_RESERVE word passing the same two tests;
+#   - a slot for which no candidate passes REFUSES the probe, naming the slot and
+#     every candidate with the site that rejected it. Never a silent skip.
+# The literal in each expression is rewritten to the derived word, and the
+# landing grep further down asserts the rewritten word reached the bundle.
+MEMBER_RESERVE=(assemble calibrate dismantle encrypt fumigate harvest inflate juggle knead laminate moisten neutralize oxidize pressurize quarantine rehearse sterilize triangulate unionize vaccinate winnow xerox yodel zonate)
+declare -A MEMBER_TAKEN=()
+MEMBER_DERIVED=()
+MEMBER_DERIVATION_FAILED=()
+for case_desc in "${MEMBER_FORMS[@]}"; do
+  IFS='|' read -r label words expr <<< "$case_desc"
+  picked=()
+  for w in $words; do
+    tried=()
+    chosen=""
+    for cand in "$w" "${MEMBER_RESERVE[@]}"; do
+      if [ -n "${MEMBER_TAKEN[$cand]:-}" ]; then
+        tried+=("$cand (taken by ${MEMBER_TAKEN[$cand]})")
+        continue
+      fi
+      rc=0
+      sites="$(subject_sites literal "$cand")" || rc=$?
+      if [ "$rc" -eq 0 ]; then
+        chosen="$cand"
+        break
+      elif [ "$rc" -eq 1 ]; then
+        tried+=("$cand ($(echo "$sites" | paste -sd ';' -))")
+      else
+        echo "probe: STEP member-word derivation — could not read the material for \"$cand\" (subject_sites exit $rc); refusing to run." >&2
+        exit 1
+      fi
+    done
+    if [ -z "$chosen" ]; then
+      MEMBER_DERIVATION_FAILED+=("$label slot \"$w\": every candidate rejected — $(printf '%s, ' "${tried[@]}")")
+      continue
+    fi
+    MEMBER_TAKEN[$chosen]="$label"
+    picked+=("$chosen")
+    if [ "$chosen" != "$w" ]; then
+      log INFO "member forms $label: preferred \"$w\" rejected — $(printf '%s, ' "${tried[@]}")derived \"$chosen\""
+      expr="${expr//\"$w\"/\"$chosen\"}"
+    fi
+  done
+  MEMBER_DERIVED+=("$label|${picked[*]}|$expr")
+done
+if [ "${#MEMBER_DERIVATION_FAILED[@]}" -gt 0 ]; then
+  for f in "${MEMBER_DERIVATION_FAILED[@]}"; do
+    echo "probe: STEP member-word derivation — $f" >&2
+  done
+  echo "probe: refusing to run — a probe whose subject it does not control proves nothing." >&2
+  exit 1
+fi
+MEMBER_FORMS=("${MEMBER_DERIVED[@]}")
 MEMBER_WORDS=()
 for case_desc in "${MEMBER_FORMS[@]}"; do
   IFS='|' read -r _label words _expr <<< "$case_desc"
@@ -708,10 +845,18 @@ for case_desc in "${MEMBER_FORMS[@]}"; do
 done
 MEMBER_FORMS_FILE="$SCRATCH/member-forms.txt"
 printf '%s\n' "${MEMBER_FORMS[@]}" > "$MEMBER_FORMS_FILE"
+# Belt, independent of the derivation above: every subject about to be
+# injected is re-proven absent by the same predicate. If the derivation is
+# ever bypassed, this names the collision and invalidates the section.
 MEMBER_SETUP_OK=true
 for w in "${MEMBER_WORDS[@]}"; do
-  if grep -rqF -- "\"$w\"" "$CLONE/src"; then
-    FAILURES+=("MUST_BLOCK member forms — \"$w\" ALREADY exists in the clone's sources, it would not be a subject this probe controls — probe invalid")
+  rc=0
+  sites="$(subject_sites literal "$w")" || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    FAILURES+=("MUST_BLOCK member forms — \"$w\" ALREADY exists in the material ($(echo "$sites" | paste -sd ';' -)) — not a subject this probe controls — probe invalid")
+    MEMBER_SETUP_OK=false
+  elif [ "$rc" -ne 0 ]; then
+    FAILURES+=("MUST_BLOCK member forms — could not prove \"$w\" absent (subject_sites exit $rc) — probe invalid")
     MEMBER_SETUP_OK=false
   fi
 done
