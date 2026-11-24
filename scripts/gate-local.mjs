@@ -13,9 +13,15 @@
  * What counts as "cannot run locally" is decided from what the step CONTAINS and is
  * declared in ONE place: SKIP_RULES below.
  *
+ * A step that CAN run locally but whose host prerequisite is absent (PRECONDITIONS
+ * below: today, the Playwright browsers a real-browser step launches) is reported
+ * COULD-NOT-RUN with one line naming what is missing and how to provision it —
+ * never executed into a generic red, never counted as a pass.
+ *
  * Anything in the workflow this runner cannot interpret (an unknown key, a matrix,
  * a non-bash shell, an `if:` it cannot classify) throws GateLocalError naming it —
- * exit 2. Exit 1 = a step that ran failed. Exit 0 = every step that ran passed.
+ * exit 2. Exit 1 = a step that ran failed. Exit 2 also when no step failed but a
+ * step could not run (the gate cannot judge). Exit 0 = every step ran and passed.
  *
  * Usage:
  *   pnpm gate:local                        run every runnable step of ci.yml
@@ -34,7 +40,15 @@
  * same files CI would (dist/, .next/ in sandbox/). Run it on a clean worktree.
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  openSync,
+  readFileSync,
+  readSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
@@ -123,6 +137,108 @@ export const SKIP_RULES = [
     rewrite: (c) => (c.opts.installBrowsers ? c.run.replace(/\s--with-deps\b/g, "") : c.run),
   },
 ];
+
+// ── PRECONDITIONS — host prerequisites a runnable step needs, checked at RUN time.
+// A step a precondition applies to is never executed while its prerequisite is
+// absent: it is reported COULD-NOT-RUN with the line `check` returns. `applies`
+// sees the step's run EXPANDED through package.json scripts (`pnpm test:browser`
+// -> `playwright test`), so the form the workflow uses to invoke the tool does
+// not matter. `attach` derives, from the same job, what `check` needs; when it
+// cannot, buildPlan throws (fail-closed), it never drops the precondition.
+export const PRECONDITIONS = [
+  {
+    id: "playwright-browsers",
+    // `playwright test` launches the browsers of the job's `playwright install`
+    // step. DECLARED DIVERGENCE: a step reaching Playwright through a node script
+    // (not the CLI, not a package script) is not decidable from the text.
+    applies: (c) => /\bplaywright\s+test\b/.test(c.expanded),
+    attach: (c) => {
+      const installs = c.job.steps
+        .map((s) => (typeof s?.run === "string" ? s.run : ""))
+        .flatMap((r) => r.split("\n"))
+        .filter((l) => /\bplaywright\s+install\b/.test(l) && !/\binstall-deps\b/.test(l));
+      if (installs.length !== 1) {
+        throw new GateLocalError(
+          `${c.where}: runs \`playwright test\` but its job has ${installs.length} \`playwright install\` line(s) — exactly one is needed to derive which browsers it launches`,
+        );
+      }
+      const installRun = installs[0].replace(/\s--with-deps\b/g, "").trim();
+      return { installRun, dryRun: `${installRun} --dry-run` };
+    },
+    check: (need, cwd) => playwrightBrowserGap(need, cwd),
+  },
+];
+
+/**
+ * Expand `pnpm <script>` / `pnpm run <script>` / `npm run <script>` through the
+ * package.json scripts of the step's directory, recursively (a cycle stops the walk).
+ */
+export function expandScripts(run, scripts = {}, seen = new Set()) {
+  return run.replace(/\b(?:pnpm(?:\s+run)?|npm\s+run)\s+([\w:.-]+)/g, (whole, name) => {
+    if (typeof scripts[name] !== "string" || seen.has(name)) return whole;
+    return `${whole} [${expandScripts(scripts[name], scripts, new Set([...seen, name]))}]`;
+  });
+}
+
+const isElf = (file) => {
+  const buf = Buffer.alloc(4);
+  const fd = openSync(file, "r");
+  try {
+    return readSync(fd, buf, 0, 4, 0) === 4 && buf.toString("latin1") === "\x7fELF";
+  } finally {
+    closeSync(fd);
+  }
+};
+
+/** Executable ELF files at most `depth` levels under `dir` (a browser's install location). */
+function executablesUnder(dir, depth) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const p = resolve(dir, name);
+    const st = statSync(p);
+    if (st.isDirectory() && depth > 0) out.push(...executablesUnder(p, depth - 1));
+    else if (st.isFile() && st.mode & 0o111 && isElf(p)) out.push(p);
+  }
+  return out;
+}
+
+/**
+ * Ask Playwright itself (`<install line> --dry-run`) where the browsers this job
+ * installs live, then check them on the host. Returns null when every browser is
+ * present with its system libraries, else the single could-not-run line.
+ */
+export function playwrightBrowserGap({ installRun, dryRun }, cwd) {
+  const r = spawnSync("bash", ["-c", dryRun], { cwd, encoding: "utf8" });
+  if (r.status !== 0) {
+    return `could not ask Playwright which browsers it needs: \`${dryRun}\` exited ${r.status} (${(r.stderr || "").trim().split("\n").pop()})`;
+  }
+  const locations = [...r.stdout.matchAll(/^\s*Install location:\s*(\S.*)$/gm)].map((m) =>
+    m[1].trim(),
+  );
+  if (locations.length === 0) {
+    return `\`${dryRun}\` listed no install location — cannot tell whether the browsers are present`;
+  }
+  const missing = locations.filter((l) => !existsSync(l));
+  if (missing.length > 0) {
+    return `Playwright browser(s) not installed: ${missing.join(", ")} — provision without root: \`pnpm gate:local --install-browsers\` (runs \`${installRun}\`), or run that command once`;
+  }
+  // DECLARED DIVERGENCE: the system-library check reads `ldd`, Linux only; on
+  // another OS Playwright's own launch-time host validation is the only check.
+  if (process.platform !== "linux") return null;
+  const libs = new Set();
+  for (const loc of locations) {
+    for (const exe of executablesUnder(loc, 2)) {
+      const l = spawnSync("ldd", [exe], { encoding: "utf8" });
+      if (l.error)
+        return `cannot verify browser system libraries: \`ldd\` unavailable (${l.error.message})`;
+      for (const m of l.stdout.matchAll(/^\s*(\S+)\s+=>\s+not found/gm)) libs.add(m[1]);
+    }
+  }
+  if (libs.size > 0) {
+    return `browser system libraries missing: ${[...libs].sort().join(", ")} — needs root, once: \`sudo ${installRun.replace(/\binstall\b/, "install-deps")}\``;
+  }
+  return null;
+}
 
 // ── EVENT_EMULATION — the single table of what a local run supplies for CI's events.
 // A local run is the SUPERSET of CI's events: a step runs when its `if:` holds under
@@ -285,6 +401,10 @@ export function buildPlan(yamlText, opts = {}) {
       const run = step.run ?? "";
       const text = `${run}\n${Object.values(env).join("\n")}`;
       const rctx = { job, step, run, text, yamlText, opts };
+      const cwdOfStep = step["working-directory"] ?? defaults["working-directory"] ?? ".";
+      const expanded = expandScripts(run, opts.scriptsFor?.(cwdOfStep) ?? {});
+      const pre = PRECONDITIONS.find((p) => p.applies({ expanded }));
+      const precondition = pre ? { id: pre.id, need: pre.attach({ job, where }) } : null;
       const rule = SKIP_RULES.find((r) => r.test(rctx));
       let skip = rule ? { rule: rule.id, reason: rule.reason(rctx) } : null;
       let finalRun = skip
@@ -328,6 +448,7 @@ export function buildPlan(yamlText, opts = {}) {
         env: { ...baseEnv, ...finalEnv },
         cwd: step["working-directory"] ?? defaults["working-directory"] ?? ".",
         skip,
+        precondition,
       };
     });
     plan.push({ jobId, jobName: String(job.name ?? jobId), steps });
@@ -336,7 +457,15 @@ export function buildPlan(yamlText, opts = {}) {
 }
 
 /** Execute a plan. `exec(step, root)` returns an exit status; injectable for tests. */
-export function runPlan(plan, { root = REPO_ROOT, exec = defaultExec, log = console.log } = {}) {
+export function runPlan(
+  plan,
+  {
+    root = REPO_ROOT,
+    exec = defaultExec,
+    log = console.log,
+    checkPrecondition = defaultCheck,
+  } = {},
+) {
   const results = [];
   for (const job of plan) {
     log(`\n=== job ${job.jobId} (${job.jobName}) ===`);
@@ -347,6 +476,15 @@ export function runPlan(plan, { root = REPO_ROOT, exec = defaultExec, log = cons
         results.push({ tag, status: "skipped", reason: step.skip.reason });
         continue;
       }
+      if (step.precondition) {
+        const gap = checkPrecondition(step, root);
+        if (gap) {
+          const reason = `[${step.precondition.id}] ${gap}`;
+          log(`--- COULD-NOT-RUN ${tag}\n    ${reason}`);
+          results.push({ tag, status: "could-not-run", reason });
+          continue;
+        }
+      }
       log(`--- RUN  ${tag}`);
       const code = exec(step, root);
       results.push({ tag, status: code === 0 ? "passed" : "failed", code });
@@ -354,6 +492,11 @@ export function runPlan(plan, { root = REPO_ROOT, exec = defaultExec, log = cons
     }
   }
   return results;
+}
+
+function defaultCheck(step, root) {
+  const pre = PRECONDITIONS.find((p) => p.id === step.precondition.id);
+  return pre.check(step.precondition.need, resolve(root, step.cwd));
 }
 
 function defaultExec(step, root) {
@@ -369,13 +512,15 @@ export function summarize(results) {
   const total = results.length;
   const skipped = results.filter((r) => r.status === "skipped");
   const failed = results.filter((r) => r.status === "failed");
-  const ran = total - skipped.length;
+  const couldNot = results.filter((r) => r.status === "could-not-run");
+  const ran = total - skipped.length - couldNot.length;
   const lines = [
-    `gate:local — ${ran} run / ${total} total, ${skipped.length} skipped, ${failed.length} failed`,
+    `gate:local — ${ran} run / ${total} total, ${skipped.length} skipped, ${failed.length} failed, ${couldNot.length} could not run`,
   ];
   for (const s of skipped) lines.push(`  skipped: ${s.tag} — ${s.reason}`);
+  for (const c of couldNot) lines.push(`  COULD-NOT-RUN: ${c.tag} — ${c.reason}`);
   for (const f of failed) lines.push(`  FAILED:  ${f.tag} (exit ${f.code})`);
-  return { text: lines.join("\n"), failed: failed.length };
+  return { text: lines.join("\n"), failed: failed.length, couldNotRun: couldNot.length };
 }
 
 function main(argv) {
@@ -396,14 +541,27 @@ function main(argv) {
     contexts,
     base,
     installBrowsers: argv.includes("--install-browsers"),
+    // The scripts of the package.json in the step's own working directory; a
+    // directory with none has no scripts to expand (its run is read as written).
+    scriptsFor: (cwd) => {
+      const pkg = resolve(REPO_ROOT, cwd, "package.json");
+      return existsSync(pkg) ? (JSON.parse(readFileSync(pkg, "utf8")).scripts ?? {}) : {};
+    },
   });
   const list = argv.includes("--list");
   const log = list
     ? (m) => console.log(String(m).replace(/^--- RUN /, "--- WOULD RUN "))
     : console.log;
-  const { text, failed } = summarize(runPlan(plan, { exec: list ? () => 0 : defaultExec, log }));
+  const { text, failed, couldNotRun } = summarize(
+    runPlan(plan, {
+      exec: list ? () => 0 : defaultExec,
+      checkPrecondition: list ? () => null : defaultCheck,
+      log,
+    }),
+  );
   console.log(`\n${text}`);
-  return failed > 0 ? 1 : 0;
+  if (failed > 0) return 1;
+  return couldNotRun > 0 ? 2 : 0;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
