@@ -62,9 +62,9 @@ describe("readSourceTokens — a quote is a delimiter only where the grammar say
     const r = read(text);
     const tpl = r.literals.find((l) => l.kind === "template");
     expect(tpl?.parts.map(([s, e]) => text.slice(s, e))).toEqual(["a ", " b ", " d"]);
-    expect(r.literals.filter((l) => l.kind === "string").map((l) => text.slice(l.start, l.end))).toEqual([
-      "'in'",
-    ]);
+    expect(
+      r.literals.filter((l) => l.kind === "string").map((l) => text.slice(l.start, l.end)),
+    ).toEqual(["'in'"]);
   });
 
   it("reads the parts of a template literal TYPE", () => {

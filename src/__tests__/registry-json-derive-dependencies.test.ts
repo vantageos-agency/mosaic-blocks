@@ -105,7 +105,9 @@ describe("dependenciesOfFiles — union over every file of an item", () => {
     // `/'/` used to open a fake string that swallowed the import line below it.
     const f = fixture(
       "RegexQuote.ts",
-      ["const re = /'/;", 'import { Button } from "@heroui/react";', "const s = 'x';", ""].join("\n"),
+      ["const re = /'/;", 'import { Button } from "@heroui/react";', "const s = 'x';", ""].join(
+        "\n",
+      ),
     );
     expect(readFileSync(f, "utf-8")).toContain("/'/"); // mutation landed
     expect(dependenciesOfFiles([f], ELIGIBLE)).toEqual(["@heroui/react"]);
@@ -115,7 +117,7 @@ describe("dependenciesOfFiles — union over every file of an item", () => {
     const f = fixture(
       "JsxApostrophe.tsx",
       [
-        "export const A = () => <p>it's import \"ghost-in-jsx-text\"</p>;",
+        'export const A = () => <p>it\'s import "ghost-in-jsx-text"</p>;',
         "const s = 'x';",
         'import { Button } from "@heroui/react";',
         "",

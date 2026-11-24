@@ -91,8 +91,8 @@ const FORMS: Array<[string, string[], string[]]> = [
   // fooled when the closing quote was on the same line.
   [
     "a quote inside a regex literal",
-    ["const __zqRe = /'/; void __zqRe; " + REAL[0]],
-    ["const __zqRe = /x/; void __zqRe; " + REAL[0]],
+    [`const __zqRe = /'/; void __zqRe; ${REAL[0]}`],
+    [`const __zqRe = /x/; void __zqRe; ${REAL[0]}`],
   ],
 ];
 
