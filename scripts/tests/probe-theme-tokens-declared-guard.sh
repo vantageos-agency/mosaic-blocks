@@ -737,9 +737,9 @@ expect MUST_BLOCK "DECL — literal-value stale row in a copy of the REAL src/st
 # quote-pairing scanner reads as a delimiter): an apostrophe in a `//` comment,
 # in a block comment, in a JSDoc block, and a quote inside a regex literal.
 # Each is placed immediately BEFORE three real strings appended to every site:
-# an undeclared utility ('bg-zqprobe-<k>-f1', FORM 1), an undeclared
-# var(--color-zqprobe-<k>-f2) (FORM 2) and an undeclared utility in a template
-# literal (`text-zqprobe-<k>-tpl ${...}`) — the positive pole: a real
+# an undeclared utility ('bg-zqd1-<k>-f1', FORM 1), an undeclared
+# var(--color-zqd1-<k>-f2) (FORM 2) and an undeclared utility in a template
+# literal (`text-zqd1-<k>-tpl ${...}`) — the positive pole: a real
 # undeclared token in a string and in a template is still flagged.
 #
 # VERDICT TEST: for each hiding form the guard's full output (exit code and
@@ -749,8 +749,8 @@ expect MUST_BLOCK "DECL — literal-value stale row in a copy of the REAL src/st
 # strings the quote swallows, so its verdict differs from the control (a flip).
 # Every injection is grep-asserted as landed BEFORE any verdict is read.
 # ---------------------------------------------------------------------------
-if grep -rqF -- 'zqprobe' "$REPO_ROOT/src"; then
-  echo "probe: 'zqprobe' already occurs in the real src/ — the D1 nonce is not unique, premise lost." >&2
+if grep -rqF -- 'zqd1' "$REPO_ROOT/src"; then
+  echo "probe: 'zqd1' already occurs in the real src/ — the D1 nonce is not unique, premise lost." >&2
   exit 1
 fi
 mapfile -t D1_ELIGIBLE < <(cd "$REPO_ROOT" && find src/components -name '*.tsx' ! -name '*.test.tsx' ! -name '*.stories.tsx' | LC_ALL=C sort)
@@ -774,8 +774,8 @@ d1_make_copy() {
     f="$dest/$site"
     q="'"
     [ "$mode" = control ] && q=""
-    local a="const __zqA = 'bg-zqprobe-$k-f1'; const __zqB = 'var(--color-zqprobe-$k-f2)';"
-    local tpl="const __zqT = \`text-zqprobe-$k-tpl \${__zqA}\`;"
+    local a="const __zqA = 'bg-zqd1-$k-f1'; const __zqB = 'var(--color-zqd1-$k-f2)';"
+    local tpl="const __zqT = \`text-zqd1-$k-tpl \${__zqA}\`;"
     {
       echo
       case "$kind" in
@@ -787,9 +787,9 @@ d1_make_copy() {
       echo "$tpl"
       echo "void [__zqA, __zqB, __zqT];"
     } >> "$f"
-    assert_landed "$f" "bg-zqprobe-$k-f1" "D1 $kind/$mode site $k ($site)"
-    assert_landed "$f" "var(--color-zqprobe-$k-f2)" "D1 $kind/$mode site $k ($site)"
-    assert_landed "$f" "text-zqprobe-$k-tpl" "D1 $kind/$mode site $k ($site)"
+    assert_landed "$f" "bg-zqd1-$k-f1" "D1 $kind/$mode site $k ($site)"
+    assert_landed "$f" "var(--color-zqd1-$k-f2)" "D1 $kind/$mode site $k ($site)"
+    assert_landed "$f" "text-zqd1-$k-tpl" "D1 $kind/$mode site $k ($site)"
     if [ "$mode" = mutated ]; then
       case "$kind" in
         sl) assert_landed "$f" "// zq: the column's width" "D1 hider $kind site $k" ;;
@@ -818,7 +818,7 @@ for kind in sl bl jd rx; do
   names_all=1
   for k in 1 2 3; do
     for part in f1 f2 tpl; do
-      printf '%s' "$mut" | grep -qF -- "zqprobe-$k-$part" || names_all=0
+      printf '%s' "$mut" | grep -qF -- "zqd1-$k-$part" || names_all=0
     done
   done
   ctrl_exit="$(printf '%s' "$ctrl" | head -1)"

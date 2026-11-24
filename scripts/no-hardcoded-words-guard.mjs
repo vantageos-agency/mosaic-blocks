@@ -415,6 +415,13 @@ function classifyContentShape(str) {
   return `unclassified shape ("${token}") — cannot confirm this is not user-facing text; classify explicitly or add a declared // allow-hardcoded-word marker`;
 }
 
+function refuseToJudge(what) {
+  console.error(
+    `REFUSING TO JUDGE: no-hardcoded-words-guard ${what}. A bundle it cannot read token by token is a bundle it cannot certify; refusing rather than guessing.`,
+  );
+  process.exit(2);
+}
+
 /**
  * TOKEN READER — the ONE place text is read out of the bundle.
  *
