@@ -96,6 +96,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { maskCommentsAndStrings } from "../../scripts/docs-counts-shared.mjs";
 
 const COMPONENTS_ROOT = path.resolve(__dirname, "..", "components");
 const FIXTURES_ROOT = path.resolve(__dirname, "fixtures");
@@ -1468,7 +1469,10 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
    * nor explicitly written off FAILS this test by name.
    */
   it("COVERAGE: every public Mosaic* export is ANALYZED or written off with a reason — none silently skipped", () => {
-    const indexSource = fs.readFileSync(path.resolve(__dirname, "..", "index.ts"), "utf-8");
+    // Comments masked: an `export { X } from "…";` inside a comment is not a public export.
+    const indexSource = maskCommentsAndStrings(
+      fs.readFileSync(path.resolve(__dirname, "..", "index.ts"), "utf-8"),
+    );
 
     // Public Mosaic* VALUE exports (type-only exports are not components).
     const publicExports = new Set<string>();

@@ -13,4 +13,5 @@
 
 - `scripts/docs-counts-shared.mjs` (+ `.d.mts`): `extractRealExports` masks before matching; parameter renamed `rawSource`.
 - `scripts/registry-json-derive.mjs`: caller-side mask removed (redundant; output unchanged).
+- `src/__tests__/no-lying-prop-contract.test.ts`: its own copy of the barrel regex now reads comment-masked text.
 - `src/__tests__/docs-counts-export-domain.test.ts`: one mutation per comment form, positive pole, idempotence, line number.
