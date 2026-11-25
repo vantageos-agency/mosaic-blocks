@@ -141,7 +141,7 @@
  *
  * Usage: node scripts/no-hardcoded-words-guard.mjs
  *   Scans every client bundle the package ships, relative to the current
- *   working directory: dist/index.cjs and, for the AG Grid entry, dist/grid.cjs
+ *   working directory: dist/index.cjs and the entry bundles dist/grid.cjs, dist/registre.cjs
  *   (listed from package.json "exports" by clientBundlePaths) — always the
  *   real artifacts at their real paths, never redirectable. An earlier
  *   revision accepted a `NO_HARDCODED_WORDS_DIST` override so probes could
@@ -230,7 +230,7 @@ const DIST_PATH = resolve(process.cwd(), "dist", "index.cjs");
  * Every client bundle the package ships: the CommonJS (`require`) target of each entry in the
  * working directory's package.json "exports", except the declared non-component entries
  * (NON_COMPONENT_ENTRIES, shared with docs-counts: "./server"). Today `dist/index.cjs` (the root
- * entry, DIST_PATH) and `dist/grid.cjs` (the AG Grid components, "./grid"). A component moved to
+ * entry, DIST_PATH), `dist/grid.cjs` ("./grid") and `dist/registre.cjs` ("./registre"). A component moved to
  * its own entry stays scanned: the list is read from the exports map, never typed here. The
  * ratchet below counts occurrences across ALL of them. An unreadable package.json, an entry
  * without a `require` target, or a list without DIST_PATH refuses (exit 2).

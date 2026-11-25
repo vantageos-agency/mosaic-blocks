@@ -2,7 +2,8 @@
  * Registry-screen blocks — behaviour contract ported from the first host's tests
  * (grille, écran, ligne-détail) plus the shared panel shell. Every import comes
  * from a PACKAGE ENTRY: GrilleRegistre from the AG Grid entry (src/grid.ts,
- * `@vantageos/mosaic-blocks/grid`), the three others from the root (src/index.ts).
+ * `@vantageos/mosaic-blocks/grid`), the three others from the registry-screen entry
+ * (src/registre.ts, `@vantageos/mosaic-blocks/registre`).
  * These tests fail until the four blocks are exported from those entries.
  *
  * The labels below are test fixtures supplied by the host, exactly as a real
@@ -22,7 +23,7 @@ import {
   type RegistreEcranLabels,
   RegistreLigneDetail,
   type RegistreLigneDetailLabels,
-} from "../../index.js";
+} from "../../registre.js";
 
 afterEach(cleanup);
 

@@ -56,17 +56,23 @@ pnpm add @vantageos/mosaic-blocks
 | `@clerk/nextjs` | `^7` | Using any auth component |
 | `@vantageos/cloud-identity` | `>=0.6.0` | `MosaicMultiTenantProvider` |
 | `svix` | `^1.0.0` | `MosaicClerkWebhookHandler` only |
-| `@heroui/react` | `^3.2.5` | Always (the registry-screen blocks import it from the root entry) |
-| `lucide-react` | `^0.511.0` | Always (the registry-screen blocks import it from the root entry) |
+| `@heroui/react` | `^3.2.5` | Optional — only for the registry-screen entry `@vantageos/mosaic-blocks/registre` (with HeroUI's styles) |
+| `lucide-react` | `^0.511.0` | Optional — only for the registry-screen entry `@vantageos/mosaic-blocks/registre` |
 | `ag-grid-community` | `^36.1.0` | Optional — only for the AG Grid entry `@vantageos/mosaic-blocks/grid` |
 | `ag-grid-react` | `^36.1.0` | Optional — only for the AG Grid entry `@vantageos/mosaic-blocks/grid` |
 
 ```bash
 # Minimal — no auth
-pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss @heroui/react lucide-react
+pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss
 
 # Full — with Clerk auth
-pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss @heroui/react lucide-react @clerk/nextjs @vantageos/cloud-identity
+pnpm add @vantageos/mosaic-blocks react react-dom tailwindcss @clerk/nextjs @vantageos/cloud-identity
+
+# Registry-screen blocks (@vantageos/mosaic-blocks/registre)
+pnpm add @heroui/react lucide-react
+
+# AG Grid components (@vantageos/mosaic-blocks/grid)
+pnpm add ag-grid-community ag-grid-react
 ```
 
 ---
@@ -173,7 +179,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 
 ## 6. Component Catalogue Summary
 
-192 exported `Mosaic*` components across 9 sections (323 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from the package's component entries (`src/index.ts`, and `src/grid.ts` for the AG Grid components) again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
+192 exported `Mosaic*` components across 9 sections (323 total named exports including hooks, variant helpers, and unprefixed aliases such as `Tooltip`/`Accordion`). This count is enforced by `src/__tests__/readme-matches-exports.test.ts` — it fails CI if this README drifts from the package's component entries (`src/index.ts`, plus `src/grid.ts` for the AG Grid components and `src/registre.ts` for the registry-screen blocks) again. Full reference: [docs/components-catalog.md](docs/components-catalog.md).
 
 > There is **no "Debate" section**. No `Mosaic*` debate component (room/timer/participant) is exported by this package — despite the "absorbed from anydebate" origin story below, the debate UI was never ported. If you need debate-room UI, it does not exist here yet.
 
@@ -189,7 +195,7 @@ For OKLCH design tokens, pair with `@vantageos/mosaic-tokens` — see [Section 1
 | Landing & utility blocks | `MosaicHeroSplit`, `MosaicStatsGrid`, `MosaicPricingCard`, `MosaicCounter`, `MosaicThemeToggle` | 13 |
 | Theming | `MosaicThemeProvider` | 1 |
 
-All exports: `import { ComponentName } from "@vantageos/mosaic-blocks"`, except the AG Grid components, which come from their own entry (below).
+All exports: `import { ComponentName } from "@vantageos/mosaic-blocks"`, except the AG Grid components and the registry-screen blocks, which come from their own entries (below) so the root never needs their peers.
 
 **AG Grid entry** — `@vantageos/mosaic-blocks/grid`: `GrilleRegistre` (AG Grid Community grid, every column sortable/filterable/resizable, stable row id), its theme helpers `registreGridTheme`, `fitGridWidthStrategy` and `refitColumns`, and `MosaicDocumentTable` (rendered through `GrilleRegistre`). The root entry never imports an AG Grid package, so a host that renders none of these installs neither `ag-grid-community` nor `ag-grid-react` (both optional peers). A host that renders one installs both and imports from the subpath:
 
@@ -197,7 +203,11 @@ All exports: `import { ComponentName } from "@vantageos/mosaic-blocks"`, except 
 import { GrilleRegistre, MosaicDocumentTable } from "@vantageos/mosaic-blocks/grid";
 ```
 
-**Registry-screen blocks** (`src/components/registre/`, root entry): `RegistreEcran` (fullscreen section + toolbar: global search, column chooser, fullscreen toggle), `PanneauRegistreShell` (resizable HeroUI drawer with ArrowUp/ArrowDown row navigation) and `RegistreLigneDetail` (declaration-driven per-field detail and edit), plus `ChoixColonnes` and the `ColonneRegistre` declaration type; the grid they frame is `GrilleRegistre` from the AG Grid entry. Columns, row shape, labels and formatters are props. They need the peer dependencies `@heroui/react` (with its styles) and `lucide-react`.
+**Registry-screen entry** — `@vantageos/mosaic-blocks/registre`: `RegistreEcran` (fullscreen section + toolbar: global search, column chooser, fullscreen toggle), `PanneauRegistreShell` (resizable HeroUI drawer with ArrowUp/ArrowDown row navigation) and `RegistreLigneDetail` (declaration-driven per-field detail and edit), plus `ChoixColonnes`, `estVisible` and the `ColonneRegistre` declaration types; the grid they frame is `GrilleRegistre` from the AG Grid entry. Columns, row shape, labels and formatters are props. They need the optional peers `@heroui/react` (with its styles) and `lucide-react`; the root entry never imports either.
+
+```tsx
+import { RegistreEcran, PanneauRegistreShell } from "@vantageos/mosaic-blocks/registre";
+```
 
 ---
 

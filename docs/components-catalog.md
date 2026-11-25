@@ -4,7 +4,8 @@
 
 Documented: **85 Mosaic* components + 10 hooks** — a curated subset with usage
 snippets and prop notes, not the full public API. The package (root entry
-`src/index.ts` plus the AG Grid entry `src/grid.ts`) exports
+`src/index.ts` plus the AG Grid entry `src/grid.ts` and the registry-screen entry
+`src/registre.ts`) exports
 **192** `Mosaic*` components and **323** total named exports; see `README.md`
 Section 6 for the complete, machine-checked list of every export.
 
@@ -487,7 +488,7 @@ silently reverted.
 This catalog is a **curated subset**, not the full public API. It documents
 **85 `Mosaic*` components** and **10 hooks** <!-- count-exempt: curated-subset figures, NOT derived from src/index.ts; the 180/283 library totals on this same line ARE derived and guarded --> out of the **192** `Mosaic*`
 components (**323** total named exports) that the package's component entries
-(`src/index.ts`, `src/grid.ts`) actually export. The full 1:1 list lives in `README.md` Section 6, which is guarded
+(`src/index.ts`, `src/grid.ts`, `src/registre.ts`) actually export. The full 1:1 list lives in `README.md` Section 6, which is guarded
 by a CI test against drift.
 
 Count breakdown by section (Mosaic* components only, hooks counted separately

@@ -51,7 +51,8 @@ export const NON_COMPONENT_ENTRIES = new Map([
 /**
  * The source barrels of the component surface, derived from package.json "exports": the root
  * entry "." (`src/index.ts`) and every other JavaScript entry not declared in
- * NON_COMPONENT_ENTRIES (today "./grid" -> `src/grid.ts`, the AG Grid components). A built entry
+ * NON_COMPONENT_ENTRIES (today "./grid" -> `src/grid.ts`, the AG Grid components, and
+ * "./registre" -> `src/registre.ts`, the HeroUI registry-screen blocks). A built entry
  * `./dist/<name>.js` is the tsup entry `<name>`, whose source is `src/<name>.ts`.
  *
  * Fail-closed: an exports map without ".", an entry whose import target is not

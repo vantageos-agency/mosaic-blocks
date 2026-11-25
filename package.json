@@ -21,6 +21,11 @@
       "import": "./dist/grid.js",
       "require": "./dist/grid.cjs"
     },
+    "./registre": {
+      "types": "./dist/registre.d.ts",
+      "import": "./dist/registre.js",
+      "require": "./dist/registre.cjs"
+    },
     "./styles.css": "./dist/styles.css"
   },
   "main": "./dist/index.cjs",
@@ -95,6 +100,10 @@
     "@clerk/nextjs": {
       "optional": true
     },
+    "@heroui/react": {
+      "optional": true,
+      "reason": "Loaded only by the ./registre entry (RegistreEcran, ChoixColonnes, PanneauRegistreShell). The root entry never imports it."
+    },
     "@vantageos/cloud-identity": {
       "optional": true
     },
@@ -105,6 +114,10 @@
     "ag-grid-react": {
       "optional": true,
       "reason": "Loaded only by the ./grid entry (GrilleRegistre, MosaicDocumentTable). The root entry never imports it."
+    },
+    "lucide-react": {
+      "optional": true,
+      "reason": "Loaded only by the ./registre entry (RegistreEcran, PanneauRegistreShell, RegistreLigneDetail). The root entry never imports it."
     },
     "recharts": {
       "optional": true

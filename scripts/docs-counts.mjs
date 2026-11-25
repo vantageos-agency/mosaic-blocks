@@ -162,7 +162,7 @@ if (JSON_MODE && !CHECK_MODE) {
 
 // ---------------------------------------------------------------------------
 // 1. Derive the canonical counts from the component surface: src/index.ts plus
-//    every other component entry (componentBarrels: today src/grid.ts).
+//    every other component entry (componentBarrels: today src/grid.ts, src/registre.ts).
 // ---------------------------------------------------------------------------
 
 function deriveCounts() {

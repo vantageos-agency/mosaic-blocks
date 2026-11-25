@@ -77,7 +77,7 @@ import {
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 const README_PATH = path.resolve(REPO_ROOT, "README.md");
 // The component surface: src/index.ts plus every other component entry of package.json
-// "exports" (componentBarrels — today src/grid.ts, the AG Grid components).
+// "exports" (componentBarrels — today src/grid.ts and src/registre.ts).
 const BARREL_SOURCES = componentBarrels(REPO_ROOT).map(({ path: rel }) =>
   fs.readFileSync(path.resolve(REPO_ROOT, rel), "utf-8"),
 );
