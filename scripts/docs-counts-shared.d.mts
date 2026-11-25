@@ -47,4 +47,5 @@ export const CATALOG_LIVE_LIB_RE: RegExp;
 export const CATALOG_FOOTER_RE: RegExp;
 export const NON_COMPONENT_ENTRIES: Map<string, string>;
 export function componentBarrels(root: string): Array<{ subpath: string; path: string }>;
+export function barrelsFromExports(exportsField: unknown): Array<{ subpath: string; path: string }>;
 export function extractSurfaceExports(root: string): Set<string>;

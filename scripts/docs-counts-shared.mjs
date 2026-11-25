@@ -63,11 +63,33 @@ export const NON_COMPONENT_ENTRIES = new Map([
  */
 export function componentBarrels(root) {
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-  if (!pkg.exports || typeof pkg.exports !== "object" || !pkg.exports["."]) {
+  const barrels = barrelsFromExports(pkg.exports);
+  for (const { subpath, path } of barrels) {
+    if (!existsSync(join(root, path))) {
+      throw new Error(
+        `componentBarrels: export "${subpath}" builds ./dist/${path.slice(4, -3)}.js, but its source ${path} does not exist.`,
+      );
+    }
+  }
+  return barrels;
+}
+
+/**
+ * The source barrels named by a package.json "exports" map, without touching the disk — for a
+ * caller that reads package.json at a git ref (the PR-title guard). Same rules as
+ * `componentBarrels`, which adds the existence check: "." required; a bare string pointing at
+ * JavaScript, or an import target that is not `./dist/<name>.js`, throws naming the entry;
+ * NON_COMPONENT_ENTRIES and asset strings are skipped.
+ *
+ * @param {unknown} exportsField the "exports" value of a package.json
+ * @returns {Array<{ subpath: string, path: string }>} root first
+ */
+export function barrelsFromExports(exportsField) {
+  if (!exportsField || typeof exportsField !== "object" || !exportsField["."]) {
     throw new Error('componentBarrels: package.json has no "exports" map with a "." entry.');
   }
   const barrels = [];
-  for (const [subpath, target] of Object.entries(pkg.exports)) {
+  for (const [subpath, target] of Object.entries(exportsField)) {
     if (typeof target === "string") {
       if (/\.c?js$/.test(target)) {
         throw new Error(
@@ -83,13 +105,7 @@ export function componentBarrels(root) {
         `componentBarrels: export "${subpath}" has import target ${JSON.stringify(target?.import)}, not ./dist/<name>.js — cannot tell its source barrel.`,
       );
     }
-    const path = `src/${built[1]}.ts`;
-    if (!existsSync(join(root, path))) {
-      throw new Error(
-        `componentBarrels: export "${subpath}" builds ./dist/${built[1]}.js, but its source ${path} does not exist.`,
-      );
-    }
-    barrels.push({ subpath, path });
+    barrels.push({ subpath, path: `src/${built[1]}.ts` });
   }
   barrels.sort((a, b) => (a.subpath === "." ? -1 : b.subpath === "." ? 1 : 0));
   return barrels;
