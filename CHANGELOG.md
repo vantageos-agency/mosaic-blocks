@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — `MosaicCreateOrgDialog.slugPlaceholder` is optional again (unreleased)
+
+`slugPlaceholder` was added as a REQUIRED prop in `0.5.29-alpha` (#100, when the hardcoded `"acme-inc"` example was removed), so every caller written before it failed to type-check (`TS2741: Property 'slugPlaceholder' is missing`). It is now optional. Omitted, the slug field renders no placeholder: the library still ships no example word of its own, and the field keeps its visible label (`slugFieldLabel`) as its accessible name. Passing it is unchanged. Test: `MosaicOrgPanel.test.tsx` ("renders without slugPlaceholder (optional)"). The other required string props of the dialog are unchanged.
+
 ### Changed (BREAKING for AG Grid users) — the AG Grid components move to `@vantageos/mosaic-blocks/grid`; the root entry no longer imports AG Grid (unreleased)
 
 Since `0.5.39-alpha` the root entry (`dist/index.js`, `dist/index.cjs`) imported `ag-grid-community` and `ag-grid-react` eagerly and declared them required peers, so every host had to install AG Grid: a host that never renders a grid failed its production build (`Rollup failed to resolve import "ag-grid-community" from "@vantageos/mosaic-blocks/dist/index.js"`). The components that import AG Grid now live behind their own entry, `./grid` (`src/grid.ts`, built as `dist/grid.js` / `dist/grid.cjs` / `dist/grid.d.ts`): `GrilleRegistre` (+ `GrilleRegistreProps`), `registreGridTheme`, `fitGridWidthStrategy`, `refitColumns`, and `MosaicDocumentTable` (+ `MosaicDocumentTableProps`, `MosaicDocumentTableRowContext`). The root entry imports no AG Grid package, and `ag-grid-community` / `ag-grid-react` are optional peers (`peerDependenciesMeta`). Every other export, including `RegistreEcran`, `PanneauRegistreShell`, `RegistreLigneDetail`, `ChoixColonnes`, `MosaicDocumentCriteriaPanel` and the document-review logic, stays at the root. `@heroui/react` and `lucide-react` stay required peers: the registry-screen blocks at the root import them.
