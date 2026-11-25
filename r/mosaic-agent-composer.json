@@ -5,7 +5,7 @@
   "description": "Responsive-pair agent composer: auto-selects Desktop (2-column with live preview) or Mobile (single-column + sticky CTA) via useDevice. Shared props contract: agentName, customInstructions, 4 module slots (role/persona/framework/model), labels override. Generic MosaicComposerModule type — no domain coupling.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

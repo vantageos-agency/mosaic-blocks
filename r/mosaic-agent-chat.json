@@ -7,10 +7,10 @@
     "class-variance-authority"
   ],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-approval-prompt.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-chat-composer.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-chat-message.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-chat-thread.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-approval-prompt.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-chat-composer.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-chat-message.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-chat-thread.json"
   ],
   "files": [
     {

@@ -5,8 +5,8 @@
   "description": "Compact agent pill picker with desktop dropdown / mobile drawer. Selected agents shown as removable pills.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-adaptive-modal.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-adaptive-modal.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {
