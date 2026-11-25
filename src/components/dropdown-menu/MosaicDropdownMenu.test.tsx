@@ -17,6 +17,20 @@ const ITEMS = [
   { id: "delete", label: "Delete" },
 ];
 
+/**
+ * Asserts that `label` is the ONE active menu item: the only item carrying
+ * `data-highlighted` (base-ui's highlight marker, which the styling keys on) and the
+ * element holding DOM focus (base-ui's Menu moves real focus, not
+ * aria-activedescendant).
+ */
+function expectActiveItem(label: string): void {
+  const highlighted = screen
+    .getAllByRole("menuitem")
+    .filter((item) => item.hasAttribute("data-highlighted"));
+  expect(highlighted.map((item) => item.textContent)).toEqual([label]);
+  expect(document.activeElement).toBe(highlighted[0]);
+}
+
 describe("MosaicDropdownMenu", () => {
   it("renders a trigger button", () => {
     render(<MosaicDropdownMenu trigger={<button type="button">Open menu</button>} items={ITEMS} />);
@@ -97,10 +111,14 @@ describe("MosaicDropdownMenu", () => {
     const trigger = screen.getByRole("button", { name: "Open menu" });
     trigger.focus();
     await user.keyboard("{Enter}");
-    await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+    // A keyboard open puts focus and the highlight on the first item. Waiting for that
+    // state, not for the item text, also waits until the popup is interactive: base-ui
+    // drops a key sent while the popup is rendered but not yet focused.
+    await waitFor(() => expectActiveItem("Edit"));
     await user.keyboard("{ArrowDown}");
+    await waitFor(() => expectActiveItem("Duplicate"));
     await user.keyboard("{ArrowUp}");
-    // Navigation completed without error
+    await waitFor(() => expectActiveItem("Edit"));
   });
 
   it("closes menu after selecting an item", async () => {
