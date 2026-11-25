@@ -138,6 +138,8 @@ git -C "$CLONE" checkout --quiet -b probe-base "$BASE"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
 # The guard imports the shared token reader: it is part of OUR tool, installed with it.
 cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+# ...and the shared component-entry list (NON_COMPONENT_ENTRIES) it reads to list the bundles.
+cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
 (cd "$CLONE" && pnpm install --frozen-lockfile >"$SCRATCH/install.log" 2>&1) || {
   echo "probe: STEP pnpm-install — \`pnpm@$PNPM_PIN install --frozen-lockfile\` failed in the scratch clone — cannot build anything, refusing to report a pass. Log tail:" >&2
   tail -30 "$SCRATCH/install.log" >&2
@@ -150,6 +152,8 @@ run_guard() {
   cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
   # The guard imports the shared token reader: it is part of OUR tool, installed with it.
   cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+  # ...and the shared component-entry list (NON_COMPONENT_ENTRIES) it reads to list the bundles.
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
   (cd "$CLONE" && node scripts/no-hardcoded-words-guard.mjs)
 }
 
@@ -1331,6 +1335,8 @@ else
   cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
   # The guard imports the shared token reader: it is part of OUR tool, installed with it.
   cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+  # ...and the shared component-entry list (NON_COMPONENT_ENTRIES) it reads to list the bundles.
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
   add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$GROWN_SEED_VALUE" 1
   if ! grep -qF "value: \"$GROWN_SEED_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
     FAILURES+=("MUST_BLOCK ratchet-grown — seeded BASELINE row did NOT land — probe invalid")
@@ -1464,6 +1470,8 @@ mkdir -p "$CLONE/scripts"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
 # The guard imports the shared token reader: it is part of OUR tool, installed with it.
 cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+# ...and the shared component-entry list (NON_COMPONENT_ENTRIES) it reads to list the bundles.
+cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
 add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$RATCHET_VALUE" 1
 # The component is deliberately NOT created: the row declares a value the
 # bundle does not carry, which is precisely the "fixed but undeleted" state.
@@ -1591,6 +1599,8 @@ printf '\nexport { MosaicProbeLooseBudgetSeed } from "./components/probe-loose-b
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
 # The guard imports the shared token reader: it is part of OUR tool, installed with it.
 cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+# ...and the shared component-entry list (NON_COMPONENT_ENTRIES) it reads to list the bundles.
+cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
 add_baseline_row "$CLONE/scripts/no-hardcoded-words-guard.mjs" "$LOOSE_VALUE" "$LOOSE_COUNT"
 if ! grep -qF "value: \"$LOOSE_VALUE\"" "$CLONE/scripts/no-hardcoded-words-guard.mjs"; then
   FAILURES+=("MUST_BLOCK loose-budget — seeded BASELINE row did NOT land — probe invalid")
@@ -1840,6 +1850,8 @@ git -C "$CLONE" checkout --quiet "$BASE"
 cp "$REPO_ROOT/scripts/no-hardcoded-words-guard.mjs" "$CLONE/scripts/no-hardcoded-words-guard.mjs"
 # The guard imports the shared token reader: it is part of OUR tool, installed with it.
 cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
+# ...and the shared component-entry list (NON_COMPONENT_ENTRIES) it reads to list the bundles.
+cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
 log INFO "building clean MUST_REFUSE artifact (this takes ~15-25s)..."
 if ! build_clone; then
   MUST_REFUSE_TOTAL=$((MUST_REFUSE_TOTAL + 5))
