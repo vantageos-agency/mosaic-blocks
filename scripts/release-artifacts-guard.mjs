@@ -14,7 +14,7 @@
  *   - a component PR's diff never hand-types the version or a count claim
  *     (THIS script; `pnpm gate:local` runs it against origin/main...HEAD)
  *   - a count claim is accepted only when it equals `docs-counts.mjs`'s derivation
- *     of the PR's own src/index.ts (`--check --json`, writes nothing); the version
+ *     of the PR's own component entries (src/index.ts + every package.json exports entry) (`--check --json`, writes nothing); the version
  *     is never typed in a PR
  *
  * registry.json is the exception to "carries nothing": with GitHub Actions off,
@@ -74,7 +74,7 @@ const MARKER_RE = /^\s*\/\/\s*allow-release-artifacts:\s*(\S.+)$/m;
 
 const GUARDED_COUNT_FILES = ["README.md", "docs/components-catalog.md"];
 const GUARDED_VERSION_FILES = ["package.json", "src/version.ts"];
-// `registry.json`'s item list is DERIVED from src/index.ts by
+// `registry.json`'s item list is DERIVED from the component entries (src/index.ts + every package.json exports entry) by
 // `scripts/registry-json-derive.mjs` (mirrors the docs-counts split above —
 // see that script's header for the full "why"). A PR may carry a change to it
 // ONLY when the committed file is byte-identical to what that deriver produces
@@ -225,7 +225,7 @@ async function rItemProblems() {
 let derivedCountDrift;
 /**
  * The count claims in README/catalog that DIFFER from `scripts/docs-counts.mjs`'s
- * derivation of this PR's src/index.ts (`--check --json`: reads, writes nothing).
+ * derivation of this PR's component entries (`--check --json`: reads, writes nothing).
  * Cached. A deriver that cannot run is a LOUD failure, never a pass.
  * @returns {Array<{file:string,line:number,found:string,expected:string,snippet:string}>}
  */
@@ -298,7 +298,7 @@ async function main() {
         file: path,
         line: 0,
         reason:
-          "registry.json differs from what scripts/registry-json-derive.mjs derives from this PR's src/index.ts — it is DERIVED, never hand-typed",
+          "registry.json differs from what scripts/registry-json-derive.mjs derives from this PR's component entries (src/index.ts + package.json exports) — it is DERIVED, never hand-typed",
         snippet:
           "(whole-file guard: a change is allowed only when `cmp registry.json <(node scripts/registry-json-derive.mjs --stdout)` is equal; run `pnpm registry:derive`)",
       });
@@ -346,14 +346,14 @@ async function main() {
       const additions = addedLines(diffText);
       for (const { line, text } of additions) {
         // A count claim is allowed when it EQUALS what docs-counts derives from this
-        // PR's src/index.ts; one that differs (a hand-typed number) is refused, naming it.
+        // PR's component entries; one that differs (a hand-typed number) is refused, naming it.
         if (matchesAnyCountPattern(text)) {
           const drift = countDrift().find((d) => d.file === path && d.line === line);
           if (drift) {
             violations.push({
               file: path,
               line,
-              reason: `hand-typed count claim: found ${drift.found}, docs-counts derives ${drift.expected} from src/index.ts`,
+              reason: `hand-typed count claim: found ${drift.found}, docs-counts derives ${drift.expected} from the component entries`,
               snippet: text.trim().slice(0, 160),
             });
           }
