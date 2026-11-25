@@ -15,8 +15,11 @@
  * refuses the run, naming the file and line: the census cannot say what it loads.
  *
  * What it asserts (exit 1 on a violation, exit 2 when it cannot judge):
- *   1. the root entry (".") loads no `ag-grid-*` package eagerly;
- *   2. the grid entry ("./grid") exists and loads `ag-grid-community` and `ag-grid-react`;
+ *   1. the root entry (".") loads no `ag-grid-*` package, no `@heroui/react` and no
+ *      `lucide-react` eagerly;
+ *   2. the grid entry ("./grid") loads `ag-grid-community` and `ag-grid-react` and no HeroUI or
+ *      lucide; the registre entry ("./registre") loads `@heroui/react` and `lucide-react` and no
+ *      AG Grid (PEER_ISOLATION);
  *   3. every package the root entry loads eagerly is a dependency or a NON-optional peer.
  *
  * Run from anywhere after `pnpm build`: node e2e/root-without-grid/census.mjs
@@ -131,6 +134,24 @@ for (const [subpath, files] of entries) {
   }
 }
 
+// What each component entry may and must load eagerly. The root carries the core blocks only:
+// the AG Grid components live behind "./grid" and the HeroUI registry-screen blocks behind
+// "./registre", so none of their peers reaches a consumer of the root.
+const PEER_ISOLATION = new Map([
+  [
+    ".",
+    { must: [], never: ["ag-grid-community", "ag-grid-react", "@heroui/react", "lucide-react"] },
+  ],
+  [
+    "./grid",
+    { must: ["ag-grid-community", "ag-grid-react"], never: ["@heroui/react", "lucide-react"] },
+  ],
+  [
+    "./registre",
+    { must: ["@heroui/react", "lucide-react"], never: ["ag-grid-community", "ag-grid-react"] },
+  ],
+]);
+
 const violations = [];
 const root = entries.get(".");
 if (!root) refuse('package.json exports has no "." entry');
@@ -144,13 +165,18 @@ for (const { file, eager } of root) {
     }
   }
 }
-const grid = entries.get("./grid");
-if (!grid) {
-  violations.push('package.json exports has no "./grid" entry');
-} else {
-  for (const { file, eager } of grid) {
-    for (const name of ["ag-grid-community", "ag-grid-react"]) {
-      if (!eager.has(name)) violations.push(`grid ${file} does not load ${name}`);
+for (const [subpath, { must, never }] of PEER_ISOLATION) {
+  const files = entries.get(subpath);
+  if (!files) {
+    violations.push(`package.json exports has no "${subpath}" entry`);
+    continue;
+  }
+  for (const { file, eager } of files) {
+    for (const name of must) {
+      if (!eager.has(name)) violations.push(`${subpath} ${file} does not load ${name}`);
+    }
+    for (const name of never) {
+      if (eager.has(name)) violations.push(`${subpath} ${file} loads ${name} eagerly`);
     }
   }
 }
