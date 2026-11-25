@@ -36,7 +36,7 @@ const DIRECTIVE = '"use client";\n';
 const ROOT = resolve(import.meta.dirname, "..");
 
 // Every JavaScript entry declared in package.json "exports" is a client-component entry and gets
-// the directive (today the root "." and the AG Grid entry "./grid"), read from the exports map so
+// the directive (today ".", "./grid" and "./registre"), read from the exports map so
 // a new entry cannot be missed. The declared exceptions are NON_COMPONENT_ENTRIES ("./server",
 // server-safe by design), shared with docs-counts and the no-hardcoded-words guard.
 const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8"));

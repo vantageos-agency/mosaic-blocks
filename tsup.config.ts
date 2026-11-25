@@ -6,6 +6,8 @@ export default defineConfig({
     server: "src/server.ts",
     // AG Grid components: their own entry, so the root entry never loads ag-grid-*.
     grid: "src/grid.ts",
+    // HeroUI + lucide registry-screen blocks: their own entry, so the root never loads them.
+    registre: "src/registre.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

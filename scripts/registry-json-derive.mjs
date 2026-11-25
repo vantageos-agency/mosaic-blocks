@@ -244,7 +244,7 @@ export function parseBarrelExports(src = readFileOrThrow(INDEX_TS), label = "src
 /**
  * The export domain of the whole component surface: `parseBarrelExports` over every component
  * barrel (`componentBarrels`, shared with docs-counts: src/index.ts first, then every other
- * component entry of package.json "exports" — today src/grid.ts, the AG Grid components). A
+ * component entry of package.json "exports" — today src/grid.ts and src/registre.ts). A
  * component moved behind its own entry stays a registry item.
  * @param {string} [root] repository root
  * @returns {Array<{ name: string, dir: string, file: string, isType: boolean }>}
@@ -307,11 +307,12 @@ const MULTI_PRIMARY_DIRS = new Map([
 ]);
 
 /**
- * DECLARED DIVERGENCE: directories whose exports span two component entries (the root and
- * "./grid"). The default primary is the first value export in barrel order, and with two barrels
- * that order is a fact about how the barrels are read, not about the component. Each directory
- * here is pinned to the primary (and so the published slug) it had before its AG Grid component
- * moved to the "./grid" entry; the item still owns every shipped file of the directory.
+ * DECLARED DIVERGENCE: directories whose exports span several component entries (the root,
+ * "./grid", "./registre"). The default primary is the first value export in barrel order, and
+ * with several barrels that order is a fact about how the barrels are read, not about the
+ * component. Each directory here is pinned to the primary (and so the published slug) it had
+ * before its components moved to those entries; the item still owns every shipped file of the
+ * directory.
  * @type {Map<string, string>} dir -> primary export name
  */
 const PINNED_PRIMARY_DIRS = new Map([

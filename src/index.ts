@@ -1218,34 +1218,7 @@ export type {
   ReviewRow,
 } from "./components/document-review/document-review-logic.js";
 
-// ── registre: registry-screen chrome, row panel shell and row detail (HeroUI) ─
-// GrilleRegistre and its theme helpers import AG Grid: they are exported from
-// src/grid.ts (`@vantageos/mosaic-blocks/grid`), never from this root entry.
-export { PanneauRegistreShell } from "./components/registre/PanneauRegistreShell.js";
-export type {
-  PanneauRegistreShellLabels,
-  PanneauRegistreShellProps,
-} from "./components/registre/PanneauRegistreShell.js";
-export { RegistreEcran } from "./components/registre/RegistreEcran.js";
-export type {
-  RegistreEcranLabels,
-  RegistreEcranProps,
-} from "./components/registre/RegistreEcran.js";
-export { RegistreLigneDetail } from "./components/registre/RegistreLigneDetail.js";
-export type {
-  CorrectionChamp,
-  RegistreLigneDetailLabels,
-  RegistreLigneDetailProps,
-} from "./components/registre/RegistreLigneDetail.js";
-export { ChoixColonnes } from "./components/registre/ChoixColonnes.js";
-export type {
-  ChoixColonnesLabels,
-  ChoixColonnesProps,
-} from "./components/registre/ChoixColonnes.js";
-export { estVisible } from "./components/registre/colonnes.js";
-export type {
-  ColonneChoisie,
-  ColonneRegistre,
-  EtatVisibilite,
-  TypeColonneRegistre,
-} from "./components/registre/colonnes.js";
+// ── registre: the registry-screen blocks (HeroUI + lucide) are exported from
+// src/registre.ts (`@vantageos/mosaic-blocks/registre`); GrilleRegistre and its
+// theme helpers (AG Grid) from src/grid.ts (`@vantageos/mosaic-blocks/grid`).
+// This root entry imports none of them.

@@ -1463,7 +1463,7 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
    * identical from the outside, a green proves nothing.
    *
    * Source of truth = the Mosaic* VALUE exports of every component barrel
-   * (src/index.ts and src/grid.ts, read through componentBarrels — the actual
+   * (src/index.ts, src/grid.ts, src/registre.ts, read through componentBarrels — the actual
    * public surface). Every one of them must land in exactly one bucket:
    *   ANALYZED · NOT-BRANCHED · NO-DISCRIMINANT · EXEMPT · NON-FUNCTION
    * and BLIND-SPOT must be empty. A public component that is neither analyzed
@@ -1471,7 +1471,7 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
    */
   it("COVERAGE: every public Mosaic* export is ANALYZED or written off with a reason — none silently skipped", () => {
     // Comments masked: an `export { X } from "…";` inside a comment is not a public export.
-    // Every component barrel (componentBarrels: src/index.ts plus src/grid.ts, the AG Grid entry),
+    // Every component barrel (componentBarrels: src/index.ts, src/grid.ts, src/registre.ts),
     // joined: a component moved to another entry stays public and stays checked.
     const repoRoot = path.resolve(__dirname, "..", "..");
     const indexSource = componentBarrels(repoRoot)
