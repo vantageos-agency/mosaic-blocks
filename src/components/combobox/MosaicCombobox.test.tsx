@@ -130,10 +130,7 @@ describe("MosaicCombobox", () => {
     await user.type(input, "a");
     // "a" keeps React and Angular, in item order.
     await waitFor(() => {
-      expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
-        "React",
-        "Angular",
-      ]);
+      expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["React", "Angular"]);
     });
     // The component sets autoHighlight, so the first match is active before any arrow key.
     await waitFor(() => expectActiveOption(input, "React"));
