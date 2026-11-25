@@ -70,6 +70,7 @@
     "check:recharts-peer": "bash scripts/check-recharts-peer.sh",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:consumers": "bash e2e/root-without-grid/run.sh",
     "sandbox:build": "cd sandbox && pnpm build",
     "prebuild": "rimraf dist",
     "sync-versions": "node scripts/sync-versions.mjs",
