@@ -236,6 +236,32 @@ describe("MosaicCreateOrgDialog", () => {
     expect(screen.getByPlaceholderText("mon-organisation")).toBeTruthy();
     expect(screen.queryByPlaceholderText("acme-inc")).toBeNull();
   });
+
+  it("renders without slugPlaceholder (optional): the slug field has no placeholder and no word is fabricated", () => {
+    render(
+      <Wrapper>
+        <MosaicCreateOrgDialog
+          open={true}
+          onOpenChange={() => {}}
+          onCreateOrg={() => {}}
+          title="Create Organization"
+          closeAriaLabel="Close dialog"
+          orgNameFieldLabel="Organization Name *"
+          orgNamePlaceholder="Acme Inc."
+          slugFieldLabel="Slug *"
+          descriptionFieldLabel="Description"
+          descriptionPlaceholder="Optional description…"
+          cancelLabel="Cancel"
+          creatingLabel="Creating…"
+          createLabel="Create Organization"
+        />
+      </Wrapper>,
+    );
+    const slug = document.getElementById("org-slug") as HTMLInputElement;
+    expect(slug).toBeTruthy();
+    expect(slug.hasAttribute("placeholder")).toBe(false);
+    expect(screen.getByLabelText("Slug *")).toBe(slug);
+  });
 });
 
 describe("MosaicInviteMemberDialog", () => {

@@ -198,7 +198,13 @@ export interface MosaicCreateOrgDialogProps {
   orgNameFieldLabel: string;
   orgNamePlaceholder: string;
   slugFieldLabel: string;
-  slugPlaceholder: string;
+  /**
+   * Optional host-owned example shown in the empty slug field. Omitted, the field has no
+   * placeholder: the library supplies no example word of its own, and the field keeps its visible
+   * label (`slugFieldLabel`) as its accessible name. Optional since it was introduced as a
+   * required prop (0.5.29-alpha) and broke every caller written before it.
+   */
+  slugPlaceholder?: string;
   descriptionFieldLabel: string;
   descriptionPlaceholder: string;
   cancelLabel: string;
