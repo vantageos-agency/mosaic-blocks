@@ -33,8 +33,10 @@
  *       this repo's own naming convention makes the mapping exact for every
  *       component in the tree, verified against the full component census
  *       below); and
- *   (b) every literal `Mosaic<Name>` token appearing on an ADDED line of
- *       `src/index.ts`'s own diff (the export surface itself), as a second,
+ *   (b) every literal `Mosaic<Name>` token appearing on an ADDED line of the
+ *       diff of a component barrel (the export surface itself: `src/index.ts`
+ *       and every other component entry of package.json "exports", read at
+ *       HEAD by componentBarrelPaths — today `src/grid.ts`, `src/registre.ts`), as a second,
  *       independent source in case a component's real exported name and its
  *       directory name ever diverge.
  *
@@ -111,6 +113,7 @@ import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { basename as posixBasename, dirname as posixDirname } from "node:path/posix";
 import { fileURLToPath } from "node:url";
+import { barrelsFromExports } from "./docs-counts-shared.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -218,6 +221,26 @@ function headFullMessage() {
 /**
  * @returns {string[]} paths changed in BASE_REF...HEAD
  */
+/**
+ * The component barrels at the HEAD commit: src/index.ts and every other component entry of
+ * package.json "exports" (today src/grid.ts and src/registre.ts), read from `HEAD_REF:package.json`
+ * through the shared `barrelsFromExports` — the same derivation the counts, the registry and the
+ * coverage tests use. A package.json that cannot be read or has no usable exports map is an
+ * instrument this guard does not have: it refuses to judge (exit 2), never falls back to
+ * src/index.ts alone.
+ * @returns {string[]}
+ */
+function componentBarrelPaths() {
+  const text = git(["show", `${HEAD_REF}:package.json`]);
+  try {
+    return barrelsFromExports(JSON.parse(text).exports).map((b) => b.path);
+  } catch (err) {
+    throw new InstrumentUnavailableError(
+      `pr-title-matches-diff-guard: cannot list the component barrels from ${HEAD_REF}:package.json — ${err.message}`,
+    );
+  }
+}
+
 function changedFiles() {
   git(["rev-parse", "--verify", BASE_REF]);
   const out = git(["diff", "--name-only", `${BASE_REF}...${HEAD_REF}`]);
@@ -279,8 +302,9 @@ function actualComponentClaim(changed) {
   }
   const names = new Set([...dirs].map((d) => `Mosaic${toPascalCase(d)}`));
 
-  if (changed.includes("src/index.ts")) {
-    const diffText = git(["diff", `${BASE_REF}...${HEAD_REF}`, "--", "src/index.ts"]);
+  for (const barrel of componentBarrelPaths()) {
+    if (!changed.includes(barrel)) continue;
+    const diffText = git(["diff", `${BASE_REF}...${HEAD_REF}`, "--", barrel]);
     for (const line of diffText.split("\n")) {
       if (!line.startsWith("+") || line.startsWith("+++")) continue;
       const matches = line.match(MOSAIC_TOKEN_RE);
@@ -388,7 +412,8 @@ function main() {
 //   1 = VIOLATION — measured, and it lies (set via process.exitCode inside
 //                   main(), a normal return — the diff/subject WERE read).
 //   2 = REFUSES TO JUDGE — could NOT obtain the instrument. Every throw site
-//                   in this file (all five `git()` call sites, plus the
+//                   in this file (every `git()` call site, the unreadable
+//                   exports map in componentBarrelPaths(), and the
 //                   pull_request-with-empty-subject case in headSubject())
 //                   raises InstrumentUnavailableError; this is the ONLY
 //                   place it is caught, and it is never silently absorbed

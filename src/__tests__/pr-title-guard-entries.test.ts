@@ -82,7 +82,10 @@ function fixtureRepo(): string {
   return root;
 }
 
-/** Adds a component in directory `zq-misc` (maps to MosaicZqMisc, never to the name) and exports it from `barrel`, then commits. */
+/**
+ * Adds a component in directory `zq-misc` (maps to MosaicZqMisc, never to the name) and exports
+ * it from `barrel`, then commits.
+ */
 function addComponent(root: string, barrel: string, name: string) {
   write(root, `src/components/zq-misc/${name}.tsx`, `export const ${name} = 1;\n`);
   write(root, barrel, `export { ${name} } from "./components/zq-misc/${name}.js";\n`);

@@ -102,10 +102,16 @@ git -C "$CLONE" config user.name "mosaic-blocks probe"
 git -C "$CLONE" config user.email "probe@vantageos.invalid"
 mkdir -p "$CLONE/scripts"
 cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+# The guard imports the shared component-entry reader (and what it imports): part of OUR tool.
+cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
 
 run_guard() {
   local base_ref="$1"
   cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  # The guard imports the shared component-entry reader (and what it imports): part of OUR tool.
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
   (cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$base_ref" node scripts/pr-title-matches-diff-guard.mjs)
 }
 
@@ -505,6 +511,9 @@ run_guard_push_path() {
   local sha="$1"
   (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet --detach "$sha")
   cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  # The guard imports the shared component-entry reader (and what it imports): part of OUR tool.
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
   (cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="HEAD^" node scripts/pr-title-matches-diff-guard.mjs)
 }
 
@@ -639,6 +648,9 @@ else
   # merge whose own subject nobody typed.
   (cd "$CLONE" && git merge --no-ff --quiet -m "Merge ${sha} into ${base}" "pr-path-feature")
   cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  # The guard imports the shared component-entry reader (and what it imports): part of OUR tool.
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
   if ! (cd "$CLONE" && git log -1 --format=%s | grep -qF "Merge ${sha} into ${base}"); then
     FAILURES+=("PR-PATH fixture $sha — synthetic merge subject did NOT land — probe invalid")
     log PR_PATH "FAIL — fixture $sha — synthetic merge subject absent"
@@ -691,6 +703,9 @@ else
     log PR_PATH "FAIL — honest-title fixture $sha — landing not proven"
   else
     cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+    # The guard imports the shared component-entry reader (and what it imports): part of OUR tool.
+    cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+    cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
     real_title="$(cd "$CLONE" && git log -1 --format=%s "$sha")"
     set +e
     output_honest="$(cd "$CLONE" && env -u GITHUB_EVENT_NAME -u GITHUB_BASE_REF -u GITHUB_HEAD_REF -u GITHUB_REF_NAME PR_TITLE_GUARD_BASE_REF="$base" PR_TITLE_GUARD_HEAD_REF="$sha" PR_TITLE_GUARD_SUBJECT="$real_title" node scripts/pr-title-matches-diff-guard.mjs 2>&1)"
@@ -757,6 +772,9 @@ MUST_REFUSE_TOTAL=0
 refuse_setup() {
   (cd "$CLONE" && git reset --hard --quiet && git clean -fdq && git checkout --quiet --detach "$BASE")
   cp "$REPO_ROOT/scripts/pr-title-matches-diff-guard.mjs" "$CLONE/scripts/pr-title-matches-diff-guard.mjs"
+  # The guard imports the shared component-entry reader (and what it imports): part of OUR tool.
+  cp "$REPO_ROOT/scripts/docs-counts-shared.mjs" "$CLONE/scripts/docs-counts-shared.mjs"
+  cp "$REPO_ROOT/scripts/source-tokens-shared.mjs" "$CLONE/scripts/source-tokens-shared.mjs"
 }
 
 # --- MUST_REFUSE 1: HEAD_REF does not resolve at all (sites 1+2, declared-grouped). ---
