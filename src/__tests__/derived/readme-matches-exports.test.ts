@@ -57,10 +57,11 @@ import {
   HERO_RE,
   SECTION6_SUMMARY_RE,
   SECTION6_TOTAL_RE,
+  componentBarrels,
   extractCatalogDocumentedMosaicNames,
   extractCitedMosaicTokens,
-  extractRealExports,
   extractRealTypeExports,
+  extractSurfaceExports,
   extractVersionTableRowStatusByLine,
   lineNumberAt,
   mosaicCountPatterns,
@@ -75,7 +76,11 @@ import {
 // nothing wrong.
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 const README_PATH = path.resolve(REPO_ROOT, "README.md");
-const INDEX_PATH = path.resolve(REPO_ROOT, "src", "index.ts");
+// The component surface: src/index.ts plus every other component entry of package.json
+// "exports" (componentBarrels — today src/grid.ts, the AG Grid components).
+const BARREL_SOURCES = componentBarrels(REPO_ROOT).map(({ path: rel }) =>
+  fs.readFileSync(path.resolve(REPO_ROOT, rel), "utf-8"),
+);
 const CATALOG_PATH = path.resolve(REPO_ROOT, "docs", "components-catalog.md");
 
 function readFile(p: string): string {
@@ -242,10 +247,9 @@ function assertGenericCountClaimsAreCurrent(
 
 describe("README ↔ exports guard — no phantom components, no stale counts", () => {
   const readme = readFile(README_PATH);
-  const indexSource = readFile(INDEX_PATH);
-  const realExports = extractRealExports(indexSource);
+  const realExports = extractSurfaceExports(REPO_ROOT);
 
-  it("sanity: extracted a plausible number of real exports from src/index.ts", () => {
+  it("sanity: extracted a plausible number of real exports from the component barrels", () => {
     // Guards the guard: if this regex ever breaks (e.g. index.ts restructured),
     // fail loudly instead of silently reporting zero phantoms.
     expect(realExports.size).toBeGreaterThan(50);
@@ -391,9 +395,10 @@ describe("README ↔ exports guard — no phantom components, no stale counts", 
 
 describe("components-catalog.md ↔ exports guard — no phantom components, no stale counts", () => {
   const catalog = readFile(CATALOG_PATH);
-  const indexSource = readFile(INDEX_PATH);
-  const realExports = extractRealExports(indexSource);
-  const realTypeExports = extractRealTypeExports(indexSource);
+  const realExports = extractSurfaceExports(REPO_ROOT);
+  const realTypeExports = new Set(
+    BARREL_SOURCES.flatMap((src) => [...extractRealTypeExports(src)]),
+  );
   const realExportsAndTypes = new Set([...realExports, ...realTypeExports]);
 
   it("every Mosaic* component cited in docs/components-catalog.md is a real export of src/index.ts", () => {

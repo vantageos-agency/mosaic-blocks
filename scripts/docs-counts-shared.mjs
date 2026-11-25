@@ -23,12 +23,101 @@
  * neither consumer is allowed to redefine it locally.
  */
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   JSX_TEXT_KINDS,
   blankRanges,
   loadTypeScript,
   readSourceTokens,
 } from "./source-tokens-shared.mjs";
+
+// ---------------------------------------------------------------------------
+// The component surface — every barrel a consumer can import components from.
+// ---------------------------------------------------------------------------
+
+/**
+ * Entries of package.json "exports" that are NOT part of the component surface, each with its
+ * reason. Every other JavaScript entry is a component barrel. A declared exception, written here
+ * where the reader of the derivation sees it.
+ */
+export const NON_COMPONENT_ENTRIES = new Map([
+  [
+    "./server",
+    "server-safe helper entry (CVA variant functions for React Server Components); it holds no component and was never part of the counted surface",
+  ],
+]);
+
+/**
+ * The source barrels of the component surface, derived from package.json "exports": the root
+ * entry "." (`src/index.ts`) and every other JavaScript entry not declared in
+ * NON_COMPONENT_ENTRIES (today "./grid" -> `src/grid.ts`, the AG Grid components). A built entry
+ * `./dist/<name>.js` is the tsup entry `<name>`, whose source is `src/<name>.ts`.
+ *
+ * Fail-closed: an exports map without ".", an entry whose import target is not
+ * `./dist/<name>.js`, or a source file that does not exist throws, naming the entry.
+ *
+ * @param {string} root repository root
+ * @returns {Array<{ subpath: string, path: string }>} root first; `path` is relative to `root`
+ */
+export function componentBarrels(root) {
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  if (!pkg.exports || typeof pkg.exports !== "object" || !pkg.exports["."]) {
+    throw new Error('componentBarrels: package.json has no "exports" map with a "." entry.');
+  }
+  const barrels = [];
+  for (const [subpath, target] of Object.entries(pkg.exports)) {
+    if (typeof target === "string") {
+      if (/\.c?js$/.test(target)) {
+        throw new Error(
+          `componentBarrels: export "${subpath}" is a bare string pointing at JavaScript (${target}) — cannot tell its source barrel.`,
+        );
+      }
+      continue; // an asset (styles.css)
+    }
+    if (NON_COMPONENT_ENTRIES.has(subpath)) continue;
+    const built = /^\.\/dist\/([A-Za-z0-9_-]+)\.js$/.exec(target?.import ?? "");
+    if (!built) {
+      throw new Error(
+        `componentBarrels: export "${subpath}" has import target ${JSON.stringify(target?.import)}, not ./dist/<name>.js — cannot tell its source barrel.`,
+      );
+    }
+    const path = `src/${built[1]}.ts`;
+    if (!existsSync(join(root, path))) {
+      throw new Error(
+        `componentBarrels: export "${subpath}" builds ./dist/${built[1]}.js, but its source ${path} does not exist.`,
+      );
+    }
+    barrels.push({ subpath, path });
+  }
+  barrels.sort((a, b) => (a.subpath === "." ? -1 : b.subpath === "." ? 1 : 0));
+  return barrels;
+}
+
+/**
+ * The named VALUE exports of the whole component surface: the union of `extractRealExports`
+ * over every barrel of `componentBarrels`. A name exported by two barrels throws (it would be
+ * counted once while shipping twice).
+ *
+ * @param {string} root repository root
+ * @returns {Set<string>}
+ */
+export function extractSurfaceExports(root) {
+  const all = new Set();
+  const owner = new Map();
+  for (const { path } of componentBarrels(root)) {
+    for (const name of extractRealExports(readFileSync(join(root, path), "utf8"))) {
+      if (owner.has(name)) {
+        throw new Error(
+          `extractSurfaceExports: \`${name}\` is exported by both ${owner.get(name)} and ${path} — a name belongs to one entry.`,
+        );
+      }
+      owner.set(name, path);
+      all.add(name);
+    }
+  }
+  return all;
+}
 
 // ---------------------------------------------------------------------------
 // Counting definition — extracted from src/index.ts.

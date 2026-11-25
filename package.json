@@ -16,6 +16,11 @@
       "import": "./dist/server.js",
       "require": "./dist/server.cjs"
     },
+    "./grid": {
+      "types": "./dist/grid.d.ts",
+      "import": "./dist/grid.js",
+      "require": "./dist/grid.cjs"
+    },
     "./styles.css": "./dist/styles.css"
   },
   "main": "./dist/index.cjs",
@@ -92,6 +97,14 @@
     },
     "@vantageos/cloud-identity": {
       "optional": true
+    },
+    "ag-grid-community": {
+      "optional": true,
+      "reason": "Loaded only by the ./grid entry (GrilleRegistre, MosaicDocumentTable). The root entry never imports it."
+    },
+    "ag-grid-react": {
+      "optional": true,
+      "reason": "Loaded only by the ./grid entry (GrilleRegistre, MosaicDocumentTable). The root entry never imports it."
     },
     "recharts": {
       "optional": true

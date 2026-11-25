@@ -1183,12 +1183,9 @@ export type {
   MosaicAdminOnlyGuardExitProps,
 } from "./components/admin-only-guard/MosaicAdminOnlyGuard.js";
 
-// ── document-review: generic document table + criteria panel + stack-free review logic ─
-export { MosaicDocumentTable } from "./components/document-review/MosaicDocumentTable.js";
-export type {
-  MosaicDocumentTableProps,
-  MosaicDocumentTableRowContext,
-} from "./components/document-review/MosaicDocumentTable.js";
+// ── document-review: criteria panel + stack-free review logic ────────────────
+// MosaicDocumentTable renders through AG Grid: it is exported from src/grid.ts
+// (`@vantageos/mosaic-blocks/grid`), never from this root entry.
 export { MosaicDocumentCriteriaPanel } from "./components/document-review/MosaicDocumentCriteriaPanel.js";
 export type {
   MosaicDocumentCriteriaPanelLabels,
@@ -1221,9 +1218,9 @@ export type {
   ReviewRow,
 } from "./components/document-review/document-review-logic.js";
 
-// ── registre: registry-screen grid, chrome, row panel shell and row detail (HeroUI + AG Grid) ─
-export { GrilleRegistre } from "./components/registre/GrilleRegistre.js";
-export type { GrilleRegistreProps } from "./components/registre/GrilleRegistre.js";
+// ── registre: registry-screen chrome, row panel shell and row detail (HeroUI) ─
+// GrilleRegistre and its theme helpers import AG Grid: they are exported from
+// src/grid.ts (`@vantageos/mosaic-blocks/grid`), never from this root entry.
 export { PanneauRegistreShell } from "./components/registre/PanneauRegistreShell.js";
 export type {
   PanneauRegistreShellLabels,
@@ -1252,8 +1249,3 @@ export type {
   EtatVisibilite,
   TypeColonneRegistre,
 } from "./components/registre/colonnes.js";
-export {
-  fitGridWidthStrategy,
-  refitColumns,
-  registreGridTheme,
-} from "./components/registre/grid-theme.js";

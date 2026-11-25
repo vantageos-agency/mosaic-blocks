@@ -4,6 +4,8 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     server: "src/server.ts",
+    // AG Grid components: their own entry, so the root entry never loads ag-grid-*.
+    grid: "src/grid.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

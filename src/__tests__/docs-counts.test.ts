@@ -54,7 +54,7 @@ afterEach(() => {
 
 /**
  * Builds a minimal, self-contained fixture repo (script + shared module +
- * src/index.ts + README.md + docs/components-catalog.md) at the exact
+ * package.json + src/index.ts + README.md + docs/components-catalog.md) at the exact
  * relative layout `docs-counts.mjs` expects (it resolves paths from its own
  * `import.meta.url`, not from `process.cwd()`, so the script — and the
  * shared module it imports — must live at `<fixture>/scripts/`).
@@ -73,6 +73,12 @@ function makeFixture(): string {
   );
   // ...which loads the `typescript` parser: resolve it from the repo's install.
   symlinkSync(path.resolve(REPO_ROOT, "node_modules"), path.join(dir, "node_modules"), "dir");
+  // The counted surface is read from package.json "exports" (componentBarrels): the fixture
+  // declares the root entry only, so src/index.ts is its one barrel.
+  writeFileSync(
+    path.join(dir, "package.json"),
+    `${JSON.stringify({ exports: { ".": { import: "./dist/index.js" } } })}\n`,
+  );
   return dir;
 }
 
