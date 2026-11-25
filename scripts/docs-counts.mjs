@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * docs-counts.mjs — derives the canonical Mosaic* component / total-export
- * counts from `src/index.ts` and writes them into the live (non-Historical)
+ * counts from the component surface (`src/index.ts` plus every other component
+ * entry of package.json "exports", see `componentBarrels`) and writes them into the live (non-Historical)
  * count claims of `README.md` and `docs/components-catalog.md`.
  *
  * Why this exists (Day 129 doctrine — "dériver, jamais taper"):
@@ -12,7 +13,7 @@
  *   each add one component, each says "134" in isolation, both green; after
  *   merge the real number is 135 and the second-merged PR's text is stale on
  *   main). This script is the missing PRODUCER: run it, and the count is
- *   always exactly what `src/index.ts` says, never what a human remembered.
+ *   always exactly what the component barrels say, never what a human remembered.
  *
  * Counting definition AND every count-claim anchor regex: imported from
  * `scripts/docs-counts-shared.mjs`, the SINGLE shared module also imported
@@ -68,7 +69,7 @@ import {
   HERO_RE,
   SECTION6_SUMMARY_RE,
   SECTION6_TOTAL_RE,
-  extractRealExports,
+  extractSurfaceExports,
   extractVersionTableRowStatusByLine,
   findUnrecognizedCountClaims,
   lineNumberAt,
@@ -146,7 +147,6 @@ function assertNoUnrecognizedCountClaims(label, src, historicalStatusByLine) {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const INDEX_PATH = resolve(ROOT, "src", "index.ts");
 const README_PATH = resolve(ROOT, "README.md");
 const CATALOG_PATH = resolve(ROOT, "docs", "components-catalog.md");
 
@@ -161,21 +161,21 @@ if (JSON_MODE && !CHECK_MODE) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Derive the canonical counts from src/index.ts.
+// 1. Derive the canonical counts from the component surface: src/index.ts plus
+//    every other component entry (componentBarrels: today src/grid.ts).
 // ---------------------------------------------------------------------------
 
 function deriveCounts() {
-  const indexSource = readFileSync(INDEX_PATH, "utf-8");
-  const realExports = extractRealExports(indexSource);
+  const realExports = extractSurfaceExports(ROOT);
   if (realExports.size === 0) {
     throw new Error(
-      `docs-counts: extracted ZERO named exports from ${INDEX_PATH} — the extraction regex no longer matches src/index.ts's shape. Refusing to write a bogus '0' count. Fix extractRealExports in scripts/docs-counts-shared.mjs before rerunning.`,
+      "docs-counts: extracted ZERO named exports from the component barrels (src/index.ts and the other entries of package.json exports) — the extraction no longer matches their shape. Refusing to write a bogus '0' count. Fix extractRealExports in scripts/docs-counts-shared.mjs before rerunning.",
     );
   }
   const mosaicCount = [...realExports].filter((name) => name.startsWith("Mosaic")).length;
   if (mosaicCount === 0) {
     throw new Error(
-      "docs-counts: extracted exports from src/index.ts but NONE start with 'Mosaic' — " +
+      "docs-counts: extracted exports from the component barrels but NONE start with 'Mosaic' — " +
         "refusing to write a bogus '0 Mosaic* components' count. Something upstream broke.",
     );
   }
@@ -297,14 +297,14 @@ function main() {
         .join("\n");
       console.error(
         `docs-counts --check: ${allDrift.length} stale count claim(s) found (derived from ` +
-          `src/index.ts: ${expected.mosaicCount} Mosaic* components, ${expected.totalExports} total ` +
+          `component surface: ${expected.mosaicCount} Mosaic* components, ${expected.totalExports} total ` +
           `named exports):\n${details}\n\nFix: run \`pnpm docs:counts\` to regenerate the derived counts.`,
       );
       process.exitCode = 1;
       return;
     }
     console.log(
-      `docs-counts --check: OK — all live count claims match src/index.ts (${expected.mosaicCount} Mosaic* components, ${expected.totalExports} total named exports).`,
+      `docs-counts --check: OK — all live count claims match the component surface (${expected.mosaicCount} Mosaic* components, ${expected.totalExports} total named exports).`,
     );
     return;
   }
@@ -312,7 +312,7 @@ function main() {
   if (readmeSrc !== readmeResult.rewritten) writeFileSync(README_PATH, readmeResult.rewritten);
   if (catalogSrc !== catalogResult.rewritten) writeFileSync(CATALOG_PATH, catalogResult.rewritten);
   console.log(
-    `docs-counts: derived ${expected.mosaicCount} Mosaic* components / ${expected.totalExports} total named exports from src/index.ts and wrote them into README.md${readmeSrc !== readmeResult.rewritten ? " (changed)" : " (already current)"} and docs/components-catalog.md${catalogSrc !== catalogResult.rewritten ? " (changed)" : " (already current)"}.`,
+    `docs-counts: derived ${expected.mosaicCount} Mosaic* components / ${expected.totalExports} total named exports from the component surface and wrote them into README.md${readmeSrc !== readmeResult.rewritten ? " (changed)" : " (already current)"} and docs/components-catalog.md${catalogSrc !== catalogResult.rewritten ? " (changed)" : " (already current)"}.`,
   );
 }
 

@@ -30,11 +30,29 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { NON_COMPONENT_ENTRIES } from "./docs-counts-shared.mjs";
 
 const DIRECTIVE = '"use client";\n';
 const ROOT = resolve(import.meta.dirname, "..");
 
-const TARGETS = [resolve(ROOT, "dist/index.js"), resolve(ROOT, "dist/index.cjs")];
+// Every JavaScript entry declared in package.json "exports" is a client-component entry and gets
+// the directive (today the root "." and the AG Grid entry "./grid"), read from the exports map so
+// a new entry cannot be missed. The declared exceptions are NON_COMPONENT_ENTRIES ("./server",
+// server-safe by design), shared with docs-counts and the no-hardcoded-words guard.
+const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8"));
+const TARGETS = Object.entries(pkg.exports)
+  .filter(([subpath, target]) => typeof target === "object" && !NON_COMPONENT_ENTRIES.has(subpath))
+  .flatMap(([subpath, target]) => {
+    if (!target.import || !target.require) {
+      throw new Error(
+        `prepend-use-client: export "${subpath}" lacks an import or require target — cannot tell which built files carry the directive.`,
+      );
+    }
+    return [resolve(ROOT, target.import), resolve(ROOT, target.require)];
+  });
+if (TARGETS.length === 0) {
+  throw new Error("prepend-use-client: no client-component entry found in package.json exports.");
+}
 
 for (const filePath of TARGETS) {
   const content = readFileSync(filePath, "utf8");

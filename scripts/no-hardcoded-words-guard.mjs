@@ -140,8 +140,10 @@
  *     of file+line to work from, instead of a human re-typing the count.
  *
  * Usage: node scripts/no-hardcoded-words-guard.mjs
- *   Scans dist/index.cjs relative to the current working directory — always
- *   the real artifact at its real path, never redirectable. An earlier
+ *   Scans every client bundle the package ships, relative to the current
+ *   working directory: dist/index.cjs and, for the AG Grid entry, dist/grid.cjs
+ *   (listed from package.json "exports" by clientBundlePaths) — always the
+ *   real artifacts at their real paths, never redirectable. An earlier
  *   revision accepted a `NO_HARDCODED_WORDS_DIST` override so probes could
  *   point the guard at a scratch clone's build without `cd`-ing into it.
  *   That is exactly the shape of a silent bypass: any caller (a probe, CI,
@@ -216,12 +218,53 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { NON_COMPONENT_ENTRIES } from "./docs-counts-shared.mjs";
 import { SourceReadRefusal, blankRanges, readSourceTokens } from "./source-tokens-shared.mjs";
 
-// No environment override — the guard always scans the real artifact at its
-// real path, relative to the current working directory. See the header
+// No environment override — the guard always scans the real artifacts at their
+// real paths, relative to the current working directory. See the header
 // comment ("Usage") for why an override was removed rather than added-to.
 const DIST_PATH = resolve(process.cwd(), "dist", "index.cjs");
+
+/**
+ * Every client bundle the package ships: the CommonJS (`require`) target of each entry in the
+ * working directory's package.json "exports", except the declared non-component entries
+ * (NON_COMPONENT_ENTRIES, shared with docs-counts: "./server"). Today `dist/index.cjs` (the root
+ * entry, DIST_PATH) and `dist/grid.cjs` (the AG Grid components, "./grid"). A component moved to
+ * its own entry stays scanned: the list is read from the exports map, never typed here. The
+ * ratchet below counts occurrences across ALL of them. An unreadable package.json, an entry
+ * without a `require` target, or a list without DIST_PATH refuses (exit 2).
+ * @returns {string[]} absolute paths, DIST_PATH first
+ */
+function clientBundlePaths() {
+  let pkg;
+  try {
+    pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8"));
+  } catch (err) {
+    console.error(
+      `REFUSING TO JUDGE: no-hardcoded-words-guard cannot read package.json in ${process.cwd()} to list the shipped bundles (${err.message}).`,
+    );
+    process.exit(2);
+  }
+  const paths = [];
+  for (const [subpath, target] of Object.entries(pkg.exports ?? {})) {
+    if (typeof target !== "object" || NON_COMPONENT_ENTRIES.has(subpath)) continue;
+    if (!target.require) {
+      console.error(
+        `REFUSING TO JUDGE: no-hardcoded-words-guard: export "${subpath}" in package.json has no require target — cannot tell which CommonJS bundle it ships.`,
+      );
+      process.exit(2);
+    }
+    paths.push(resolve(process.cwd(), target.require));
+  }
+  if (!paths.includes(DIST_PATH)) {
+    console.error(
+      `REFUSING TO JUDGE: no-hardcoded-words-guard: package.json "exports" does not list ${DIST_PATH} as the root bundle.`,
+    );
+    process.exit(2);
+  }
+  return [DIST_PATH, ...paths.filter((p) => p !== DIST_PATH)];
+}
 
 // The parser. `typescript` is already a devDependency of this package. An
 // import failure is a refusal (exit 2), never a fallback to a text scan.
@@ -450,13 +493,14 @@ function refuseToJudge(what) {
  * ORIGINAL text.
  * @param {typeof import("typescript")} tsApi
  * @param {string} text
+ * @param {string} label the bundle's path, named in a refusal
  * @returns {{ stripped: string, literals: Array<{ rawStart: number, value: string, isTextAttributeValue: boolean }> }}
  */
-function readTokens(tsApi, text) {
+function readTokens(tsApi, text, label) {
   const { SyntaxKind } = tsApi;
   let read;
   try {
-    read = readSourceTokens(tsApi, text, { fileName: "index.cjs", label: DIST_PATH });
+    read = readSourceTokens(tsApi, text, { fileName: "index.cjs", label });
   } catch (err) {
     if (err instanceof SourceReadRefusal) refuseToJudge(err.what);
     throw err;
@@ -1361,13 +1405,19 @@ function findWebhookHandlerFunctionSpan(text) {
   process.exit(2);
 }
 
-function main() {
+/**
+ * Reads one bundle and returns its violations, each carrying the bundle's path. Every refusal
+ * (unreadable, empty, implausible, unparseable) exits 2 naming that bundle.
+ * @param {string} distPath
+ * @returns {Array<{ file: string, line: number, snippet: string, reason: string }>}
+ */
+function scanBundle(distPath) {
   let text;
   try {
-    text = readFileSync(DIST_PATH, "utf8");
+    text = readFileSync(distPath, "utf8");
   } catch (err) {
     console.error(
-      `REFUSING TO JUDGE: no-hardcoded-words-guard cannot read ${DIST_PATH} — run \`pnpm build\` first. Refusing ` +
+      `REFUSING TO JUDGE: no-hardcoded-words-guard cannot read ${distPath} — run \`pnpm build\` first. Refusing ` +
         `to report a clean bill of health when the artifact under test could not even be opened. Underlying error: ${err.message}`,
     );
     process.exit(2);
@@ -1405,14 +1455,14 @@ function main() {
   const MIN_PLAUSIBLE_BUNDLE_BYTES = 1000;
   if (text.trim().length === 0) {
     console.error(
-      `REFUSING TO JUDGE: no-hardcoded-words-guard read ${DIST_PATH} but it is empty (0 bytes of non-whitespace content). A real build of this library is never empty — this looks like \`pnpm build\` silently produced nothing. Refusing to report a clean bill of health on an artifact that was never actually built.`,
+      `REFUSING TO JUDGE: no-hardcoded-words-guard read ${distPath} but it is empty (0 bytes of non-whitespace content). A real build of this library is never empty — this looks like \`pnpm build\` silently produced nothing. Refusing to report a clean bill of health on an artifact that was never actually built.`,
     );
     process.exit(2);
     return;
   }
   if (text.length < MIN_PLAUSIBLE_BUNDLE_BYTES || !/require\(/.test(text)) {
     console.error(
-      `REFUSING TO JUDGE: no-hardcoded-words-guard read ${DIST_PATH} (${text.length} byte(s)) but it does not look like a real built CJS bundle of this library — every genuine build emits multiple \`require(...)\` calls and is well over ${MIN_PLAUSIBLE_BUNDLE_BYTES} bytes. Refusing to report a clean bill of health on content that was never actually built (or was truncated/corrupted before this guard ran).`,
+      `REFUSING TO JUDGE: no-hardcoded-words-guard read ${distPath} (${text.length} byte(s)) but it does not look like a real built CJS bundle of this library — every genuine build emits multiple \`require(...)\` calls and is well over ${MIN_PLAUSIBLE_BUNDLE_BYTES} bytes. Refusing to report a clean bill of health on content that was never actually built (or was truncated/corrupted before this guard ran).`,
     );
     process.exit(2);
     return;
@@ -1424,11 +1474,11 @@ function main() {
   // preserves every offset/line-number computation below while making it
   // impossible for a quote inside a comment or a regex to pair with another.
   // See readTokens.
-  const { stripped: maskedText, literals } = readTokens(ts, text);
+  const { stripped: maskedText, literals } = readTokens(ts, text, distPath);
   const { candidates, unreadableChildrenAt } = extractCandidates(maskedText, literals);
   if (unreadableChildrenAt.length > 0) {
     console.error(
-      `REFUSING TO JUDGE: no-hardcoded-words-guard could not walk ${unreadableChildrenAt.length} \`children:\` value(s) to a verdict at ${unreadableChildrenAt.map((u) => `${DIST_PATH}:${u.line} (${u.reason})`).join("; ")}. A rendered-child literal it cannot delimit or classify is a literal it cannot judge; refusing rather than passing it.`,
+      `REFUSING TO JUDGE: no-hardcoded-words-guard could not walk ${unreadableChildrenAt.length} \`children:\` value(s) to a verdict at ${unreadableChildrenAt.map((u) => `${distPath}:${u.line} (${u.reason})`).join("; ")}. A rendered-child literal it cannot delimit or classify is a literal it cannot judge; refusing rather than passing it.`,
     );
     process.exit(2);
     return;
@@ -1553,6 +1603,13 @@ function main() {
     deduped.push(v);
   }
   deduped.sort((a, b) => a.line - b.line);
+  return deduped.map((v) => ({ file: distPath, ...v }));
+}
+
+function main() {
+  const bundles = clientBundlePaths();
+  const deduped = bundles.flatMap((distPath) => scanBundle(distPath));
+  const bundlesLabel = bundles.join(", ");
 
   // ---------------------------------------------------------------------
   // RATCHET — classify every violation against BASELINE. See the header
@@ -1570,7 +1627,7 @@ function main() {
   // Rule 2 — a baseline value's DECLARED `maxCount` must always equal the
   // ARTIFACT's actual current occurrence count — never merely be "not lower
   // than" it. `maxCount` is not read from anyone's memory: it is DERIVED
-  // from `dist/index.cjs` right here, every run. Two directions of drift,
+  // from the client bundles (clientBundlePaths) right here, every run. Two directions of drift,
   // both blocked, for the SAME underlying reason (a declared number that
   // does not match reality):
   //
@@ -1617,7 +1674,7 @@ function main() {
 
     if (newOffenders.length > 0) {
       const details = newOffenders
-        .map((v) => `  - ${DIST_PATH}:${v.line} — "${v.snippet}"\n      ${v.reason}`)
+        .map((v) => `  - ${v.file}:${v.line} — "${v.snippet}"\n      ${v.reason}`)
         .join("\n");
       sections.push(
         `NEW offender(s) not in BASELINE (${newOffenders.length}) — this library must ship ZERO user-facing words of its own (every user-facing string is a HOST-supplied prop):\n${details}\n\nFix: replace each with a prop the host supplies, or if genuinely not user-facing, declare it with \`// allow-hardcoded-word: <reason>\` immediately above the source statement.`,
@@ -1628,7 +1685,7 @@ function main() {
       const details = grownEntries
         .map(
           ({ entry, current }) =>
-            `  - "${entry.value}" — BASELINE declares maxCount=${entry.maxCount}, but ${DIST_PATH} now has ${current} occurrence(s). The baseline may only ever SHRINK.`,
+            `  - "${entry.value}" — BASELINE declares maxCount=${entry.maxCount}, but the client bundles (${bundlesLabel}) now have ${current} occurrence(s). The baseline may only ever SHRINK.`,
         )
         .join("\n");
       sections.push(`BASELINE entry GREW (${grownEntries.length}):\n${details}`);
@@ -1638,7 +1695,7 @@ function main() {
       const details = looseEntries
         .map(
           ({ entry, current }) =>
-            `  - "${entry.value}" — BASELINE declares maxCount=${entry.maxCount}, but ${DIST_PATH} actually has only ${current} occurrence(s). A budget above reality is a licence to regress without the guard ever noticing — lower maxCount to ${current} in scripts/no-hardcoded-words-guard.mjs.`,
+            `  - "${entry.value}" — BASELINE declares maxCount=${entry.maxCount}, but the client bundles (${bundlesLabel}) actually has only ${current} occurrence(s). A budget above reality is a licence to regress without the guard ever noticing — lower maxCount to ${current} in scripts/no-hardcoded-words-guard.mjs.`,
         )
         .join("\n");
       sections.push(
@@ -1650,7 +1707,7 @@ function main() {
       const details = staleEntries
         .map(
           (entry) =>
-            `  - "${entry.value}" (declared maxCount=${entry.maxCount}) no longer appears anywhere in ${DIST_PATH}. Delete this row from BASELINE in scripts/no-hardcoded-words-guard.mjs — a fixed offender left in BASELINE is a stale, silent exemption.`,
+            `  - "${entry.value}" (declared maxCount=${entry.maxCount}) no longer appears anywhere in the client bundles (${bundlesLabel}). Delete this row from BASELINE in scripts/no-hardcoded-words-guard.mjs — a fixed offender left in BASELINE is a stale, silent exemption.`,
         )
         .join("\n");
       sections.push(
@@ -1668,11 +1725,11 @@ function main() {
   const baselineTotal = BASELINE.reduce((sum, e) => sum + e.maxCount, 0);
   if (BASELINE.length === 0) {
     console.log(
-      `no-hardcoded-words-guard: OK — ${DIST_PATH} carries zero hardcoded user-facing words. BASELINE is empty: this guard is now absolute.`,
+      `no-hardcoded-words-guard: OK — ${bundlesLabel} carries zero hardcoded user-facing words. BASELINE is empty: this guard is now absolute.`,
     );
   } else {
     console.log(
-      `no-hardcoded-words-guard: OK (ratchet held) — ${DIST_PATH} carries no NEW offenders and no BASELINE row grew or went stale. ${BASELINE.length} declared baseline row(s), ${baselineTotal} allowed occurrence(s) remaining to be fixed by in-flight PRs.`,
+      `no-hardcoded-words-guard: OK (ratchet held) — ${bundlesLabel} carries no NEW offenders and no BASELINE row grew or went stale. ${BASELINE.length} declared baseline row(s), ${baselineTotal} allowed occurrence(s) remaining to be fixed by in-flight PRs.`,
     );
   }
 }

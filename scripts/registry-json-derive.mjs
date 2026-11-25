@@ -87,6 +87,7 @@ import { builtinModules } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  componentBarrels,
   extractRealExports,
   maskCommentsAndStrings,
   scanExportStatements,
@@ -183,11 +184,11 @@ const NON_REGISTRY_SOURCES = new Set([
  * @param {string} [src] defaults to the real src/index.ts
  * @returns {Array<{ name: string, dir: string, file: string, isType: boolean }>}
  */
-export function parseBarrelExports(src = readFileOrThrow(INDEX_TS)) {
+export function parseBarrelExports(src = readFileOrThrow(INDEX_TS), label = "src/index.ts") {
   const out = [];
   const valueNames = new Set();
   for (const st of scanExportStatements(src)) {
-    const where = `src/index.ts:${st.line} (${st.text.replace(/\s+/g, " ").trim()})`;
+    const where = `${label}:${st.line} (${st.text.replace(/\s+/g, " ").trim()})`;
     if (st.kind !== "named-reexport") {
       throw new Error(
         `registry-json-derive: unreadable export form \`${st.kind}${st.keyword ? ` ${st.keyword}` : ""}\` at ${where} — it cannot be mapped to a component directory, so the derived registry.json would silently omit it. Re-export it from a \`./components/<dir>/<File>.js\` barrel, or extend this script (and declare it) to cover the form.`,
@@ -234,8 +235,24 @@ export function parseBarrelExports(src = readFileOrThrow(INDEX_TS)) {
   }
   if (out.length === 0) {
     throw new Error(
-      "registry-json-derive: parsed ZERO export statements out of src/index.ts — the barrel's export syntax changed and this script can no longer read it. Refusing to derive an empty registry.json.",
+      `registry-json-derive: parsed ZERO export statements out of ${label} — the barrel's export syntax changed and this script can no longer read it. Refusing to derive an empty registry.json.`,
     );
+  }
+  return out;
+}
+
+/**
+ * The export domain of the whole component surface: `parseBarrelExports` over every component
+ * barrel (`componentBarrels`, shared with docs-counts: src/index.ts first, then every other
+ * component entry of package.json "exports" — today src/grid.ts, the AG Grid components). A
+ * component moved behind its own entry stays a registry item.
+ * @param {string} [root] repository root
+ * @returns {Array<{ name: string, dir: string, file: string, isType: boolean }>}
+ */
+export function parseSurfaceExports(root = ROOT) {
+  const out = [];
+  for (const { path } of componentBarrels(root)) {
+    out.push(...parseBarrelExports(readFileOrThrow(join(root, path)), path));
   }
   return out;
 }
@@ -290,6 +307,19 @@ const MULTI_PRIMARY_DIRS = new Map([
 ]);
 
 /**
+ * DECLARED DIVERGENCE: directories whose exports span two component entries (the root and
+ * "./grid"). The default primary is the first value export in barrel order, and with two barrels
+ * that order is a fact about how the barrels are read, not about the component. Each directory
+ * here is pinned to the primary (and so the published slug) it had before its AG Grid component
+ * moved to the "./grid" entry; the item still owns every shipped file of the directory.
+ * @type {Map<string, string>} dir -> primary export name
+ */
+const PINNED_PRIMARY_DIRS = new Map([
+  ["registre", "GrilleRegistre"],
+  ["document-review", "MosaicDocumentTable"],
+]);
+
+/**
  * Derives the shadcn-registry slug for a primary export name: `Mosaic`
  * prefix stripped and kebab-cased with a `mosaic-` prefix for components
  * (e.g. `MosaicClerkWebhookHandler` -> `mosaic-clerk-webhook-handler`,
@@ -335,11 +365,21 @@ function primaryExports(exportsInDir, dir) {
       const found = real.find((e) => e.name === wantedName);
       if (!found) {
         throw new Error(
-          `registry-json-derive: MULTI_PRIMARY_DIRS declares \`${wantedName}\` for \`src/components/${dir}\`, but src/index.ts no longer exports it. Update the declared exception.`,
+          `registry-json-derive: MULTI_PRIMARY_DIRS declares \`${wantedName}\` for \`src/components/${dir}\`, but no component barrel exports it. Update the declared exception.`,
         );
       }
       return found;
     });
+  }
+  if (PINNED_PRIMARY_DIRS.has(dir)) {
+    const wantedName = PINNED_PRIMARY_DIRS.get(dir);
+    const found = real.find((e) => e.name === wantedName);
+    if (!found) {
+      throw new Error(
+        `registry-json-derive: PINNED_PRIMARY_DIRS declares \`${wantedName}\` for \`src/components/${dir}\`, but no component barrel exports it. Update the declared exception.`,
+      );
+    }
+    return [found];
   }
   const last = dir.split("/").pop();
   const pascal = last
@@ -351,7 +391,7 @@ function primaryExports(exportsInDir, dir) {
   if (exact) return [exact];
   if (real.length === 0) {
     throw new Error(
-      `registry-json-derive: directory \`src/components/${dir}\` has only type exports in src/index.ts — no primary component/hook export found.`,
+      `registry-json-derive: directory \`src/components/${dir}\` has only type exports in the component barrels — no primary component/hook export found.`,
     );
   }
   return [real[0]];
@@ -509,12 +549,12 @@ function groupByDir(exportsFlat) {
 /** @param {(sourcePath: string) => boolean} isShipped non-shipped.mjs's predicate */
 function main(isShipped) {
   const ELIGIBLE_DEPENDENCIES = eligibleDependencies(readJsonOrThrow(PACKAGE_JSON));
-  const exportsFlat = parseBarrelExports();
+  const exportsFlat = parseSurfaceExports();
   const byDir = groupByDir(exportsFlat);
 
   if (byDir.size === 0) {
     throw new Error(
-      "registry-json-derive: zero component directories derived from src/index.ts — refusing to write/verify an empty registry.json.",
+      "registry-json-derive: zero component directories derived from the component barrels — refusing to write/verify an empty registry.json.",
     );
   }
 
@@ -629,7 +669,7 @@ function main(isShipped) {
     const lines = [];
     if (missing.length > 0) {
       lines.push(
-        `MISSING from registry.json (exported in src/index.ts, absent here): ${missing.join(", ")}`,
+        `MISSING from registry.json (exported by a component barrel, absent here): ${missing.join(", ")}`,
       );
     }
     if (depsDrift.length > 0) {
@@ -637,7 +677,7 @@ function main(isShipped) {
     }
     if (stale.length > 0) {
       lines.push(
-        `STALE in registry.json (no longer backed by any src/index.ts export): ${stale.join(", ")}`,
+        `STALE in registry.json (no longer backed by any component barrel export): ${stale.join(", ")}`,
       );
     }
     console.error(

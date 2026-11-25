@@ -96,7 +96,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { maskCommentsAndStrings } from "../../scripts/docs-counts-shared.mjs";
+import { componentBarrels, maskCommentsAndStrings } from "../../scripts/docs-counts-shared.mjs";
 
 const COMPONENTS_ROOT = path.resolve(__dirname, "..", "components");
 const FIXTURES_ROOT = path.resolve(__dirname, "fixtures");
@@ -1462,7 +1462,8 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
    * library. As long as "I could not analyze it" and "it is clean" look
    * identical from the outside, a green proves nothing.
    *
-   * Source of truth = the Mosaic* VALUE exports of src/index.ts (the actual
+   * Source of truth = the Mosaic* VALUE exports of every component barrel
+   * (src/index.ts and src/grid.ts, read through componentBarrels — the actual
    * public surface). Every one of them must land in exactly one bucket:
    *   ANALYZED · NOT-BRANCHED · NO-DISCRIMINANT · EXEMPT · NON-FUNCTION
    * and BLIND-SPOT must be empty. A public component that is neither analyzed
@@ -1470,9 +1471,14 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
    */
   it("COVERAGE: every public Mosaic* export is ANALYZED or written off with a reason — none silently skipped", () => {
     // Comments masked: an `export { X } from "…";` inside a comment is not a public export.
-    const indexSource = maskCommentsAndStrings(
-      fs.readFileSync(path.resolve(__dirname, "..", "index.ts"), "utf-8"),
-    );
+    // Every component barrel (componentBarrels: src/index.ts plus src/grid.ts, the AG Grid entry),
+    // joined: a component moved to another entry stays public and stays checked.
+    const repoRoot = path.resolve(__dirname, "..", "..");
+    const indexSource = componentBarrels(repoRoot)
+      .map(({ path: rel }) =>
+        maskCommentsAndStrings(fs.readFileSync(path.resolve(repoRoot, rel), "utf-8"), false, rel),
+      )
+      .join("\n");
 
     // Public Mosaic* VALUE exports (type-only exports are not components).
     const publicExports = new Set<string>();
@@ -1491,7 +1497,7 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
     }
     expect(
       publicExports.size,
-      "extracted zero public Mosaic* exports from src/index.ts — the export syntax changed and this coverage check silently stopped checking. Fix the parser.",
+      "extracted zero public Mosaic* exports from the component barrels — the export syntax changed and this coverage check silently stopped checking. Fix the parser.",
     ).toBeGreaterThan(100);
 
     // What the guard actually did, component by component, across the library.
@@ -1520,7 +1526,7 @@ describe("no-lying-prop-contract guard — a required prop must be read exactly 
       [
         "",
         "── no-lying-prop-contract COVERAGE INVENTORY ─────────────────────",
-        `public Mosaic* exports (src/index.ts) : ${publicExports.size}`,
+        `public Mosaic* exports (component barrels) : ${publicExports.size}`,
         `  ANALYZED (discriminant + gating)    : ${analyzed.length}`,
         `  NOT-BRANCHED (enum never gated)     : ${notBranched.length}`,
         `  NO-DISCRIMINANT (no union at all)   : ${noDiscriminant.length}`,

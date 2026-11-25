@@ -1,8 +1,9 @@
 /**
  * Registry-screen blocks — behaviour contract ported from the first host's tests
  * (grille, écran, ligne-détail) plus the shared panel shell. Every import comes
- * from the PACKAGE ENTRY (src/index.ts): these tests fail until the four blocks
- * are exported from it.
+ * from a PACKAGE ENTRY: GrilleRegistre from the AG Grid entry (src/grid.ts,
+ * `@vantageos/mosaic-blocks/grid`), the three others from the root (src/index.ts).
+ * These tests fail until the four blocks are exported from those entries.
  *
  * The labels below are test fixtures supplied by the host, exactly as a real
  * host supplies them: the library ships no words of its own.
@@ -11,11 +12,10 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import type { ColDef, GridApi } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { GrilleRegistre, type GrilleRegistreProps } from "../../grid.js";
 import {
   type ColonneRegistre,
   type EtatVisibilite,
-  GrilleRegistre,
-  type GrilleRegistreProps,
   PanneauRegistreShell,
   type PanneauRegistreShellLabels,
   RegistreEcran,
