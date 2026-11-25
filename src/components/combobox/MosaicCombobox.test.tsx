@@ -20,6 +20,20 @@ const ITEMS = [
   { value: "angular", label: "Angular" },
 ];
 
+/**
+ * Asserts that `label` is the ONE active option: the only option carrying
+ * `data-highlighted` (base-ui's highlight marker, which the styling keys on), and the
+ * option the input points at through `aria-activedescendant` (focus stays in the input).
+ */
+function expectActiveOption(input: HTMLElement, label: string): void {
+  const highlighted = screen
+    .getAllByRole("option")
+    .filter((option) => option.hasAttribute("data-highlighted"));
+  expect(highlighted.map((option) => option.textContent)).toEqual([label]);
+  expect(highlighted[0].id).not.toBe("");
+  expect(input.getAttribute("aria-activedescendant")).toBe(highlighted[0].id);
+}
+
 describe("MosaicCombobox", () => {
   it("renders an input with role=combobox", () => {
     render(
@@ -108,18 +122,25 @@ describe("MosaicCombobox", () => {
     expect(handler.mock.calls[0][0]).toBe("react");
   });
 
-  it("navigates items with ArrowDown", async () => {
+  it("navigates items with ArrowDown / ArrowUp keys", async () => {
     const user = userEvent.setup();
     render(<MosaicCombobox items={ITEMS} placeholder="Search…" emptyMessage="No results found." />);
     const input = screen.getByRole("combobox");
     await user.click(input);
     await user.type(input, "a");
+    // "a" keeps React and Angular, in item order.
     await waitFor(() => {
-      const opts = screen.queryAllByRole("option");
-      expect(opts.length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+        "React",
+        "Angular",
+      ]);
     });
+    // The component sets autoHighlight, so the first match is active before any arrow key.
+    await waitFor(() => expectActiveOption(input, "React"));
     await user.keyboard("{ArrowDown}");
-    // Arrow navigation succeeded without throwing
+    await waitFor(() => expectActiveOption(input, "Angular"));
+    await user.keyboard("{ArrowUp}");
+    await waitFor(() => expectActiveOption(input, "React"));
   });
 
   it("shows all items when input is empty and popup is open", async () => {
