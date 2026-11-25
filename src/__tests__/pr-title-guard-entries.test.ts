@@ -94,11 +94,19 @@ function addComponent(root: string, barrel: string, name: string) {
 }
 
 function runGuard(root: string, subject: string) {
-  const env = { ...process.env, PR_TITLE_GUARD_BASE_REF: "HEAD^", PR_TITLE_GUARD_SUBJECT: subject };
-  for (const k of ["GITHUB_EVENT_NAME", "GITHUB_BASE_REF", "GITHUB_HEAD_REF", "GITHUB_REF_NAME"]) {
-    delete env[k];
-  }
-  delete env.PR_TITLE_GUARD_HEAD_REF;
+  // The CI event variables and an inherited head override are dropped: the fixture is the head.
+  const dropped = new Set([
+    "GITHUB_EVENT_NAME",
+    "GITHUB_BASE_REF",
+    "GITHUB_HEAD_REF",
+    "GITHUB_REF_NAME",
+    "PR_TITLE_GUARD_HEAD_REF",
+  ]);
+  const env: NodeJS.ProcessEnv = {
+    ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !dropped.has(k))),
+    PR_TITLE_GUARD_BASE_REF: "HEAD^",
+    PR_TITLE_GUARD_SUBJECT: subject,
+  };
   const r = spawnSync("node", [join(root, "scripts", "pr-title-matches-diff-guard.mjs")], {
     cwd: root,
     encoding: "utf8",
