@@ -60,8 +60,15 @@ function runGuard(component: string, fileName = "Probe.tsx") {
     },
   });
   if (r.error) throw r.error;
-  // The case directory differs between runs; the verdict must not.
-  const out = `${r.stdout}${r.stderr}`.split(dir).join("<D>");
+  // The case directory differs between runs; the verdict must not. The guard names files
+  // relative to its cwd (ROOT), so the case directory is masked in both spellings: absolute, and
+  // relative to ROOT (`../../theme-forms-…/case-N` when the checkout itself sits under the temp
+  // root, as in a fresh clone made with mktemp).
+  const out = `${r.stdout}${r.stderr}`
+    .split(dir)
+    .join("<D>")
+    .split(path.relative(ROOT, dir))
+    .join("<D>");
   return { code: r.status, out };
 }
 
