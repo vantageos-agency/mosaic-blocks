@@ -267,6 +267,16 @@ jobs:
       - name: Real-browser e2e — native <dialog> behaviour
         run: pnpm test:browser
 
+      # ── Consumer e2e — the root entry builds without the optional peers ─────
+      # Packs the package and builds three consumers with `vite build`, peer
+      # auto-install off: the root entry with none of ag-grid-*, @heroui/react,
+      # lucide-react installed; ./registre with HeroUI + lucide; ./grid with
+      # AG Grid. Plus the entry census (which packages each built entry loads).
+      # A peer only some components need, imported by the root entry again,
+      # turns this step red.
+      - name: Consumer e2e — root entry builds without optional peers
+        run: pnpm test:consumers
+
       # ── 10. Sandbox install + build (Next.js — Rule #19) ─────────────────────
       #    The sandbox is a standalone pnpm project (not a workspace member).
       #    Install its deps first (including the freshly built local lib via file:..).
