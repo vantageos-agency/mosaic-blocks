@@ -5,9 +5,9 @@
   "description": "Full-height app shell: sticky header (title, subtitle, breadcrumbs, actions slot), persistent sidebar on desktop, hamburger + AdaptiveModal drawer on mobile. Props: title, subtitle, breadcrumbs[], actions, sidebarProps, renderLink. Zero hardcoded branding.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-adaptive-modal.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-app-sidebar.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.39-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-adaptive-modal.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-app-sidebar.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {
