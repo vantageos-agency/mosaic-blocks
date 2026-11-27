@@ -26,11 +26,29 @@ cleanup() { [ -n "${WORK:-}" ] && [ -d "$WORK" ] && find "$WORK" -delete; }
 trap cleanup EXIT
 
 cd "$REPO_ROOT"
+# The copied node_modules is linked from a pnpm content store, and pnpm refuses
+# to add a package with a different store (ERR_PNPM_UNEXPECTED_STORE). Without
+# --store-dir, pnpm picks the store by the throwaway directory's filesystem, so
+# a WORK on another filesystem than the store (e.g. /tmp as a tmpfs) fails. The
+# store is read from node_modules/.modules.yaml, the record pnpm itself checks,
+# rather than recomputed; a missing record is a failure, never a guess.
+# pnpm writes the record in YAML's JSON-compatible form ("storeDir": "...") and
+# has written plain YAML (storeDir: ...); both key forms are read.
+STORE="$(node -e '
+const t = require("node:fs").readFileSync(process.argv[1], "utf8");
+const m = t.match(/^\s*["\x27]?storeDir["\x27]?\s*:\s*["\x27]?([^"\x27,\n]+)/m);
+if (m) process.stdout.write(m[1].trim());
+' node_modules/.modules.yaml 2>/dev/null || true)"
+[ -n "$STORE" ] || { echo "FAIL: no storeDir in $REPO_ROOT/node_modules/.modules.yaml (run pnpm install first)" >&2; exit 5; }
 git ls-files -z | xargs -0 cp --parents -t "$WORK"
 cp -a node_modules "$WORK/node_modules"
 cd "$WORK"
 
-pnpm add --save-dev "recharts@${SPEC}" --ignore-scripts >/dev/null
+if ! ADD_OUT="$(pnpm add --save-dev "recharts@${SPEC}" --ignore-scripts --store-dir "$STORE" 2>&1)"; then
+  printf '%s\n' "$ADD_OUT" >&2
+  echo "FAIL: pnpm add recharts@${SPEC} failed in the throwaway copy (store: $STORE)" >&2
+  exit 6
+fi
 INSTALLED="$(node -p "require('recharts/package.json').version")"
 echo "recharts requested: ${SPEC} -> installed: ${INSTALLED}"
 case "$SPEC" in
