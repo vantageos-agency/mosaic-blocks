@@ -91,7 +91,7 @@
     "@vantageos/cloud-identity": ">=0.6.0",
     "ag-grid-community": "^36.1.0",
     "ag-grid-react": "^36.1.0",
-    "lucide-react": "^0.511.0",
+    "lucide-react": "^0.511.0 || ^1.0.0",
     "react": "^19",
     "react-dom": "^19",
     "recharts": "^2.12.0 || ^3.0.0",
@@ -119,7 +119,7 @@
     },
     "lucide-react": {
       "optional": true,
-      "reason": "Loaded only by the ./registre entry (RegistreEcran, PanneauRegistreShell, RegistreLigneDetail). The root entry never imports it."
+      "reason": "Loaded only by the ./registre entry (RegistreEcran, PanneauRegistreShell, RegistreLigneDetail). The root entry never imports it. Range ^0.511.0 || ^1.0.0: the five icons imported (ChevronDown, ChevronUp, Maximize2, Minimize2, Pencil) exist in both majors; the 1.x half is checked by `pnpm check:lucide-peer`."
     },
     "recharts": {
       "optional": true
