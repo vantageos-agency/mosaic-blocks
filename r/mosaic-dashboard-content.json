@@ -5,7 +5,7 @@
   "description": "Generic dashboard content area with view switcher. Tab-based view rendering. CSS fade-in transition.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {
