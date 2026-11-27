@@ -68,6 +68,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "biome check .",
     "check:recharts-peer": "bash scripts/check-recharts-peer.sh",
+    "check:lucide-peer": "bash scripts/check-lucide-peer.sh",
     "test": "vitest run",
     "test:browser": "playwright test",
     "test:consumers": "bash e2e/root-without-grid/run.sh",
