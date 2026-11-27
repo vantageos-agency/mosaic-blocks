@@ -57,7 +57,7 @@ pnpm add @vantageos/mosaic-blocks
 | `@vantageos/cloud-identity` | `>=0.6.0` | `MosaicMultiTenantProvider` |
 | `svix` | `^1.0.0` | `MosaicClerkWebhookHandler` only |
 | `@heroui/react` | `^3.2.5` | Optional — only for the registry-screen entry `@vantageos/mosaic-blocks/registre` (with HeroUI's styles) |
-| `lucide-react` | `^0.511.0` | Optional — only for the registry-screen entry `@vantageos/mosaic-blocks/registre` |
+| `lucide-react` | `^0.511.0 \|\| ^1.0.0` | Optional — only for the registry-screen entry `@vantageos/mosaic-blocks/registre` |
 | `ag-grid-community` | `^36.1.0` | Optional — only for the AG Grid entry `@vantageos/mosaic-blocks/grid` |
 | `ag-grid-react` | `^36.1.0` | Optional — only for the AG Grid entry `@vantageos/mosaic-blocks/grid` |
 

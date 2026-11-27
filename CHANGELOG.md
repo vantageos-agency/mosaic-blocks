@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — the optional peer `lucide-react` admits 1.x: `^0.511.0 || ^1.0.0` (unreleased)
+
+Up to `0.5.40-alpha` the optional peer was `lucide-react: ^0.511.0`, so a host on lucide-react 1.x could not install the package with npm (`ERESOLVE … Could not resolve dependency: peerOptional lucide-react@"^0.511.0" from @vantageos/mosaic-blocks`). The range is now `^0.511.0 || ^1.0.0`. The `./registre` entry imports five icons (`ChevronDown`, `ChevronUp`, `Maximize2`, `Minimize2`, `Pencil`), all exported by both majors. New committed check `pnpm check:lucide-peer` (`scripts/check-lucide-peer.sh`): in a throwaway copy it installs `lucide-react@^1`, runs `tsc` and the `./registre` tests, then asserts the declared peer range admits the installed version (fails naming the range otherwise; `LUCIDE_SPEC=0.400.0` is its negative control). Nothing else changes; a host on 0.511.x is unaffected.
+
 ### Fixed — `MosaicCreateOrgDialog.slugPlaceholder` is optional again (unreleased)
 
 `slugPlaceholder` was added as a REQUIRED prop in `0.5.29-alpha` (#100, when the hardcoded `"acme-inc"` example was removed), so every caller written before it failed to type-check (`TS2741: Property 'slugPlaceholder' is missing`). It is now optional. Omitted, the slug field renders no placeholder: the library still ships no example word of its own, and the field keeps its visible label (`slugFieldLabel`) as its accessible name. Passing it is unchanged. Test: `MosaicOrgPanel.test.tsx` ("renders without slugPlaceholder (optional)"). The other required string props of the dialog are unchanged.
