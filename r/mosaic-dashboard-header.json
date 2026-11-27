@@ -5,7 +5,7 @@
   "description": "Generic sticky dashboard header. Title/subtitle, search bar (desktop), notification bell, right-side actions slot.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

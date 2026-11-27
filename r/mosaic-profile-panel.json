@@ -5,7 +5,7 @@
   "description": "Generic user profile form. Avatar upload slot, field list, security section. Fully controlled via props.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

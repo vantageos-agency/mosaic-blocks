@@ -5,7 +5,7 @@
   "description": "Step navigation: tab strip on desktop, expandable accordion on mobile. Props: items[] {id, title, duration?, isComplete?, children?}, activeItem, onItemChange, expandedItems, onToggleExpanded. Zero debate coupling; generic items API.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-device-provider.json"
   ],
   "files": [
     {

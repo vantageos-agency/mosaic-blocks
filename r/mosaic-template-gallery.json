@@ -5,9 +5,9 @@
   "description": "Responsive template browser (responsive-pair). Includes MosaicTemplateCard, MosaicTemplatePreview, MosaicQuickStartPanel, MosaicAgentTeamPreview.",
   "dependencies": [],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-adaptive-modal.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-device-provider.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-filter-sidebar.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-adaptive-modal.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-device-provider.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-filter-sidebar.json"
   ],
   "files": [
     {

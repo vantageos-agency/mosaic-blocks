@@ -7,11 +7,11 @@
     "class-variance-authority"
   ],
   "registryDependencies": [
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-adaptive-modal.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-input.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-select.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-tag-input.json",
-    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.40-alpha/r/mosaic-textarea.json"
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-adaptive-modal.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-input.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-select.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-tag-input.json",
+    "https://cdn.jsdelivr.net/npm/@vantageos/mosaic-blocks@0.5.41-alpha/r/mosaic-textarea.json"
   ],
   "files": [
     {
