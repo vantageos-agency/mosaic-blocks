@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — `check:lucide-peer` and `check:recharts-peer` work when the temp directory is on another filesystem than the pnpm store (unreleased)
+
+Both scripts copy the tree and its `node_modules` to `mktemp -d "${TMPDIR:-/tmp}/…"` and run `pnpm add` there. When that directory sits on another filesystem than the pnpm store (a tmpfs `/tmp`), pnpm picked a store next to it and refused with `ERR_PNPM_UNEXPECTED_STORE`; the output went to `/dev/null`, so the script exited 1 with no message. The store is now read from `node_modules/.modules.yaml` (the record pnpm checks) and passed as `--store-dir`; a missing record fails with exit 5 naming the file. A failing `pnpm add` now prints its full output on stderr and exits 6 naming the package spec. The version assertion, `tsc`, tests, range check and negative controls are unchanged.
+
 ### Fixed — the optional peer `lucide-react` admits 1.x: `^0.511.0 || ^1.0.0` (unreleased)
 
 Up to `0.5.40-alpha` the optional peer was `lucide-react: ^0.511.0`, so a host on lucide-react 1.x could not install the package with npm (`ERESOLVE … Could not resolve dependency: peerOptional lucide-react@"^0.511.0" from @vantageos/mosaic-blocks`). The range is now `^0.511.0 || ^1.0.0`. The `./registre` entry imports five icons (`ChevronDown`, `ChevronUp`, `Maximize2`, `Minimize2`, `Pencil`), all exported by both majors. New committed check `pnpm check:lucide-peer` (`scripts/check-lucide-peer.sh`): in a throwaway copy it installs `lucide-react@^1`, runs `tsc` and the `./registre` tests, then asserts the declared peer range admits the installed version (fails naming the range otherwise; `LUCIDE_SPEC=0.400.0` is its negative control). Nothing else changes; a host on 0.511.x is unaffected.
